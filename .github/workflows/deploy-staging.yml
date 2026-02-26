@@ -10,4 +10,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger aaPanel Webhook
-        run: curl -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" -H "CF-Access-Client-Id: ${{ secrets.CF_CLIENT_ID }}" -H "CF-Access-Client-Secret: ${{ secrets.CF_CLIENT_SECRET }}"
+        run: |
+          curl -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" -H "CF-Access-Client-Id: ${{ secrets.CF_CLIENT_ID }}" -H "CF-Access-Client-Secret: ${{ secrets.CF_CLIENT_SECRET }}"
