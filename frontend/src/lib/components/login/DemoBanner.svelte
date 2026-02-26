@@ -4,7 +4,7 @@
     
     const dispatch = createEventDispatcher();
     // Using relative path, assumes proxy or CORS configured, or full URL from env
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+    const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
     function fill(email, password) {
         dispatch('fill', { email, password: password || '123' });

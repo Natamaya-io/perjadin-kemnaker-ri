@@ -1,7 +1,7 @@
 import type { ApiClient, TravelRecord, User } from './types';
 import { browser } from '$app/environment';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export class RealApiClient implements ApiClient {
     private token: string | null = null;
