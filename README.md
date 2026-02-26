@@ -1,42 +1,51 @@
-# sv
+# Perjadin Protokol Kemnaker RI
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This repository contains the official frontend and backend code for the Perjadin Protokol system.
 
-## Creating a project
+## Project Structure
 
-If you're seeing this, you've probably already done this step. Congrats!
+This project follows an enterprise monorepo architecture, strictly separating the frontend and backend environments, orchestrated entirely via Docker.
 
-```sh
-# create a new project
-npx sv create my-app
+- **`/frontend`**: SvelteKit web application (Node.js).
+- **`/backend`**: REST API backend (Golang/Echo).
+- **`docker-compose.yml`**: Root orchestration configuration.
+
+## Prerequisites
+
+- **Docker** and **Docker Compose** installed on your system.
+*(You do not need Node.js or Go installed locally on your host machine to run this project.)*
+
+## Getting Started
+
+### 1. Build and Run
+
+From the root directory, simply run Docker Compose to build and start the entire stack:
+
+```bash
+docker-compose up --build
 ```
 
-To recreate this project with the same configuration:
+*(Add `-d` to run it in detached/background mode: `docker-compose up -d --build`)*
 
-```sh
-# recreate this project
-npx sv create --template minimal --types jsdoc --no-install .
+This single command will:
+1. Spin up a **PostgreSQL** database container.
+2. Build and start the **Go Backend** container (connecting it to the database).
+3. Build and start the **SvelteKit Frontend** container (connecting it to the backend).
+
+### 2. Access the Application
+
+Once the containers are running, you can access the applications at:
+
+- **Frontend Web App**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8081`
+- **Postgres Database**: `localhost:5432` (User: `postgres`, Password: `postgres`)
+
+### 3. Stopping the Stack
+
+To stop the containers and network:
+
+```bash
+docker-compose down
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+*Note: The database data is persisted in a local Docker volume. Running `down` will not delete your database tables or users.*
