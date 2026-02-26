@@ -18,7 +18,7 @@ services:
       dockerfile: Dockerfile
     container_name: perjadin_backend
     environment:
-      - DB_HOST=db
+      - DB_HOST=perjadin_db
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER:-postgres}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
@@ -37,8 +37,8 @@ services:
       dockerfile: Dockerfile
     container_name: perjadin_frontend
     environment:
-      - VITE_API_URL=http://backend:8081/api/v1
-      - PUBLIC_API_URL=http://localhost:8081/api/v1
+      - VITE_API_URL=/api/v1
+      - PUBLIC_API_URL=/api/v1
     ports:
       - "3005:3000"
     depends_on:
