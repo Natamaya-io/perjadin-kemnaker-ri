@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -46,7 +45,7 @@ func main() {
 	sugar.Info("Migrating database schemas...")
 	err = db.AutoMigrate(
 		&models.User{},
-		&models.Employee{},
+		// &models.Employee{}, // Removed
 		&models.TravelRecord{},
 		&models.TravelCost{},
 		&models.TravelReport{},
@@ -60,6 +59,8 @@ func main() {
 	svc := services.NewService(repo, cfg)
 	authHandler := handlers.NewAuthHandler(svc)
 	recordHandler := handlers.NewRecordHandler(svc)
+	// employeeHandler := handlers.NewEmployeeHandler(svc) // Removed
+	userHandler := handlers.NewUserHandler(svc)
 
 	// 6. Setup Echo
 	e := echo.New()
@@ -73,14 +74,24 @@ func main() {
 	// Auth Routes
 	api.POST("/auth/login", authHandler.Login)
 	api.POST("/auth/register", authHandler.Register)
+	api.GET("/auth/demo-users", authHandler.GetDemoUsers)
 
 	// Protected Routes
 	protected := api.Group("")
-	protected.Use(middleware.JWTMiddleware(cfg))
+	protected.Use(middleware.JWTMiddleware(cfg, repo))
 	{
 		protected.GET("/records", recordHandler.GetRecords)
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
+		protected.PUT("/records/:id", recordHandler.UpdateRecord)
+
+		// Employee Management Removed
+		
+		// User Management
+		protected.GET("/users", userHandler.GetUsers)
+		protected.POST("/users", userHandler.CreateUser)
+		protected.PUT("/users/:id", userHandler.UpdateUser)
+		protected.DELETE("/users/:id", userHandler.DeleteUser)
 	}
 
 	// 8. Start Server with Graceful Shutdown

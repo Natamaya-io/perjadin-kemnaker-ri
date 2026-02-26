@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -21,31 +22,35 @@ type User struct {
 	Password string `gorm:"not null" json:"-"` // Never return password
 	Name     string `gorm:"not null" json:"name"`
 	Role     string `gorm:"not null;default:'user'" json:"role"` // super_admin, keuangan, ppk, user
+	NIP      string `json:"nip"`
+	NomorHP  string `json:"nomorHp"`
+	Pangkat  string `json:"pangkat"`
+	Golongan string `json:"golongan"`
+	Jabatan  string `json:"jabatan"`
+	TingkatBiaya string `json:"tingkatBiaya"`
+	SessionID string `json:"-"` // Tracks the current active session ID
+	DemoPassword string `json:"-"` // Stores plain text password for Demo Banner (INSECURE - DEMO ONLY)
 }
 
-type Employee struct {
-	Base
-	Name     string `gorm:"not null" json:"name"`
-	NIP      string `gorm:"uniqueIndex;not null" json:"nip"`
-	Rank     string `json:"rank"`     // e.g. "Pembina"
-	Golongan string `json:"golongan"` // e.g. "IV/a"
-}
+// Employee struct removed as it is replaced by User (Protokol role)
 
 type TravelRecord struct {
 	Base
 	SPDNumber    string    `gorm:"uniqueIndex" json:"spd"`
 	EmployeeID   uuid.UUID `gorm:"type:uuid;not null" json:"employeeId"`
-	Employee     Employee  `gorm:"foreignKey:EmployeeID" json:"employee"`
+	Employee     User      `gorm:"foreignKey:EmployeeID" json:"employee"` // Linked to User now
 	CreatorID    uuid.UUID `gorm:"type:uuid;not null" json:"creatorId"` // User who created this
 	Creator      User      `gorm:"foreignKey:CreatorID" json:"creator"`
 	StartDate    time.Time `json:"startDate"`
+	// ... rest identical
 	EndDate      time.Time `json:"endDate"`
 	Location     string    `json:"location"`
 	Province     string    `json:"province"`
+	Type         string    `json:"type"` // dalam_kota, luar_kota, luar_negeri
 	Purpose      string    `json:"purpose"`
 	Stakeholder  string    `json:"stakeholder"`
 	Agenda       string    `json:"agenda"`
-	Status       string    `gorm:"default:'Submitted'" json:"status"`           // Submitted, Approved, Rejected
+	Status       string    `gorm:"default:'Draft'" json:"status"`           // Draft, Submitted, Approved, Rejected
 	ReportStatus string    `gorm:"default:'Pending'" json:"reportStatus"`       // Pending, Completed
 	TotalCost    float64   `json:"totalCost"`
 
@@ -68,10 +73,10 @@ type TravelCost struct {
 }
 
 type TravelReport struct {
-	TravelRecordID uuid.UUID `gorm:"type:uuid;primaryKey" json:"-"`
-	Text           string    `json:"text"`
-	SubmittedAt    time.Time `json:"submittedAt"`
-	Files          []byte    `gorm:"type:jsonb" json:"files"` // Storing file metadata/links as JSON
+	TravelRecordID uuid.UUID      `gorm:"type:uuid;primaryKey" json:"-"`
+	Text           string         `json:"text"`
+	SubmittedAt    time.Time      `json:"submittedAt"`
+	Files          datatypes.JSON `gorm:"type:jsonb" json:"files"` // Storing file metadata/links as JSON
 }
 
 // Hooks
@@ -79,18 +84,10 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
-	return
-}
-
-func (e *Employee) BeforeCreate(tx *gorm.DB) (err error) {
-	if e.ID == uuid.Nil {
-		e.ID = uuid.New()
+	    return
 	}
-	return
-}
-
-func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {
-	if t.ID == uuid.Nil {
+	
+	func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
 	}
 	return

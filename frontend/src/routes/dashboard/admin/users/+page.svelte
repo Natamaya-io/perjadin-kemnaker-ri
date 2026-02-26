@@ -1,0 +1,323 @@
+<script>
+    import { usersStore, addUser, updateUser, removeUser } from '$lib/stores/auth';
+    import { userStore } from '$lib/stores/auth';
+    import { cn } from '$lib/utils';
+    
+    // UI Components
+    import Button from '$lib/components/ui/button/Button.svelte';
+    import Input from '$lib/components/ui/input/Input.svelte';
+    import Label from '$lib/components/ui/label/Label.svelte';
+    import Dialog from '$lib/components/ui/dialog/Dialog.svelte';
+    import DialogHeader from '$lib/components/ui/dialog/DialogHeader.svelte';
+    import DialogTitle from '$lib/components/ui/dialog/DialogTitle.svelte';
+    import DialogFooter from '$lib/components/ui/dialog/DialogFooter.svelte';
+    import Table from '$lib/components/ui/table/Table.svelte';
+    import TableHeader from '$lib/components/ui/table/TableHeader.svelte';
+    import TableRow from '$lib/components/ui/table/TableRow.svelte';
+    import TableHead from '$lib/components/ui/table/TableHead.svelte';
+    import TableBody from '$lib/components/ui/table/TableBody.svelte';
+    import TableCell from '$lib/components/ui/table/TableCell.svelte';
+    import Select from '$lib/components/ui/select/Select.svelte';
+    import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
+    import AlertModal from '$lib/components/ui/alert-modal/AlertModal.svelte';
+
+    let searchQuery = '';
+    let isModalOpen = false;
+    let isConfirmOpen = false;
+    /** @type {number | string | null} */
+    let editingId = null; // null for add mode, number for edit mode
+
+    // Alert & Delete State
+    let isAlertOpen = false;
+    let alertTitle = '';
+    let alertDescription = '';
+    let isDeleteConfirmOpen = false;
+    /** @type {number | string | null} */
+    let deleteId = null;
+
+    import { toast } from '$lib/stores/toast';
+
+    // Form State
+    let formData = {
+        name: '',
+        email: '',
+        password: '',
+        role: 'protokol',
+        nip: '',
+        nomorHp: '',
+        pangkat: '',
+        golongan: '',
+        jabatan: '',
+        tingkatBiaya: ''
+    };
+
+    $: filteredUsers = $usersStore.filter(u => 
+        (u.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
+        (u.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (u.nip || '').includes(searchQuery)
+    );
+
+    function openAddModal() {
+        editingId = null;
+        formData = { name: '', email: '', password: '', role: 'protokol', nip: '', nomorHp: '', pangkat: '', golongan: '', jabatan: '', tingkatBiaya: '' };
+        isModalOpen = true;
+    }
+
+    /** @param {{ id: any; name?: string; email?: string; password?: string; role?: any; nip?: string; nomorHp?: string; }} user */
+    function openEditModal(user) {
+        editingId = user.id;
+        formData = { ...user, password: '' }; // Clear password on edit init
+        isModalOpen = true;
+    }
+
+    // ... (rest of functions) ...
+
+    /* IN HTML Template: Update Table and Modal */
+    /* I need to replace the Table and Modal blocks entirely to insert the new columns/fields cleanly */
+    
+    // ... inside <TableHead> ...
+    // Add NIP and HP columns
+    
+    // ... inside <TableRow> ...
+    // Add cells
+    
+    // ... inside Modal ...
+    // Add Inputs
+
+
+    function confirmSubmit() {
+        if (!formData.name || !formData.email || !formData.password) {
+            toast.error('Semua field wajib diisi');
+            return;
+        }
+        isConfirmOpen = true;
+    }
+
+    async function processSubmit() {
+        try {
+            // @ts-ignore
+            if (editingId) {
+                // @ts-ignore
+                await updateUser(editingId, formData);
+                toast.success('Data user berhasil diperbarui');
+            } else {
+                // @ts-ignore
+                await addUser(formData);
+                toast.success('User baru berhasil ditambahkan');
+            }
+            isModalOpen = false;
+            isConfirmOpen = false;
+        } catch (e) {
+            toast.error('Gagal menyimpan data user.');
+        }
+    }
+
+    /** @param {number | string} id */
+    function handleDelete(id) {
+        deleteId = id;
+        isDeleteConfirmOpen = true;
+    }
+
+    async function processDelete() {
+        if (deleteId) {
+            try {
+                await removeUser(deleteId);
+                toast.success('User berhasil dihapus');
+            } catch (e) {
+                toast.error('Gagal menghapus user');
+            }
+            deleteId = null;
+        }
+        isDeleteConfirmOpen = false;
+    }
+</script>
+
+<div class="space-y-6 pb-20">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Manajemen User</h2>
+            <p class="text-slate-500">Kelola akun pengguna dan hak akses aplikasi.</p>
+        </div>
+        <div class="flex items-center space-x-2 w-full md:w-auto">
+            <Button on:click={openAddModal} class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Tambah User
+            </Button>
+        </div>
+    </div>
+
+    {#if $userStore.role !== 'super_admin'}
+        <div class="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <h3 class="text-lg font-medium text-slate-900">Akses Dibatasi</h3>
+            <p class="text-slate-500 max-w-sm mt-1">Halaman ini khusus untuk Super Admin. Silakan login dengan akun yang sesuai.</p>
+        </div>
+    {:else}
+        <!-- Search Bar -->
+        <div class="relative w-full md:w-96">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <Input type="text" placeholder="Cari Nama atau Email..." bind:value={searchQuery} class="pl-9 bg-white border-slate-200" />
+        </div>
+
+        <!-- Card Grid View (Responsive) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {#if filteredUsers.length === 0}
+                <div class="col-span-full text-center py-12 text-slate-500 italic bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Tidak ada user ditemukan.</span>
+                    </div>
+                </div>
+            {:else}
+                {#each filteredUsers as user (user.id)}
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 relative hover:shadow-md hover:border-slate-300 transition-all">
+                        <div class="absolute top-4 right-4 flex gap-2">
+                             <button class="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Edit" on:click={() => openEditModal(user)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                             </button>
+                             <button class="text-slate-400 hover:text-red-600 transition-colors p-1" title="Hapus" on:click={() => handleDelete(user.id)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                             </button>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 pr-12 line-clamp-1" title={user.name}>{user.name}</h3>
+                            <p class="text-[11px] font-mono text-slate-500 mt-1 mb-2 truncate" title={user.email}>{user.email}</p>
+                            
+                            <div class="grid grid-cols-2 gap-y-3 gap-x-4 mt-3">
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">NIP</p>
+                                    <p class="text-xs font-mono text-slate-700 truncate" title={user.nip || '-'}>{user.nip || '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Tingkat Biaya</p>
+                                    <p class="text-xs font-bold text-slate-700">{user.tingkatBiaya || '-'}</p>
+                                </div>
+                                <div class="col-span-2">
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Jabatan & Pangkat</p>
+                                    <p class="text-xs text-slate-700 line-clamp-1" title={user.jabatan || '-'}>{user.jabatan || '-'}</p>
+                                    {#if user.pangkat || user.golongan}
+                                        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1" title="{user.pangkat || '-'} ({user.golongan || '-'})">{user.pangkat || '-'} ({user.golongan || '-'})</p>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-center justify-between border-t border-slate-100 pt-3 mt-2">
+                             <span class={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                                user.role === 'super_admin' ? "bg-purple-50 text-purple-700 border border-purple-100" :
+                                user.role === 'keuangan' ? "bg-indigo-50 text-indigo-700 border border-indigo-100" :
+                                user.role === 'kasubag' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                                "bg-blue-50 text-blue-700 border border-blue-100")}>
+                                {user.role}
+                            </span>
+                        </div>
+                    </div>
+                {/each}
+            {/if}
+        </div>
+    {/if}
+
+    <Dialog open={isModalOpen} on:close={() => isModalOpen = false}>
+        <DialogHeader class="border-b border-slate-100 pb-4">
+            <DialogTitle class="text-xl">{editingId ? 'Edit' : 'Tambah'} User</DialogTitle>
+            <p class="text-sm text-slate-500">Lengkapi data akun pengguna.</p>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+            <div class="space-y-2">
+                <Label>Nama Lengkap</Label>
+                <Input type="text" placeholder="Contoh: Staf Pengaju" bind:value={formData.name} />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <Label>NIP (Opsional)</Label>
+                    <Input type="text" placeholder="198..." bind:value={formData.nip} />
+                </div>
+                <div class="space-y-2">
+                    <Label>Nomor HP (WhatsApp)</Label>
+                    <Input type="text" placeholder="08..." bind:value={formData.nomorHp} />
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <Label>Pangkat</Label>
+                    <Input type="text" placeholder="Contoh: Pembina Utama" bind:value={formData.pangkat} />
+                </div>
+                <div class="space-y-2">
+                    <Label>Golongan</Label>
+                    <Input type="text" placeholder="Contoh: IV/e" bind:value={formData.golongan} />
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <Label>Jabatan</Label>
+                    <Input type="text" placeholder="Contoh: Analis Protokol" bind:value={formData.jabatan} />
+                </div>
+                <div class="space-y-2">
+                    <Label>Tingkat Biaya</Label>
+                    <Input type="text" placeholder="Contoh: B, C, D" bind:value={formData.tingkatBiaya} />
+                </div>
+            </div>
+            <div class="space-y-2">
+                <Label>Email Kedinasan</Label>
+                <Input type="email" placeholder="nama@kemnaker.go.id" bind:value={formData.email} />
+            </div>
+            <div class="space-y-2">
+                <Label>Password</Label>
+                <Input type="text" placeholder="Minimal 6 karakter" bind:value={formData.password} />
+            </div>
+            <div class="space-y-2">
+                <Label>Role (Hak Akses)</Label>
+                <div class="relative w-full">
+                    <Select bind:value={formData.role} class="bg-white border-slate-200">
+                        <option value="protokol">Protokol (Staf Pengaju)</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="keuangan">Admin Keuangan</option>
+                        <option value="kasubag">Kasubag (Approval)</option>
+                    </Select>
+                </div>
+            </div>
+        </div>
+
+        <DialogFooter class="border-t border-slate-100 pt-4 flex justify-end gap-2">
+            <Button variant="outline" on:click={() => isModalOpen = false}>Batal</Button>
+            <Button class="bg-blue-600 hover:bg-blue-700 text-white" on:click={confirmSubmit}>Simpan</Button>
+        </DialogFooter>
+    </Dialog>
+
+    <ConfirmationModal
+        bind:open={isConfirmOpen}
+        title={editingId ? 'Simpan Perubahan User' : 'Tambah User Baru'}
+        description="Apakah Anda yakin data user ini sudah benar?"
+        confirmText="Ya, Simpan"
+        onConfirm={processSubmit}
+    />
+    
+    <ConfirmationModal
+        bind:open={isDeleteConfirmOpen}
+        title="Hapus User"
+        description="Apakah Anda yakin ingin menghapus user ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus"
+        onConfirm={processDelete}
+        variant="destructive"
+    />
+
+    <AlertModal
+        bind:open={isAlertOpen}
+        title={alertTitle}
+        description={alertDescription}
+    />
+</div>

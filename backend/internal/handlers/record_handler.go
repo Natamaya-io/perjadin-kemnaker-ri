@@ -66,3 +66,28 @@ func (h *RecordHandler) GetRecordByID(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, record)
 }
+
+func (h *RecordHandler) UpdateRecord(c echo.Context) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid UUID format")
+	}
+
+	// Fetch existing
+	record, err := h.Service.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
+	}
+
+	// Bind updates
+	if err := c.Bind(&record); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+
+	if err := h.Service.UpdateRecord(record); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, record)
+}

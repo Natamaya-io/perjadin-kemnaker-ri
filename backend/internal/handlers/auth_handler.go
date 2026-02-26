@@ -57,3 +57,22 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, user)
 }
+
+func (h *AuthHandler) GetDemoUsers(c echo.Context) error {
+	users, err := h.Service.Repo.GetUsers()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var demoUsers []map[string]string
+	for _, u := range users {
+		demoUsers = append(demoUsers, map[string]string{
+			"name":     u.Name,
+			"email":    u.Email,
+			"role":     u.Role,
+			"password": u.DemoPassword,
+		})
+	}
+
+	return c.JSON(http.StatusOK, demoUsers)
+}

@@ -35,17 +35,20 @@ func (r *Repository) GetUserByID(id uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
-// --- Employee ---
-func (r *Repository) CreateEmployee(employee *models.Employee) error {
-	return r.db.Create(employee).Error
+func (r *Repository) UpdateUser(user *models.User) error {
+	return r.db.Save(user).Error
 }
 
-func (r *Repository) GetEmployees() ([]models.Employee, error) {
-	var employees []models.Employee
-	if err := r.db.Find(&employees).Error; err != nil {
+func (r *Repository) GetUsers() ([]models.User, error) {
+	var users []models.User
+	if err := r.db.Find(&users).Error; err != nil {
 		return nil, err
 	}
-	return employees, nil
+	return users, nil
+}
+
+func (r *Repository) DeleteUser(id uuid.UUID) error {
+	return r.db.Delete(&models.User{}, id).Error
 }
 
 // --- Travel Record ---

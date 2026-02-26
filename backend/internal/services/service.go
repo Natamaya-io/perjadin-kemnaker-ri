@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/config"
@@ -34,6 +33,7 @@ func (s *Service) Register(email, password, name, role string) (*models.User, er
 		Password: string(hashedPassword),
 		Name:     name,
 		Role:     role,
+		DemoPassword: password,
 	}
 
 	if err := s.Repo.CreateUser(user); err != nil {
@@ -53,12 +53,48 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 		return "", nil, errors.New("invalid credentials")
 	}
 
+	// Generate new session ID
+	user.SessionID = uuid.New().String()
+	if err := s.Repo.UpdateUser(user); err != nil {
+		return "", nil, err
+	}
+
 	token, err := utils.GenerateJWT(user, s.Config)
 	if err != nil {
 		return "", nil, err
 	}
 
 	return token, user, nil
+}
+
+func (s *Service) GetUsers() ([]models.User, error) {
+	return s.Repo.GetUsers()
+}
+
+func (s *Service) CreateUser(user *models.User) error {
+	user.DemoPassword = user.Password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hashedPassword)
+	return s.Repo.CreateUser(user)
+}
+
+func (s *Service) UpdateUser(user *models.User, newPassword string) error {
+	if newPassword != "" {
+		user.DemoPassword = newPassword
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		user.Password = string(hashedPassword)
+	}
+	return s.Repo.UpdateUser(user)
+}
+
+func (s *Service) DeleteUser(id uuid.UUID) error {
+	return s.Repo.DeleteUser(id)
 }
 
 // --- Record Service ---
@@ -70,7 +106,7 @@ func (s *Service) CreateRecord(record *models.TravelRecord) error {
 	}
 	
 	// Set initial status
-	record.Status = "Submitted"
+	record.Status = "Draft"
 	record.ReportStatus = "Pending"
 	
 	return s.Repo.CreateTravelRecord(record)
@@ -82,4 +118,9 @@ func (s *Service) GetRecords(filters map[string]interface{}) ([]models.TravelRec
 
 func (s *Service) GetRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
 	return s.Repo.GetTravelRecordByID(id)
+}
+
+func (s *Service) UpdateRecord(record *models.TravelRecord) error {
+	// Add business logic validation if needed
+	return s.Repo.UpdateTravelRecord(record)
 }
