@@ -47,10 +47,13 @@
         selectedEmployees: []
     };
 
+    let isReadOnly = false;
+
     let isConfirmOpen = false;
 
     /** @param {CustomEvent} event */
     function toggleEmployee(event) {
+        if (isReadOnly) return;
         const employeeId = event.detail;
         if (formData.selectedEmployees.includes(employeeId)) {
             formData.selectedEmployees = formData.selectedEmployees.filter(id => id !== employeeId);
@@ -100,6 +103,19 @@
         try {
             await addRecord(tripData);
             toast.success('Pengajuan Berhasil Disimpan!');
+            
+            // Send WA Notification to selected users
+            selectedUsers.forEach((user, index) => {
+                if (user.nomorHp) {
+                    // Format phone number to start with 62 instead of 0
+                    let hp = user.nomorHp.startsWith('0') ? '62' + user.nomorHp.slice(1) : user.nomorHp;
+                    const text = `Halo ${user.name}, Anda telah ditugaskan untuk perjalanan dinas ke ${formData.location}, ${formData.province} pada tanggal ${formData.startDate} s/d ${formData.endDate}. Mohon persiapkan diri Anda.`;
+                    
+                    setTimeout(() => {
+                        window.open(`https://wa.me/${hp}?text=${encodeURIComponent(text)}`, '_blank');
+                    }, index * 500); // Stagger to prevent popup blockers from killing all
+                }
+            });
             
             if ($userStore.role === 'super_admin' || $userStore.role === 'keuangan') {
                 goto('/dashboard/admin/perdin');
@@ -212,6 +228,7 @@
                     email={$userStore.email} 
                     bind:startDate={formData.startDate}
                     bind:endDate={formData.endDate}
+                    readonly={isReadOnly}
                 />
                 
                 <LocationCard 
@@ -220,6 +237,7 @@
                     bind:purpose={formData.purpose}
                     bind:agenda={formData.agenda}
                     provinces={$provincesStore}
+                    readonly={isReadOnly}
                 />
             </ProposalForm>
 
@@ -227,11 +245,13 @@
                 <StakeholderCard 
                     stakeholders={$stakeholdersStore}
                     bind:selectedStakeholder={formData.stakeholder}
+                    readonly={isReadOnly}
                 />
                 
                 <EmployeeSelectorCard 
                     employees={protokolOfficers}
                     selectedEmployees={formData.selectedEmployees}
+                    readonly={isReadOnly}
                     on:toggle={toggleEmployee}
                     on:submit={handleSubmit}
                 />

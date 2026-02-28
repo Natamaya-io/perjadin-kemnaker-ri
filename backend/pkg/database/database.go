@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,6 +21,16 @@ func NewPostgresDB(host, port, user, password, name, sslMode string) (*gorm.DB, 
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	log.Println("Connected to PostgreSQL database")
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	// Connection Pooling Configuration
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	log.Println("Connected to PostgreSQL database with connection pooling enabled")
 	return db, nil
 }

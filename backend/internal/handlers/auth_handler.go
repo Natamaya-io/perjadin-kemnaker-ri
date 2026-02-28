@@ -24,7 +24,7 @@ type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 	Name     string `json:"name" validate:"required"`
-	Role     string `json:"role"` // Optional, defaults to user
+	Role     string `json:"role"` // Optional, defaults to protokol
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
@@ -70,7 +70,7 @@ func (h *AuthHandler) GetDemoUsers(c echo.Context) error {
 			"name":     u.Name,
 			"email":    u.Email,
 			"role":     u.Role,
-			"password": u.DemoPassword,
+			"password": "123", // For demo purposes, we expose this
 		})
 	}
 

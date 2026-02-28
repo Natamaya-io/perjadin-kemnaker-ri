@@ -44,6 +44,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
+	if req.NomorHP == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Nomor HP is required")
+	}
+
 	user := models.User{
 		Name:     req.Name,
 		Email:    req.Email,
@@ -87,6 +91,10 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	var req UpdateUserRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+	
+	if req.NomorHP == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Nomor HP is required")
 	}
 	
 	// Get existing user

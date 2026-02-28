@@ -129,13 +129,19 @@ export class RealApiClient implements ApiClient {
          const createdRecords: TravelRecord[] = [];
 
          for (const emp of employees) {
+             const safeDate = (d: any) => {
+                 if (!d) return undefined;
+                 const date = new Date(d);
+                 return isNaN(date.getTime()) ? undefined : date.toISOString();
+             };
+
              const singleRecord = {
                  ...record,
-                 employeeId: emp.id, // Map full employee to ID for backend
-                 employee: undefined, // Remove full object if backend doesn't want it, or keep if it ignores
+                 employeeId: emp.id, 
+                 employee: undefined, 
                  employees: undefined,
-                 startDate: record.startDate ? new Date(record.startDate).toISOString() : undefined,
-                 endDate: record.endDate ? new Date(record.endDate).toISOString() : undefined
+                 startDate: safeDate(record.startDate),
+                 endDate: safeDate(record.endDate)
              };
              
              // backend expects 'employeeId' (UUID). 

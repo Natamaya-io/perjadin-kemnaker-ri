@@ -5,6 +5,7 @@
     export let email = '';
     export let startDate = '';
     export let endDate = '';
+    export let readonly = false;
 </script>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -25,11 +26,11 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div class="space-y-2">
                 <Label class="text-slate-600">Tanggal Mulai <span class="text-red-500">*</span></Label>
-                <Input type="date" bind:value={startDate} required class="h-11" />
+                <Input type="date" bind:value={startDate} required class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
             </div>
             <div class="space-y-2">
                 <Label class="text-slate-600">Tanggal Selesai <span class="text-red-500">*</span></Label>
-                <Input type="date" bind:value={endDate} required class="h-11" />
+                <Input type="date" bind:value={endDate} required class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
             </div>
         </div>
     </div>

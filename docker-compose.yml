@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  db:
+  postgres:
     image: postgres:15-alpine
     container_name: perjadin_db
     environment:
@@ -9,7 +7,19 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-perjadin}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - perjadin_db_data:/var/lib/postgresql/data
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=50"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "work_mem=16MB"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     restart: unless-stopped
 
   backend:
@@ -18,17 +28,18 @@ services:
       dockerfile: Dockerfile
     container_name: perjadin_backend
     environment:
-      - DB_HOST=perjadin_db
+      - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER:-postgres}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - DB_NAME=${POSTGRES_DB:-perjadin}
       - JWT_SECRET=${JWT_SECRET:-supersecretkey}
       - APP_PORT=8081
+      - SEED_DB=true
     ports:
       - "8081:8081"
     depends_on:
-      - db
+      - postgres
     restart: unless-stopped
 
   frontend:
@@ -39,6 +50,7 @@ services:
     environment:
       - VITE_API_URL=/api/v1
       - PUBLIC_API_URL=/api/v1
+      - INTERNAL_API_URL=http://backend:8081
     ports:
       - "3005:3000"
     depends_on:
@@ -46,4 +58,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  perjadin_db_data:
+    driver: local

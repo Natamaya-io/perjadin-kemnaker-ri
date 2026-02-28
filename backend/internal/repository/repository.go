@@ -65,7 +65,7 @@ func (r *Repository) GetTravelRecords(filters map[string]interface{}) ([]models.
 		query = query.Where("status = ?", status)
 	}
 
-	if err := query.Order("created_at desc").Find(&records).Error; err != nil {
+	if err := query.Order("created_at desc").Limit(1000).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil

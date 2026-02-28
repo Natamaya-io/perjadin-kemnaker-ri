@@ -10,13 +10,7 @@
         dispatch('fill', { email, password: password || '123' });
     }
 
-    let demoUsers = [
-        { name: 'Super Admin', email: 'superadmin@kemnaker.go.id', password: '123' },
-        { name: 'Keuangan', email: 'keuangan@kemnaker.go.id', password: '123' },
-        { name: 'Kasubag', email: 'kasubag@kemnaker.go.id', password: '123' },
-        { name: 'Protokol Vito', email: 'vito@kemnaker.go.id', password: '123' },
-        { name: 'Protokol Keneth', email: 'keneth@kemnaker.go.id', password: '123' }
-    ];
+    let demoUsers = [];
 
     onMount(async () => {
         if (browser) {

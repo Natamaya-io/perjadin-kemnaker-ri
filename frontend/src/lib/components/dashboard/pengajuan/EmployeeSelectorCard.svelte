@@ -7,6 +7,8 @@
     export let employees = [];
     /** @type {any[]} */
     export let selectedEmployees = [];
+    /** @type {boolean} */
+    export let readonly = false;
 
     const dispatch = createEventDispatcher();
     
@@ -20,6 +22,7 @@
 
     /** @param {any} id */
     function toggleEmployee(id) {
+        if (readonly) return;
         dispatch('toggle', id);
     }
 </script>
@@ -46,11 +49,12 @@
             <div class="text-center py-6 text-sm text-slate-500 italic">Tidak ada petugas yang cocok.</div>
         {:else}
             {#each filteredEmployees as employee (employee.id)}
-                <label class="flex items-center space-x-3 p-3 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer has-[:checked]:bg-blue-50/30 has-[:checked]:border-blue-200">
+                <label class="flex items-center space-x-3 p-3 rounded-lg border border-transparent {readonly ? 'cursor-default' : 'hover:border-slate-200 hover:bg-slate-50 cursor-pointer'} transition-all has-[:checked]:bg-blue-50/30 has-[:checked]:border-blue-200">
                     <input type="checkbox" 
                         checked={selectedEmployees.includes(employee.id)}
                         on:change={() => toggleEmployee(employee.id)}
-                        class="accent-blue-600 h-5 w-5 rounded border-slate-300 shrink-0"
+                        disabled={readonly}
+                        class="accent-blue-600 h-5 w-5 rounded border-slate-300 shrink-0 {readonly ? 'opacity-50' : ''}"
                     />
                     <div class="grid gap-0.5">
                         <span class="text-sm font-semibold text-slate-800">{employee.name}</span>
@@ -61,10 +65,12 @@
             {/each}
         {/if}
     </div>
+    {#if !readonly}
     <div class="p-4 border-t border-slate-100 bg-slate-50/50">
         <p class="text-xs text-slate-500 text-center mb-3">Pastikan data sudah benar sebelum menyimpan.</p>
         <Button class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={() => dispatch('submit')}>
             Simpan Pengajuan
         </Button>
     </div>
+    {/if}
 </div>

@@ -21,7 +21,7 @@ type User struct {
 	Email    string `gorm:"uniqueIndex;not null" json:"email"`
 	Password string `gorm:"not null" json:"-"` // Never return password
 	Name     string `gorm:"not null" json:"name"`
-	Role     string `gorm:"not null;default:'user'" json:"role"` // super_admin, keuangan, ppk, user
+	Role     string `gorm:"not null;default:'protokol'" json:"role"` // super_admin, keuangan, kasubag, protokol
 	NIP      string `json:"nip"`
 	NomorHP  string `json:"nomorHp"`
 	Pangkat  string `json:"pangkat"`
@@ -84,10 +84,11 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
-	    return
-	}
-	
-	func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {	if t.ID == uuid.Nil {
+	return
+}
+
+func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {
+	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
 	}
 	return

@@ -86,8 +86,8 @@
 
 
     function confirmSubmit() {
-        if (!formData.name || !formData.email || !formData.password) {
-            toast.error('Semua field wajib diisi');
+        if (!formData.name || !formData.email || !formData.nomorHp || (!editingId && !formData.password)) {
+            toast.error('Nama, Email, Nomor WA, dan Password (untuk user baru) wajib diisi');
             return;
         }
         isConfirmOpen = true;
@@ -238,7 +238,7 @@
 
         <div class="space-y-4 py-4">
             <div class="space-y-2">
-                <Label>Nama Lengkap</Label>
+                <Label>Nama Lengkap <span class="text-red-500">*</span></Label>
                 <Input type="text" placeholder="Contoh: Staf Pengaju" bind:value={formData.name} />
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -247,7 +247,7 @@
                     <Input type="text" placeholder="198..." bind:value={formData.nip} />
                 </div>
                 <div class="space-y-2">
-                    <Label>Nomor HP (WhatsApp)</Label>
+                    <Label>Nomor HP (WhatsApp) <span class="text-red-500">*</span></Label>
                     <Input type="text" placeholder="08..." bind:value={formData.nomorHp} />
                 </div>
             </div>
@@ -272,15 +272,15 @@
                 </div>
             </div>
             <div class="space-y-2">
-                <Label>Email Kedinasan</Label>
+                <Label>Email Kedinasan <span class="text-red-500">*</span></Label>
                 <Input type="email" placeholder="nama@kemnaker.go.id" bind:value={formData.email} />
             </div>
             <div class="space-y-2">
-                <Label>Password</Label>
+                <Label>Password {editingId ? '(Kosongkan jika tidak diubah)' : '<span class="text-red-500">*</span>'}</Label>
                 <Input type="text" placeholder="Minimal 6 karakter" bind:value={formData.password} />
             </div>
             <div class="space-y-2">
-                <Label>Role (Hak Akses)</Label>
+                <Label>Role (Hak Akses) <span class="text-red-500">*</span></Label>
                 <div class="relative w-full">
                     <Select bind:value={formData.role} class="bg-white border-slate-200">
                         <option value="protokol">Protokol (Staf Pengaju)</option>

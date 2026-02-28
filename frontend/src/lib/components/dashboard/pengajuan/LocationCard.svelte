@@ -9,6 +9,7 @@
     export let purpose = '';
     export let agenda = '';
     export let provinces = [];
+    export let readonly = false;
 </script>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -25,11 +26,11 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div class="space-y-2">
                 <Label class="text-slate-600">Lokasi Dinas (Kab/Kota)</Label>
-                <Input placeholder="Contoh: Surabaya" bind:value={location} class="h-11" />
+                <Input placeholder="Contoh: Surabaya" bind:value={location} class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
             </div>
             <div class="space-y-2">
                 <Label class="text-slate-600">Provinsi <span class="text-red-500">*</span></Label>
-                <Select bind:value={province} class="h-11">
+                <Select bind:value={province} class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly}>
                     <option value="" disabled selected>Pilih Provinsi</option>
                     {#each provinces as prov}
                         <option value={prov}>{prov}</option>
@@ -41,12 +42,12 @@
         <div class="space-y-3">
             <Label class="text-slate-600">Tujuan Perjalanan</Label>
             <div class="grid grid-cols-1 gap-3">
-                <label class="relative flex items-center p-4 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/30">
-                    <input type="radio" name="purpose" value="persiapan" bind:group={purpose} class="accent-blue-600 h-4 w-4 mr-3" />
+                <label class="relative flex items-center p-4 rounded-lg border border-slate-200 {readonly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-slate-50'} transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/30">
+                    <input type="radio" name="purpose" value="persiapan" bind:group={purpose} disabled={readonly} class="accent-blue-600 h-4 w-4 mr-3" />
                     <span class="text-sm font-medium text-slate-700">Persiapan dan Pendampingan Kunjungan Kerja</span>
                 </label>
-                <label class="relative flex items-center p-4 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/30">
-                    <input type="radio" name="purpose" value="koordinasi" bind:group={purpose} class="accent-blue-600 h-4 w-4 mr-3" />
+                <label class="relative flex items-center p-4 rounded-lg border border-slate-200 {readonly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-slate-50'} transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/30">
+                    <input type="radio" name="purpose" value="koordinasi" bind:group={purpose} disabled={readonly} class="accent-blue-600 h-4 w-4 mr-3" />
                     <span class="text-sm font-medium text-slate-700">Koordinasi dan Konsultasi Kunjungan Kerja</span>
                 </label>
             </div>
@@ -54,7 +55,7 @@
 
         <div class="space-y-2">
             <Label class="text-slate-600">Detail Agenda</Label>
-            <Textarea placeholder="Jelaskan detail agenda kegiatan secara singkat..." bind:value={agenda} class="min-h-[100px] resize-y" />
+            <Textarea placeholder="Jelaskan detail agenda kegiatan secara singkat..." bind:value={agenda} class="min-h-[100px] resize-y {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
         </div>
     </div>
 </div>

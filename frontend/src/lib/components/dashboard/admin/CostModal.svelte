@@ -19,6 +19,8 @@
 
     const dispatch = createEventDispatcher();
 
+    $: isReadOnly = $userStore.role === 'kasubag';
+
     // Derived Calculations
     $: totalDailyAllowance = (editingCosts.dailyAllowanceDays || 0) * (editingCosts.dailyAllowanceRate || 0);
     $: totalHotel = (editingCosts.hotelDays || 0) * (editingCosts.hotelRate || 0);
@@ -51,6 +53,7 @@
     }
 
     function handleSave() {
+        if (isReadOnly) return;
         const error = validateCosts();
         if (error) {
             toast.error(error);
@@ -73,14 +76,14 @@
                 <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
                 <div class="relative">
                     <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="number" bind:value={editingCosts.ticketGo} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white" />
+                    <Input type="number" bind:value={editingCosts.ticketGo} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
             </div>
             <div class="space-y-2">
                 <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Pulang</Label>
                 <div class="relative">
                     <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="number" bind:value={editingCosts.ticketBack} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white" />
+                    <Input type="number" bind:value={editingCosts.ticketBack} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
             </div>
         </div>
@@ -96,13 +99,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="space-y-2 col-span-1">
                     <Label class="text-xs text-slate-500">Durasi (Hari)</Label>
-                    <Input type="number" bind:value={editingCosts.dailyAllowanceDays} class="bg-white border-slate-200" />
+                    <Input type="number" bind:value={editingCosts.dailyAllowanceDays} disabled={isReadOnly} class="bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
                 <div class="space-y-2 col-span-1 sm:col-span-2">
                     <Label class="text-xs text-slate-500">Rate per Hari</Label>
                     <div class="relative">
                         <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                        <Input type="number" bind:value={editingCosts.dailyAllowanceRate} class="pl-9 bg-white border-slate-200" />
+                        <Input type="number" bind:value={editingCosts.dailyAllowanceRate} disabled={isReadOnly} class="pl-9 bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                     </div>
                 </div>
             </div>
@@ -122,13 +125,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="space-y-2 col-span-1">
                     <Label class="text-xs text-slate-500">Durasi (Malam)</Label>
-                    <Input type="number" bind:value={editingCosts.hotelDays} class="bg-white border-slate-200" />
+                    <Input type="number" bind:value={editingCosts.hotelDays} disabled={isReadOnly} class="bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
                 <div class="space-y-2 col-span-1 sm:col-span-2">
                     <Label class="text-xs text-slate-500">Rate per Malam</Label>
                     <div class="relative">
                         <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                        <Input type="number" bind:value={editingCosts.hotelRate} class="pl-9 bg-white border-slate-200" />
+                        <Input type="number" bind:value={editingCosts.hotelRate} disabled={isReadOnly} class="pl-9 bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                     </div>
                 </div>
             </div>
@@ -143,7 +146,7 @@
                 <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Transport Lokal</Label>
                 <div class="relative">
                     <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="number" bind:value={editingCosts.localTransport} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white" />
+                    <Input type="number" bind:value={editingCosts.localTransport} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
                 <p class="text-[10px] text-slate-400">Maks. Rp 500.000</p>
             </div>
@@ -151,14 +154,14 @@
                 <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Transport Daerah</Label>
                 <div class="relative">
                     <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="number" bind:value={editingCosts.regionalTransport} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white" />
+                    <Input type="number" bind:value={editingCosts.regionalTransport} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
             </div>
         </div>
 
         <div class="space-y-2 pt-2">
             <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
-            <Select bind:value={editingCosts.transportMode} class="bg-slate-50 border-slate-200">
+            <Select bind:value={editingCosts.transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}">
                 <option value="Pesawat">Pesawat Udara</option>
                 <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
                 <option value="Kendaraan Dinas">Kendaraan Dinas</option>
@@ -169,7 +172,7 @@
         <div class="space-y-2 pt-2 border-t border-slate-100 mt-4">
             <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Dokumen, Kwitansi, & Tagihan</Label>
             
-            {#if $userStore.role === 'protokol'}
+            {#if $userStore.role === 'protokol' && !isReadOnly}
                 <div class="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -211,8 +214,10 @@
                 <span class="text-lg font-bold text-blue-600">{formatCurrency(grandTotal)}</span>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
-                <Button variant="outline" class="flex-1 sm:flex-none border-slate-200 text-slate-600" on:click={() => dispatch('close')}>Batal</Button>
-                <Button class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={handleSave}>Simpan</Button>
+                <Button variant="outline" class="flex-1 sm:flex-none border-slate-200 text-slate-600" on:click={() => dispatch('close')}>Tutup</Button>
+                {#if !isReadOnly}
+                    <Button class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={handleSave}>Simpan</Button>
+                {/if}
             </div>
         </div>
     </DialogFooter>

@@ -24,10 +24,13 @@ func (h *RecordHandler) CreateRecord(c echo.Context) error {
 	}
 
 	// Set creator from context
-	creatorIDStr := c.Get("user_id").(string)
-	creatorID, err := uuid.Parse(creatorIDStr)
-	if err == nil {
-		record.CreatorID = creatorID
+	creatorIDInterface := c.Get("user_id")
+	if creatorIDInterface != nil {
+		if creatorIDStr, ok := creatorIDInterface.(string); ok {
+			if creatorID, err := uuid.Parse(creatorIDStr); err == nil {
+				record.CreatorID = creatorID
+			}
+		}
 	}
 
 	if err := h.Service.CreateRecord(&record); err != nil {

@@ -11,9 +11,10 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/handlers"
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
 	"github.com/kemnaker/perjadin-backend/internal/models"
-	"github.com/kemnaker/perjadin-backend/pkg/database"
 	"github.com/kemnaker/perjadin-backend/internal/repository"
+	"github.com/kemnaker/perjadin-backend/internal/seeder"
 	"github.com/kemnaker/perjadin-backend/internal/services"
+	"github.com/kemnaker/perjadin-backend/pkg/database"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -41,6 +42,18 @@ func main() {
 		sugar.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Get generic database object sql.DB to use its functions
+	sqlDB, err := db.DB()
+	if err != nil {
+		sugar.Fatalf("Failed to get underlying sql.DB: %v", err)
+	}
+	defer func() {
+		sugar.Info("Closing database connection...")
+		if err := sqlDB.Close(); err != nil {
+			sugar.Errorf("Error closing database connection: %v", err)
+		}
+	}()
+
 	// 4. Auto Migrate
 	sugar.Info("Migrating database schemas...")
 	err = db.AutoMigrate(
@@ -54,7 +67,13 @@ func main() {
 		sugar.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	// 5. Initialize Layers
+	// 5. Seed Data (if enabled)
+	if os.Getenv("SEED_DB") == "true" {
+		sugar.Info("Seeding database...")
+		seeder.Seed(db)
+	}
+
+	// 6. Initialize Layers
 	repo := repository.NewRepository(db)
 	svc := services.NewService(repo, cfg)
 	authHandler := handlers.NewAuthHandler(svc)
@@ -62,13 +81,13 @@ func main() {
 	// employeeHandler := handlers.NewEmployeeHandler(svc) // Removed
 	userHandler := handlers.NewUserHandler(svc)
 
-	// 6. Setup Echo
+	// 7. Setup Echo
 	e := echo.New()
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
 
-	// 7. Routes
+	// 8. Routes
 	api := e.Group("/api/v1")
 
 	// Auth Routes
