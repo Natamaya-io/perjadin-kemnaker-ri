@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPO_NAME: xm4yestiK/perjadin-kemnaker-ri
+  REPO_NAME: xm4yestik/perjadin-kemnaker-ri
 
 jobs:
   build-push-backend:
