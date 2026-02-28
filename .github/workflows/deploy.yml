@@ -84,11 +84,11 @@ jobs:
       - name: Execute Webhook via Cloudflare Access
         run: |
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" \
-          -H "CF-Access-Client-Id: ${{ secrets.CF_CLIENT_ID }}" \
-          -H "CF-Access-Client-Secret: ${{ secrets.CF_CLIENT_SECRET }}")
+          -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+          -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}")
           
           echo "Webhook HTTP Status: $HTTP_STATUS"
           if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Failed to trigger aaPanel webhook!"
+            echo "Failed to trigger aaPanel webhook! Cloudflare memblokir atau aaPanel down."
             exit 1
           fi
