@@ -149,7 +149,7 @@
                                 {record.status}
                             </span>
                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                {record.type ? record.type.split('_').join(' ') : 'Dalam Kota'}
+                                {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
                             </span>
                         </div>
                         <span class="text-xs font-mono text-slate-400">{record.spd}</span>

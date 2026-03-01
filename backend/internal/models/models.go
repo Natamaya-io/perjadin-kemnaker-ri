@@ -79,6 +79,41 @@ type TravelReport struct {
 	Files          datatypes.JSON `gorm:"type:jsonb" json:"files"` // Storing file metadata/links as JSON
 }
 
+// ==========================================
+// Master Data Models (SBM & Reference)
+// ==========================================
+
+type Province struct {
+	Base
+	Name string `gorm:"uniqueIndex;not null" json:"name"`
+	Code string `gorm:"uniqueIndex" json:"code"` // e.g., "31" for DKI Jakarta
+}
+
+type SBMRate struct {
+	Base
+	ProvinceID uuid.UUID `gorm:"type:uuid;not null;index" json:"provinceId"`
+	Province   Province  `gorm:"foreignKey:ProvinceID" json:"province"`
+	
+	Year int `gorm:"index;not null" json:"year"` // e.g., 2025
+
+	// Uang Harian (Per diem)
+	FullboardRate    float64 `json:"fullboardRate"`
+	FullhalfRate     float64 `json:"fullhalfRate"`
+	OutsideCityRate  float64 `json:"outsideCityRate"` // Luar Kota Biasa
+	InsideCityRate   float64 `json:"insideCityRate"`  // Dalam Kota > 8 Jam
+	DiklatRate       float64 `json:"diklatRate"`
+	
+	// Batas Tertinggi Penginapan (Hotel)
+	HotelEchelon1 float64 `json:"hotelEchelon1"` // Menteri/Eselon I
+	HotelEchelon2 float64 `json:"hotelEchelon2"`
+	HotelEchelon3 float64 `json:"hotelEchelon3"`
+	HotelEchelon4 float64 `json:"hotelEchelon4"` // Gol III
+	HotelStaff    float64 `json:"hotelStaff"`    // Gol II/I
+	
+	// Transport Taksi (Perjalanan Dinas Dalam Negeri)
+	TaxiRate float64 `json:"taxiRate"`
+}
+
 // Hooks
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == uuid.Nil {
@@ -90,6 +125,20 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
+	}
+	return
+}
+
+func (p *Province) BeforeCreate(tx *gorm.DB) (err error) {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	return
+}
+
+func (s *SBMRate) BeforeCreate(tx *gorm.DB) (err error) {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
 	}
 	return
 }

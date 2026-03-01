@@ -138,44 +138,54 @@
 
 <div class="max-w-6xl mx-auto space-y-8 pb-20">
     {#if !selectedType}
+        <!-- Back Button -->
+        <div class="w-full mb-4">
+            <a href="/dashboard/pengajuan" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Kembali
+            </a>
+        </div>
+
         <!-- Selection Screen -->
-        <div class="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in duration-300">
-            <div class="text-center mb-10 space-y-2">
-                <h2 class="text-3xl font-serif font-bold text-slate-800 tracking-tight">Jenis Perjalanan Dinas</h2>
-                <p class="text-slate-500 max-w-md mx-auto">Silakan pilih jenis perjalanan dinas yang akan diajukan.</p>
+        <div class="flex flex-col items-center justify-center min-h-[50vh] md:min-h-[60vh] animate-in fade-in zoom-in duration-300 py-6 md:py-0">
+            <div class="text-center mb-8 md:mb-10 space-y-2 px-4">
+                <h2 class="text-2xl md:text-3xl font-serif font-bold text-slate-800 tracking-tight">Jenis Perjalanan Dinas</h2>
+                <p class="text-sm md:text-base text-slate-500 max-w-md mx-auto">Silakan pilih jenis perjalanan dinas yang akan diajukan.</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full px-0 md:px-4">
                 <!-- Card Dalam Kota (Under Construction) -->
-                <button type="button" on:click={() => toast.info('Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.')} class="group relative flex flex-col items-center p-8 bg-slate-50/50 rounded-2xl shadow-sm border border-slate-200 cursor-not-allowed opacity-80">
-                    <div class="h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" on:click={() => toast.info('Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.')} class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-50/50 rounded-2xl shadow-sm border border-slate-200 cursor-not-allowed opacity-80">
+                    <div class="h-16 w-16 md:h-24 md:w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 md:mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-700 mb-2">Dalam Kota</h3>
-                    <p class="text-sm text-slate-500 text-center leading-relaxed">
+                    <h3 class="text-lg md:text-xl font-bold text-slate-700 mb-2">Dalam Kota</h3>
+                    <p class="text-xs md:text-sm text-slate-500 text-center leading-relaxed">
                         Perjalanan dinas ke instansi atau lokasi di dalam wilayah kota/kabupaten yang sama atau jarak dekat.
                     </p>
                     <div class="absolute inset-x-0 bottom-0 top-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-200 shadow-sm text-center mx-4">
-                            Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.
+                            Segera Hadir
                         </span>
                     </div>
                 </button>
 
                 <!-- Card Luar Kota -->
-                <a href="?type=luar_kota" class="group relative flex flex-col items-center p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300">
-                    <div class="h-24 w-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-indigo-100 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <a href="?type=luar_kota" class="group relative flex flex-col items-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 ring-2 ring-transparent active:ring-indigo-200">
+                    <div class="h-16 w-16 md:h-24 md:w-24 bg-indigo-50 rounded-full flex items-center justify-center mb-4 md:mb-6 group-hover:bg-indigo-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-700">Luar Kota</h3>
-                    <p class="text-sm text-slate-500 text-center leading-relaxed">
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-700">Luar Kota</h3>
+                    <p class="text-xs md:text-sm text-slate-500 text-center leading-relaxed">
                         Perjalanan dinas ke luar kota/kabupaten atau lintas provinsi yang memerlukan akomodasi menginap.
                     </p>
-                    <div class="absolute bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                    <div class="absolute bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hidden md:block">
                         <span class="text-indigo-600 font-medium text-sm flex items-center">
                             Pilih
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,23 +193,23 @@
                             </svg>
                         </span>
                     </div>
-                     <div class="h-8"></div>
+                     <div class="h-0 md:h-8"></div>
                 </a>
 
                 <!-- Card Luar Negeri (Under Construction) -->
-                <button type="button" on:click={() => toast.info('Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.')} class="group relative flex flex-col items-center p-8 bg-slate-50/50 rounded-2xl shadow-sm border border-slate-200 cursor-not-allowed opacity-80">
-                    <div class="h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" on:click={() => toast.info('Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.')} class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-50/50 rounded-2xl shadow-sm border border-slate-200 cursor-not-allowed opacity-80">
+                    <div class="h-16 w-16 md:h-24 md:w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 md:mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-700 mb-2">Luar Negeri</h3>
-                    <p class="text-sm text-slate-500 text-center leading-relaxed">
+                    <h3 class="text-lg md:text-xl font-bold text-slate-700 mb-2">Luar Negeri</h3>
+                    <p class="text-xs md:text-sm text-slate-500 text-center leading-relaxed">
                         Perjalanan dinas ke luar negeri untuk keperluan tugas negara, konferensi internasional, atau studi banding.
                     </p>
                     <div class="absolute inset-x-0 bottom-0 top-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-200 shadow-sm text-center mx-4">
-                            Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.
+                            Segera Hadir
                         </span>
                     </div>
                 </button>
@@ -207,15 +217,15 @@
         </div>
     {:else}
         <!-- Back Button & Form -->
-        <div class="flex items-center mb-4">
-            <a href="/dashboard/pengajuan/new" class="inline-flex items-center text-sm text-slate-500 hover:text-slate-800 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="flex items-center mb-6 gap-3">
+            <a href="/dashboard/pengajuan/new" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Kembali ke Pilihan
             </a>
-            <span class="mx-2 text-slate-300">|</span>
-            <span class="text-sm font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+            <div class="h-8 w-px bg-slate-200"></div>
+            <span class="text-sm font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
                 {getLabel(selectedType)}
             </span>
         </div>

@@ -11,20 +11,124 @@ import (
 )
 
 func Seed(db *gorm.DB) {
-	log.Println("Seeding users...")
+	log.Println("Starting Database Seeding...")
 
-	// Clear out old mock protokol users to prevent duplicates/garbage
-	// Ignore errors since there might be foreign key constraints if travel records exist.
-	if err := db.Unscoped().Where("role = ?", "protokol").Delete(&models.User{}).Error; err != nil {
-		log.Printf("Could not delete existing protokol users (might have travel records): %v", err)
+	seedProvincesAndRates(db)
+	seedUsers(db)
+
+	log.Println("Database Seeding Completed Successfully.")
+}
+
+func seedProvincesAndRates(db *gorm.DB) {
+	log.Println("Seeding Provinces and SBM Rates...")
+
+	provinces := []struct {
+		Name string
+		Code string
+		// Base Rates for generating dummy SBM data (Uang Harian / Hotel)
+		BaseRate float64 
+	}{
+		{"ACEH", "11", 360000},
+		{"SUMATERA UTARA", "12", 370000},
+		{"SUMATERA BARAT", "13", 380000},
+		{"RIAU", "14", 370000},
+		{"JAMBI", "15", 370000},
+		{"SUMATERA SELATAN", "16", 380000},
+		{"BENGKULU", "17", 380000},
+		{"LAMPUNG", "18", 380000},
+		{"KEPULAUAN BANGKA BELITUNG", "19", 410000},
+		{"KEPULAUAN RIAU", "21", 420000},
+		{"DKI JAKARTA", "31", 530000},
+		{"JAWA BARAT", "32", 430000},
+		{"JAWA TENGAH", "33", 370000},
+		{"DI YOGYAKARTA", "34", 420000},
+		{"JAWA TIMUR", "35", 410000},
+		{"BANTEN", "36", 370000},
+		{"BALI", "51", 480000},
+		{"NUSA TENGGARA BARAT", "52", 440000},
+		{"NUSA TENGGARA TIMUR", "53", 430000},
+		{"KALIMANTAN BARAT", "61", 380000},
+		{"KALIMANTAN TENGAH", "62", 360000},
+		{"KALIMANTAN SELATAN", "63", 380000},
+		{"KALIMANTAN TIMUR", "64", 430000},
+		{"KALIMANTAN UTARA", "65", 430000},
+		{"SULAWESI UTARA", "71", 370000},
+		{"SULAWESI TENGAH", "72", 370000},
+		{"SULAWESI SELATAN", "73", 430000},
+		{"SULAWESI TENGGARA", "74", 380000},
+		{"GORONTALO", "75", 370000},
+		{"SULAWESI BARAT", "76", 410000},
+		{"MALUKU", "81", 380000},
+		{"MALUKU UTARA", "82", 430000},
+		{"PAPUA BARAT", "91", 480000},
+		{"PAPUA", "92", 580000},
+		{"PAPUA SELATAN", "93", 580000},
+		{"PAPUA TENGAH", "94", 580000},
+		{"PAPUA PEGUNUNGAN", "95", 580000},
+		{"PAPUA BARAT DAYA", "96", 480000},
 	}
+
+	for _, p := range provinces {
+		var province models.Province
+		// Upsert Province
+		if err := db.Where("code = ?", p.Code).First(&province).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				province = models.Province{Name: p.Name, Code: p.Code}
+				db.Create(&province)
+			}
+		} else {
+			if province.Name != p.Name {
+				province.Name = p.Name
+				db.Save(&province)
+			}
+		}
+
+		// Seed SBM Rate for 2025
+		year := 2025
+		var sbm models.SBMRate
+		if err := db.Where("province_id = ? AND year = ?", province.ID, year).First(&sbm).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				// Create simplified logic for rates based on BaseRate
+				// These are APPROXIMATIONS for demo/staging purposes.
+				
+				base := p.BaseRate
+				
+				sbm = models.SBMRate{
+					ProvinceID:      province.ID,
+					Year:            year,
+					
+					// Uang Harian
+					OutsideCityRate: base, // Luar Kota
+					InsideCityRate:  base * 0.4, // Dalam Kota > 8 Jam ~40%
+					DiklatRate:      base * 0.3, // Diklat ~30%
+					FullboardRate:   base * 0.4, // Fullboard (Paket Meeting)
+					FullhalfRate:    base * 0.6, // Fullhalf
+					
+					// Hotel (Pagu Tertinggi) - Estimasi
+					HotelEchelon1:   base * 10,  // ~4jt - 5jt
+					HotelEchelon2:   base * 5,   // ~2jt - 3jt
+					HotelEchelon3:   base * 3,   // ~1jt - 2jt
+					HotelEchelon4:   base * 2.5, // ~800k - 1jt
+					HotelStaff:      base * 2,   // ~600k - 800k
+					
+					TaxiRate:        150000, // Flat average
+				}
+				db.Create(&sbm)
+			}
+		}
+	}
+}
+
+func seedUsers(db *gorm.DB) {
+	log.Println("Seeding Users...")
 
 	// Default Password "123"
 	password := "123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	hashedPwdStr := string(hashedPassword)
 
-	users := []models.User{
+	// Admin Users
+	adminUsers := []models.User{
 		{
 			Name:         "Super Admin",
 			Email:        "superadmin@kemnaker.go.id",
@@ -51,6 +155,7 @@ func Seed(db *gorm.DB) {
 		},
 	}
 
+	// Protokol Users Data
 	type rawUser struct {
 		Name         string
 		NIP          string
@@ -60,7 +165,7 @@ func Seed(db *gorm.DB) {
 		Jabatan      string
 	}
 
-	protokolUsers := []rawUser{
+	protokolData := []rawUser{
 		{"Jiyanto", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
 		{"Fathan Asyraf", "-", "-", "-", "-", "Staf Tata Usaha"},
 		{"Auditya Hermawan", "19880920 201403 1 001", "C", "Penata Tk.I", "III/d", "Kabag TU Pimpinan dan Protokol"},
@@ -112,12 +217,17 @@ func Seed(db *gorm.DB) {
 		{"Dhika Nur Khaliffa", "-", "-", "-", "-", "Pramu Pimpinan"},
 	}
 
-	for i, raw := range protokolUsers {
+	// Seed Admins
+	for _, u := range adminUsers {
+		upsertUser(db, u)
+	}
+
+	// Seed Protokol Users
+	for i, raw := range protokolData {
 		email := strings.ToLower(strings.ReplaceAll(raw.Name, " ", "")) + "@kemnaker.go.id"
-		// Remove dots in email if any to make it a standard alias
 		email = strings.ReplaceAll(email, ".", "")
 
-		users = append(users, models.User{
+		user := models.User{
 			Name:         raw.Name,
 			Email:        email,
 			Password:     hashedPwdStr,
@@ -129,27 +239,35 @@ func Seed(db *gorm.DB) {
 			TingkatBiaya: raw.TingkatBiaya,
 			NIP:          raw.NIP,
 			NomorHP:      fmt.Sprintf("081234567%03d", i+1),
-		})
-	}
-
-	for _, u := range users {
-		var existing models.User
-		if err := db.Where("email = ?", u.Email).First(&existing).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				if err := db.Create(&u).Error; err != nil {
-					log.Printf("Failed to create user %s: %v", u.Email, err)
-				} else {
-					log.Printf("Created user: %s", u.Email)
-				}
-			} else {
-				log.Printf("Error checking user %s: %v", u.Email, err)
-			}
-		} else {
-			// Update existing user details just in case they were modified
-			db.Model(&existing).Updates(u)
-			log.Printf("Updated user: %s", u.Email)
 		}
+		upsertUser(db, user)
 	}
+}
 
-	log.Println("Seeding complete.")
+func upsertUser(db *gorm.DB, u models.User) {
+	var existing models.User
+	if err := db.Where("email = ?", u.Email).First(&existing).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			if err := db.Create(&u).Error; err != nil {
+				log.Printf("Failed to create user %s: %v", u.Email, err)
+			} else {
+				log.Printf("Created user: %s", u.Email)
+			}
+		}
+	} else {
+		// Update existing user details
+		updates := map[string]interface{}{
+			"Name":         u.Name,
+			"Role":         u.Role,
+			"Jabatan":      u.Jabatan,
+			"Pangkat":      u.Pangkat,
+			"Golongan":     u.Golongan,
+			"TingkatBiaya": u.TingkatBiaya,
+			"NIP":          u.NIP,
+			// Do NOT update Password to prevent locking out real users if they changed it
+			// "Password": u.Password, 
+		}
+		db.Model(&existing).Updates(updates)
+		// log.Printf("Updated user: %s", u.Email)
+	}
 }

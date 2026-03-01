@@ -8,16 +8,18 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/repository"
 	"github.com/kemnaker/perjadin-backend/internal/utils"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
-	Repo *repository.Repository
-	Config *config.Config
+	Repo        *repository.Repository
+	Config      *config.Config
+	RedisClient *redis.Client
 }
 
-func NewService(repo *repository.Repository, cfg *config.Config) *Service {
-	return &Service{Repo: repo, Config: cfg}
+func NewService(repo *repository.Repository, cfg *config.Config, rdb *redis.Client) *Service {
+	return &Service{Repo: repo, Config: cfg, RedisClient: rdb}
 }
 
 // --- Auth Service ---

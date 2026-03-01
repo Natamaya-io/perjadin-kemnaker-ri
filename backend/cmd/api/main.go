@@ -14,6 +14,7 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/repository"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
 	"github.com/kemnaker/perjadin-backend/internal/services"
+	"github.com/kemnaker/perjadin-backend/pkg/cache"
 	"github.com/kemnaker/perjadin-backend/pkg/database"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
@@ -54,14 +55,29 @@ func main() {
 		}
 	}()
 
+	// 3.5 Connect to Redis
+	rdb, err := cache.NewRedisClient(cfg)
+	if err != nil {
+		sugar.Warnf("Failed to connect to Redis: %v. Running without cache.", err)
+		rdb = nil
+	} else {
+		defer func() {
+			if err := rdb.Close(); err != nil {
+				sugar.Errorf("Error closing Redis connection: %v", err)
+			}
+		}()
+	}
+
 	// 4. Auto Migrate
 	sugar.Info("Migrating database schemas...")
 	err = db.AutoMigrate(
 		&models.User{},
-		// &models.Employee{}, // Removed
 		&models.TravelRecord{},
 		&models.TravelCost{},
 		&models.TravelReport{},
+		// Master Data
+		&models.Province{},
+		&models.SBMRate{},
 	)
 	if err != nil {
 		sugar.Fatalf("Failed to migrate database: %v", err)
@@ -75,7 +91,7 @@ func main() {
 
 	// 6. Initialize Layers
 	repo := repository.NewRepository(db)
-	svc := services.NewService(repo, cfg)
+	svc := services.NewService(repo, cfg, rdb)
 	authHandler := handlers.NewAuthHandler(svc)
 	recordHandler := handlers.NewRecordHandler(svc)
 	// employeeHandler := handlers.NewEmployeeHandler(svc) // Removed

@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/kemnaker/perjadin-backend/internal/services"
 	"github.com/labstack/echo/v4"
@@ -59,6 +62,23 @@ func (h *AuthHandler) Register(c echo.Context) error {
 }
 
 func (h *AuthHandler) GetDemoUsers(c echo.Context) error {
+	ctx := context.Background()
+	cacheKey := "demo_users"
+
+	// 1. Try to get from Redis Cache first
+	if h.Service.RedisClient != nil {
+		cachedData, err := h.Service.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil && cachedData != "" {
+			var demoUsers []map[string]string
+			if err := json.Unmarshal([]byte(cachedData), &demoUsers); err == nil {
+				c.Logger().Info("Cache Hit for GetDemoUsers")
+				return c.JSON(http.StatusOK, demoUsers)
+			}
+		}
+	}
+
+	// 2. Cache Miss, get from Database
+	c.Logger().Info("Cache Miss for GetDemoUsers, fetching from DB")
 	users, err := h.Service.Repo.GetUsers()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -74,5 +94,14 @@ func (h *AuthHandler) GetDemoUsers(c echo.Context) error {
 		})
 	}
 
+	// 3. Save to Redis Cache (set expiration to 1 hour)
+	if h.Service.RedisClient != nil {
+		cacheBytes, err := json.Marshal(demoUsers)
+		if err == nil {
+			h.Service.RedisClient.Set(ctx, cacheKey, cacheBytes, time.Hour)
+		}
+	}
+
 	return c.JSON(http.StatusOK, demoUsers)
 }
+
