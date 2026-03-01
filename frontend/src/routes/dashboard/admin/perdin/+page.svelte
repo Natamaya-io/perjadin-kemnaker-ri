@@ -58,14 +58,26 @@
             return matchSearch && matchStatus && matchDate;
         })
         .sort((a, b) => {
-            if (sortOption === 'date-desc') return new Date(b.startDate) - new Date(a.startDate);
-            if (sortOption === 'date-asc') return new Date(a.startDate) - new Date(b.startDate);
+            if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+            if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             if (sortOption === 'cost-desc') return b.totalCost - a.totalCost;
             if (sortOption === 'cost-asc') return a.totalCost - b.totalCost;
             return 0;
         });
 
+    $: groupedRecords = filteredRecords.reduce((acc, record) => {
+        if (!acc[record.spd]) {
+            acc[record.spd] = { ...record, employeesList: [record] };
+        } else {
+            acc[record.spd].employeesList.push(record);
+            // DO NOT accumulate total cost. The record totalCost is per-SPD, not per-employee.
+            // Ensure we use the latest/highest cost or just the base one.
+            acc[record.spd].totalCost = record.totalCost || acc[record.spd].totalCost || 0;
+        }
+        return acc;
+    }, {});
 
+    $: uniqueRecords = Object.values(groupedRecords);
 
     function openEditModal(record) {
         selectedRecord = record;
@@ -107,11 +119,16 @@
     }
 
     function generateSPD(record) {
-        window.open(`/print?type=spd&spd=${encodeURIComponent(record.spd)}`, '_blank');
+        // Find the specific travel record ID or use the SPD string?
+        // Since SPD is shared, passing spd string will just pick the first one. We should pass ID in the real app, but for now we'll pass SPD and the employee id if possible.
+        // Actually, we must change the print route to use record id, but to avoid breaking print, we'll open it with the specific record.
+        // For now, keeping the original behavior but warning that it prints the first match.
+        // Wait, I can pass &id=record.id to print
+        window.open(`/print?type=spd&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
     }
 
     function generateRincian(record) {
-        window.open(`/print?type=rincian&spd=${encodeURIComponent(record.spd)}`, '_blank');
+        window.open(`/print?type=rincian&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
     }
 </script>
 
@@ -128,9 +145,8 @@
 
     {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
 
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {#each filteredRecords as record (record.id)}
+        <div class="flex flex-col gap-6">
+            {#each uniqueRecords as record (record.spd)}
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
                     <div class="p-6 flex-1 space-y-4">
                         <div class="flex justify-between items-start">
@@ -146,8 +162,7 @@
                         </div>
 
                         <div>
-                            <div class="font-semibold text-slate-900 text-sm">{record.employee?.name || '-'}</div>
-                            <div class="text-xs text-slate-500 mb-2">{record.employee?.rank || record.employee?.golongan || '-'}</div>
+                            <div class="font-semibold text-slate-900 text-sm mb-2">{record.employeesList.length} Petugas</div>
                             <h3 class="font-bold text-lg text-slate-800 line-clamp-2">{record.purpose}</h3>
                             <p class="text-sm text-slate-500 mt-1 flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -170,30 +185,42 @@
                         </div>
                     </div>
 
-                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                        <span class="font-mono font-semibold text-slate-700 text-sm">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost || 0)}</span>
-                        <div class="flex items-center gap-2">
-                            <button class="p-1.5 hover:bg-slate-200 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Cetak SPD" on:click={() => generateSPD(record)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                            </button>
-                            <button class="p-1.5 hover:bg-slate-200 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Cetak Rincian" on:click={() => generateRincian(record)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                            </button>
-                            {#if $userStore.role !== 'kasubag'}
-                                {#if record.status === 'Draft'}
-                                    <span class="px-3 py-1.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-center">
-                                        Menunggu Input
-                                    </span>
-                                {:else if record.status === 'Submitted'}
-                                    <button class="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm" on:click={() => openEditModal(record)}>
-                                        Review Biaya
-                                    </button>
-                                {:else if record.status === 'Approved'}
-                                    <button class="bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm" on:click={() => openEditModal(record)}>
-                                        Edit Review
-                                    </button>
-                                {/if}
-                            {/if}
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+                        <div class="text-sm font-semibold text-slate-700">Daftar Pegawai & Biaya</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {#each record.employeesList as empRecord}
+                                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+                                    <div class="mb-4">
+                                        <div class="font-medium text-sm text-slate-800 line-clamp-1" title={empRecord.employee?.name}>{empRecord.employee?.name || '-'}</div>
+                                        <div class="text-xs text-slate-500 mb-2">{empRecord.employee?.rank || empRecord.employee?.golongan || '-'}</div>
+                                        <span class="font-mono font-semibold text-blue-600 text-sm">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(empRecord.totalCost || 0)}</span>
+                                        <div class="mt-2">
+                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {empRecord.status === 'Draft' ? 'bg-slate-50 text-slate-600 border-slate-200' : (empRecord.status === 'Submitted' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}">
+                                                {empRecord.status === 'Draft' ? 'Menunggu Protokol' : empRecord.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+                                        <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Cetak SPD" on:click={() => generateSPD(empRecord)}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                                        </button>
+                                        <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Cetak Rincian" on:click={() => generateRincian(empRecord)}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                                        </button>
+                                        {#if $userStore.role !== 'kasubag'}
+                                            {#if empRecord.status === 'Submitted'}
+                                                <button class="ml-auto bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={() => openEditModal(empRecord)}>
+                                                    Review Biaya
+                                                </button>
+                                            {:else if empRecord.status === 'Approved'}
+                                                <button class="ml-auto bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={() => openEditModal(empRecord)}>
+                                                    Edit Review
+                                                </button>
+                                            {/if}
+                                        {/if}
+                                    </div>
+                                </div>
+                            {/each}
                         </div>
                     </div>
                 </div>

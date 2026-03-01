@@ -24,15 +24,37 @@ func (h *RecordHandler) CreateRecord(c echo.Context) error {
 	}
 
 	// Set creator from context
+	var creatorID uuid.UUID
 	creatorIDInterface := c.Get("user_id")
 	if creatorIDInterface != nil {
 		if creatorIDStr, ok := creatorIDInterface.(string); ok {
-			if creatorID, err := uuid.Parse(creatorIDStr); err == nil {
-				record.CreatorID = creatorID
+			if id, err := uuid.Parse(creatorIDStr); err == nil {
+				creatorID = id
 			}
 		}
 	}
 
+	// Bulk Creation
+	if len(record.EmployeeIDs) > 0 {
+		var createdRecords []models.TravelRecord
+		for _, empID := range record.EmployeeIDs {
+			newRecord := record // Copy struct
+			newRecord.ID = uuid.Nil // Ensure new ID generation
+			newRecord.EmployeeID = empID
+			newRecord.CreatorID = creatorID
+			// Clear the bulk field to avoid confusion, though GORM ignores it
+			newRecord.EmployeeIDs = nil 
+
+			if err := h.Service.CreateRecord(&newRecord); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			createdRecords = append(createdRecords, newRecord)
+		}
+		return c.JSON(http.StatusCreated, createdRecords)
+	}
+
+	// Single Creation
+	record.CreatorID = creatorID
 	if err := h.Service.CreateRecord(&record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -93,4 +115,18 @@ func (h *RecordHandler) UpdateRecord(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, record)
+}
+
+func (h *RecordHandler) DeleteRecord(c echo.Context) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid UUID format")
+	}
+
+	if err := h.Service.DeleteRecord(id); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

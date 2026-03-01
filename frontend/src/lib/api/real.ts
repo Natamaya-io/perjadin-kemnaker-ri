@@ -137,29 +137,36 @@ export class RealApiClient implements ApiClient {
 
              const singleRecord = {
                  ...record,
-                 employeeId: emp.id, 
-                 employee: undefined, 
+                 employeeId: emp.id,
+                 employee: undefined,
                  employees: undefined,
                  startDate: safeDate(record.startDate),
                  endDate: safeDate(record.endDate)
              };
-             
-             // backend expects 'employeeId' (UUID). 
+
+             // backend expects 'employeeId' (UUID).
              // Ideally we need the UUID. Assuming frontend sends proper Employee objects with IDs.
-             
+
              const res = await this.request<TravelRecord>('/records', {
                  method: 'POST',
                  body: JSON.stringify(singleRecord)
              });
-             createdRecords.push(res);
+
+             // Manually attach employee to response because Create response might not preload it
+             createdRecords.push({ ...res, employee: emp });
          }
          return createdRecords;
     }
-
-    async updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
+    updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
         return this.request<TravelRecord>(`/records/${id}`, {
             method: 'PUT',
             body: JSON.stringify(record)
+        });
+    }
+
+    deleteRecord(id: string): Promise<void> {
+        return this.request<void>(`/records/${id}`, {
+            method: 'DELETE'
         });
     }
 }

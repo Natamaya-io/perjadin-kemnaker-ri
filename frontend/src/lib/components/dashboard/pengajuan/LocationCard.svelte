@@ -33,7 +33,7 @@
                 <Select bind:value={province} class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly}>
                     <option value="" disabled selected>Pilih Provinsi</option>
                     {#each provinces as prov}
-                        <option value={prov}>{prov}</option>
+                        <option value={prov.name}>{prov.name}</option>
                     {/each}
                 </Select>
             </div>

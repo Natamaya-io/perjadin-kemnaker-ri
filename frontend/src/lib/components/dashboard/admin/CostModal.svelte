@@ -2,6 +2,7 @@
     import { createEventDispatcher } from 'svelte';
     import { toast } from '$lib/stores/toast';
     import { userStore } from '$lib/stores/auth';
+    import { provincesStore } from '$lib/stores/master-data';
     import Dialog from '$lib/components/ui/dialog/Dialog.svelte';
     import DialogHeader from '$lib/components/ui/dialog/DialogHeader.svelte';
     import DialogTitle from '$lib/components/ui/dialog/DialogTitle.svelte';
@@ -14,15 +15,30 @@
     export let open = false;
     export let record = null;
     
-    /** @type {{ dailyAllowanceDays?: number, dailyAllowanceRate?: number, hotelDays?: number, hotelRate?: number, ticketGo?: number, ticketBack?: number, localTransport?: number, regionalTransport?: number, transportMode?: string }} */
+    /** @type {{ hotelDays?: number, hotelRate?: number, ticketGo?: number, ticketBack?: number, localTransport?: number, regionalTransport?: number, transportMode?: string }} */
     export let editingCosts = {};
 
     const dispatch = createEventDispatcher();
 
     $: isReadOnly = $userStore.role === 'kasubag';
 
-    // Derived Calculations
-    $: totalDailyAllowance = (editingCosts.dailyAllowanceDays || 0) * (editingCosts.dailyAllowanceRate || 0);
+    // Derived Calculations for SBM Uang Harian
+    $: days = (() => {
+        if (!record?.startDate || !record?.endDate) return 0;
+        const start = new Date(record.startDate);
+        const end = new Date(record.endDate);
+        // Reset time to ignore timezone differences for day calculation
+        start.setHours(0,0,0,0);
+        end.setHours(0,0,0,0);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+        return diffDays > 0 ? diffDays : 0;
+    })();
+    
+    $: sbmRate = $provincesStore.find(p => p.name === record?.province)?.luarKota || 0;
+    $: totalDailyAllowance = days * sbmRate;
+
+    // Derived Calculations for Other Costs
     $: totalHotel = (editingCosts.hotelDays || 0) * (editingCosts.hotelRate || 0);
     $: totalTicket = Number(editingCosts.ticketGo || 0) + Number(editingCosts.ticketBack || 0);
     $: totalLocal = Number(editingCosts.localTransport || 0);
@@ -36,9 +52,6 @@
     function validateCosts() {
         if ((editingCosts.ticketGo || 0) < 0) return "Biaya Tiket Berangkat tidak boleh negatif";
         if ((editingCosts.ticketBack || 0) < 0) return "Biaya Tiket Pulang tidak boleh negatif";
-        
-        if ((editingCosts.dailyAllowanceDays || 0) <= 0) return "Durasi Uang Harian harus lebih dari 0 hari";
-        if ((editingCosts.dailyAllowanceRate || 0) <= 0) return "Rate Uang Harian harus lebih dari Rp 0";
         
         if ((editingCosts.hotelDays || 0) < 0) return "Durasi Penginapan tidak boleh negatif";
         // Allow 0 hotel rate if stayed at non-paid accommodation, but strictly check negative
@@ -88,29 +101,27 @@
             </div>
         </div>
 
-        <!-- Daily Allowance -->
-        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
-            <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Uang Harian
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="space-y-2 col-span-1">
-                    <Label class="text-xs text-slate-500">Durasi (Hari)</Label>
-                    <Input type="number" bind:value={editingCosts.dailyAllowanceDays} disabled={isReadOnly} class="bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-                <div class="space-y-2 col-span-1 sm:col-span-2">
-                    <Label class="text-xs text-slate-500">Rate per Hari</Label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                        <Input type="number" bind:value={editingCosts.dailyAllowanceRate} disabled={isReadOnly} class="pl-9 bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                    </div>
-                </div>
+        <!-- Daily Allowance (SBM - Read Only) -->
+        <div class="p-4 bg-blue-50/50 rounded-lg border border-blue-100 space-y-3">
+            <div class="flex justify-between items-center">
+                <h4 class="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Uang Harian (Otomatis SBM)
+                </h4>
+                <span class="text-lg font-bold text-blue-700">{formatCurrency(totalDailyAllowance)}</span>
             </div>
-            <div class="text-right text-sm font-mono font-medium text-slate-600 border-t border-slate-200 pt-2 mt-2">
-                Subtotal: {formatCurrency(totalDailyAllowance)}
+            <div class="flex items-center gap-4 text-sm text-slate-600 bg-white p-3 rounded-md border border-blue-50/50">
+                <div class="flex-1">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
+                    <span class="font-medium">{days} Hari</span>
+                </div>
+                <div class="w-px h-8 bg-slate-100"></div>
+                <div class="flex-[2]">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi</span>
+                    <span class="font-medium">{formatCurrency(sbmRate)} <span class="text-xs text-slate-400 font-normal">/ hari</span></span>
+                </div>
             </div>
         </div>
 

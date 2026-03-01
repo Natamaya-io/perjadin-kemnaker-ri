@@ -126,3 +126,7 @@ func (s *Service) UpdateRecord(record *models.TravelRecord) error {
 	// Add business logic validation if needed
 	return s.Repo.UpdateTravelRecord(record)
 }
+
+func (s *Service) DeleteRecord(id uuid.UUID) error {
+	return s.Repo.DeleteTravelRecord(id)
+}

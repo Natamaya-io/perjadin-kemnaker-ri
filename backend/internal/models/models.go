@@ -36,8 +36,9 @@ type User struct {
 
 type TravelRecord struct {
 	Base
-	SPDNumber    string    `gorm:"uniqueIndex" json:"spd"`
+	SPDNumber    string    `gorm:"index" json:"spd"`
 	EmployeeID   uuid.UUID `gorm:"type:uuid;not null" json:"employeeId"`
+	EmployeeIDs  []uuid.UUID `gorm:"-" json:"employeeIds,omitempty"` // For bulk creation
 	Employee     User      `gorm:"foreignKey:EmployeeID" json:"employee"` // Linked to User now
 	CreatorID    uuid.UUID `gorm:"type:uuid;not null" json:"creatorId"` // User who created this
 	Creator      User      `gorm:"foreignKey:CreatorID" json:"creator"`
@@ -53,6 +54,9 @@ type TravelRecord struct {
 	Status       string    `gorm:"default:'Draft'" json:"status"`           // Draft, Submitted, Approved, Rejected
 	ReportStatus string    `gorm:"default:'Pending'" json:"reportStatus"`       // Pending, Completed
 	TotalCost    float64   `json:"totalCost"`
+
+	// Documents
+	SuratTugasPath string `json:"suratTugasPath"`
 
 	// Relationships
 	Cost   *TravelCost   `gorm:"foreignKey:TravelRecordID;constraint:OnDelete:CASCADE" json:"costs,omitempty"`
@@ -70,6 +74,10 @@ type TravelCost struct {
 	LocalTransport     float64   `json:"localTransport"`
 	RegionalTransport  float64   `json:"regionalTransport"`
 	TransportMode      string    `json:"transportMode"`
+	
+	// Additional Costs
+	OtherCost     float64 `json:"otherCost"`
+	OtherCostDesc string  `json:"otherCostDesc"`
 }
 
 type TravelReport struct {

@@ -34,11 +34,42 @@ export async function updateRecord(id: string, data: Partial<TravelRecord>) {
     try {
         const updated = await api.updateRecord(id, data);
         recordsStore.update(current => 
-            current.map(r => r.id === id ? updated : r)
+            current.map(r => r.id === id ? { ...r, ...updated, employee: updated.employee?.id ? updated.employee : r.employee } : r)
         );
         return updated;
     } catch (e) {
         console.error("Failed to update record", e);
+        throw e;
+    }
+}
+
+export async function deleteRecord(id: string) {
+    try {
+        await api.deleteRecord(id);
+        recordsStore.update(current => current.filter(r => r.id !== id));
+    } catch (e) {
+        console.error(`Failed to delete record ${id}`, e);
+        throw e;
+    }
+}
+
+export async function deleteRecordBySpd(spd: string) {
+    try {
+        // Find all records with this SPD
+        let recordsToDelete: TravelRecord[] = [];
+        recordsStore.subscribe(records => {
+            recordsToDelete = records.filter(r => r.spd === spd);
+        })();
+
+        // Delete each via API
+        for (const record of recordsToDelete) {
+            await api.deleteRecord(record.id);
+        }
+
+        // Update local store
+        recordsStore.update(current => current.filter(r => r.spd !== spd));
+    } catch (e) {
+        console.error(`Failed to delete records for SPD ${spd}`, e);
         throw e;
     }
 }

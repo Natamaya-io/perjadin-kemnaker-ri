@@ -70,6 +70,12 @@ func main() {
 
 	// 4. Auto Migrate
 	sugar.Info("Migrating database schemas...")
+	
+	// Drop the unique index to allow multiple records per SPD
+	if err := db.Exec("DROP INDEX IF EXISTS idx_travel_records_spd_number;").Error; err != nil {
+		sugar.Warnf("Failed to drop index idx_travel_records_spd_number: %v", err)
+	}
+
 	err = db.AutoMigrate(
 		&models.User{},
 		&models.TravelRecord{},
@@ -119,6 +125,7 @@ func main() {
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
+		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 
 		// Employee Management Removed
 		

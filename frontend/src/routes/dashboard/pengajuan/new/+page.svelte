@@ -15,6 +15,7 @@
     import LocationCard from '$lib/components/dashboard/pengajuan/LocationCard.svelte';
     import StakeholderCard from '$lib/components/dashboard/pengajuan/StakeholderCard.svelte';
     import EmployeeSelectorCard from '$lib/components/dashboard/pengajuan/EmployeeSelectorCard.svelte';
+    import CostEstimateCard from '$lib/components/dashboard/pengajuan/CostEstimateCard.svelte';
     
     import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
 
@@ -28,6 +29,7 @@
      * @type {{
      *   startDate: string,
      *   endDate: string,
+     *   suratTugas: File | null,
      *   location: string,
      *   province: string,
      *   purpose: string,
@@ -39,6 +41,7 @@
     let formData = {
         startDate: '',
         endDate: '',
+        suratTugas: null,
         location: '',
         province: '',
         purpose: 'persiapan', // Default
@@ -50,6 +53,21 @@
     let isReadOnly = false;
 
     let isConfirmOpen = false;
+
+    // Cost Calculations
+    $: selectedProvinceData = $provincesStore.find(p => p.name === formData.province);
+    $: rate = selectedProvinceData ? selectedProvinceData.luarKota : 0;
+    
+    $: days = (() => {
+        if (!formData.startDate || !formData.endDate) return 0;
+        const start = new Date(formData.startDate);
+        const end = new Date(formData.endDate);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+        return diffDays > 0 ? diffDays : 0;
+    })();
+
+    $: totalCost = rate * days * formData.selectedEmployees.length;
 
     /** @param {CustomEvent} event */
     function toggleEmployee(event) {
@@ -79,6 +97,11 @@
             return;
         }
 
+        if (days <= 0) {
+            toast.error('Tanggal selesai tidak boleh mendahului tanggal mulai.');
+            return;
+        }
+
         isConfirmOpen = true;
     }
 
@@ -91,13 +114,15 @@
             email: $userStore.email,
             startDate: formData.startDate,
             endDate: formData.endDate,
+            suratTugasPath: formData.suratTugas ? formData.suratTugas.name : null,
             location: formData.location,
             province: formData.province,
             purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
             stakeholder: formData.stakeholder,
             agenda: formData.agenda,
             employees: selectedUsers,
-            type: selectedType // Save the type as well
+            type: selectedType, // Save the type as well
+            totalCost: totalCost // Set calculated cost
         };
         
         try {
@@ -238,6 +263,7 @@
                     email={$userStore.email} 
                     bind:startDate={formData.startDate}
                     bind:endDate={formData.endDate}
+                    bind:suratTugas={formData.suratTugas}
                     readonly={isReadOnly}
                 />
                 
@@ -265,6 +291,16 @@
                     on:toggle={toggleEmployee}
                     on:submit={handleSubmit}
                 />
+
+                {#if formData.province && days > 0 && formData.selectedEmployees.length > 0}
+                    <CostEstimateCard
+                        days={days}
+                        rate={rate}
+                        employeeCount={formData.selectedEmployees.length}
+                        totalCost={totalCost}
+                        readonly={isReadOnly}
+                    />
+                {/if}
             </ProposalSidebar>
         </div>
 

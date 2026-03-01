@@ -27,12 +27,22 @@
         
             // Stats Logic (Scoped to Role)
             $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag') ? records : myRecords;
-            
-            $: totalTrips = statsSource.length;
+
+            // Group by SPD to avoid counting multiple employees in the same trip as multiple trips
+            $: uniqueTrips = Object.values(statsSource.reduce((acc, r) => {
+                if (!acc[r.spd]) acc[r.spd] = r;
+                return acc;
+            }, {}));
+
+            $: myUniqueTrips = Object.values(myRecords.reduce((acc, r) => {
+                if (!acc[r.spd]) acc[r.spd] = r;
+                return acc;
+            }, {}));
+
+            $: totalTrips = uniqueTrips.length;
             $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
-            $: activeTrips = statsSource.filter(r => new Date(r.endDate) >= new Date() && r.reportStatus !== 'Completed').length;
-            $: pendingReports = myRecords.filter(r => r.status === 'Approved' && r.reportStatus !== 'Completed').length;
-        
+            $: activeTrips = uniqueTrips.filter(r => new Date(r.endDate) >= new Date() && r.reportStatus !== 'Completed').length;
+            $: pendingReports = myUniqueTrips.filter(r => r.status === 'Approved' && r.reportStatus !== 'Completed').length;        
             // Recent Logic
             $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5);    
         // Chart Data

@@ -82,3 +82,7 @@ func (r *Repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 func (r *Repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	return r.db.Save(record).Error
 }
+
+func (r *Repository) DeleteTravelRecord(id uuid.UUID) error {
+	return r.db.Delete(&models.TravelRecord{}, id).Error
+}

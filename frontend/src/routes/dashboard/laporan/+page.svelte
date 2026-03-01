@@ -33,6 +33,17 @@
             if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             return 0;
         });
+
+    $: groupedRecords = filteredRecords.reduce((acc, record) => {
+        if (!acc[record.spd]) {
+            acc[record.spd] = { ...record, employeesList: [record] };
+        } else {
+            acc[record.spd].employeesList.push(record);
+        }
+        return acc;
+    }, {});
+
+    $: uniqueRecords = Object.values(groupedRecords);
 </script>
 
 <div class="space-y-8 pb-20">
@@ -42,11 +53,11 @@
         bind:sortOption 
     />
 
-    {#if filteredRecords.length === 0}
+    {#if uniqueRecords.length === 0}
         <EmptyState />
     {:else}
         <ReportList>
-            {#each filteredRecords as record (record.id)}
+            {#each uniqueRecords as record (record.spd)}
                 <ReportItem {record} />
             {/each}
         </ReportList>

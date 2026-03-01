@@ -23,49 +23,50 @@ func seedProvincesAndRates(db *gorm.DB) {
 	log.Println("Seeding Provinces and SBM Rates...")
 
 	provinces := []struct {
-		Name string
-		Code string
-		// Base Rates for generating dummy SBM data (Uang Harian / Hotel)
-		BaseRate float64 
+		Name      string
+		Code      string
+		LuarKota  float64
+		DalamKota float64
+		Diklat    float64
 	}{
-		{"ACEH", "11", 360000},
-		{"SUMATERA UTARA", "12", 370000},
-		{"SUMATERA BARAT", "13", 380000},
-		{"RIAU", "14", 370000},
-		{"JAMBI", "15", 370000},
-		{"SUMATERA SELATAN", "16", 380000},
-		{"BENGKULU", "17", 380000},
-		{"LAMPUNG", "18", 380000},
-		{"KEPULAUAN BANGKA BELITUNG", "19", 410000},
-		{"KEPULAUAN RIAU", "21", 420000},
-		{"DKI JAKARTA", "31", 530000},
-		{"JAWA BARAT", "32", 430000},
-		{"JAWA TENGAH", "33", 370000},
-		{"DI YOGYAKARTA", "34", 420000},
-		{"JAWA TIMUR", "35", 410000},
-		{"BANTEN", "36", 370000},
-		{"BALI", "51", 480000},
-		{"NUSA TENGGARA BARAT", "52", 440000},
-		{"NUSA TENGGARA TIMUR", "53", 430000},
-		{"KALIMANTAN BARAT", "61", 380000},
-		{"KALIMANTAN TENGAH", "62", 360000},
-		{"KALIMANTAN SELATAN", "63", 380000},
-		{"KALIMANTAN TIMUR", "64", 430000},
-		{"KALIMANTAN UTARA", "65", 430000},
-		{"SULAWESI UTARA", "71", 370000},
-		{"SULAWESI TENGAH", "72", 370000},
-		{"SULAWESI SELATAN", "73", 430000},
-		{"SULAWESI TENGGARA", "74", 380000},
-		{"GORONTALO", "75", 370000},
-		{"SULAWESI BARAT", "76", 410000},
-		{"MALUKU", "81", 380000},
-		{"MALUKU UTARA", "82", 430000},
-		{"PAPUA BARAT", "91", 480000},
-		{"PAPUA", "92", 580000},
-		{"PAPUA SELATAN", "93", 580000},
-		{"PAPUA TENGAH", "94", 580000},
-		{"PAPUA PEGUNUNGAN", "95", 580000},
-		{"PAPUA BARAT DAYA", "96", 480000},
+		{"ACEH", "11", 360000, 140000, 110000},
+		{"SUMATERA UTARA", "12", 370000, 150000, 110000},
+		{"SUMATERA BARAT", "13", 380000, 150000, 110000},
+		{"RIAU", "14", 370000, 150000, 110000},
+		{"JAMBI", "15", 370000, 150000, 110000},
+		{"SUMATERA SELATAN", "16", 380000, 150000, 110000},
+		{"BENGKULU", "17", 380000, 150000, 110000},
+		{"LAMPUNG", "18", 380000, 150000, 110000},
+		{"KEPULAUAN BANGKA BELITUNG", "19", 410000, 160000, 120000},
+		{"KEPULAUAN RIAU", "21", 370000, 150000, 110000},
+		{"DKI JAKARTA", "31", 530000, 210000, 160000},
+		{"JAWA BARAT", "32", 430000, 170000, 130000},
+		{"JAWA TENGAH", "33", 370000, 150000, 110000},
+		{"DI YOGYAKARTA", "34", 420000, 170000, 130000},
+		{"JAWA TIMUR", "35", 410000, 160000, 120000},
+		{"BANTEN", "36", 370000, 150000, 110000},
+		{"BALI", "51", 480000, 190000, 140000},
+		{"NUSA TENGGARA BARAT", "52", 440000, 180000, 130000},
+		{"NUSA TENGGARA TIMUR", "53", 430000, 170000, 130000},
+		{"KALIMANTAN BARAT", "61", 380000, 150000, 110000},
+		{"KALIMANTAN TENGAH", "62", 360000, 140000, 110000},
+		{"KALIMANTAN SELATAN", "63", 380000, 150000, 110000},
+		{"KALIMANTAN TIMUR", "64", 430000, 170000, 130000},
+		{"KALIMANTAN UTARA", "65", 430000, 170000, 130000},
+		{"SULAWESI UTARA", "71", 370000, 150000, 110000},
+		{"SULAWESI TENGAH", "72", 370000, 150000, 110000},
+		{"SULAWESI SELATAN", "73", 430000, 170000, 130000},
+		{"SULAWESI TENGGARA", "74", 380000, 150000, 110000},
+		{"GORONTALO", "75", 370000, 150000, 110000},
+		{"SULAWESI BARAT", "76", 410000, 160000, 120000},
+		{"MALUKU", "81", 380000, 150000, 110000},
+		{"MALUKU UTARA", "82", 430000, 170000, 130000},
+		{"PAPUA BARAT", "91", 480000, 190000, 140000},
+		{"PAPUA", "92", 580000, 230000, 170000},
+		{"PAPUA SELATAN", "93", 580000, 230000, 170000},
+		{"PAPUA TENGAH", "94", 580000, 230000, 170000},
+		{"PAPUA PEGUNUNGAN", "95", 580000, 230000, 170000},
+		{"PAPUA BARAT DAYA", "96", 480000, 190000, 140000},
 	}
 
 	for _, p := range provinces {
@@ -88,33 +89,37 @@ func seedProvincesAndRates(db *gorm.DB) {
 		var sbm models.SBMRate
 		if err := db.Where("province_id = ? AND year = ?", province.ID, year).First(&sbm).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				// Create simplified logic for rates based on BaseRate
-				// These are APPROXIMATIONS for demo/staging purposes.
-				
-				base := p.BaseRate
-				
 				sbm = models.SBMRate{
 					ProvinceID:      province.ID,
 					Year:            year,
 					
 					// Uang Harian
-					OutsideCityRate: base, // Luar Kota
-					InsideCityRate:  base * 0.4, // Dalam Kota > 8 Jam ~40%
-					DiklatRate:      base * 0.3, // Diklat ~30%
-					FullboardRate:   base * 0.4, // Fullboard (Paket Meeting)
-					FullhalfRate:    base * 0.6, // Fullhalf
+					OutsideCityRate: p.LuarKota,
+					InsideCityRate:  p.DalamKota,
+					DiklatRate:      p.Diklat,
+					
+					// Fullboard (Paket Meeting)
+					FullboardRate:   p.LuarKota * 0.4,
+					FullhalfRate:    p.LuarKota * 0.6,
 					
 					// Hotel (Pagu Tertinggi) - Estimasi
-					HotelEchelon1:   base * 10,  // ~4jt - 5jt
-					HotelEchelon2:   base * 5,   // ~2jt - 3jt
-					HotelEchelon3:   base * 3,   // ~1jt - 2jt
-					HotelEchelon4:   base * 2.5, // ~800k - 1jt
-					HotelStaff:      base * 2,   // ~600k - 800k
+					HotelEchelon1:   p.LuarKota * 10,
+					HotelEchelon2:   p.LuarKota * 5,
+					HotelEchelon3:   p.LuarKota * 3,
+					HotelEchelon4:   p.LuarKota * 2.5,
+					HotelStaff:      p.LuarKota * 2,
 					
 					TaxiRate:        150000, // Flat average
 				}
 				db.Create(&sbm)
 			}
+		} else {
+			// Update Existing SBM Record to ensure we have the new rates
+			db.Model(&sbm).Updates(map[string]interface{}{
+				"OutsideCityRate": p.LuarKota,
+				"InsideCityRate":  p.DalamKota,
+				"DiklatRate":      p.Diklat,
+			})
 		}
 	}
 }

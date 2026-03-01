@@ -36,16 +36,19 @@ export interface TravelRecord {
     id: string;
     spd: string;
     employee: User;
+    creator?: User;
+    creatorId?: string;
     email: string; // Creator email
     startDate: string;
     endDate: string;
+    suratTugasPath?: string;
     location: string;
     province: string;
     type?: string;
     purpose: string;
     stakeholder: string;
     agenda: string;
-    status: 'Submitted' | 'Approved' | 'Rejected';
+    status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
     reportStatus: 'Pending' | 'Completed';
     totalCost: number;
     costs?: TravelCost;
@@ -70,4 +73,5 @@ export interface ApiClient {
     getRecordById(id: string): Promise<TravelRecord | null>;
     createRecord(record: Omit<TravelRecord, 'id' | 'spd' | 'status' | 'reportStatus'>): Promise<TravelRecord[]>; // Returns array because one request can create multiple records (bulk)
     updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord>;
+    deleteRecord(id: string): Promise<void>;
 }
