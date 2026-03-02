@@ -21,3 +21,26 @@ export function formatCurrency(amount: number) {
         maximumFractionDigits: 0
     }).format(amount);
 }
+
+export function getStatusBadge(record: any) {
+    if (!record) return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+
+    if (record.paymentStatus === 'Paid') {
+        return {
+            label: 'Completed',
+            class: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        };
+    }
+
+    if (record.status === 'Submitted' || record.status === 'Approved') {
+        return {
+            label: 'In Progress',
+            class: 'bg-orange-50 text-orange-700 border-orange-200'
+        };
+    }
+
+    return {
+        label: 'Assigned',
+        class: 'bg-yellow-50 text-yellow-700 border-yellow-200'
+    };
+}

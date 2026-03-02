@@ -3,6 +3,7 @@
     import { userStore } from '$lib/stores/auth';
     import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
     import { toast } from '$lib/stores/toast';
+    import { getStatusBadge } from '$lib/utils';
     
     import Table from '$lib/components/ui/table/Table.svelte';
     import TableHeader from '$lib/components/ui/table/TableHeader.svelte';
@@ -12,19 +13,62 @@
     import TableCell from '$lib/components/ui/table/TableCell.svelte';
     import ReviewModal from '$lib/components/dashboard/pengajuan/ReviewModal.svelte';
     import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
+    import AdminTableFilters from '$lib/components/dashboard/admin/AdminTableFilters.svelte';
+
+    // Filter & Sort State
+    let searchQuery = '';
+    let statusFilter = 'all'; // 'all', 'In Progress', 'Completed'
+    let sortOption = 'date-desc'; // 'date-desc', 'date-asc', 'cost-desc', 'cost-asc'
+    let startDate = '';
+    let endDate = '';
     
-    // Derived Records: Filter only records created by the current user
+    // Derived Records: Filter only records created by the current user (or all if super_admin/kasubag)
     // Group by SPD number since one submission can have multiple employees
     $: myRecords = $recordsStore
         .filter(r => {
+            if ($userStore?.role === 'super_admin' || $userStore?.role === 'kasubag') return true;
             const creatorEmail = r.creator?.email || r.email; // fallback to email if it was stored that way
             const creatorId = r.creatorId || r.creator?.id;
             return creatorEmail === $userStore?.email || creatorId === $userStore?.id;
+        });
+
+    $: filteredRecords = myRecords
+        .filter(r => {
+            const query = searchQuery.toLowerCase();
+            const matchSearch = 
+                (r.spd?.toLowerCase() || '').includes(query) ||
+                (r.location?.toLowerCase() || '').includes(query);
+            
+            const badge = getStatusBadge(r);
+            const matchStatus = statusFilter === 'all' || badge.label === statusFilter;
+            
+            let matchDate = true;
+            if (startDate || endDate) {
+                const recordDate = new Date(r.startDate).setHours(0,0,0,0);
+                const start = startDate ? new Date(startDate).setHours(0,0,0,0) : null;
+                const end = endDate ? new Date(endDate).setHours(0,0,0,0) : null;
+
+                if (start && end) {
+                    matchDate = recordDate >= start && recordDate <= end;
+                } else if (start) {
+                    matchDate = recordDate >= start;
+                } else if (end) {
+                    matchDate = recordDate <= end;
+                }
+            }
+
+            return matchSearch && matchStatus && matchDate;
         })
-        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+        .sort((a, b) => {
+            if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+            if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+            if (sortOption === 'cost-desc') return (b.totalCost || 0) - (a.totalCost || 0);
+            if (sortOption === 'cost-asc') return (a.totalCost || 0) - (b.totalCost || 0);
+            return 0;
+        });
         
     // Group records by SPD for display
-    $: groupedRecords = myRecords.reduce((/** @type {Record<string, any>} */ acc, record) => {
+    $: groupedRecords = filteredRecords.reduce((/** @type {Record<string, any>} */ acc, record) => {
         if (!acc[record.spd]) {
             acc[record.spd] = { ...record, employeesList: [record.employee], totalCost: record.totalCost || 0 };
         } else {
@@ -34,7 +78,13 @@
         return acc;
     }, {});
     
-    $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
+        if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        if (sortOption === 'cost-desc') return b.totalCost - a.totalCost;
+        if (sortOption === 'cost-asc') return a.totalCost - b.totalCost;
+        return 0;
+    });
 
     let isReviewOpen = false;
     /** @type {any[]} */
@@ -82,6 +132,16 @@
             </svg>
             Buat Pengajuan Baru
         </a>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <AdminTableFilters 
+            bind:searchQuery 
+            bind:statusFilter 
+            bind:sortOption 
+            bind:startDate
+            bind:endDate
+        />
     </div>
 
     <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden">
@@ -142,14 +202,9 @@
                                 </TableCell>
                                 <TableCell class="py-4 align-top">
                                     <div class="flex flex-col gap-1.5 items-start">
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {record.status === 'Draft' ? 'bg-slate-50 text-slate-600 border-slate-200' : (record.status === 'Submitted' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}">
-                                            {record.status === 'Draft' ? 'Menunggu Protokol' : record.status}
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
+                                            {getStatusBadge(record).label}
                                         </span>
-                                        {#if record.status === 'Draft'}
-                                            <span class="text-[10px] text-slate-400 italic">Belum Diproses</span>
-                                        {:else}
-                                            <span class="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">Diproses</span>
-                                        {/if}
                                     </div>
                                 </TableCell>
                                 <TableCell class="text-right py-4 align-top">
@@ -169,15 +224,17 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-                                        <button 
-                                            class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
-                                            title="Hapus"
-                                            on:click={() => handleDelete(record.spd)}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                        {#if $userStore?.role === 'super_admin' || (record.employeesList[0].creator?.email || record.employeesList[0].email) === $userStore?.email || (record.employeesList[0].creatorId || record.employeesList[0].creator?.id) === $userStore?.id}
+                                            <button 
+                                                class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
+                                                title="Hapus"
+                                                on:click={() => handleDelete(record.spd)}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        {/if}
                                     </div>
                                 </TableCell>
                             </TableRow>

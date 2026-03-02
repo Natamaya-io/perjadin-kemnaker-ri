@@ -239,9 +239,9 @@
                                 <p>c. Tingkat Biaya Perjalanan Dinas</p>
                             </div>
                             <div class="flex-1 space-y-1">
-                                <p>: {record.employee.pangkat} ({record.employee.golongan})</p>
-                                <p>: Staf Protokol / Kementerian Ketenagakerjaan</p>
-                                <p>: C</p>
+                                <p>: {#if record.employee.pangkat || record.employee.golongan}{record.employee.pangkat || ''} {record.employee.golongan ? `(${record.employee.golongan})` : ''}{/if}</p>
+                                <p>: {record.employee.jabatan || 'Staf Protokol'} / Kementerian Ketenagakerjaan</p>
+                                <p>: {record.employee.tingkatBiaya || 'C'}</p>
                             </div>
                         </div>
                         <div class="flex">

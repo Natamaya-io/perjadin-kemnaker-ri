@@ -89,6 +89,10 @@ func main() {
 		sugar.Fatalf("Failed to migrate database: %v", err)
 	}
 
+	// Fix missing unique constraint for ON CONFLICT during report update
+	db.Exec("ALTER TABLE travel_reports ADD CONSTRAINT travel_reports_record_id_key UNIQUE (travel_record_id);")
+	db.Exec("ALTER TABLE travel_costs ADD CONSTRAINT travel_costs_record_id_key UNIQUE (travel_record_id);")
+
 	// 5. Seed Data (if enabled)
 	if os.Getenv("SEED_DB") == "true" {
 		sugar.Info("Seeding database...")

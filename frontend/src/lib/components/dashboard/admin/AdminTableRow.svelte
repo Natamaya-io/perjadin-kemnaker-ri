@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { cn } from '$lib/utils';
+    import { cn, getStatusBadge } from '$lib/utils';
     import { userStore } from '$lib/stores/auth';
     import Button from '$lib/components/ui/button/Button.svelte';
     import TableRow from '$lib/components/ui/table/TableRow.svelte';
@@ -41,9 +41,8 @@
         </div>
     </TableCell>
     <TableCell class="py-3 align-top">
-        <span class={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border", 
-            record.status === 'Submitted' ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200")}>
-            {record.status}
+        <span class={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border", getStatusBadge(record).class)}>
+            {getStatusBadge(record).label}
         </span>
     </TableCell>
     <TableCell class="text-right font-mono font-medium text-slate-700 py-3 align-top">{formatCurrency(record.totalCost)}</TableCell>
@@ -51,7 +50,7 @@
         <div class="flex justify-end items-center gap-1">
             {#if $userStore.role !== 'kasubag'}
                 <Button variant="outline" size="sm" class="h-8 text-xs border-slate-200 bg-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm" on:click={() => dispatch('edit', record)}>
-                    {$userStore.role === 'protokol' ? 'Input Dokumen & Biaya' : 'Review Biaya'}
+                    {$userStore.role === 'protokol' ? (record.status === 'Draft' ? 'Input Dokumen & Biaya' : 'Edit Dokumen & Biaya') : 'Review Biaya'}
                 </Button>
                 <div class="h-4 w-px bg-slate-200 mx-1"></div>
             {/if}

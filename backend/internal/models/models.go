@@ -53,6 +53,7 @@ type TravelRecord struct {
 	Agenda       string    `json:"agenda"`
 	Status       string    `gorm:"default:'Draft'" json:"status"`           // Draft, Submitted, Approved, Rejected
 	ReportStatus string    `gorm:"default:'Pending'" json:"reportStatus"`       // Pending, Completed
+	PaymentStatus string   `gorm:"default:'Unpaid'" json:"paymentStatus"`   // Unpaid, Paid
 	TotalCost    float64   `json:"totalCost"`
 
 	// Documents
@@ -78,6 +79,9 @@ type TravelCost struct {
 	// Additional Costs
 	OtherCost     float64 `json:"otherCost"`
 	OtherCostDesc string  `json:"otherCostDesc"`
+
+	// Receipts and Documents
+	ReceiptFiles  datatypes.JSON `gorm:"type:jsonb" json:"receiptFiles"`
 }
 
 type TravelReport struct {

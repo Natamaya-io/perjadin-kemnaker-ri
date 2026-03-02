@@ -26,8 +26,8 @@
             <div class="w-1/2 sm:w-32">
                 <Select bind:value={statusFilter} class="h-9 text-xs w-full bg-white border-slate-200">
                     <option value="all">Semua Status</option>
-                    <option value="Submitted">Submitted</option>
-                    <option value="Approved">Approved</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
                 </Select>
             </div>
 

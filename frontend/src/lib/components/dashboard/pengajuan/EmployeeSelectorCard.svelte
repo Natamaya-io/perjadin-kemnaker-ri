@@ -58,7 +58,18 @@
                     />
                     <div class="grid gap-0.5">
                         <span class="text-sm font-semibold text-slate-800">{employee.name}</span>
-                        <span class="text-xs text-slate-500">{employee.pangkat || '-'} ({employee.golongan || '-'})</span>
+                        {#if employee.jabatan}
+                            <span class="text-xs font-medium text-slate-700">{employee.jabatan}</span>
+                        {/if}
+                        {#if (employee.pangkat && employee.pangkat !== '-') || (employee.golongan && employee.golongan !== '-')}
+                            <span class="text-xs text-slate-500">
+                                {#if (employee.pangkat && employee.pangkat !== '-') && (employee.golongan && employee.golongan !== '-')}
+                                    {employee.pangkat} ({employee.golongan})
+                                {:else}
+                                    {(employee.pangkat !== '-' ? employee.pangkat : '') || (employee.golongan !== '-' ? employee.golongan : '')}
+                                {/if}
+                            </span>
+                        {/if}
                         <span class="text-[10px] text-slate-400 font-mono">NIP. {employee.nip || '-'}</span>
                     </div>
                 </label>

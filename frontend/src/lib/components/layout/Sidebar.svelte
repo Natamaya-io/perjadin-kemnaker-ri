@@ -26,6 +26,7 @@
         dashboard: "M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z",
         chartPie: "M10.5 6a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75",
         receipt: "M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-2-2l-2 2l-2-2l-2 2l-2-2l-2 2l-2-2l-2 2l-2-2l-2 2l-2-2l-2 2L3 21V5a2 2 0 012-2h14a2 2 0 012 2v16z",
+        documentEdit: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
         map: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7",
         building: "M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21",
         globe: "M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418",
@@ -49,8 +50,9 @@
             header: "Perjalanan Dinas",
             items: [
                 { label: "Pengajuan Perjalanan", href: "/dashboard/pengajuan", icon: icons.plus, role: ['super_admin', 'kasubag'] },
-                { label: "Input SPJ", href: "/dashboard/billing", icon: icons.receipt, role: ['protokol', 'super_admin', 'kasubag'] },
+                { label: "Input SPJ", href: "/dashboard/spj", icon: icons.documentEdit, role: ['protokol', 'super_admin', 'kasubag'] },
                 { label: "Rekap & Kalkulasi", href: "/dashboard/admin/perdin", icon: icons.cash, role: ['super_admin', 'keuangan', 'kasubag'] },
+                { label: "Billing Protokol", href: "/dashboard/billing-protokol", icon: icons.receipt, role: ['protokol', 'super_admin', 'keuangan', 'kasubag'] },
                 { label: "Laporan", href: "/dashboard/laporan", icon: icons.map, role: ['protokol', 'super_admin', 'kasubag'] }
             ]
         },

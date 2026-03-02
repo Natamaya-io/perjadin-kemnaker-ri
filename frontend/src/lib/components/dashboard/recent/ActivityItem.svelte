@@ -1,18 +1,10 @@
 <script>
-    import { getInitials } from '$lib/utils';
+    import { getInitials, getStatusBadge } from '$lib/utils';
     
     export let record;
     export let formatIDR;
 
-    const statusColors = {
-        'Completed': 'bg-blue-100 text-blue-700 border-blue-200 ring-blue-500/20',
-        'Approved': 'bg-emerald-100 text-emerald-700 border-emerald-200 ring-emerald-500/20',
-        'Submitted': 'bg-amber-100 text-amber-700 border-amber-200 ring-amber-500/20',
-        'Rejected': 'bg-red-100 text-red-700 border-red-200 ring-red-500/20'
-    };
-
-    $: displayStatus = record.reportStatus === 'Completed' ? 'Completed' : record.status;
-    $: statusLabel = displayStatus === 'Completed' ? 'Selesai' : displayStatus;
+    $: badge = getStatusBadge(record);
 </script>
 
 <tr class="group hover:bg-slate-50/80 transition-all duration-200 cursor-default">
@@ -61,15 +53,8 @@
 
     <!-- Status Column -->
     <td class="px-6 py-4 align-top text-center">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ring-1 ring-inset {statusColors[displayStatus] || 'bg-slate-100 text-slate-600'}">
-            {#if displayStatus === 'Completed'}
-                <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            {:else if displayStatus === 'Approved'}
-                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-            {:else if displayStatus === 'Submitted'}
-                 <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
-            {/if}
-            {statusLabel}
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ring-1 ring-inset {badge.class}">
+            {badge.label}
         </span>
     </td>
 
@@ -79,7 +64,7 @@
             <span class="font-bold text-slate-700 font-feature-settings-tnum">
                 {formatIDR(record.totalCost)}
             </span>
-            {#if record.status === 'Approved'}
+            {#if record.status === 'Approved' || record.paymentStatus === 'Paid'}
                  <span class="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1 rounded">Realisasi</span>
             {:else}
                  <span class="text-[10px] text-slate-400 font-medium">Estimasi</span>

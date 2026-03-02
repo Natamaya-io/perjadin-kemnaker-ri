@@ -209,8 +209,10 @@
                                 <div class="col-span-2">
                                     <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Jabatan & Pangkat</p>
                                     <p class="text-xs text-slate-700 line-clamp-1" title={user.jabatan || '-'}>{user.jabatan || '-'}</p>
-                                    {#if user.pangkat || user.golongan}
-                                        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1" title="{user.pangkat || '-'} ({user.golongan || '-'})">{user.pangkat || '-'} ({user.golongan || '-'})</p>
+                                    {#if (user.pangkat && user.pangkat !== '-') || (user.golongan && user.golongan !== '-')}
+                                        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1" title={(user.pangkat && user.pangkat !== '-') && (user.golongan && user.golongan !== '-') ? `${user.pangkat} (${user.golongan})` : ((user.pangkat !== '-' ? user.pangkat : '') || (user.golongan !== '-' ? user.golongan : ''))}>
+                                            {(user.pangkat && user.pangkat !== '-') && (user.golongan && user.golongan !== '-') ? `${user.pangkat} (${user.golongan})` : ((user.pangkat !== '-' ? user.pangkat : '') || (user.golongan !== '-' ? user.golongan : ''))}
+                                        </p>
                                     {/if}
                                 </div>
                             </div>

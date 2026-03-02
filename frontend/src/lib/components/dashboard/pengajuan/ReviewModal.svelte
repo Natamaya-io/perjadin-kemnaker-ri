@@ -12,7 +12,7 @@
     import { updateRecord, deleteRecord, addRecord } from '$lib/stores/records';
     import { usersStore, userStore } from '$lib/stores/auth';
     import { toast } from '$lib/stores/toast';
-    import { formatCurrency } from '$lib/utils';
+    import { formatCurrency, getStatusBadge } from '$lib/utils';
     
     export let open = false;
     export let records = []; // All records for the selected SPD
@@ -28,6 +28,13 @@
     let selectedEmployeeIds = [];
     let initialEmployeeIds = [];
     let prevOpen = false;
+    
+    let searchQuery = '';
+    $: filteredOfficers = protokolOfficers.filter(officer => 
+        (officer.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (officer.nip || '').includes(searchQuery) ||
+        (officer.jabatan || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
     
     // Form state initialized when records change
     let formData = {
@@ -177,8 +184,8 @@
             <div>
                 <div class="flex items-center gap-3 mb-1">
                     <h2 class="text-xl font-bold text-slate-800">Detail Pengajuan</h2>
-                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {baseRecord.status === 'Draft' ? 'bg-slate-50 text-slate-600 border-slate-200' : (baseRecord.status === 'Submitted' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}">
-                        {baseRecord.status === 'Draft' ? 'Menunggu Protokol' : baseRecord.status}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(baseRecord).class}">
+                        {getStatusBadge(baseRecord).label}
                     </span>
                 </div>
                 <div class="flex items-center gap-2 text-sm text-slate-500">
@@ -231,6 +238,27 @@
                             <div class="space-y-1.5">
                                 <Label class="text-slate-600 text-xs">Lokasi / Kota Tujuan</Label>
                                 <Input bind:value={formData.location} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                            </div>
+
+                            <div class="space-y-1.5 pt-2">
+                                <Label class="text-slate-600 text-xs">Surat Tugas</Label>
+                                {#if baseRecord.suratTugasPath}
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-slate-50">
+                                        <div class="flex items-center gap-2 overflow-hidden">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="text-sm font-medium text-slate-700 truncate" title={baseRecord.suratTugasPath}>{baseRecord.suratTugasPath}</span>
+                                        </div>
+                                        <a href={`/uploads/${baseRecord.suratTugasPath}`} target="_blank" rel="noopener noreferrer" class="ml-3 shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors">
+                                            Lihat Dokumen
+                                        </a>
+                                    </div>
+                                {:else}
+                                    <div class="text-xs text-slate-500 italic p-2.5 border border-dashed border-slate-200 rounded-lg bg-slate-50 text-center">
+                                        Tidak ada Surat Tugas yang dilampirkan.
+                                    </div>
+                                {/if}
                             </div>
                         </div>
                     </div>
@@ -288,28 +316,57 @@
                                         </div>
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold text-slate-800 truncate">{record.employee?.name || '-'}</p>
-                                            <p class="text-[11px] text-slate-500 truncate">{record.employee?.jabatan || record.employee?.golongan || 'Tidak ada jabatan'}</p>
+                                            {#if (record.employee?.jabatan && record.employee.jabatan !== '-') || (record.employee?.golongan && record.employee.golongan !== '-') || (record.employee?.pangkat && record.employee.pangkat !== '-')}
+                                                <p class="text-[11px] text-slate-500 truncate">
+                                                    {(record.employee?.jabatan && record.employee.jabatan !== '-') ? record.employee.jabatan : 
+                                                     ((record.employee?.pangkat && record.employee.pangkat !== '-') && (record.employee?.golongan && record.employee.golongan !== '-') ? `${record.employee.pangkat} (${record.employee.golongan})` : 
+                                                     ((record.employee?.pangkat && record.employee.pangkat !== '-') ? record.employee.pangkat : 
+                                                     ((record.employee?.golongan && record.employee.golongan !== '-') ? record.employee.golongan : '')))}
+                                                </p>
+                                            {:else}
+                                                <p class="text-[11px] text-slate-500 truncate">Tidak ada jabatan</p>
+                                            {/if}
                                         </div>
                                     </div>
                                 {/each}
                             {:else}
-                                <div class="text-xs text-slate-500 mb-2 px-1">Pilih petugas untuk perjalanan ini:</div>
-                                {#each protokolOfficers as officer}
-                                    <label class="flex items-center space-x-3 p-2.5 rounded-lg border {selectedEmployeeIds.includes(officer.id) ? 'bg-indigo-50/50 border-indigo-200' : 'border-transparent hover:bg-slate-50 hover:border-slate-200'} cursor-pointer transition-all">
-                                        <input type="checkbox"
-                                            checked={selectedEmployeeIds.includes(officer.id)}
-                                            on:change={(e) => {
-                                                if (e.target.checked) selectedEmployeeIds = [...selectedEmployeeIds, officer.id];
-                                                else selectedEmployeeIds = selectedEmployeeIds.filter(id => id !== officer.id);
-                                            }}
-                                            class="accent-indigo-600 h-4 w-4 rounded border-slate-300 shrink-0"
-                                        />
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-slate-800 truncate">{officer.name}</p>
-                                            <p class="text-[11px] text-slate-500 truncate">{officer.jabatan || officer.golongan || '-'}</p>
-                                        </div>
-                                    </label>
-                                {/each}
+                                <div class="mb-3 relative">
+                                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <Input type="text" placeholder="Cari nama petugas..." bind:value={searchQuery} class="pl-8 bg-slate-50 border-slate-200 text-xs h-8" />
+                                </div>
+                                {#if filteredOfficers.length === 0}
+                                    <div class="text-center py-4 text-xs text-slate-500 italic">Tidak ada petugas yang cocok.</div>
+                                {:else}
+                                    {#each filteredOfficers as officer}
+                                        <label class="flex items-center space-x-3 p-2.5 rounded-lg border {selectedEmployeeIds.includes(officer.id) ? 'bg-indigo-50/50 border-indigo-200' : 'border-transparent hover:bg-slate-50 hover:border-slate-200'} cursor-pointer transition-all">
+                                            <input type="checkbox"
+                                                checked={selectedEmployeeIds.includes(officer.id)}
+                                                on:change={(e) => {
+                                                    if (e.target.checked) selectedEmployeeIds = [...selectedEmployeeIds, officer.id];
+                                                    else selectedEmployeeIds = selectedEmployeeIds.filter(id => id !== officer.id);
+                                                }}
+                                                class="accent-indigo-600 h-4 w-4 rounded border-slate-300 shrink-0"
+                                            />
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-slate-800 truncate">{officer.name}</p>
+                                                {#if (officer.jabatan && officer.jabatan !== '-') || (officer.golongan && officer.golongan !== '-') || (officer.pangkat && officer.pangkat !== '-')}
+                                                    <p class="text-[11px] text-slate-500 truncate">
+                                                        {(officer.jabatan && officer.jabatan !== '-') ? officer.jabatan : 
+                                                         ((officer.pangkat && officer.pangkat !== '-') && (officer.golongan && officer.golongan !== '-') ? `${officer.pangkat} (${officer.golongan})` : 
+                                                         ((officer.pangkat && officer.pangkat !== '-') ? officer.pangkat : 
+                                                         ((officer.golongan && officer.golongan !== '-') ? officer.golongan : '')))}
+                                                    </p>
+                                                {:else}
+                                                    <p class="text-[11px] text-slate-500 truncate">Tidak ada jabatan</p>
+                                                {/if}
+                                            </div>
+                                        </label>
+                                    {/each}
+                                {/if}
                             {/if}
                         </div>
                     </div>
