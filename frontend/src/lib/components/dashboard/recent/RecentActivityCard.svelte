@@ -1,7 +1,10 @@
 <script>
     import { fly } from 'svelte/transition';
+    import { userStore } from '$lib/stores/auth';
     export let title = 'Aktivitas Terbaru';
     export let viewAllLink = '';
+    
+    $: isProtokol = $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag';
 </script>
 
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
@@ -26,11 +29,18 @@
         <table class="w-full text-sm text-left border-collapse">
             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs tracking-wider border-b border-slate-100">
                 <tr>
-                    <th class="px-6 py-4 font-medium">Pegawai</th>
-                    <th class="px-6 py-4 font-medium">Tujuan & Lokasi</th>
-                    <th class="px-6 py-4 font-medium">Tanggal</th>
-                    <th class="px-6 py-4 font-medium text-center">Status</th>
-                    <th class="px-6 py-4 font-medium text-right">Biaya</th>
+                    {#if isProtokol}
+                        <th class="px-6 py-4 font-medium">Nomor SPD</th>
+                        <th class="px-6 py-4 font-medium">Tujuan & Lokasi</th>
+                        <th class="px-6 py-4 font-medium">Tanggal</th>
+                        <th class="px-6 py-4 font-medium text-center">Status</th>
+                    {:else}
+                        <th class="px-6 py-4 font-medium">Pegawai</th>
+                        <th class="px-6 py-4 font-medium">Tujuan & Lokasi</th>
+                        <th class="px-6 py-4 font-medium">Tanggal</th>
+                        <th class="px-6 py-4 font-medium text-center">Status</th>
+                        <th class="px-6 py-4 font-medium text-right">Biaya</th>
+                    {/if}
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">

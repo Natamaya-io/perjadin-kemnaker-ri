@@ -69,7 +69,12 @@
     $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
     
     // Recent Logic
-    $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5);    
+    $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5).map(record => {
+        const allRecordsForSpd = records.filter(r => r.spd === record.spd);
+        const officerIndex = allRecordsForSpd.findIndex(r => r.id === record.id);
+        const nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
+        return { ...record, nomorSpdPetugas };
+    });    
     
     // Chart Data
     $: statusData = [
@@ -167,6 +172,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                 </div>
+                <div slot="action">
+                    {#if newAssignments > 0}
+                    <a href="/dashboard/pengajuan" class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold tracking-wide text-white bg-rose-500 hover:bg-rose-600 rounded-lg shadow-sm transition-colors shadow-rose-500/20 hover:shadow-rose-500/40">
+                        LIHAT <span class="sr-only">Penugasan Baru</span>
+                    </a>
+                    {/if}
+                </div>
             </StatCard>
             {/if}
 
@@ -194,7 +206,7 @@
 
         <!-- 3. Recent Activity Section (Organism) -->
         <RecentActivityCard 
-            title="Aktivitas Terbaru"
+            title={$userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag' ? "Riwayat Terbaru" : "Aktivitas Terbaru"}
             viewAllLink={$userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag' ? "/dashboard/admin/perdin" : ""}
         >
             {#each recentRecords as record (record.id)}

@@ -3,18 +3,19 @@
     export let title = '';
     export let value = '';
     export let description = '';
-    export let iconColor = 'blue'; // blue, emerald, amber, purple
+    export let iconColor = 'blue'; // blue, emerald, amber, purple, rose
     export let trend = null; // e.g., '+2.5%', '-1.2%', etc.
     export let trendDirection = 'up'; // 'up', 'down', 'neutral'
-    
+
     const colorClasses = {
         blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',
         emerald: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white',
         amber: 'bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white',
         purple: 'bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white',
+        rose: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white'
     };
 
-    $: trendClasses = trendDirection === 'up' 
+    $: trendClasses = trendDirection === 'up'
         ? 'text-emerald-600 bg-emerald-50 border-emerald-100'
         : trendDirection === 'down'
             ? 'text-rose-600 bg-rose-50 border-rose-100'
@@ -27,10 +28,10 @@
 
     <div class="relative z-10 flex flex-col h-full justify-between gap-4">
         <div class="flex justify-between items-start">
-            <div class={cn("p-3.5 rounded-xl transition-colors duration-300", colorClasses[iconColor])}>
+            <div class={cn("p-3.5 rounded-xl transition-colors duration-300", colorClasses[iconColor] || colorClasses.blue)}>
                 <slot name="icon" />
             </div>
-            
+
             {#if trend}
             <div class={cn("flex items-center space-x-1 text-[10px] font-medium px-2 py-0.5 rounded-full border", trendClasses)}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -45,8 +46,13 @@
                 <span>{trend}</span>
             </div>
             {/if}
+
+            <!-- Optional Action Slot (e.g. for buttons) -->
+            <div class="ml-auto">
+                <slot name="action" />
+            </div>
         </div>
-        
+
         <div class="space-y-1 overflow-hidden">
             <div class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight font-feature-settings-tnum truncate" title={value}>
                 {value}
@@ -58,7 +64,6 @@
         </div>
     </div>
 </div>
-
 <style>
     .font-feature-settings-tnum {
         font-feature-settings: "tnum";

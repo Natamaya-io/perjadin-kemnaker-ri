@@ -70,9 +70,9 @@
         currentDate = new Date();
     }
 
-    function isToday(day) {
+    function isToday(day, month, year) {
         const today = new Date();
-        return day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+        return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
     }
 </script>
 
@@ -117,18 +117,18 @@
     </div>
 
     <!-- Calendar Grid -->
-    <div class="p-2 sm:p-4">
+    <div class="p-1.5 sm:p-4">
         <!-- Days Header -->
-        <div class="grid grid-cols-7 gap-1 mb-2">
+        <div class="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
             {#each dayNames as day, i}
-                <div class="text-center text-[9px] sm:text-[10px] md:text-xs font-semibold uppercase tracking-wider {i === 0 ? 'text-red-500' : 'text-slate-500'}">
+                <div class="text-center text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-tight sm:tracking-wider {i === 0 ? 'text-red-500' : 'text-slate-500'}">
                     {day}
                 </div>
             {/each}
         </div>
 
         <!-- Days Grid -->
-        <div class="grid grid-cols-7 gap-1 sm:gap-1.5 md:gap-2">
+        <div class="grid grid-cols-7 gap-0.5 sm:gap-1.5 md:gap-2">
             {#each blanks as _}
                 <div class="aspect-square bg-slate-50/50 rounded-md sm:rounded-lg border border-slate-100 border-dashed"></div>
             {/each}
@@ -140,7 +140,7 @@
                 
                 <div class="relative aspect-square rounded-md sm:rounded-lg flex items-center justify-center text-[10px] sm:text-xs md:text-sm transition-all duration-200
                     {hasRecord ? (isCompleted ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-sm font-bold' : 'bg-red-50 border border-red-200 text-red-800 shadow-sm font-bold') : 'bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-blue-200 font-medium'}
-                    {isToday(day) && !hasRecord ? 'ring-2 ring-blue-400 ring-offset-1 font-bold text-blue-700 bg-blue-50' : ''}
+                    {isToday(day, currentMonth, currentYear) && !hasRecord ? 'ring-2 ring-blue-400 ring-offset-1 font-bold text-blue-700 bg-blue-50' : ''}
                 " title={hasRecord ? `${hasRecord.purpose} (${hasRecord.location})` : ''}>
                     
                     <span>{day}</span>
@@ -148,7 +148,7 @@
                     {#if hasRecord}
                         <div class="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full {isCompleted ? 'bg-emerald-500' : 'bg-red-500'}"></div>
                     {/if}
-                    {#if isToday(day)}
+                    {#if isToday(day, currentMonth, currentYear)}
                         <div class="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500" title="Hari ini"></div>
                     {/if}
                 </div>
