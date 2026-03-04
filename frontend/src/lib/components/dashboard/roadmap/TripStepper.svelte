@@ -10,53 +10,40 @@
     function getSteps(record) {
         if (!record) return [];
         const step1Done = true; // Selalu true jika record ada
-        const step2Done = record.status === 'Submitted' || record.status === 'Approved';
-        const step3Done = record.status === 'Approved';
-        const step4Done = record.reportStatus === 'Completed';
-        const step5Done = record.paymentStatus === 'Paid';
+        const step2Done = record.reportStatus === 'Completed' || record.status === 'Approved' || record.paymentStatus === 'Paid';
+        const step3Done = record.status === 'Approved' || record.paymentStatus === 'Paid';
+        const step4Done = record.paymentStatus === 'Paid';
 
         return [
             { 
                 id: 1, 
                 title: 'Perjalanan Dinas', 
-                description: 'Surat tugas diterbitkan', 
+                description: 'Surat tugas & petugas ditugaskan', 
                 isCompleted: step1Done, 
                 isCurrent: !step2Done
             },
-            { 
-                id: 2, 
-                title: 'Input SPJ', 
-                description: 'Unggah bukti biaya', 
-                isCompleted: step2Done, 
+            {
+                id: 2,
+                title: 'Laporan',
+                description: 'Input rincian biaya & laporan',
+                isCompleted: step2Done,
                 isCurrent: step1Done && !step2Done,
-                actionLabel: !step2Done ? 'Input Sekarang' : null,
-                actionEvent: 'input-spj'
+                actionLabel: !step2Done ? 'Buat Laporan' : null,
+                actionLink: !step2Done ? `/dashboard/laporan/${record.spd}` : null
             },
             { 
                 id: 3, 
                 title: 'Review Keuangan', 
-                description: 'Menunggu approval', 
+                description: 'Review & approve rincian biaya', 
                 isCompleted: step3Done, 
-                // Review is current if SPJ is submitted but not yet approved
                 isCurrent: step2Done && !step3Done
             },
             { 
                 id: 4, 
-                title: 'Laporan Akhir', 
-                description: 'Buat laporan kegiatan', 
-                isCompleted: step4Done, 
-                // Laporan can be done ANYTIME after step2 is done
-                isCurrent: step2Done && !step4Done,
-                actionLabel: (step2Done && !step4Done) ? 'Buat Laporan' : null,
-                actionLink: '/dashboard/laporan'
-            },
-            { 
-                id: 5, 
                 title: 'Billing Cair', 
-                description: 'Pembayaran selesai', 
-                isCompleted: step5Done, 
-                // Billing cair waits for Laporan (step4) AND Review (step3)
-                isCurrent: step3Done && step4Done && !step5Done 
+                description: 'Pembayaran & kwitansi dicetak', 
+                isCompleted: step4Done, 
+                isCurrent: step3Done && !step4Done 
             }
         ];
     }
@@ -72,7 +59,7 @@
         
         <div class="flex justify-between relative z-10 w-full">
             {#each steps as step, i}
-                <div class="flex flex-col items-center w-[120px] relative group">
+                <div class="flex flex-col items-center w-1/4 relative group">
                     <div class="h-10 w-10 bg-white rounded-full p-1 z-10">
                         <div class="h-full w-full rounded-full flex items-center justify-center transition-all duration-500 {step.isCompleted ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : (step.isCurrent ? 'bg-white border-2 border-indigo-500 text-indigo-600 ring-4 ring-indigo-50' : 'bg-slate-100 border-2 border-slate-200 text-slate-400')}">
                             {#if step.isCompleted}

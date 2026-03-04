@@ -89,6 +89,8 @@ type TravelReport struct {
 	Text           string         `json:"text"`
 	SubmittedAt    time.Time      `json:"submittedAt"`
 	Files          datatypes.JSON `gorm:"type:jsonb" json:"files"` // Storing file metadata/links as JSON
+	SppdFile       datatypes.JSON `gorm:"type:jsonb" json:"sppdFile"`
+	SuratTugasFile datatypes.JSON `gorm:"type:jsonb" json:"suratTugasFile"`
 }
 
 // ==========================================

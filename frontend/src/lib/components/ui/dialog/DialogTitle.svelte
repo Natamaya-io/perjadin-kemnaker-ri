@@ -1,3 +1,9 @@
-<h2 class="text-lg font-semibold leading-none tracking-tight">
+<script>
+  import { cn } from "$lib/utils";
+  let className = undefined;
+  export { className as class };
+</script>
+
+<h2 class={cn("text-lg font-semibold leading-none tracking-tight", className)}>
   <slot />
 </h2>

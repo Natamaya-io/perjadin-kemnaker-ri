@@ -70,7 +70,7 @@
           </div>
         {/if}
 
-        <!-- Laporan Link -->
+        <!-- Laporan Perjadin Link -->
         <div class="nav-item-wrapper h-full w-full">
             <a href="/dashboard/laporan" class="nav-link flex flex-col items-center justify-center space-y-1 h-full w-full group {activeRoute.includes('/dashboard/laporan') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}">
                 <div class="icon-container relative">
@@ -79,7 +79,7 @@
                     </svg>
                 </div>
                 <div class="label-container">
-                    <span class="label text-[10px] font-medium">Laporan</span>
+                    <span class="label text-[10px] font-medium text-center leading-tight">Laporan<br/>Perjadin</span>
                 </div>
             </a>
         </div>

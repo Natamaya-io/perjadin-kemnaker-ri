@@ -50,10 +50,8 @@
             header: "Perjalanan Dinas",
             items: [
                 { label: "Pengajuan Perjalanan", href: "/dashboard/pengajuan", icon: icons.plus, role: ['super_admin', 'kasubag'] },
-                { label: "Input SPJ", href: "/dashboard/spj", icon: icons.documentEdit, role: ['protokol', 'super_admin', 'kasubag'] },
                 { label: "Rekap & Kalkulasi", href: "/dashboard/admin/perdin", icon: icons.cash, role: ['super_admin', 'keuangan', 'kasubag'] },
-                { label: "Billing Protokol", href: "/dashboard/billing-protokol", icon: icons.receipt, role: ['protokol', 'super_admin', 'keuangan', 'kasubag'] },
-                { label: "Laporan", href: "/dashboard/laporan", icon: icons.map, role: ['protokol', 'super_admin', 'kasubag'] }
+                { label: "Laporan Perjadin", href: "/dashboard/laporan", icon: icons.map, role: ['protokol', 'super_admin', 'kasubag'] }
             ]
         },
         {

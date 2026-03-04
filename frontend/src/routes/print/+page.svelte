@@ -239,7 +239,7 @@
                                 <p>c. Tingkat Biaya Perjalanan Dinas</p>
                             </div>
                             <div class="flex-1 space-y-1">
-                                <p>: {#if record.employee.pangkat || record.employee.golongan}{record.employee.pangkat || ''} {record.employee.golongan ? `(${record.employee.golongan})` : ''}{/if}</p>
+                                <p>: {#if record.employee.pangkat && record.employee.pangkat !== '-' && record.employee.golongan && record.employee.golongan !== '-'}{record.employee.pangkat} ({record.employee.golongan}){:else}{record.employee.jabatan || '-'}{/if}</p>
                                 <p>: {record.employee.jabatan || 'Staf Protokol'} / Kementerian Ketenagakerjaan</p>
                                 <p>: {record.employee.tingkatBiaya || 'C'}</p>
                             </div>
@@ -485,7 +485,7 @@
                             <span class="font-bold block text-slate-700">Nama Pelaksana:</span>
                             <span class="text-lg">{record.employee.name}</span>
                             <span class="block text-xs text-slate-500">NIP. {record.employee.nip}</span>
-                            <span class="block text-xs text-slate-500 mt-1">{record.employee.pangkat}</span>
+                            <span class="block text-xs text-slate-500 mt-1">{record.employee.pangkat && record.employee.pangkat !== '-' ? record.employee.pangkat : (record.employee.jabatan || '')}</span>
                         </div>
                         <div class="text-right">
                             <span class="font-bold block text-slate-700">Waktu & Tempat:</span>

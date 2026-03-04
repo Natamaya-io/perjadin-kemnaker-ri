@@ -23,7 +23,7 @@
         
         <!-- Status & Sort -->
         <div class="flex gap-2 w-full sm:w-auto">
-            <div class="w-1/2 sm:w-32">
+            <div class="flex-1 sm:flex-none sm:w-32">
                 <Select bind:value={statusFilter} class="h-9 text-xs w-full bg-white border-slate-200">
                     <option value="all">Semua Status</option>
                     <option value="In Progress">In Progress</option>
@@ -31,7 +31,7 @@
                 </Select>
             </div>
 
-            <div class="w-1/2 sm:w-40">
+            <div class="flex-1 sm:flex-none sm:w-40">
                 <Select bind:value={sortOption} class="h-9 text-xs w-full bg-white border-slate-200">
                     <option value="date-desc">Terbaru</option>
                     <option value="date-asc">Terlama</option>

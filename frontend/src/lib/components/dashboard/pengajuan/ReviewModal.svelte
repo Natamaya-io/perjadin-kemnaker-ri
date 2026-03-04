@@ -181,15 +181,15 @@
     <div transition:fly={{y: 20, duration: 300}} class="fixed left-[50%] top-[50%] z-50 w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-white">
-            <div>
-                <div class="flex items-center gap-3 mb-1">
-                    <h2 class="text-xl font-bold text-slate-800">Detail Pengajuan</h2>
+            <div class="flex-1 min-w-0 pr-4">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5">
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Detail Pengajuan</h2>
                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(baseRecord).class}">
                         {getStatusBadge(baseRecord).label}
                     </span>
                 </div>
-                <div class="flex items-center gap-2 text-sm text-slate-500">
-                    <span class="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{baseRecord.spd}</span>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    <span class="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs sm:text-sm">{baseRecord.spd}</span>
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
                         {baseRecord.type ? baseRecord.type.replace(/_/g, ' ') : 'Dalam Kota'}
                     </span>
@@ -214,7 +214,7 @@
                         </h3>
                         
                         <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div class="space-y-1.5">
                                     <Label class="text-slate-600 text-xs">Tanggal Mulai <span class="text-red-500">*</span></Label>
                                     <Input type="date" bind:value={formData.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />

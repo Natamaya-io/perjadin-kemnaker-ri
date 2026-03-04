@@ -19,10 +19,9 @@
 
     function getSteps(record) {
         const step1Done = true; // Selalu true jika record ada
-        const step2Done = record.status === 'Submitted' || record.status === 'Approved';
-        const step3Done = record.status === 'Approved';
-        const step4Done = record.reportStatus === 'Completed';
-        const step5Done = record.paymentStatus === 'Paid';
+        const step2Done = record.reportStatus === 'Completed' || record.status === 'Approved' || record.paymentStatus === 'Paid';
+        const step3Done = record.status === 'Approved' || record.paymentStatus === 'Paid';
+        const step4Done = record.paymentStatus === 'Paid';
 
         return [
             { 
@@ -33,14 +32,14 @@
                 isCurrent: !step2Done,
                 icon: 'M0 0' // Placeholder, real SVG below
             },
-            { 
-                id: 2, 
-                title: 'Input SPJ', 
-                description: 'Unggah bukti biaya', 
-                isCompleted: step2Done, 
+            {
+                id: 2,
+                title: 'Laporan',
+                description: 'Input rincian biaya & laporan',
+                isCompleted: step2Done,
                 isCurrent: step1Done && !step2Done,
-                actionLabel: !step2Done ? 'Input Sekarang' : null,
-                actionLink: '/dashboard/spj'
+                actionLabel: !step2Done ? 'Buat Laporan' : null,
+                actionLink: '/dashboard/laporan'
             },
             { 
                 id: 3, 
@@ -51,19 +50,10 @@
             },
             { 
                 id: 4, 
-                title: 'Laporan Akhir', 
-                description: 'Buat laporan kegiatan', 
-                isCompleted: step4Done, 
-                isCurrent: step3Done && !step4Done,
-                actionLabel: (step3Done && !step4Done) ? 'Buat Laporan' : null,
-                actionLink: '/dashboard/laporan'
-            },
-            { 
-                id: 5, 
                 title: 'Billing Cair', 
-                description: 'Pembayaran selesai', 
-                isCompleted: step5Done, 
-                isCurrent: step4Done && !step5Done 
+                description: 'Pembayaran & kwitansi dicetak', 
+                isCompleted: step4Done, 
+                isCurrent: step3Done && !step4Done 
             }
         ];
     }
@@ -150,7 +140,7 @@
                                 
                                 <div class="flex justify-between relative z-10">
                                     {#each steps as step, i}
-                                        <div class="flex flex-col items-center w-1/5 relative group">
+                                        <div class="flex flex-col items-center w-1/4 relative group">
                                             <div class="h-10 w-10 rounded-full flex items-center justify-center transition-all duration-500 {step.isCompleted ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : (step.isCurrent ? 'bg-white border-2 border-indigo-500 text-indigo-600 ring-4 ring-indigo-50' : 'bg-white border-2 border-slate-200 text-slate-400')}">
                                                 {#if step.isCompleted}
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

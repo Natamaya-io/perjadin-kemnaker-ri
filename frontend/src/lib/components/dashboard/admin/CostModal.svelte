@@ -15,7 +15,6 @@
     export let open = false;
     export let record = null;
     
-    /** @type {{ hotelDays?: number, hotelRate?: number, ticketGo?: number, ticketBack?: number, localTransport?: number, regionalTransport?: number, transportMode?: string, uangRepresentasi?: number, sewaKendaraan?: number }} */
     export let editingCosts = {};
 
     const dispatch = createEventDispatcher();
@@ -27,7 +26,6 @@
         if (!record?.startDate || !record?.endDate) return 0;
         const start = new Date(record.startDate);
         const end = new Date(record.endDate);
-        // Reset time to ignore timezone differences for day calculation
         start.setHours(0,0,0,0);
         end.setHours(0,0,0,0);
         const diffTime = end.getTime() - start.getTime();
@@ -38,82 +36,20 @@
     $: sbmRate = $provincesStore.find(p => p.name === record?.province)?.luarKota || 0;
     $: totalDailyAllowance = days * sbmRate;
 
-    // Derived Calculations for Other Costs
+    // Default arrays if undefined
+    $: if (open && !editingCosts.additionalCosts) {
+        editingCosts.additionalCosts = [];
+    }
+
     $: totalHotel = (editingCosts.hotelDays || 0) * (editingCosts.hotelRate || 0);
     $: totalTicket = Number(editingCosts.ticketGo || 0) + Number(editingCosts.ticketBack || 0);
-    $: totalLocal = Number(editingCosts.localTransport || 0);
-    $: totalRegional = Number(editingCosts.regionalTransport || 0);
-    $: totalRepresentasi = Number(editingCosts.uangRepresentasi || 0);
-    $: totalSewa = Number(editingCosts.sewaKendaraan || 0);
-    $: grandTotal = totalTicket + totalDailyAllowance + totalHotel + totalLocal + totalRegional + totalRepresentasi + totalSewa;
-
-    // --- File Upload State & Logic ---
-    let uploadedFiles = [];
-    let isDragging = false;
-
-    // Reactively initialize files when modal opens
-    $: if (open && editingCosts) {
-        uploadedFiles = editingCosts.receiptFiles || [];
-    }
-
-    function processFiles(selectedFiles) {
-        if (uploadedFiles.length + selectedFiles.length > 10) {
-            toast.error('Maksimal 10 file yang dapat diunggah.');
-            return;
-        }
-
-        selectedFiles.forEach(file => {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error(`Ukuran file ${file.name} melebihi 5MB.`);
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                uploadedFiles = [...uploadedFiles, {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    data: e.target.result // base64
-                }];
-                editingCosts.receiptFiles = uploadedFiles; // Update bound costs
-                editingCosts = editingCosts;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function handleFileSelect(e) {
-        const files = Array.from(e.target.files);
-        processFiles(files);
-        e.target.value = ''; // Reset
-    }
-
-    function handleDrop(e) {
-        e.preventDefault();
-        isDragging = false;
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.match(/(image.*|application\/pdf)/));
-            processFiles(files);
-        }
-    }
-
-    function handleDragOver(e) {
-        e.preventDefault();
-        isDragging = true;
-    }
-
-    function handleDragLeave() {
-        isDragging = false;
-    }
-
-    function removeFile(index) {
-        uploadedFiles = uploadedFiles.filter((_, i) => i !== index);
-        editingCosts.receiptFiles = uploadedFiles;
-        editingCosts = editingCosts;
-    }
+    $: totalTransportAmount = Number(editingCosts.transportAmount || 0);
+    $: totalAdditional = (editingCosts.additionalCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+    
+    $: grandTotal = totalTicket + totalDailyAllowance + totalHotel + totalTransportAmount + totalAdditional;
 
     function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
+        if (!bytes) return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -121,14 +57,13 @@
     }
 
     function viewFile(file) {
-        if (file.data) {
+        if (file && file.data) {
             const win = window.open();
             if (win) {
                 win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
             }
         }
     }
-    // ---------------------------------
 
     function formatCurrency(amount) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
@@ -145,25 +80,86 @@
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         editingCosts[field] = isNaN(num) ? undefined : num;
-        editingCosts = editingCosts; // trigger reactivity
+        editingCosts = editingCosts;
+    }
+
+    function handleSpecificFileSelect(e, field) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 5MB.`);
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            editingCosts[field] = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: ev.target.result
+            };
+            editingCosts = editingCosts;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }
+
+    function removeSpecificFile(field) {
+        editingCosts[field] = null;
+        editingCosts = editingCosts;
+    }
+
+    function addAdditionalCost() {
+        if (!editingCosts.additionalCosts) editingCosts.additionalCosts = [];
+        editingCosts.additionalCosts = [...editingCosts.additionalCosts, { name: '', amount: undefined, file: null }];
+        editingCosts = editingCosts;
+    }
+
+    function removeAdditionalCost(index) {
+        editingCosts.additionalCosts = editingCosts.additionalCosts.filter((_, i) => i !== index);
+        editingCosts = editingCosts;
+    }
+
+    function updateAdditionalCostAmount(index, event) {
+        const raw = event.target.value.replace(/[^0-9]/g, '');
+        const num = parseInt(raw, 10);
+        editingCosts.additionalCosts[index].amount = isNaN(num) ? undefined : num;
+        editingCosts = editingCosts;
+    }
+
+    function handleAdditionalFileSelect(e, index) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 5MB.`);
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            editingCosts.additionalCosts[index].file = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: ev.target.result
+            };
+            editingCosts = editingCosts;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
     }
 
     function validateCosts() {
         if ((editingCosts.ticketGo || 0) < 0) return "Biaya Tiket Berangkat tidak boleh negatif";
         if ((editingCosts.ticketBack || 0) < 0) return "Biaya Tiket Pulang tidak boleh negatif";
-        
         if ((editingCosts.hotelDays || 0) < 0) return "Durasi Penginapan tidak boleh negatif";
-        // Allow 0 hotel rate if stayed at non-paid accommodation, but strictly check negative
         if ((editingCosts.hotelRate || 0) < 0) return "Rate Penginapan tidak boleh negatif";
-
-        if ((editingCosts.localTransport || 0) < 0) return "Transport Lokal tidak boleh negatif";
-        
-        if ((editingCosts.regionalTransport || 0) < 0) return "Transport Daerah tidak boleh negatif";
-
-        if ((editingCosts.uangRepresentasi || 0) < 0) return "Uang Representasi tidak boleh negatif";
-        if ((editingCosts.sewaKendaraan || 0) < 0) return "Biaya Sewa Kendaraan tidak boleh negatif";
-
-        return null; // Valid
+        if ((editingCosts.transportAmount || 0) < 0) return "Biaya Transportasi tidak boleh negatif";
+        for (const cost of (editingCosts.additionalCosts || [])) {
+            if ((cost.amount || 0) < 0) return "Biaya Tambahan tidak boleh negatif";
+        }
+        return null;
     }
 
     function handleSave() {
@@ -177,244 +173,303 @@
     }
 </script>
 
-<Dialog bind:open={open} class="md:max-w-2xl overflow-hidden flex flex-col p-0 md:p-0" on:close={() => dispatch('close')}>
+<Dialog bind:open={open} class="w-[calc(100vw-1rem)] max-w-2xl overflow-hidden flex flex-col p-0 md:p-0" on:close={() => dispatch('close')}>
     <DialogHeader class="border-b border-slate-100 p-4 md:p-6 pb-4 shrink-0 bg-white">
-        <DialogTitle class="text-xl">
+        <DialogTitle class="text-lg md:text-xl">
             {$userStore.role === 'protokol' 
                 ? (record?.status === 'Draft' ? 'Input Rincian Biaya' : 'Edit Rincian Biaya') 
                 : 'Review Rincian Biaya'}
         </DialogTitle>
-        <p class="text-sm text-slate-500 mt-1">Lengkapi komponen biaya untuk <span class="font-semibold text-slate-800">{record?.employee?.name}</span>.</p>
+        <p class="text-xs md:text-sm text-slate-500 mt-1">Lengkapi komponen biaya untuk <span class="font-semibold text-slate-800">{record?.employee?.name}</span>.</p>
     </DialogHeader>
     
-    <div class="grid gap-6 p-4 md:p-6 overflow-y-auto bg-slate-50/30 custom-scrollbar">
-        <!-- Surat Tugas Display -->
-        <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider block mb-2">Surat Tugas (Dasar Perjalanan)</Label>
-            {#if record?.suratTugasPath}
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="h-10 w-10 rounded-lg bg-rose-50 flex items-center justify-center border border-rose-100 shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-slate-800 truncate" title={record.suratTugasPath}>{record.suratTugasPath}</p>
-                            <p class="text-[10px] text-slate-500 mt-0.5">Dokumen pendukung pengajuan SPD</p>
-                        </div>
-                    </div>
-                    <a href={`/uploads/${record.suratTugasPath}`} target="_blank" rel="noopener noreferrer" class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors">
-                        Lihat Dokumen
-                    </a>
-                </div>
-            {:else}
-                <div class="text-xs text-slate-500 italic flex items-center gap-2 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Tidak ada Surat Tugas yang dilampirkan.
-                </div>
-            {/if}
-        </div>
-
-        <!-- Transportation -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-2">
-                <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.ticketGo)} on:input={(e) => updateCost('ticketGo', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-            <div class="space-y-2">
-                <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Pulang</Label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.ticketBack)} on:input={(e) => updateCost('ticketBack', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-        </div>
-
-        <!-- Daily Allowance (SBM - Read Only) -->
-        <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <h4 class="text-sm font-semibold text-blue-800 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Uang Harian (Otomatis SBM)
-                </h4>
-                <span class="text-lg font-bold text-blue-700">{formatCurrency(totalDailyAllowance)}</span>
-            </div>
-            <div class="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-blue-50/50 shadow-sm">
-                <div class="flex-1">
-                    <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
-                    <span class="font-medium whitespace-nowrap">{days} Hari</span>
-                </div>
-                <div class="w-px h-8 bg-slate-100"></div>
-                <div class="flex-[2]">
-                    <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi</span>
-                    <span class="font-medium whitespace-nowrap">{formatCurrency(sbmRate)} <span class="text-xs text-slate-400 font-normal hidden sm:inline">/ hari</span></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Hotel -->
-        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
-            <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Penginapan
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="space-y-2 col-span-1">
-                    <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Durasi (Malam)</Label>
-                    <Input type="number" bind:value={editingCosts.hotelDays} disabled={isReadOnly} class="bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-                <div class="space-y-2 col-span-1 sm:col-span-2">
-                    <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Rate per Malam</Label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                        <Input type="text" value={formatInputNumber(editingCosts.hotelRate)} on:input={(e) => updateCost('hotelRate', e)} disabled={isReadOnly} class="pl-9 bg-white border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                    </div>
-                </div>
-            </div>
-            <div class="text-right text-sm font-mono font-medium text-slate-600 border-t border-slate-200 pt-3 mt-2">
-                Subtotal: {formatCurrency(totalHotel)}
-            </div>
-        </div>
-
-        <!-- Local Transport -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Transport Lokal</Label>
-                </div>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.localTransport)} on:input={(e) => updateCost('localTransport', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-            <div class="space-y-2">
-                <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Transport Daerah</Label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.regionalTransport)} on:input={(e) => updateCost('regionalTransport', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-        </div>
-
-        <!-- Additional Components for Protokol -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-            <div class="space-y-2 pt-2">
-                <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Uang Representasi</Label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.uangRepresentasi)} on:input={(e) => updateCost('uangRepresentasi', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-            <div class="space-y-2 pt-2">
-                <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Sewa Kendaraan</Label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.sewaKendaraan)} on:input={(e) => updateCost('sewaKendaraan', e)} disabled={isReadOnly} class="pl-9 bg-slate-50 border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-2 pt-2">
-            <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
-            <Select bind:value={editingCosts.transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}">
+    <div class="grid gap-4 md:gap-5 p-3 md:p-6 overflow-y-auto overflow-x-hidden bg-slate-50/30 custom-scrollbar flex-1 min-h-0 pb-20">
+        
+        <!-- Mode Transportasi -->
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5">
+            <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
+            <Select bind:value={editingCosts.transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}">
                 <option value="Pesawat">Pesawat Udara</option>
                 <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
                 <option value="Kendaraan Dinas">Kendaraan Dinas</option>
             </Select>
         </div>
 
-        <!-- Document Upload / Review -->
-        <div class="space-y-2 pt-2 border-t border-slate-100 mt-4">
-            <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Dokumen, Kwitansi, & Tagihan</Label>
-            
-            {#if $userStore.role === 'protokol' && !isReadOnly}
-                <div class="border-2 {isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-dashed border-slate-200'} rounded-lg p-6 text-center hover:bg-slate-50 transition-colors"
-                    on:drop={handleDrop}
-                    on:dragover={handleDragOver}
-                    on:dragleave={handleDragLeave}
-                    role="region"
-                    aria-label="File upload area"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 {isDragging ? 'text-indigo-500' : 'text-slate-400'} mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        <!-- Uang Harian SBM -->
+        <div class="p-3 md:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2.5 md:space-y-3 w-full">
+            <div class="flex flex-wrap justify-between items-center gap-2">
+                <h4 class="text-xs md:text-sm font-semibold text-blue-800 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div class="text-sm text-slate-600">
-                        <label for="file-upload" class="relative cursor-pointer bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                            <span>Upload File</span>
-                            <input id="file-upload" name="file-upload" type="file" class="sr-only" multiple accept=".pdf,.jpg,.jpeg,.png" on:change={handleFileSelect}>
-                        </label>
-                        <p class="pl-1 text-slate-500 text-xs mt-1">PDF, PNG, JPG hingga 5MB (Bisa pilih lebih dari satu)</p>
-                    </div>
+                    Uang Harian (SBM)
+                </h4>
+                <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(totalDailyAllowance)}</span>
+            </div>
+            <div class="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-600 bg-white p-2 md:p-3 rounded-lg border border-blue-50/50 shadow-sm w-full">
+                <div class="flex-none pr-2 border-r border-slate-100">
+                    <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
+                    <span class="font-medium whitespace-nowrap">{days} Hari</span>
                 </div>
-            {:else if isReadOnly && (uploadedFiles.length === 0)}
-                 <div class="border border-slate-200 rounded-lg p-4 bg-slate-50 text-center text-xs text-slate-500">
-                    Tidak ada dokumen yang dilampirkan.
-                 </div>
-            {/if}
+                <div class="flex-1 min-w-0 overflow-hidden">
+                    <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi</span>
+                    <span class="font-medium truncate block w-full">{formatCurrency(sbmRate)} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
+                </div>
+            </div>
+        </div>
 
-            {#if uploadedFiles.length > 0}
-                <div class="mt-4 space-y-2">
-                    {#each uploadedFiles as file, index}
-                        <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <div class="flex-shrink-0">
-                                    {#if file.type?.includes('pdf') || file.name?.endsWith('.pdf')}
-                                        <svg class="h-6 w-6 text-rose-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                        </svg>
-                                    {:else}
-                                        <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    {/if}
-                                </div>
-                                <div class="flex-1 min-w-0 text-left">
-                                    <p class="text-sm font-medium text-slate-900 truncate" title={file.name}>{file.name}</p>
-                                    <p class="text-xs text-slate-500">{formatFileSize(file.size)}</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
-                                <button type="button" class="text-slate-400 hover:text-blue-600 transition-colors" title="Lihat Dokumen" on:click={() => viewFile(file)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </button>
-                                {#if !isReadOnly}
-                                    <button type="button" class="text-slate-400 hover:text-red-500 transition-colors" title="Hapus Dokumen" on:click={() => removeFile(index)}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                {/if}
+        <!-- Tiket & Boarding Pass -->
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
+            <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Tiket & Boarding Pass
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Tiket Berangkat -->
+                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
+                        {#if !editingCosts.ticketGoFile && !isReadOnly}
+                            <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Upload Kwitansi
+                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'ticketGoFile')} />
+                            </label>
+                        {/if}
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                        <Input type="text" value={formatInputNumber(editingCosts.ticketGo)} on:input={(e) => updateCost('ticketGo', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                    </div>
+                    {#if editingCosts.ticketGoFile}
+                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
+                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.ticketGoFile.name}</span>
+                            <div class="flex gap-2 shrink-0 text-[10px]">
+                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => viewFile(editingCosts.ticketGoFile)}>Lihat</button>
+                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketGoFile')}>Hapus</button>{/if}
                             </div>
                         </div>
-                    {/each}
+                    {/if}
+                </div>
+
+                <!-- Tiket Pulang -->
+                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Pulang</Label>
+                        {#if !editingCosts.ticketBackFile && !isReadOnly}
+                            <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Upload Kwitansi
+                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'ticketBackFile')} />
+                            </label>
+                        {/if}
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                        <Input type="text" value={formatInputNumber(editingCosts.ticketBack)} on:input={(e) => updateCost('ticketBack', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                    </div>
+                    {#if editingCosts.ticketBackFile}
+                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
+                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.ticketBackFile.name}</span>
+                            <div class="flex gap-2 shrink-0 text-[10px]">
+                                <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFile(editingCosts.ticketBackFile)}>Lihat</button>
+                                {#if !isReadOnly}<button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile('ticketBackFile')}>Hapus</button>{/if}
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Boarding Pass -->
+                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg md:col-span-2 flex flex-col justify-center">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Boarding Pass</Label>
+                        {#if !editingCosts.boardingPassFile && !isReadOnly}
+                            <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-white px-2 py-1.5 rounded border border-blue-200 shadow-sm transition-colors">
+                                Upload Boarding Pass (.pdf / gambar)
+                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'boardingPassFile')} />
+                            </label>
+                        {/if}
+                    </div>
+                    {#if editingCosts.boardingPassFile}
+                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md w-full">
+                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.boardingPassFile.name}</span>
+                            <div class="flex gap-2 shrink-0 text-[10px]">
+                                <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFile(editingCosts.boardingPassFile)}>Lihat</button>
+                                {#if !isReadOnly}<button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile('boardingPassFile')}>Hapus</button>{/if}
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+
+        <!-- Hotel -->
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
+            <div class="flex justify-between items-center mb-1">
+                <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5 md:gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Penginapan (Hotel)
+                </h4>
+                {#if !editingCosts.hotelFile && !isReadOnly}
+                    <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
+                        + Upload Kwitansi
+                        <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'hotelFile')} />
+                    </label>
+                {/if}
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">
+                <div class="space-y-1.5 col-span-1">
+                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Malam</Label>
+                    <Input type="number" bind:value={editingCosts.hotelDays} disabled={isReadOnly} class="h-9 md:h-10 text-sm bg-slate-50 border-slate-200 px-2 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                </div>
+                <div class="space-y-1.5 col-span-2">
+                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Rate per Malam</Label>
+                    <div class="relative">
+                        <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                        <Input type="text" value={formatInputNumber(editingCosts.hotelRate)} on:input={(e) => updateCost('hotelRate', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                    </div>
+                </div>
+            </div>
+            
+            {#if editingCosts.hotelFile}
+                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
+                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.hotelFile.name}</span>
+                    <div class="flex gap-2 shrink-0 text-[10px]">
+                        <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFile(editingCosts.hotelFile)}>Lihat</button>
+                        {#if !isReadOnly}<button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile('hotelFile')}>Hapus</button>{/if}
+                    </div>
+                </div>
+            {/if}
+
+            <div class="text-right text-xs md:text-sm font-mono font-medium text-slate-600 border-t border-slate-100 pt-2 mt-1">
+                Subtotal Hotel: <span class="text-slate-800">{formatCurrency(totalHotel)}</span>
+            </div>
+        </div>
+
+        <!-- Bukti Transportasi atau Rental -->
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
+            <div class="flex justify-between items-center mb-1">
+                <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Transport Darat / Rental
+                </h4>
+                {#if !editingCosts.transportFile && !isReadOnly}
+                    <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
+                        + Upload Bukti
+                        <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'transportFile')} />
+                    </label>
+                {/if}
+            </div>
+
+            <div class="space-y-1.5 w-full">
+                <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Total Biaya (Opsional)</Label>
+                <div class="relative">
+                    <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                    <Input type="text" value={formatInputNumber(editingCosts.transportAmount)} on:input={(e) => updateCost('transportAmount', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                </div>
+            </div>
+
+            {#if editingCosts.transportFile}
+                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
+                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.transportFile.name}</span>
+                    <div class="flex gap-2 shrink-0 text-[10px]">
+                        <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFile(editingCosts.transportFile)}>Lihat</button>
+                        {#if !isReadOnly}<button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile('transportFile')}>Hapus</button>{/if}
+                    </div>
                 </div>
             {/if}
         </div>
+
+        <!-- Add Cost / Additional Costs -->
+        <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Biaya Tambahan Lainnya
+                </h4>
+                {#if !isReadOnly}
+                    <Button size="sm" class="h-7 px-3 text-[10px] font-bold tracking-wider bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm transition-colors rounded-md flex items-center gap-1" on:click={addAdditionalCost}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        ADD COST
+                    </Button>
+                {/if}
+            </div>
+
+            <div class="space-y-3">
+                {#if editingCosts.additionalCosts && editingCosts.additionalCosts.length > 0}
+                    {#each editingCosts.additionalCosts as cost, index}
+                        <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
+                            {#if !isReadOnly}
+                                <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(index)}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            {/if}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="space-y-1.5">
+                                    <Label class="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Nama Biaya</Label>
+                                    <Input type="text" placeholder="Cth: Taksi Bandara" bind:value={cost.name} disabled={isReadOnly} class="h-8 text-xs bg-slate-50 border-slate-200" />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label class="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Nominal</Label>
+                                    <div class="relative">
+                                        <span class="absolute left-2 top-1.5 text-slate-400 text-xs">Rp</span>
+                                        <Input type="text" value={formatInputNumber(cost.amount)} on:input={(e) => updateAdditionalCostAmount(index, e)} disabled={isReadOnly} class="pl-7 h-8 text-xs bg-slate-50 border-slate-200" />
+                                    </div>
+                                </div>
+                                <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between mt-1 pt-2 border-t border-slate-100 gap-2">
+                                    <span class="text-[10px] font-medium text-slate-500">Kwitansi / Bukti (.pdf):</span>
+                                    {#if !cost.file && !isReadOnly}
+                                        <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 w-fit">
+                                            Upload Kwitansi
+                                            <input type="file" class="hidden" accept=".pdf" on:change={(e) => handleAdditionalFileSelect(e, index)} />
+                                        </label>
+                                    {:else if cost.file}
+                                        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 w-full sm:w-auto">
+                                            <span class="text-[10px] text-slate-700 truncate max-w-[150px]">{cost.file.name}</span>
+                                            <button type="button" class="text-[10px] text-blue-600 font-medium hover:underline ml-auto" on:click={() => viewFile(cost.file)}>Lihat</button>
+                                            {#if !isReadOnly}
+                                                <button type="button" class="text-[10px] text-red-500 font-medium hover:underline" on:click={() => { cost.file = null; editingCosts = editingCosts; }}>Hapus</button>
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                    <div class="text-right text-xs md:text-sm font-mono font-medium text-slate-600 pt-2">
+                        Subtotal Tambahan: <span class="text-slate-800">{formatCurrency(totalAdditional)}</span>
+                    </div>
+                {:else}
+                    <div class="text-center p-4 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500">
+                        Belum ada biaya tambahan diinputkan.
+                    </div>
+                {/if}
+            </div>
+        </div>
     </div>
 
-    <DialogFooter class="p-4 md:p-6 pt-0 bg-white shrink-0">
-        <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-4">
+    <DialogFooter class="p-4 md:p-6 pt-0 bg-white shrink-0 z-10 border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+        <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
             <div class="w-full sm:w-auto flex justify-between sm:block text-left">
-                <span class="block text-xs text-slate-500 self-center sm:self-auto">Total Estimasi</span>
-                <span class="text-lg font-bold text-blue-600">{formatCurrency(grandTotal)}</span>
+                <span class="block text-[10px] md:text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Estimasi</span>
+                <span class="text-xl font-bold text-blue-700 font-mono tracking-tight">{formatCurrency(grandTotal)}</span>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
-                <Button variant="outline" class="flex-1 sm:flex-none border-slate-200 text-slate-600" on:click={() => dispatch('close')}>Tutup</Button>
+                <Button variant="outline" class="flex-1 sm:flex-none h-10 border-slate-200 text-slate-600" on:click={() => dispatch('close')}>Tutup</Button>
                 {#if !isReadOnly}
-                    <Button class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={handleSave}>Simpan</Button>
+                    <Button class="flex-1 sm:flex-none h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={handleSave}>Simpan Rincian</Button>
                 {/if}
             </div>
         </div>

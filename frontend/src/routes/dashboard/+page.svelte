@@ -16,6 +16,7 @@
     import EmptyActivity from '$lib/components/dashboard/recent/EmptyActivity.svelte';
     
     import PieChart from '$lib/components/ui/charts/PieChart.svelte';
+    import TimelineCalendar from '$lib/components/dashboard/timeline/TimelineCalendar.svelte';
     
     // Helper for currency if not in utils
     function formatIDR(amount) {
@@ -64,7 +65,8 @@
     $: totalTrips = uniqueTrips.length;
     $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
     $: activeTrips = statsSource.filter(r => r.reportStatus !== 'Completed').length;
-    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted') && r.reportStatus !== 'Completed').length;        
+    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted') && r.reportStatus !== 'Completed').length;
+    $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
     
     // Recent Logic
     $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5);    
@@ -153,6 +155,21 @@
                 </div>
             </StatCard>
 
+            {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+            <StatCard 
+                title="Penugasan Baru" 
+                value={newAssignments} 
+                description="Menunggu konfirmasi Anda" 
+                iconColor="rose"
+            >
+                <div slot="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+            </StatCard>
+            {/if}
+
             <StatCard 
                 title="Laporan Pending" 
                 value={pendingReports} 
@@ -188,4 +205,11 @@
                 <EmptyActivity />
             {/if}
         </RecentActivityCard>
+
+        <!-- 4. Timeline Calendar (Protokol User) -->
+        {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+            <div class="pt-4">
+                <TimelineCalendar records={myUniqueTrips} />
+            </div>
+        {/if}
 </div>
