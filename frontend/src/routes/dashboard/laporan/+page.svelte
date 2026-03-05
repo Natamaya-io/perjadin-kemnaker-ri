@@ -18,6 +18,7 @@
     import DialogHeader from '$lib/components/ui/dialog/DialogHeader.svelte';
     import DialogTitle from '$lib/components/ui/dialog/DialogTitle.svelte';
     import TripStepper from '$lib/components/dashboard/roadmap/TripStepper.svelte';
+    import DocumentViewer from '$lib/components/ui/document-viewer/DocumentViewer.svelte';
 
     $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag');
 
@@ -31,6 +32,19 @@
     // Detail Modal State
     let isDetailModalOpen = false;
     let selectedDetailRecord = null;
+    
+    // Preview Modal State
+    let isPreviewOpen = false;
+    let previewUrl = '';
+    let previewType = '';
+    let previewFilename = '';
+
+    function openPreview(url, type, filename) {
+        previewUrl = url;
+        previewType = type;
+        previewFilename = filename;
+        isPreviewOpen = true;
+    }
 
     function openDetailModal(record) {
         selectedDetailRecord = record;
@@ -192,16 +206,16 @@
                                             </button>
                                         </a>
                                         {#if record.reportStatus === 'Completed'}
-                                            <button 
-                                                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors border border-blue-200 shadow-sm" 
+                                            <a
+                                                href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`}
+                                                target="_blank"
+                                                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors border border-blue-200 shadow-sm"
                                                 title="Cetak Laporan"
-                                                on:click={() => window.open(`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`, '_blank')}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2-2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                                 </svg>
-                                            </button>
-                                        {/if}
+                                            </a>                                        {/if}
                                         <button 
                                             class="text-slate-600 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-lg transition-colors border border-slate-200 shadow-sm" 
                                             title="Detail Selengkapnya"
@@ -285,15 +299,16 @@
                                 </button>
                             </a>
                             {#if record.reportStatus === 'Completed'}
-                                <button 
+                                <a
+                                    href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`}
+                                    target="_blank"
                                     class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2.5 rounded-lg transition-colors border border-blue-200 shadow-sm shrink-0 flex items-center justify-center" 
                                     title="Cetak Laporan"
-                                    on:click={() => window.open(`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`, '_blank')}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2-2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                     </svg>
-                                </button>
+                                </a>
                             {/if}
                         </div>
                         <button 
@@ -417,7 +432,7 @@
                                             <p class="font-bold text-slate-800 text-[13px] md:text-sm truncate">{emp.employee?.name || '-'}</p>
                                             <p class="text-[11px] text-slate-500 font-semibold truncate mt-0.5 uppercase tracking-wide">{emp.employee?.jabatan || '-'}</p>
                                         </div>
-                                        <span class="text-[10px] text-slate-400 font-mono font-bold bg-white px-2 py-1 rounded shadow-sm border border-slate-100 shrink-0">#{String(idx + 1).padStart(2, '0')}</span>
+                                        <span class="text-[10px] text-slate-400 font-mono font-bold bg-white px-2 py-1 rounded shadow-sm border border-slate-100 shrink-0">{String(idx + 1).padStart(3, '0')}</span>
                                     </div>
                                 {/each}
                             </div>
@@ -455,10 +470,10 @@
                                         <p class="text-xs md:text-sm font-medium text-slate-500">PDF Document &bull; Bukti Penugasan Resmi</p>
                                     </div>
                                 </div>
-                                <a href={`/uploads/${selectedDetailRecord.suratTugasPath}`} target="_blank" rel="noopener noreferrer" class="w-full md:w-auto shrink-0 inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 rounded-lg transition-all hover:-translate-y-0.5">
+                                <button type="button" on:click={() => openPreview(`/uploads/${selectedDetailRecord.suratTugasPath}`, 'pdf', selectedDetailRecord.suratTugasPath)} class="w-full md:w-auto shrink-0 inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 rounded-lg transition-all hover:-translate-y-0.5">
                                     Buka Dokumen
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                </a>
+                                </button>
                             </div>
                         {:else}
                             <div class="text-sm text-slate-500 font-medium flex flex-col items-center justify-center gap-4 p-8 md:p-10 bg-slate-50 border border-dashed border-slate-300 rounded-xl">
@@ -494,5 +509,34 @@
         <Button class="w-full md:w-auto min-w-[140px] h-12 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-slate-300 font-bold text-sm rounded-lg transition-colors shadow-sm" variant="outline" on:click={() => isDetailModalOpen = false}>
             Tutup Detail
         </Button>
+    </div>
+</Dialog>
+
+<!-- Document Preview Modal -->
+<Dialog open={isPreviewOpen} hideCloseButton={true} on:close={() => isPreviewOpen = false} class="!w-[95vw] md:!w-[90vw] !max-w-6xl !h-[90vh] md:!h-[85vh] !p-0 overflow-hidden rounded-xl shadow-2xl z-[60]">
+    <div class="h-full flex flex-col">
+        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-slate-50/50 flex-none">
+            <div class="flex flex-col min-w-0 pr-4">
+                <h3 class="text-base md:text-lg font-bold text-slate-800 tracking-tight truncate">Pratinjau Dokumen</h3>
+                {#if previewFilename}
+                    <p class="text-[10px] md:text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs md:max-w-md">{previewFilename}</p>
+                {/if}
+            </div>
+            <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-hidden bg-slate-100 relative p-0">
+            {#if previewUrl}
+                <DocumentViewer 
+                    url={previewUrl} 
+                    type={previewType} 
+                    filename={previewFilename} 
+                />
+            {/if}
+        </div>
     </div>
 </Dialog>

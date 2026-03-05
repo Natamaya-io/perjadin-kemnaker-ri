@@ -269,12 +269,12 @@
                                         </td>
                                         <td class="px-6 py-4 align-middle">
                                             <div class="flex items-center justify-end gap-2">
-                                                <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm" title="Cetak SPD" on:click={(e) => { e.stopPropagation(); generateSPD(empRecord); }}>
+                                                <a href={`/print?type=spd&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak SPD" on:click={(e) => e.stopPropagation()}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                                                </button>
-                                                <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm" title="Cetak Rincian" on:click={(e) => { e.stopPropagation(); generateRincian(empRecord); }}>
+                                                </a>
+                                                <a href={`/print?type=rincian&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak Rincian" on:click={(e) => e.stopPropagation()}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                                                </button>
+                                                </a>
                                                 {#if $userStore.role !== 'kasubag'}
                                                     {#if empRecord.status === 'Submitted'}
                                                         <button class="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
@@ -380,12 +380,12 @@
                                                 </span>
                                             </div>
                                             <div class="flex items-center gap-2 w-full">
-                                                <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm" title="Cetak SPD" on:click={(e) => { e.stopPropagation(); generateSPD(empRecord); }}>
+                                                <a href={`/print?type=spd&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak SPD" on:click={(e) => e.stopPropagation()}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                                                </button>
-                                                <button class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm" title="Cetak Rincian" on:click={(e) => { e.stopPropagation(); generateRincian(empRecord); }}>
+                                                </a>
+                                                <a href={`/print?type=rincian&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak Rincian" on:click={(e) => e.stopPropagation()}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                                                </button>
+                                                </a>
                                                 {#if $userStore.role !== 'kasubag'}
                                                     {#if empRecord.status === 'Submitted'}
                                                         <button class="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>

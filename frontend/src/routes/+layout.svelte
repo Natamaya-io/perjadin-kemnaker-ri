@@ -15,9 +15,10 @@
   import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
 
   $: activeRoute = $page.url?.pathname || '';
+  $: isBlankPage = activeRoute.startsWith('/login') || activeRoute.startsWith('/print');
   
   // Auth Redirect
-  $: if (!$userStore.loggedIn && !activeRoute.startsWith('/login')) {
+  $: if (!$userStore.loggedIn && !isBlankPage) {
       if (browser) goto('/login');
   }
   
@@ -65,7 +66,7 @@
 <Toaster />
 
 <div class="h-[100dvh] w-screen flex font-sans antialiased text-slate-900 overflow-hidden {activeRoute.startsWith('/login') ? 'bg-slate-900' : 'bg-slate-50'}">
-  {#if $userStore.loggedIn && !activeRoute.startsWith('/login')}
+  {#if $userStore.loggedIn && !isBlankPage}
     {#if mobileSidebarOpen}
         <div 
             class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden" 
@@ -80,13 +81,13 @@
   {/if}
 
   <div class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
-      {#if $userStore.loggedIn && !activeRoute.startsWith('/login')}
+      {#if $userStore.loggedIn && !isBlankPage}
         <MobileHeader on:toggleSidebar={toggleMobileSidebar} />
       {/if}
 
       <!-- Main Content Area (Scrollable) -->
       <main class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar w-full relative">
-        <div class="{$userStore.loggedIn && !activeRoute.startsWith('/login') ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''} min-h-full">
+        <div class="{$userStore.loggedIn && !isBlankPage ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''} min-h-full">
             {#key activeRoute}
                 <div in:fly={{ y: 10, duration: 300, delay: 150 }} out:fly={{ y: -10, duration: 150 }} class="min-h-full">
                     <slot />

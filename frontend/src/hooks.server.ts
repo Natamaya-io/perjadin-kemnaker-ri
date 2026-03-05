@@ -2,7 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (event.url.pathname.startsWith('/api')) {
+	if (event.url.pathname.startsWith('/api') || event.url.pathname.startsWith('/uploads')) {
 		const target = env.INTERNAL_API_URL || 'http://backend:8081';
 		const url = `${target}${event.url.pathname}${event.url.search}`;
 

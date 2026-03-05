@@ -1,4 +1,5 @@
 <script>
+    import { api } from '$lib/api';
     import { userStore, usersStore } from '$lib/stores/auth';
     import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
     import { recordsStore, addRecord } from '$lib/stores/records';
@@ -30,6 +31,7 @@
      *   startDate: string,
      *   endDate: string,
      *   suratTugas: File | null,
+     *   suratTugasNumber: string,
      *   location: string,
      *   province: string,
      *   purpose: string,
@@ -42,6 +44,7 @@
         startDate: '',
         endDate: '',
         suratTugas: null,
+        suratTugasNumber: '',
         location: '',
         province: '',
         purpose: 'persiapan', // Default
@@ -109,12 +112,26 @@
         // Map selected IDs back to full user objects
         const selectedUsers = protokolOfficers.filter(u => formData.selectedEmployees.includes(u.id));
 
+        let uploadedSuratTugasPath = null;
+        if (formData.suratTugas) {
+            try {
+                toast.info('Mengunggah Surat Tugas...');
+                const res = await api.uploadFile(formData.suratTugas);
+                uploadedSuratTugasPath = res.path;
+            } catch (e) {
+                toast.error('Gagal mengunggah Surat Tugas.');
+                isConfirmOpen = false;
+                return;
+            }
+        }
+
         const tripData = {
             spd: generateId(),
             email: $userStore.email,
             startDate: formData.startDate,
             endDate: formData.endDate,
-            suratTugasPath: formData.suratTugas ? formData.suratTugas.name : null,
+            suratTugasPath: uploadedSuratTugasPath,
+            suratTugasNumber: formData.suratTugasNumber,
             location: formData.location,
             province: formData.province,
             purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
@@ -264,6 +281,7 @@
                     bind:startDate={formData.startDate}
                     bind:endDate={formData.endDate}
                     bind:suratTugas={formData.suratTugas}
+                    bind:suratTugasNumber={formData.suratTugasNumber}
                     readonly={isReadOnly}
                 />
                 

@@ -80,7 +80,7 @@ func (r *Repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 }
 
 func (r *Repository) UpdateTravelRecord(record *models.TravelRecord) error {
-	return r.db.Save(record).Error
+	return r.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(record).Error
 }
 
 func (r *Repository) DeleteTravelRecord(id uuid.UUID) error {

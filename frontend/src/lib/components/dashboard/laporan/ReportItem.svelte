@@ -53,19 +53,25 @@
          </div>
          <div class="flex gap-2">
              {#if record.status === 'Approved' || record.status === 'Submitted'}
-                 <Button variant="outline" size="sm" class="h-8 p-2 rounded-md hover:bg-slate-100 text-slate-600 border-slate-200" title="Cetak SPD" on:click={() => window.open(`/print?type=spd&spd=${encodeURIComponent(record.spd)}`, '_blank')}>
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                 </Button>
-                 <Button variant="outline" size="sm" class="h-8 p-2 rounded-md hover:bg-slate-100 text-slate-600 border-slate-200" title="Cetak Rincian" on:click={() => window.open(`/print?type=rincian&spd=${encodeURIComponent(record.spd)}`, '_blank')}>
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="16" height="20" x="4" y="2" rx="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><line x1="8" x2="16" y1="6" y2="6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><line x1="16" x2="16" y1="14" y2="18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-                 </Button>
+                 <a href={`/print?type=spd&spd=${encodeURIComponent(record.spd)}`} target="_blank" class="contents">
+                     <Button variant="outline" size="sm" class="h-8 p-2 rounded-md hover:bg-slate-100 text-slate-600 border-slate-200" title="Cetak SPD">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                     </Button>
+                 </a>
+                 <a href={`/print?type=rincian&spd=${encodeURIComponent(record.spd)}`} target="_blank" class="contents">
+                     <Button variant="outline" size="sm" class="h-8 p-2 rounded-md hover:bg-slate-100 text-slate-600 border-slate-200" title="Cetak Rincian">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="16" height="20" x="4" y="2" rx="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><line x1="8" x2="16" y1="6" y2="6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><line x1="16" x2="16" y1="14" y2="18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                     </Button>
+                 </a>
              {/if}
              {#if record.reportStatus === 'Completed'}
-                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-full hover:bg-slate-200 text-slate-500" title="Cetak Laporan" on:click={() => window.open(`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`, '_blank')}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                </Button>
+                <a href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`} target="_blank" class="contents">
+                    <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-full hover:bg-slate-200 text-slate-500" title="Cetak Laporan">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2-2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                    </Button>
+                </a>
              {/if}
              <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`}>
                 <Button size="sm" class={cn("h-8 text-xs font-medium shadow-sm transition-all", 

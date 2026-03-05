@@ -57,7 +57,8 @@ type TravelRecord struct {
 	TotalCost    float64   `json:"totalCost"`
 
 	// Documents
-	SuratTugasPath string `json:"suratTugasPath"`
+	SuratTugasPath   string `json:"suratTugasPath"`
+	SuratTugasNumber string `json:"suratTugasNumber"`
 
 	// Relationships
 	Cost   *TravelCost   `gorm:"foreignKey:TravelRecordID;constraint:OnDelete:CASCADE" json:"costs,omitempty"`
@@ -75,13 +76,20 @@ type TravelCost struct {
 	LocalTransport     float64   `json:"localTransport"`
 	RegionalTransport  float64   `json:"regionalTransport"`
 	TransportMode      string    `json:"transportMode"`
+	TransportAmount    float64   `json:"transportAmount"`
 	
 	// Additional Costs
 	OtherCost     float64 `json:"otherCost"`
 	OtherCostDesc string  `json:"otherCostDesc"`
 
 	// Receipts and Documents
-	ReceiptFiles  datatypes.JSON `gorm:"type:jsonb" json:"receiptFiles"`
+	ReceiptFiles     datatypes.JSON `gorm:"type:jsonb" json:"receiptFiles"`
+	TicketGoFile     datatypes.JSON `gorm:"type:jsonb" json:"ticketGoFile"`
+	TicketBackFile   datatypes.JSON `gorm:"type:jsonb" json:"ticketBackFile"`
+	BoardingPassFile datatypes.JSON `gorm:"type:jsonb" json:"boardingPassFile"`
+	HotelFile        datatypes.JSON `gorm:"type:jsonb" json:"hotelFile"`
+	TransportFile    datatypes.JSON `gorm:"type:jsonb" json:"transportFile"`
+	AdditionalCosts  datatypes.JSON `gorm:"type:jsonb" json:"additionalCosts"`
 }
 
 type TravelReport struct {

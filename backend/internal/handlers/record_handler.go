@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
@@ -15,6 +19,46 @@ type RecordHandler struct {
 
 func NewRecordHandler(s *services.Service) *RecordHandler {
 	return &RecordHandler{Service: s}
+}
+
+func (h *RecordHandler) UploadFile(c echo.Context) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "File not found in request")
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer src.Close()
+
+	// Generate unique filename
+	ext := filepath.Ext(file.Filename)
+	filename := uuid.New().String() + "_" + time.Now().Format("20060102150405") + ext
+
+	// Ensure uploads directory exists
+	uploadDir := "uploads"
+	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create upload directory")
+	}
+
+	// Create destination file
+	dstPath := filepath.Join(uploadDir, filename)
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer dst.Close()
+
+	// Copy content
+	if _, err = io.Copy(dst, src); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"path": filename,
+	})
 }
 
 func (h *RecordHandler) CreateRecord(c echo.Context) error {

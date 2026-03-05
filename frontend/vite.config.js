@@ -9,6 +9,10 @@ export default defineConfig({
 			'/api': {
 				target: 'http://backend:8081',
 				changeOrigin: true
+			},
+			'/uploads': {
+				target: 'http://backend:8081',
+				changeOrigin: true
 			}
 		}
 	}

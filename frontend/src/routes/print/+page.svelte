@@ -1,14 +1,17 @@
 <script>
     import { page } from '$app/stores';
-    import { recordsStore } from '$lib/stores/records';
+    import { recordsStore, loadRecords } from '$lib/stores/records';
     import { onMount, tick } from 'svelte';
     import Button from '$lib/components/ui/button/Button.svelte';
     import { terbilang } from '$lib/utils/terbilang';
+    import { toast } from '$lib/stores/toast';
 
     let type = $page.url.searchParams.get('type'); // 'spd', 'rincian', 'laporan'
     let spd = $page.url.searchParams.get('spd');
     
-    $: record = $recordsStore.find(r => r.spd === spd);
+    $: allRecordsForSpd = $recordsStore.filter(r => r.spd === spd);
+    $: record = allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null;
+    $: allFiles = allRecordsForSpd.flatMap(r => r.reportData?.files || []);
 
     const defaultCosts = {
         dailyAllowanceDays: 0, dailyAllowanceRate: 0,
@@ -20,12 +23,16 @@
     $: costs = { ...defaultCosts, ...(record?.costs || {}) };
 
     let isPagedLoaded = false;
+    let pagedRendering = false;
+    let isDataLoaded = false;
+    let loadError = false;
 
     async function initPaged() {
         // @ts-ignore
-        if (!record || !window.Paged) return;
+        if (!window.Paged || pagedRendering || isPagedLoaded) return;
         
-        // Wait for DOM
+        pagedRendering = true;
+        // Wait for DOM to reflect the 'record' state (either found or not found)
         await tick();
         
         const source = document.querySelector('#source-content');
@@ -33,25 +40,42 @@
 
         if (source && target) {
             target.innerHTML = ''; // Clear previous
-            // @ts-ignore
-            const previewer = new window.Paged.Previewer();
-            
-            // Get all stylesheets to pass to Paged.js
-            const stylesheets = Array.from(document.styleSheets)
-                .map(sheet => sheet.href)
-                .filter(href => href);
+            try {
+                // @ts-ignore
+                const previewer = new window.Paged.Previewer();
+                
+                // Get all stylesheets to pass to Paged.js
+                const stylesheets = Array.from(document.styleSheets)
+                    .map(sheet => sheet.href)
+                    .filter(href => href);
 
-            await previewer.preview(source.innerHTML, stylesheets, target);
-            isPagedLoaded = true;
+                await previewer.preview(source.innerHTML, stylesheets, target);
+                isPagedLoaded = true;
+            } catch (e) {
+                console.error('PagedJS error:', e);
+                target.innerHTML = '<div class="p-8 text-red-500 font-bold text-center">Gagal memuat pratinjau cetak.</div>';
+                isPagedLoaded = true; // Set true so it stops loading state
+                loadError = true;
+            }
         }
+        pagedRendering = false;
     }
 
-    onMount(() => {
-        // Poll for Paged.js availability (since it's loaded via CDN async)
+    onMount(async () => {
+        try {
+            if ($recordsStore.length === 0) {
+                await loadRecords();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isDataLoaded = true;
+        }
+
+        // Poll for Paged.js availability AND data loaded state
         const interval = setInterval(() => {
             // @ts-ignore
-            if (window.Paged) {
-                clearInterval(interval);
+            if (window.Paged && isDataLoaded && !isPagedLoaded && !pagedRendering) {
                 initPaged();
             }
         }, 100);
@@ -59,8 +83,140 @@
         return () => clearInterval(interval);
     });
 
-    function print() {
-        window.print();
+    let isGeneratingPdf = false;
+
+    async function print() {
+        // Fallback to browser print if Gotenberg fails or record is missing
+        if (!record || loadError) {
+            window.print();
+            return;
+        }
+
+        isGeneratingPdf = true;
+        toast.info('Mohon tunggu, sedang memproses dan mencetak PDF resolusi tinggi...', 5000);
+        
+        try {
+            // Clone the entire current document to preserve all styles (Tailwind, Paged.js, etc.)
+            const htmlDoc = document.documentElement.cloneNode(true);
+            
+            // 1. Remove all script tags to prevent any re-hydration or JS execution in Gotenberg
+            const scripts = htmlDoc.querySelectorAll('script');
+            scripts.forEach(s => s.remove());
+
+            // 2. Isolate the exact Paged.js output
+            const pagedPages = htmlDoc.querySelector('.pagedjs_pages');
+            if (!pagedPages) throw new Error('Paged.js output not found');
+            
+            // Reconstruct a clean HTML document string from scratch containing ONLY the Paged.js output
+            const styles = Array.from(htmlDoc.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => el.outerHTML)
+                .join('\n');
+
+            // 3. Inject specific print overrides to ensure Gotenberg's Chromium engine prints the Paged.js DOM perfectly 1:1
+            const printOverrides = `
+            <style>
+                @media print {
+                    @page { 
+                        size: A4; 
+                        margin: 0 !important; 
+                    }
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                    }
+                    /* Force Paged.js container to expand fully */
+                    .pagedjs_pages { 
+                        width: 100% !important; 
+                        height: auto !important;
+                        transform: none !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important;
+                        display: block !important; 
+                        overflow: visible !important;
+                    }
+                    /* Force each Paged.js page to exactly match a physical printed page */
+                    .pagedjs_page { 
+                        margin: 0 !important; 
+                        padding: 0 !important;
+                        box-shadow: none !important; 
+                        border: none !important;
+                        page-break-after: always !important; 
+                        break-after: page !important; 
+                        position: relative !important;
+                    }
+                    /* The last page doesn't need a page break */
+                    .pagedjs_page:last-of-type {
+                        page-break-after: auto !important;
+                        break-after: auto !important;
+                    }
+                    /* Hide any visual artifacts Paged.js might leave */
+                    .pagedjs_marks { display: none !important; }
+                    /* Force each document section to absolutely start on a new page */
+                    .document-section {
+                        page-break-before: always !important;
+                        break-before: page !important;
+                    }
+                    /* Remove the forced break on the very first section so it doesn't leave a blank first page */
+                    .document-section:first-child {
+                        page-break-before: auto !important;
+                        break-before: auto !important;
+                    }
+                }
+            </style>`;
+
+            // Construct the ultimate exact HTML for Gotenberg
+            const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Dokumen - ${spd}</title>
+    ${styles}
+    ${printOverrides}
+</head>
+<body class="bg-white text-black" style="font-family: 'Times New Roman', Times, serif;">
+    ${pagedPages.outerHTML}
+</body>
+</html>`;
+            
+            const filename = `Dokumen-${type}-${spd}`;
+
+            const response = await fetch('/export-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ html, filename })
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal menghasilkan PDF dari server');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `${filename}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            toast.success('PDF berhasil diunduh!');
+        } catch (e) {
+            console.error(e);
+            toast.error('Gagal mengunduh PDF. Menggunakan print browser bawaan.');
+            window.print(); // Fallback
+        } finally {
+            isGeneratingPdf = false;
+        }
     }
 
     function handleBack() {
@@ -151,29 +307,73 @@
         /* Page Setup */
         @page {
             size: A4;
-            margin: 20mm;
+            margin: 15mm;
+        }
+
+        /* Document Section Breaks - CRITICAL FOR PAGED.JS TO PARSE */
+        .document-section {
+            break-before: page;
+            page-break-before: always;
+        }
+        .document-section:first-child {
+            break-before: auto;
+            page-break-before: auto;
         }
     </style>
 </svelte:head>
 
-<div class="min-h-screen font-serif text-black">
+<div class="min-h-screen text-black" style="font-family: 'Times New Roman', Times, serif;">
     <!-- Toolbar -->
-    <div class="print-toolbar fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur border-b border-slate-200 z-50 flex items-center justify-between px-4 sm:px-8 shadow-sm print:hidden">
-        <Button variant="outline" class="bg-white border-slate-300 hover:bg-slate-50 text-xs sm:text-sm px-3 sm:px-4" on:click={handleBack}>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span class="hidden sm:inline">Kembali</span>
-        </Button>
-        <div class="flex gap-2 sm:gap-4 items-center">
-            <span class="text-xs sm:text-sm font-medium text-slate-500 hidden sm:inline">{isPagedLoaded ? 'Siap Dicetak' : 'Memuat...'}</span>
-            <Button on:click={print} disabled={!isPagedLoaded} class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:opacity-50 text-xs sm:text-sm px-3 sm:px-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+    <div class="print-toolbar fixed top-0 left-0 right-0 h-[72px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 z-50 flex items-center justify-between px-4 sm:px-8 shadow-sm transition-all duration-300">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center justify-center h-10 w-10 rounded-full hover:bg-slate-100 transition-colors text-slate-600" on:click={handleBack} title="Kembali">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span class="hidden sm:inline">Cetak / Simpan PDF</span>
-                <span class="sm:hidden">PDF</span>
-            </Button>
+            </button>
+            <div class="hidden sm:flex flex-col">
+                <h2 class="text-sm font-bold text-slate-800 leading-tight">Pratinjau Dokumen</h2>
+                <p class="text-xs text-slate-500">{spd || 'Memuat...'}</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3 sm:gap-5">
+            {#if isPagedLoaded}
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200/50">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    Siap Diunduh
+                </div>
+            {:else}
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-xs font-medium border border-amber-200/50">
+                    <svg class="animate-spin h-3 w-3 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memuat Pratinjau...
+                </div>
+            {/if}
+
+            <button 
+                on:click={print} 
+                disabled={!isPagedLoaded || isGeneratingPdf} 
+                class="group relative flex items-center justify-center gap-2.5 h-10 px-5 sm:px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full font-medium text-sm shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden"
+            >
+                {#if isGeneratingPdf}
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Memproses PDF...</span>
+                {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:-translate-y-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Unduh PDF Resmi</span>
+                {/if}
+            </button>
         </div>
     </div>
 
@@ -184,350 +384,458 @@
                 <p class="text-lg font-medium">Data dokumen tidak ditemukan.</p>
             </div>
         {:else}
-            <!-- Kop Surat -->
-            <div class="flex items-start justify-center gap-6 border-b-[3px] border-black pb-4 mb-8">
-                <img src="/kemnaker-ri.webp" alt="Logo Kemnaker" class="h-24 w-auto object-contain" />
-                <div class="text-center flex-1 pt-1">
-                    <h2 class="text-xl font-bold uppercase tracking-wide leading-tight">Kementerian Ketenagakerjaan<br/>Republik Indonesia</h2>
-                    <h3 class="text-base font-bold uppercase mt-1">Biro Protokol dan Hubungan Masyarakat</h3>
-                    <p class="text-[11px] mt-1 leading-tight">Jalan Jenderal Gatot Subroto Kaveling 51, Jakarta Selatan 12950</p>
-                    <p class="text-[11px] leading-tight">Telepon: (021) 525 5733 • Faksimili: (021) 525 5733</p>
-                    <p class="text-[11px] leading-tight font-medium text-blue-900">Laman: www.kemnaker.go.id</p>
-                </div>
-            </div>
+            <!-- 1. LAPORAN SECTION -->
+            {#if type === 'laporan'}
+                <div class="document-section" style="page-break-after: always; break-after: page;">
+                    <!-- Kop Surat Laporan -->
+                    <div class="flex items-start justify-center gap-6 border-b-[3px] border-black pb-4 mb-8">
+                        <img src="/kemnaker-ri.webp" alt="Logo Kemnaker" class="h-24 w-auto object-contain" />
+                        <div class="text-center flex-1 pt-1">
+                            <h2 class="text-xl font-bold uppercase tracking-wide leading-tight text-black">KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA<br/>SEKRETARIAT JENDERAL</h2>
+                            <p class="text-[11px] mt-2 leading-tight text-black">Jalan Jenderal Gatot Subroto Kaveling 51 Jakarta Selatan 12950 Telepon (021) 5255685 , Faximile 5256559</p>
+                            <p class="text-[11px] leading-tight text-black">Laman: http: //www.kemnaker.go.id; Surel: persuratan@kemnaker.go.id</p>
+                        </div>
+                    </div>
 
-            {#if type === 'spd'}
-                <div class="space-y-6">
-                    <div class="grid grid-cols-2 text-sm">
-                        <div></div>
-                        <div class="space-y-1">
-                            <div class="flex">
-                                <span class="w-24">Lembar ke</span>
-                                <span>: 1</span>
+                    <div class="space-y-6">
+                        <div class="text-center space-y-1 mb-8">
+                            <h1 class="text-lg font-bold uppercase">LAPORAN</h1>
+                            <p class="text-base font-normal">Perjalanan Dinas ke {record.location}, {record.province}</p>
+                            <p class="text-base font-normal">{new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h3 class="font-bold mb-2 text-base">I. PENDAHULUAN</h3>
+                            <div class="flex text-sm leading-relaxed text-justify">
+                                <div class="w-24">Dasar</div>
+                                <div class="w-4">:</div>
+                                <div class="flex-1">
+                                    <ol class="list-decimal pl-4 space-y-1">
+                                        <li>Surat Tugas Kepala Biro Umum Sekretariat Jenderal Kementerian Ketenagakerjaan Nomor {record.suratTugasNumber || '1/ /UM.06.00/...../2026'} Tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { month: 'long'})} {new Date().getFullYear()} dalam rangka {record.purpose};</li>
+                                        <li>Peraturan Menteri Keuangan No. 119 Tahun 2023 tentang Perubahan atas PMK No. 113/PMK.05/2012 tentang Perjalanan Dinas dalam negeri bagi Pejabat Negara, Pegawai Negeri dan Pegawai Tidak Tetap;</li>
+                                        <li>Peraturan Menteri Ketenagakerjaan Nomor 20 Tahun 2024 tanggal 30 Desember 2024 tentang Organisasi dan Tata Kerja Kementerian Ketenagakerjaan;</li>
+                                        <li>Keputusan Menteri Ketenagakerjaan Nomor 460 tanggal 23 Desember 2025, tentang Pengangkatan Pejabat Perbendaharaan Negara selaku Kuasa Pengguna Anggaran (KPA)/Kuasa Pengguna Barang (KPB) Daftar Isian Pelaksanaan Anggaran (DIPA) Bidang Ketenagakerjaan pada Kantor Pusat Kementerian Ketenagakerjaan;</li>
+                                        <li>Surat Keputusan Kuasa Pengguna Anggaran (KPA) /Kuasa Pengguna Barang (KPB) Sekretariat Jenderal NOMOR 1/02/KU.04/I/2026 tanggal 2 Januari 2026 tentang Pejabat Pembuat Komitmen DIPA Unit Sekretariat Jenderal Kementerian Ketenagakerjaan Tahun 2026;</li>
+                                        <li>DIPA Unit Sekretariat Jenderal Kementerian Ketenagakerjaan Tahun 2026, NOMOR : SP DIPA-026.01.1.450938/2026 tanggal 1 Desember 2025.</li>
+                                    </ol>
+                                </div>
                             </div>
-                            <div class="flex">
-                                <span class="w-24">Kode No</span>
-                                <span>: ....................</span>
+                        </div>
+
+                        <div class="mb-4">
+                            <h3 class="font-bold mb-2 text-base">II. ISI LAPORAN</h3>
+                            <div class="text-justify whitespace-pre-wrap leading-relaxed text-sm px-8">
+                                {record.reportData?.text || 'Belum ada laporan yang disubmit oleh pegawai.'}
                             </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="font-bold mb-2 text-base">III. PENUTUP</h3>
+                            <div class="text-justify leading-relaxed text-sm px-8">
+                                Demikian laporan ini dibuat untuk digunakan sebagaimana mestinya.
+                            </div>
+                        </div>
+
+                        <div class="mt-8 flex justify-end text-sm break-inside-avoid">
+                            <div class="w-[350px]">
+                                <p class="mb-4">Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                                <p class="font-bold mb-4">Pelaksana Perjalanan Dinas</p>
+                                
+                                <table class="w-full">
+                                    <tbody>
+                                        {#each allRecordsForSpd as empRecord, i}
+                                            <tr>
+                                                <td class="w-8 align-top py-4">{i + 1}.</td>
+                                                <td class="align-top py-4">
+                                                    <span class="block">{empRecord.employee.name}</span>
+                                                    <span class="block">NIP. {empRecord.employee.nip}</span>
+                                                </td>
+                                                <td class="w-32 align-bottom py-4 text-right">{i + 1}......................</td>
+                                            </tr>
+                                        {/each}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {#if allFiles.length > 0}
+                    <div class="document-section" style="page-break-before: always; break-before: page;">
+                        <div class="text-center space-y-1 mb-8">
+                            <h1 class="text-lg font-bold uppercase">DOKUMENTASI</h1>
+                        </div>
+                        <div class="flex flex-col items-center gap-8">
+                            {#each allFiles as file, i}
+                                {#if file.type.startsWith('image/')}
+                                    <img src={file.data} alt="Dokumentasi {i + 1}" class="max-w-[80%] max-h-[500px] w-auto h-auto object-contain break-inside-avoid mb-8" />
+                                {/if}
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+
+                <!-- PHYSICAL SPACER -->
+                <div style="height: 100vh; display: block; width: 100%;"></div>
+            {/if}
+
+            <!-- 2. RINCIAN BIAYA SECTION -->
+            {#if type === 'rincian' || type === 'laporan'}
+                <div class="document-section" style="page-break-after: always; break-after: page;">
+                    <div class="space-y-6 px-4 py-8">
+                        <div class="text-center mb-8">
+                            <h1 class="text-xl font-bold uppercase">RINCIAN BIAYA PERJALANAN DINAS</h1>
+                        </div>
+
+                        <div class="space-y-1 text-sm mb-6">
                             <div class="flex">
-                                <span class="w-24">Nomor</span>
+                                <span class="w-48">Lampiran SPPD Nomor</span>
                                 <span>: {record.spd}</span>
                             </div>
+                            <div class="flex">
+                                <span class="w-48">Tanggal</span>
+                                <span>: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric'})}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="text-center space-y-1 mt-4">
-                        <h1 class="text-xl font-bold uppercase underline decoration-2 underline-offset-4">Surat Perjalanan Dinas (SPD)</h1>
-                    </div>
+                        <table class="w-full border-collapse border-2 border-black text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="border border-black p-2 text-center w-10 font-bold">NO</th>
+                                    <th class="border border-black p-2 text-center font-bold">PERINCIAN BIAYA</th>
+                                    <th class="border border-black p-2 text-center w-48 font-bold">JUMLAH</th>
+                                    <th class="border border-black p-2 text-center w-[30%] font-bold">KETERANGAN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border-l border-r border-black p-2 text-center font-bold align-top">A</td>
+                                    <td class="border-l border-r border-black p-2 font-bold align-top">Transport PP</td>
+                                    <td class="border-l border-r border-black p-2 align-top"></td>
+                                    <td class="border-l border-r border-black p-2 align-top" rowspan="5">
+                                        Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} ke {record.location}, Provinsi {record.province} selama {Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} ({terbilang(Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}) Hari pada tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})};
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-l border-r border-black p-2 text-center align-top">1</td>
+                                    <td class="border-l border-r border-black p-2 align-top">
+                                        <div class="space-y-1">
+                                            <div>- Tiket Pesawat/Kereta/Bus</div>
+                                            <div>- Transport Lokal Jakarta</div>
+                                            <div>- Transport Daerah</div>
+                                        </div>
+                                    </td>
+                                    <td class="border-l border-r border-black p-2 align-top">
+                                        <div class="space-y-1 flex flex-col h-full">
+                                            <div class="flex justify-between">
+                                                <span>Rp</span>
+                                                <span>{new Intl.NumberFormat('id-ID').format(Number(costs.ticketGo) + Number(costs.ticketBack))}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>Rp</span>
+                                                <span>{new Intl.NumberFormat('id-ID').format(costs.localTransport)}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>Rp</span>
+                                                <span>{new Intl.NumberFormat('id-ID').format(costs.regionalTransport)}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-l border-r border-black p-2 text-center align-top">2</td>
+                                    <td class="border-l border-r border-black p-2 align-top">
+                                        <div class="space-y-1">
+                                            <div>- Uang Harian</div>
+                                            <div class="pl-3">{costs.dailyAllowanceDays} hari x Rp {new Intl.NumberFormat('id-ID').format(costs.dailyAllowanceRate)}</div>
+                                        </div>
+                                    </td>
+                                    <td class="border-l border-r border-black p-2 align-bottom pb-3">
+                                        <div class="flex justify-between">
+                                            <span>Rp</span>
+                                            <span>{new Intl.NumberFormat('id-ID').format(costs.dailyAllowanceDays * costs.dailyAllowanceRate)}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-l border-r border-black p-2 text-center align-top"></td>
+                                    <td class="border-l border-r border-black p-2 align-top">
+                                        <div class="space-y-1">
+                                            <div>- Penginapan</div>
+                                            <div class="pl-3">{costs.hotelDays} hari x Rp {new Intl.NumberFormat('id-ID').format(costs.hotelRate)}</div>
+                                        </div>
+                                    </td>
+                                    <td class="border-l border-r border-black p-2 align-bottom pb-3">
+                                        <div class="flex justify-between">
+                                            <span>Rp</span>
+                                            <span>{new Intl.NumberFormat('id-ID').format(costs.hotelDays * costs.hotelRate)}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-l border-r border-black p-2 text-center align-top"></td>
+                                    <td class="border-l border-r border-black p-2 align-top pb-8"></td>
+                                    <td class="border-l border-r border-black p-2 align-top"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-black p-2 font-bold text-center" colspan="2">JUMLAH :</td>
+                                    <td class="border border-black p-2 font-bold">
+                                        <div class="flex justify-between">
+                                            <span>Rp</span>
+                                            <span>{new Intl.NumberFormat('id-ID').format(record.totalCost)}</span>
+                                        </div>
+                                    </td>
+                                    <td class="border border-black p-2 bg-slate-50"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-black p-3" colspan="4">
+                                        <div class="flex gap-4">
+                                            <span class="font-bold whitespace-nowrap">Terbilang :</span> 
+                                            <span class="uppercase font-bold">{terbilang(record.totalCost)} RUPIAH</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <div class="space-y-2 mt-8 text-sm leading-relaxed">
-                        <div class="flex">
-                            <span class="w-8 font-bold">1.</span>
-                            <span class="w-1/3">Pejabat Pembuat Komitmen</span>
-                            <span class="flex-1">: Kepala Biro Protokol dan Humas</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">2.</span>
-                            <span class="w-1/3">Nama Pegawai yang diperintah</span>
-                            <span class="flex-1 font-semibold uppercase">: {record.employee.name}</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">3.</span>
-                            <div class="w-1/3 space-y-1">
-                                <p>a. Pangkat dan Golongan</p>
-                                <p>b. Jabatan/Instansi</p>
-                                <p>c. Tingkat Biaya Perjalanan Dinas</p>
+                        <div class="mt-8 grid grid-cols-2 gap-12 text-sm break-inside-avoid">
+                            <div class="space-y-24">
+                                <div>
+                                    <p>Telah dibayar sejumlah</p>
+                                    <p>Rp. <span class="underline decoration-black underline-offset-4">{new Intl.NumberFormat('id-ID').format(record.totalCost)}</span></p>
+                                    <p class="font-bold mt-4 text-center">Bendahara Pengeluaran Pembantu<br/>Biro Umum Tahun {new Date().getFullYear()}</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="font-bold underline decoration-black">Ardimas Perdana Putra</p>
+                                    <p>NIP. 19970722 201812 1 002</p>
+                                </div>
                             </div>
-                            <div class="flex-1 space-y-1">
-                                <p>: {#if record.employee.pangkat && record.employee.pangkat !== '-' && record.employee.golongan && record.employee.golongan !== '-'}{record.employee.pangkat} ({record.employee.golongan}){:else}{record.employee.jabatan || '-'}{/if}</p>
-                                <p>: {record.employee.jabatan || 'Staf Protokol'} / Kementerian Ketenagakerjaan</p>
-                                <p>: {record.employee.tingkatBiaya || 'C'}</p>
-                            </div>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">4.</span>
-                            <span class="w-1/3">Maksud Perjalanan Dinas</span>
-                            <span class="flex-1 text-justify">: {record.purpose}</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">5.</span>
-                            <span class="w-1/3">Alat Angkutan yang dipergunakan</span>
-                            <span class="flex-1">: {costs.transportMode}</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">6.</span>
-                            <div class="w-1/3 space-y-1">
-                                <p>a. Tempat Berangkat</p>
-                                <p>b. Tempat Tujuan</p>
-                            </div>
-                            <div class="flex-1 space-y-1">
-                                <p>: Jakarta</p>
-                                <p>: {record.location}, {record.province}</p>
+                            <div class="space-y-24">
+                                <div class="text-center">
+                                    <p>Jakarta, <span class="inline-block w-40 border-b border-black"></span></p>
+                                    <p class="mt-4">Telah menerima jumlah uang sebesar</p>
+                                    <p>Rp. <span class="underline decoration-black underline-offset-4">{new Intl.NumberFormat('id-ID').format(record.totalCost)}</span></p>
+                                    <p class="font-bold mt-4">Yang menerima,</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="font-bold underline decoration-black uppercase">{record.employee.name}</p>
+                                    <p>NIP. {record.employee.nip || '-'}</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">7.</span>
-                            <div class="w-1/3 space-y-1">
-                                <p>a. Lama Perjalanan Dinas</p>
-                                <p>b. Tanggal Berangkat</p>
-                                <p>c. Tanggal Harus Kembali</p>
-                            </div>
-                            <div class="flex-1 space-y-1">
-                                <p>: {Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} (....................) hari</p>
-                                <p>: {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                                <p>: {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                            </div>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">8.</span>
-                            <span class="w-1/3">Pembebanan Anggaran</span>
-                            <span class="flex-1">: DIPA Biro Protokol dan Humas TA {new Date().getFullYear()}</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-8 font-bold">9.</span>
-                            <span class="w-1/3">Keterangan Lain-lain</span>
-                            <span class="flex-1">: -</span>
-                        </div>
-                    </div>
-
-                    <div class="mt-16 grid grid-cols-2 gap-8 break-inside-avoid">
-                        <div></div> <!-- Empty left column -->
-                        <div class="text-center space-y-24">
-                            <div>
-                                <p>Dikeluarkan di: Jakarta</p>
-                                <p>Pada tanggal: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                                <p class="font-bold mt-4">Pejabat Pembuat Komitmen</p>
-                            </div>
-                            <div>
-                                <p class="font-bold underline uppercase">Nama Pejabat</p>
-                                <p>NIP. 19700101 199002 1 001</p>
+                        
+                        <div class="border-t-2 border-black mt-8 pt-4 break-inside-avoid text-sm">
+                            <p class="mb-4">PERHITUNGAN SPPD RAMPUNG</p>
+                            <div class="grid grid-cols-2 gap-12">
+                                 <div>
+                                    <div class="flex">
+                                        <span class="w-48">Ditetapkan sejumlah</span>
+                                        <span>: Rp {new Intl.NumberFormat('id-ID').format(record.totalCost)} ,-</span>
+                                    </div>
+                                    <div class="flex">
+                                        <span class="w-48">Yang telah dibayar semula</span>
+                                        <span>: Rp 0 ,-</span>
+                                    </div>
+                                    <div class="flex">
+                                        <span class="w-48">Sisa kurang/lebih</span>
+                                        <span>: Rp {new Intl.NumberFormat('id-ID').format(record.totalCost)} ,-</span>
+                                    </div>
+                                </div>
+                                <div class="text-center space-y-24 mt-[-1.5rem]">
+                                    <div>
+                                        <p class="font-bold">Pejabat Pembuat Komitmen<br/>Biro Umum Sekretariat Jenderal</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold underline decoration-black">Arief Hafidiyanto</p>
+                                        <p>NIP. 19720827 200312 1 002</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-            {:else if type === 'rincian'}
-                <div class="space-y-6">
-                    <div class="text-center space-y-1 mb-8">
-                        <h1 class="text-xl font-bold uppercase underline decoration-2 underline-offset-4">Rincian Biaya Perjalanan Dinas</h1>
-                        <p class="text-sm font-medium">Lampiran SPD Nomor: {record.spd}</p>
+                <!-- PHYSICAL SPACER IF LAPORAN IS FULL (Meaning SPD is next) -->
+                {#if type === 'laporan'}
+                    <div style="height: 100vh; display: block; width: 100%;"></div>
+                {/if}
+            {/if}
+
+            <!-- 3. SURAT PERJALANAN DINAS (SPD) SECTION -->
+            {#if type === 'spd' || type === 'laporan'}
+                <div class="document-section px-8 py-10" style="page-break-after: always; break-after: page;">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="font-bold text-sm">SEKRETARIAT JENDERAL</div>
+                        <div class="text-sm">
+                            <table class="w-full">
+                                <tbody>
+                                    <tr>
+                                        <td class="w-24 font-bold">Lembar Ke</td>
+                                        <td class="w-4">:</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="w-24 font-bold">Kode Nomor</td>
+                                        <td class="w-4">:</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="w-24 font-bold tracking-widest">Nomor</td>
+                                        <td class="w-4">:</td>
+                                        <td>{record.spd}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <div class="space-y-1 text-sm mb-6">
-                         <div class="flex">
-                            <span class="w-48">Tanggal</span>
-                            <span>: {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</span>
-                         </div>
+                    <div class="text-center space-y-1 mb-6">
+                        <h1 class="text-base font-bold uppercase underline decoration-2 underline-offset-4">SURAT PERJALANAN DINAS (SPD)</h1>
                     </div>
 
-                    <table class="w-full border-collapse border border-black text-sm">
-                        <thead>
-                            <tr class="bg-slate-100">
-                                <th class="border border-black p-2 text-center w-12">No</th>
-                                <th class="border border-black p-2 text-left">Perincian Biaya</th>
-                                <th class="border border-black p-2 text-right w-40">Jumlah</th>
-                                <th class="border border-black p-2 text-left w-1/3">Keterangan</th>
-                            </tr>
-                        </thead>
+                    <table class="w-full border-collapse border-2 border-black text-sm">
                         <tbody>
                             <tr>
-                                <td class="border border-black p-2 text-center align-top">1</td>
-                                <td class="border border-black p-2 align-top">
-                                    <div class="font-bold mb-1">Biaya Transportasi</div>
-                                    <div class="pl-4 text-xs space-y-1">
-                                        <div class="flex justify-between">
-                                            <span>Tiket Berangkat</span>
-                                            <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.ticketGo)}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Tiket Pulang</span>
-                                            <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.ticketBack)}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="border border-black p-2 text-right align-top font-medium">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(costs.ticketGo) + Number(costs.ticketBack))}
-                                </td>
-                                <td class="border border-black p-2 text-xs align-top">Sesuai bukti tiket terlampir.</td>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">1.</td>
+                                <td class="border-b border-r border-black p-2 align-top w-[35%]">Pejabat berwenang yang memberi perintah</td>
+                                <td class="border-b border-black p-2 align-top">KPA Biro Umum Sekretariat Jenderal Kemnaker</td>
                             </tr>
                             <tr>
-                                <td class="border border-black p-2 text-center align-top">2</td>
-                                <td class="border border-black p-2 align-top">
-                                    <div class="font-bold mb-1">Uang Harian</div>
-                                    <div class="pl-4 text-xs">
-                                        {costs.dailyAllowanceDays} hari x {new Intl.NumberFormat('id-ID').format(costs.dailyAllowanceRate)}
-                                    </div>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">2.</td>
+                                <td class="border-b border-r border-black p-2 align-top">Nama /NIP pegawai yang diperintahkan</td>
+                                <td class="border-b border-black p-2 align-top">
+                                    <span class="inline-block min-w-[200px]">{record.employee.name}</span> / NIP. {record.employee.nip || '-'}
                                 </td>
-                                <td class="border border-black p-2 text-right align-top font-medium">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.dailyAllowanceDays * costs.dailyAllowanceRate)}
-                                </td>
-                                <td class="border border-black p-2 text-xs align-top">Uang saku, uang makan, dan transport lokal.</td>
                             </tr>
                             <tr>
-                                <td class="border border-black p-2 text-center align-top">3</td>
-                                <td class="border border-black p-2 align-top">
-                                    <div class="font-bold mb-1">Biaya Penginapan</div>
-                                    <div class="pl-4 text-xs">
-                                        {costs.hotelDays} malam x {new Intl.NumberFormat('id-ID').format(costs.hotelRate)}
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">3.</td>
+                                <td class="border-b border-r border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-4">a.</span> Pangkat dan Golongan</div>
+                                        <div class="flex"><span class="w-4">b.</span> Jabatan / Instansi</div>
+                                        <div class="flex"><span class="w-4">c.</span> Tingkat Biaya Perjalanan Dinas</div>
                                     </div>
                                 </td>
-                                <td class="border border-black p-2 text-right align-top font-medium">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.hotelDays * costs.hotelRate)}
-                                </td>
-                                <td class="border border-black p-2 text-xs align-top">Sesuai bill hotel terlampir (30%).</td>
-                            </tr>
-                            <tr>
-                                <td class="border border-black p-2 text-center align-top">4</td>
-                                <td class="border border-black p-2 align-top">
-                                    <div class="font-bold mb-1">Lain-lain</div>
-                                    <div class="pl-4 text-xs space-y-1">
-                                        {#if costs.localTransport > 0}
-                                        <div class="flex justify-between">
-                                            <span>Transport Lokal</span>
-                                            <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.localTransport)}</span>
-                                        </div>
-                                        {/if}
-                                        {#if costs.regionalTransport > 0}
-                                        <div class="flex justify-between">
-                                            <span>Transport Daerah</span>
-                                            <span>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costs.regionalTransport)}</span>
-                                        </div>
-                                        {/if}
+                                <td class="border-b border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-6">a.</span> {#if record.employee.pangkat && record.employee.pangkat !== '-' && record.employee.golongan && record.employee.golongan !== '-'}{record.employee.pangkat} ({record.employee.golongan}){:else}{record.employee.jabatan || '-'}{/if}</div>
+                                        <div class="flex"><span class="w-6">b.</span> {record.employee.jabatan || 'Staf Protokol'} / Kementerian Ketenagakerjaan</div>
+                                        <div class="flex"><span class="w-6">c.</span> {record.employee.tingkatBiaya || 'C'}</div>
                                     </div>
                                 </td>
-                                <td class="border border-black p-2 text-right align-top font-medium">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(costs.localTransport) + Number(costs.regionalTransport))}
-                                </td>
-                                <td class="border border-black p-2 text-xs align-top">Dukungan transport kegiatan.</td>
-                            </tr>
-                            <tr class="bg-slate-50">
-                                <td class="border border-black p-2 font-bold text-center" colspan="2">Jumlah Total</td>
-                                <td class="border border-black p-2 text-right font-bold text-base">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost)}
-                                </td>
-                                <td class="border border-black p-2 bg-slate-50"></td>
                             </tr>
                             <tr>
-                                <td class="border border-black p-3" colspan="4">
-                                    <span class="font-bold">Terbilang:</span> 
-                                    <span class="italic capitalize bg-slate-100 px-2 py-0.5 rounded">{terbilang(record.totalCost)} Rupiah</span>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">4</td>
+                                <td class="border-b border-r border-black p-2 align-top">
+                                    <div class="flex"><span class="w-4">a.</span> Maksud Perjalanan Dinas</div>
                                 </td>
+                                <td class="border-b border-black p-2 align-top">
+                                    Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} di {record.location}, Provinsi {record.province};
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">5.</td>
+                                <td class="border-b border-r border-black p-2 align-top">Alat Angkutan yang dipergunakan</td>
+                                <td class="border-b border-black p-2 align-top">{costs.transportMode}</td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">6.</td>
+                                <td class="border-b border-r border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-4">a.</span> Tempat berangkat</div>
+                                        <div class="flex"><span class="w-4">b.</span> Tempat tujuan</div>
+                                    </div>
+                                </td>
+                                <td class="border-b border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-6">a.</span> Jakarta</div>
+                                        <div class="flex"><span class="w-6">b.</span> {record.location}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">7.</td>
+                                <td class="border-b border-r border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-4">a.</span> Lamanya Perjalanan Dinas</div>
+                                        <div class="flex"><span class="w-4">b.</span> Tanggal berangkat</div>
+                                        <div class="flex"><span class="w-4">c.</span> Tanggal harus kembali</div>
+                                    </div>
+                                </td>
+                                <td class="border-b border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-6">a.</span> {Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} ({terbilang(Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}) Hari</div>
+                                        <div class="flex"><span class="w-6">b.</span> {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</div>
+                                        <div class="flex"><span class="w-6">c.</span> {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">8.</td>
+                                <td class="border-b border-r border-black p-2 align-top">Pengikut : Nama</td>
+                                <td class="border-b border-black p-2 align-top text-center">Keterangan</td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top"></td>
+                                <td class="border-b border-r border-black p-2 align-top h-16">
+                                    <div class="space-y-1">
+                                        <div>1.</div>
+                                        <div>2.</div>
+                                        <div>3.</div>
+                                    </div>
+                                </td>
+                                <td class="border-b border-black p-2 align-top"></td>
+                            </tr>
+                            <tr>
+                                <td class="border-b border-r border-black p-2 text-center w-8 align-top">9.</td>
+                                <td class="border-b border-r border-black p-2 align-top">
+                                    <div class="space-y-1">
+                                        <div>Pembebanan Anggaran</div>
+                                        <div class="flex"><span class="w-4">a.</span> Instansi</div>
+                                        <div class="flex"><span class="w-4">b.</span> Mata Anggaran</div>
+                                    </div>
+                                </td>
+                                <td class="border-b border-black p-2 align-bottom">
+                                    <div class="space-y-1">
+                                        <div class="flex"><span class="w-6">a.</span> KEMENTERIAN KETENAGAKERJAAN R.I.</div>
+                                        <div class="flex"><span class="w-6">b.</span> 026.01.WA.2158.EBA.994.002  S  524111</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border-r border-black p-2 text-center w-8 align-top">10.</td>
+                                <td class="border-r border-black p-2 align-top h-12">Keterangan</td>
+                                <td class="border-black p-2 align-top"></td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <div class="mt-16 grid grid-cols-2 gap-12 text-center text-sm break-inside-avoid">
-                        <div class="space-y-20">
-                            <div>
-                                <p>Telah dibayar sejumlah</p>
-                                <p class="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost)}</p>
-                            </div>
-                            <div>
-                                <p class="font-bold">Bendahara Pengeluaran</p>
-                                <br/><br/><br/>
-                                <p class="font-bold underline">(......................................)</p>
-                                <p>NIP. ..................................</p>
-                            </div>
-                        </div>
-                        <div class="space-y-20">
-                            <div>
-                                <p>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                                <p>Telah menerima jumlah uang sebesar</p>
-                                <p class="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost)}</p>
-                            </div>
-                            <div>
-                                <p class="font-bold">Yang Menerima</p>
-                                <br/><br/><br/>
-                                <p class="font-bold underline">{record.employee.name}</p>
-                                <p>NIP. {record.employee.nip}</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="border-t-2 border-black border-dashed mt-8 pt-4 text-center break-inside-avoid">
-                        <p class="font-bold mb-8">PERHITUNGAN RAMPUNG</p>
-                        <div class="grid grid-cols-2 gap-12 text-sm">
-                             <div class="space-y-20">
+                    <div class="mt-8 grid grid-cols-2 gap-8 text-sm break-inside-avoid">
+                        <div></div> <!-- Empty left column -->
+                        <div class="flex flex-col">
+                            <table class="w-full mb-4">
+                                <tbody>
+                                    <tr>
+                                        <td class="w-32">Dikeluarkan di</td>
+                                        <td class="w-4">:</td>
+                                        <td>Jakarta</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="w-32">Pada Tanggal</td>
+                                        <td class="w-4">:</td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="text-center space-y-24">
                                 <div>
-                                    <p>Ditetapkan sejumlah</p>
-                                    <p class="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost)}</p>
+                                    <p class="font-bold">Pejabat Pembuat Komitmen<br/>Biro Umum Sekretariat Jenderal</p>
                                 </div>
                                 <div>
-                                    <p class="font-bold">Pejabat Pembuat Komitmen</p>
-                                    <br/><br/><br/>
-                                    <p class="font-bold underline">(......................................)</p>
-                                    <p>NIP. ..................................</p>
+                                    <p class="font-bold underline decoration-black">Arief Hafidiyanto</p>
+                                    <p>NIP. 19720827 200312 1 002</p>
                                 </div>
                             </div>
-                            <div class="space-y-20">
-                                <div>
-                                    <p>Yang telah dibayar semula</p>
-                                    <p class="font-bold">Rp 0</p>
-                                </div>
-                                <div>
-                                    <p>Sisa Kurang / Lebih</p>
-                                    <p class="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.totalCost)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            {:else if type === 'laporan'}
-                <div class="space-y-6 font-sans">
-                    <div class="text-center space-y-1 mb-8 border-b pb-4">
-                        <h1 class="text-xl font-bold uppercase">Laporan Pelaksanaan Perjalanan Dinas</h1>
-                        <p class="text-sm font-normal text-slate-500 mt-1">Berdasarkan SPD Nomor: {record.spd}</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mb-6 text-sm bg-slate-50 p-4 rounded-lg border border-slate-200">
-                        <div>
-                            <span class="font-bold block text-slate-700">Nama Pelaksana:</span>
-                            <span class="text-lg">{record.employee.name}</span>
-                            <span class="block text-xs text-slate-500">NIP. {record.employee.nip}</span>
-                            <span class="block text-xs text-slate-500 mt-1">{record.employee.pangkat && record.employee.pangkat !== '-' ? record.employee.pangkat : (record.employee.jabatan || '')}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-bold block text-slate-700">Waktu & Tempat:</span>
-                            <span>{new Date(record.startDate).toLocaleDateString('id-ID')} s.d {new Date(record.endDate).toLocaleDateString('id-ID')}</span>
-                            <span class="block text-sm font-semibold text-blue-800 mt-1">{record.location}, {record.province}</span>
-                        </div>
-                    </div>
-
-                    <div class="mb-8">
-                        <h3 class="font-bold border-b border-slate-300 mb-2 pb-1 text-lg">I. Hasil Kegiatan</h3>
-                        <div class="text-justify whitespace-pre-wrap leading-relaxed text-sm">
-                            {record.reportData?.text || 'Belum ada laporan yang disubmit oleh pegawai.'}
-                        </div>
-                    </div>
-
-                    <div class="mb-8 break-inside-avoid">
-                        <h3 class="font-bold border-b border-slate-300 mb-4 pb-1 text-lg">II. Dokumentasi</h3>
-                        {#if record.reportData?.files && record.reportData.files.length > 0}
-                            <div class="grid grid-cols-2 gap-4">
-                                {#each record.reportData.files as file}
-                                    {#if file.type.startsWith('image/')}
-                                        <div class="border p-2 rounded-lg break-inside-avoid">
-                                            <img src={file.data} alt={file.name} class="w-full h-48 object-cover mb-2 rounded bg-slate-100"/>
-                                            <p class="text-[10px] text-center text-slate-500">{file.name} - {new Date(file.timestamp).toLocaleDateString()}</p>
-                                        </div>
-                                    {/if}
-                                {/each}
-                            </div>
-                        {:else}
-                            <div class="p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                                <p class="text-sm text-slate-500 italic">Tidak ada dokumentasi terlampir.</p>
-                            </div>
-                        {/if}
-                    </div>
-
-                    <div class="mt-16 flex justify-end text-center break-inside-avoid">
-                        <div>
-                            <p>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                            <p class="font-bold">Pelaksana Perjalanan Dinas</p>
-                            <br/><br/><br/>
-                            <p class="font-bold underline uppercase">{record.employee.name}</p>
-                            <p>NIP. {record.employee.nip}</p>
                         </div>
                     </div>
                 </div>

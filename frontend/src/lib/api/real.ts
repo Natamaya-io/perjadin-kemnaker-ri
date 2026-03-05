@@ -114,6 +114,31 @@ export class RealApiClient implements ApiClient {
         });
     }
 
+    // --- Files ---
+    async uploadFile(file: File): Promise<{path: string}> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const headers: HeadersInit = {
+            ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
+        };
+
+        const response = await fetch(`${BASE_URL}/upload`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 && this.unauthorizedHandler) {
+                this.unauthorizedHandler();
+            }
+            throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
     // --- Records ---
     async getRecords(filters?: Record<string, any>): Promise<TravelRecord[]> {
         const query = filters ? '?' + new URLSearchParams(filters).toString() : '';

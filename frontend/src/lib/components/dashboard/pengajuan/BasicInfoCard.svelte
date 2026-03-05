@@ -7,6 +7,7 @@
     export let endDate = '';
     /** @type {File | null} */
     export let suratTugas = null;
+    export let suratTugasNumber = '';
     export let readonly = false;
 
     // File handling logic
@@ -162,6 +163,11 @@
                     {/if}
                 </div>
             </div>
+        </div>
+        
+        <div class="space-y-2">
+            <Label class="text-slate-600">Nomor Surat Tugas <span class="text-xs text-slate-400 font-normal">(Opsional)</span></Label>
+            <Input type="text" bind:value={suratTugasNumber} placeholder="Cth: 1/B/2026/01" class="h-11 {readonly ? 'bg-slate-50 opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
         </div>
     </div>
 </div>

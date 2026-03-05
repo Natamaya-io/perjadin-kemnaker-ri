@@ -40,31 +40,8 @@
         return acc;
     }, {}));
 
-    // Time based calculations for trends
-    $: currentMonthTrips = uniqueTrips.filter(r => new Date(r.startDate).getMonth() === new Date().getMonth() && new Date(r.startDate).getFullYear() === new Date().getFullYear());
-    $: lastMonthTrips = uniqueTrips.filter(r => {
-        const d = new Date(r.startDate);
-        const now = new Date();
-        return d.getMonth() === (now.getMonth() - 1 === -1 ? 11 : now.getMonth() - 1) && d.getFullYear() === (now.getMonth() - 1 === -1 ? now.getFullYear() - 1 : now.getFullYear());
-    });
-
-    // Total Trips Trend
-    $: tripsTrend = lastMonthTrips.length === 0 
-        ? (currentMonthTrips.length > 0 ? '+100%' : '0%') 
-        : `${currentMonthTrips.length >= lastMonthTrips.length ? '+' : ''}${Math.round(((currentMonthTrips.length - lastMonthTrips.length) / lastMonthTrips.length) * 100)}%`;
-    $: tripsTrendDirection = currentMonthTrips.length > lastMonthTrips.length ? 'up' : (currentMonthTrips.length < lastMonthTrips.length ? 'down' : 'neutral');
-
-    // Total Cost Trend
-    $: currentMonthCost = currentMonthTrips.reduce((acc, r) => acc + (r.totalCost || 0), 0);
-    $: lastMonthCost = lastMonthTrips.reduce((acc, r) => acc + (r.totalCost || 0), 0);
-    $: costTrend = lastMonthCost === 0 
-        ? (currentMonthCost > 0 ? '+100%' : '0%')
-        : `${currentMonthCost >= lastMonthCost ? '+' : ''}${Math.round(((currentMonthCost - lastMonthCost) / lastMonthCost) * 100)}%`;
-    $: costTrendDirection = currentMonthCost > lastMonthCost ? 'up' : (currentMonthCost < lastMonthCost ? 'down' : 'neutral');
-
     $: totalTrips = uniqueTrips.length;
-    $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
-    $: activeTrips = statsSource.filter(r => r.reportStatus !== 'Completed').length;
+    $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);    $: activeTrips = statsSource.filter(r => r.reportStatus !== 'Completed').length;
     $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted') && r.reportStatus !== 'Completed').length;
     $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
     
@@ -120,8 +97,6 @@
                 value={totalTrips} 
                 description="Kegiatan tercatat tahun ini" 
                 iconColor="blue"
-                trend={tripsTrend}
-                trendDirection={tripsTrendDirection}
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,8 +111,6 @@
                 value={formatIDR(totalCost)} 
                 description="Realisasi biaya perjalanan" 
                 iconColor="emerald"
-                trend={costTrend}
-                trendDirection={costTrendDirection}
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

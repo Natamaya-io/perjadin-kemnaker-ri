@@ -40,10 +40,31 @@ services:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:
       - redis
+    volumes:
+      - backend_uploads:/app/uploads
     restart: unless-stopped
     # Using 'host.docker.internal' requires extra_hosts on Linux, usually automatic on Desktop
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # ==============================================
+  # Gotenberg Service (PDF Generation)
+  # ==============================================
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: ${COMPOSE_PROJECT_NAME}_gotenberg
+    shm_size: "2g"
+    ports:
+      - "3000" # Internal port mapping, accessible by frontend/backend. Host port not strictly needed unless debugging.
+    restart: unless-stopped
+    command:
+      - "gotenberg"
+      - "--api-port=3000"
+      - "--api-timeout=300s"
+      - "--chromium-disable-routes=false"
+      - "--chromium-disable-web-security"
+      - "--chromium-ignore-certificate-errors"
+      - "--chromium-allow-insecure-localhost"
 
   # ==============================================
   # Frontend Service (SvelteKit)
@@ -60,6 +81,8 @@ services:
       - INTERNAL_API_URL=${INTERNAL_API_URL}
       # Vite specific env vars if needed
       - VITE_API_URL=${PUBLIC_API_URL}
+      # Allow large payload uploads (50MB)
+      - BODY_SIZE_LIMIT=52428800
     ports:
       - "${FRONTEND_PORT}:3000"
     depends_on:
@@ -68,4 +91,6 @@ services:
 
 volumes:
   redis_data:
+    driver: local
+  backend_uploads:
     driver: local

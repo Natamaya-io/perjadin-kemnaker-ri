@@ -42,6 +42,7 @@ export interface TravelRecord {
     startDate: string;
     endDate: string;
     suratTugasPath?: string;
+    suratTugasNumber?: string;
     location: string;
     province: string;
     type?: string;
@@ -67,6 +68,9 @@ export interface ApiClient {
     createUser(user: Omit<User, 'id'>): Promise<User>;
     updateUser(id: string | number, user: Partial<User>): Promise<User>;
     deleteUser(id: string | number): Promise<void>;
+
+    // Files
+    uploadFile(file: File): Promise<{path: string}>;
 
     // Records
     getRecords(filters?: Record<string, any>): Promise<TravelRecord[]>;

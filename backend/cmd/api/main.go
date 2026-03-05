@@ -107,11 +107,19 @@ func main() {
 	// employeeHandler := handlers.NewEmployeeHandler(svc) // Removed
 	userHandler := handlers.NewUserHandler(svc)
 
+	// Ensure uploads directory exists
+	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+		sugar.Warnf("Failed to create uploads directory: %v", err)
+	}
+
 	// 7. Setup Echo
 	e := echo.New()
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
+
+	// Static files
+	e.Static("/uploads", "uploads")
 
 	// 8. Routes
 	api := e.Group("/api/v1")
@@ -125,6 +133,8 @@ func main() {
 	protected := api.Group("")
 	protected.Use(middleware.JWTMiddleware(cfg, repo))
 	{
+		protected.POST("/upload", recordHandler.UploadFile)
+		
 		protected.GET("/records", recordHandler.GetRecords)
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)

@@ -44,7 +44,8 @@
         province: '',
         purpose: '',
         stakeholder: '',
-        agenda: ''
+        agenda: '',
+        suratTugasNumber: ''
     };
     
     $: if (open && !prevOpen) {
@@ -65,7 +66,8 @@
                 province: firstRecord.province || '',
                 purpose: firstRecord.purpose || '',
                 stakeholder: firstRecord.stakeholder || '',
-                agenda: firstRecord.agenda || ''
+                agenda: firstRecord.agenda || '',
+                suratTugasNumber: firstRecord.suratTugasNumber || ''
             };
             
             selectedEmployeeIds = records.map(r => r.employee?.id).filter(Boolean);
@@ -77,7 +79,7 @@
     }
     
     $: baseRecord = records[0] || {};
-    $: isEditable = baseRecord.status === 'Draft' || baseRecord.status === 'Submitted';
+    $: isEditable = ((baseRecord.status === 'Draft' || baseRecord.status === 'Submitted' || baseRecord.status === 'In Progress') && $userStore?.role !== 'kasubag') || $userStore?.role === 'super_admin';
     
     // Calculate SBM Cost
     $: selectedProvinceData = provinces.find(p => p.name === formData.province);
@@ -259,6 +261,11 @@
                                         Tidak ada Surat Tugas yang dilampirkan.
                                     </div>
                                 {/if}
+                            </div>
+
+                            <div class="space-y-1.5 pt-2">
+                                <Label class="text-slate-600 text-xs">Nomor Surat Tugas</Label>
+                                <Input bind:value={formData.suratTugasNumber} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder="Cth: 1/B/2026/01" />
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 <script>
     import { page } from '$app/stores';
-    import { recordsStore, updateRecord } from '$lib/stores/records';
+    import { recordsStore, updateRecord, loadRecords } from '$lib/stores/records';
     import { userStore } from '$lib/stores/auth';
     import { provincesStore } from '$lib/stores/master-data';
     import { toast } from '$lib/stores/toast';
@@ -203,12 +203,18 @@
         isPreviewOpen = true;
     }
 
-    onMount(() => {
-        if (record && record.reportData) {
-            reportText = record.reportData.text;
-            uploadedFiles = record.reportData.files || [];
-            sppdFile = record.reportData.sppdFile || null;
-            suratTugasFile = record.reportData.suratTugasFile || null;
+    let isDataLoaded = false;
+    $: if (record && record.reportData && !isDataLoaded) {
+        reportText = record.reportData.text || '';
+        uploadedFiles = record.reportData.files || [];
+        sppdFile = record.reportData.sppdFile || null;
+        suratTugasFile = record.reportData.suratTugasFile || null;
+        isDataLoaded = true;
+    }
+
+    onMount(async () => {
+        if ($recordsStore.length === 0) {
+            await loadRecords();
         }
     });
 
@@ -225,24 +231,23 @@
                 return;
             }
 
-            if (!file.type.startsWith('image/') && file.type !== 'application/pdf' && file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                toast.error(`File ${file.name} tidak didukung. Hanya gambar, PDF, dan Word yang diperbolehkan.`);
+            if (!file.type.startsWith('image/')) {
+                toast.error(`File ${file.name} tidak didukung. Hanya file gambar yang diperbolehkan untuk dokumentasi.`);
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                uploadedFiles = [...uploadedFiles, { 
-                    name: file.name, 
-                    type: file.type, 
-                    data: e.target.result, 
+                uploadedFiles = [...uploadedFiles, {
+                    name: file.name,
+                    type: file.type,
+                    data: e.target.result,
                     timestamp: new Date(file.lastModified).toISOString()
                 }];
             };
             reader.readAsDataURL(file);
         });
     }
-
     /** @param {Event} event */
     function handleFileChange(event) {
         // @ts-ignore
@@ -336,7 +341,7 @@
 
         const words = reportText.trim().split(/\s+/).length;
         if (words > 200) {
-            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 200 kata.`);
+            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 2000 kata.`);
             return;
         }
 
@@ -350,6 +355,12 @@
         try {
             const updatePromises = recordsList.map(r => {
                 const local = localCosts[r.id];
+                const costsToSave = { ...(local?.costs || r.costs) };
+                
+                // Inject daily allowance details automatically
+                costsToSave.dailyAllowanceDays = getDays(r);
+                costsToSave.dailyAllowanceRate = getSbmRate(r);
+
                 return updateRecord(r.id, {
                     reportStatus: 'Completed',
                     reportData: {
@@ -359,7 +370,7 @@
                         suratTugasFile: suratTugasFile,
                         submittedAt: new Date().toISOString()
                     },
-                    costs: local?.costs || r.costs,
+                    costs: costsToSave,
                     totalCost: local?.totalCost || r.totalCost
                 });
             });
@@ -400,7 +411,7 @@
                 </div>
                 <div>
                     <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NO. SURAT TUGAS</span>
-                    <span class="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">1/B/{record.spd.split('-')[1] || '2024'}/01</span>
+                    <span class="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">{record.suratTugasNumber || '-'}</span>
                 </div>
                 <div>
                     <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NO. SPD</span>
@@ -489,7 +500,7 @@
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                         <Label class="text-lg font-bold text-slate-800">Isi Laporan Kegiatan</Label>
                         <span class="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-full border border-slate-200">
-                            {reportText.trim().split(/\s+/).filter(w => w.length > 0).length} / 200 Kata
+                            {reportText.trim().split(/\s+/).filter(w => w.length > 0).length} / 2000 Kata
                         </span>
                     </div>
                     <Textarea 
@@ -499,7 +510,7 @@
                         bind:value={reportText} 
                         disabled={$userStore.role === 'kasubag'}
                     />
-                    <p class="text-xs text-slate-400 italic">Maksimal 200 kata. Gunakan bahasa yang baku dan jelas.</p>
+                    <p class="text-xs text-slate-400 italic">Maksimal 2000 kata. Gunakan bahasa yang baku dan jelas.</p>
                 </div>
 
                 <!-- File Upload Section -->
@@ -524,14 +535,14 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             <p class="mb-1 text-sm text-slate-500"><span class="font-semibold text-blue-600">Klik untuk unggah</span> atau seret file ke sini</p>
-                            <p class="text-xs text-slate-400">PDF, PNG, JPG, Word (Maks. 10MB)</p>
+                            <p class="text-xs text-slate-400">PNG, JPG (Maks. 10MB)</p>
                         </div>
                         {#if isDragging}
                             <div class="absolute inset-0 flex items-center justify-center bg-blue-50/90 rounded-xl pointer-events-none">
                                 <p class="text-blue-600 font-bold text-lg animate-pulse">Lepaskan file di sini</p>
                             </div>
                         {/if}
-                        <input type="file" multiple accept="image/*,application/pdf,.docx" class="hidden" on:change={handleFileChange} />
+                        <input type="file" multiple accept="image/*" class="hidden" on:change={handleFileChange} />
                     </label>
                     {/if}
                     
@@ -689,7 +700,7 @@
                                                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.ticketGoFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
-                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => viewFilePreview(localCosts[empId].costs.ticketGoFile)}>Lihat</button>
+                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.ticketGoFile)}>Lihat</button>
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'ticketGoFile')}>Hapus</button>
                                                             </div>
                                                         </div>
@@ -718,8 +729,8 @@
                                                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.ticketBackFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
-                                                                <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFilePreview(localCosts[empId].costs.ticketBackFile)}>Lihat</button>
-                                                                <button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile(empId, 'ticketBackFile')}>Hapus</button>
+                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.ticketBackFile)}>Lihat</button>
+                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'ticketBackFile')}>Hapus</button>
                                                             </div>
                                                         </div>
                                                     {/if}
@@ -743,8 +754,8 @@
                                                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md w-full">
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.boardingPassFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
-                                                                <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFilePreview(localCosts[empId].costs.boardingPassFile)}>Lihat</button>
-                                                                <button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile(empId, 'boardingPassFile')}>Hapus</button>
+                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.boardingPassFile)}>Lihat</button>
+                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'boardingPassFile')}>Hapus</button>
                                                             </div>
                                                         </div>
                                                     {/if}
@@ -793,8 +804,8 @@
                                                 <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
                                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.hotelFile.name}</span>
                                                     <div class="flex gap-2 shrink-0 text-[10px]">
-                                                        <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFilePreview(localCosts[empId].costs.hotelFile)}>Lihat</button>
-                                                        <button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile(empId, 'hotelFile')}>Hapus</button>
+                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.hotelFile)}>Lihat</button>
+                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'hotelFile')}>Hapus</button>
                                                     </div>
                                                 </div>
                                             {/if}
@@ -835,8 +846,8 @@
                                                 <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
                                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.transportFile.name}</span>
                                                     <div class="flex gap-2 shrink-0 text-[10px]">
-                                                        <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFilePreview(localCosts[empId].costs.transportFile)}>Lihat</button>
-                                                        <button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeSpecificFile(empId, 'transportFile')}>Hapus</button>
+                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.transportFile)}>Lihat</button>
+                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'transportFile')}>Hapus</button>
                                                     </div>
                                                 </div>
                                             {/if}
@@ -879,7 +890,7 @@
                                                                     </div>
                                                                 </div>
                                                                 <div class="md:col-span-2 mt-1 pt-3 border-t border-slate-100">
-                                                                    <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (.pdf)</span>
+                                                                    <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (PDF/Gambar)</span>
                                                                     {#if !cost.file}
                                                                         <label class="flex flex-col items-center justify-center w-full h-14 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all group">
                                                                             <div class="flex flex-col items-center justify-center pt-1 pb-1 pointer-events-none">
@@ -888,13 +899,15 @@
                                                                                 </svg>
                                                                                 <p class="text-[9px] text-slate-500 text-center px-2"><span class="font-semibold text-blue-600">Klik unggah</span> atau seret file</p>
                                                                             </div>
-                                                                            <input type="file" class="hidden" accept=".pdf" on:change={(e) => handleAdditionalFileSelect(empId, e, index)} />
+                                                                            <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleAdditionalFileSelect(empId, e, index)} />
                                                                         </label>
                                                                     {:else}
                                                                         <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-200 w-full">
-                                                                            <span class="text-[10px] text-slate-700 truncate max-w-[150px]">{cost.file.name}</span>
-                                                                            <button type="button" class="text-[10px] text-blue-600 font-medium hover:underline ml-auto" on:click={() => viewFilePreview(cost.file)}>Lihat</button>
-                                                                            <button type="button" class="text-[10px] text-red-500 font-medium hover:underline" on:click={() => removeAdditionalFile(empId, index)}>Hapus</button>
+                                                                            <span class="text-[10px] text-slate-700 truncate max-w-[150px] flex-1">{cost.file.name}</span>
+                                                                            <div class="flex gap-2 shrink-0 text-[10px]">
+                                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalFile(empId, index)}>Hapus</button>
+                                                                            </div>
                                                                         </div>
                                                                     {/if}
                                                                 </div>
@@ -949,17 +962,17 @@
     {/if}
 
     <!-- Document Preview Modal -->
-    <Dialog open={isPreviewOpen} on:close={() => isPreviewOpen = false} class="max-w-5xl h-[85vh] p-0 overflow-hidden">
+    <Dialog open={isPreviewOpen} hideCloseButton={true} on:close={() => isPreviewOpen = false} class="!w-[95vw] md:!w-[90vw] !max-w-6xl !h-[90vh] md:!h-[85vh] !p-0 overflow-hidden rounded-xl shadow-2xl z-[60]">
         <div class="h-full flex flex-col">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex-none">
-                <div class="flex flex-col">
-                    <h3 class="text-lg font-bold text-slate-800 tracking-tight">Pratinjau Dokumen</h3>
+            <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-slate-50/50 flex-none">
+                <div class="flex flex-col min-w-0 pr-4">
+                    <h3 class="text-base md:text-lg font-bold text-slate-800 tracking-tight truncate">Pratinjau Dokumen</h3>
                     {#if previewFile}
-                        <p class="text-xs text-slate-500 truncate max-w-md">{previewFile.name}</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs md:max-w-md">{previewFile.name}</p>
                     {/if}
                 </div>
-                <button class="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors" on:click={() => isPreviewOpen = false}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>

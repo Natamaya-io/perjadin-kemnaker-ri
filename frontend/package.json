@@ -20,7 +20,7 @@
 		"bits-ui": "2.16.1",
 		"docx-preview": "0.3.7",
 		"lucide-svelte": "0.575.0",
-		"pdfjs-dist": "5.4.624",
+		"pdfjs-dist": "5.5.207",
 		"postcss": "8.5.6",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.3.6",
