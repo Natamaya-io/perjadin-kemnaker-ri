@@ -41,8 +41,21 @@
     }, {}));
 
     $: totalTrips = uniqueTrips.length;
-    $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);    $: activeTrips = statsSource.filter(r => r.reportStatus !== 'Completed').length;
-    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted') && r.reportStatus !== 'Completed').length;
+    $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
+    
+    $: activeTrips = uniqueTrips.filter(r => {
+        if (!r.startDate || !r.endDate) return false;
+        const now = new Date();
+        const start = new Date(r.startDate);
+        const end = new Date(r.endDate);
+        // Reset time for accurate day comparison
+        now.setHours(0,0,0,0);
+        start.setHours(0,0,0,0);
+        end.setHours(0,0,0,0);
+        return now >= start && now <= end && (r.status === 'Approved' || r.status === 'Submitted');
+    }).length;
+    
+    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft') && r.reportStatus !== 'Completed').length;
     $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
     
     // Recent Logic
@@ -90,6 +103,56 @@
         </WelcomeActions>
     </WelcomeBanner>
 
+    <!-- 1.5 Alert Penugasan Baru (Khusus Protokol) -->
+    {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+        {#if newAssignments > 0}
+        <div class="bg-gradient-to-r from-rose-500 to-pink-600 rounded-2xl p-6 shadow-lg shadow-rose-500/20 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden mb-8 animate-in fade-in slide-in-from-bottom-2">
+            <div class="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+            
+            <div class="relative z-10 flex flex-col sm:flex-row items-center text-center sm:text-left gap-5 w-full md:w-auto">
+                <div class="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shrink-0 border border-white/20 shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-xl sm:text-2xl font-bold tracking-tight mb-1">Anda memiliki {newAssignments} Penugasan Baru!</h3>
+                    <p class="text-rose-100 text-sm">Ada perjalanan dinas baru yang menunggu konfirmasi dan tindakan dari Anda.</p>
+                </div>
+            </div>
+            
+            <div class="relative z-10 w-full md:w-auto shrink-0 mt-2 md:mt-0">
+                <a href="/dashboard/laporan?from=notif" class="inline-flex w-full md:w-auto items-center justify-center px-6 py-3 text-sm font-bold tracking-wide text-rose-600 bg-white hover:bg-rose-50 rounded-xl shadow-md shadow-black/10 transition-all hover:scale-105 active:scale-95">
+                    Lihat Detail Penugasan
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {:else}
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 shadow-sm">
+            <div class="flex items-center gap-4 text-center sm:text-left">
+                <div class="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-700">Tidak ada penugasan baru</h3>
+                    <p class="text-slate-500 text-sm mt-0.5">Anda sudah menyelesaikan semua konfirmasi penugasan saat ini.</p>
+                </div>
+            </div>
+            <div class="w-full sm:w-auto">
+                <a href="/dashboard/laporan" class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors">
+                    Lihat Riwayat Perjalanan
+                </a>
+            </div>
+        </div>
+        {/if}
+    {/if}
+
     <!-- 2. Stats Section (Organism) -->
     <StatsGrid>
             <StatCard 
@@ -97,6 +160,12 @@
                 value={totalTrips} 
                 description="Kegiatan tercatat tahun ini" 
                 iconColor="blue"
+                bgClass="bg-gradient-to-br from-blue-500 to-indigo-600 border-transparent shadow-lg shadow-blue-500/20"
+                textColorClass="text-white"
+                titleColorClass="text-blue-100"
+                descColorClass="text-blue-50"
+                blobClass="bg-white/10 group-hover:bg-white/20"
+                iconContainerClass="bg-white/20 text-white"
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,12 +174,19 @@
                 </div>
             </StatCard>
 
-            {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+            {#if \.role === 'super_admin' || \.role === 'keuangan' || \.role === 'kasubag'}
             <StatCard 
                 title="Total Anggaran" 
                 value={formatIDR(totalCost)} 
                 description="Realisasi biaya perjalanan" 
                 iconColor="emerald"
+                bgClass="bg-gradient-to-br from-emerald-500 to-teal-600 border-transparent shadow-lg shadow-emerald-500/20"
+                textColorClass="text-white"
+                titleColorClass="text-emerald-100"
+                descColorClass="text-emerald-50"
+                blobClass="bg-white/10 group-hover:bg-white/20"
+                iconContainerClass="bg-white/20 text-white"
+                isSecret={true}
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,11 +196,18 @@
             </StatCard>
             {/if}
 
+            {#if \.role !== 'keuangan'}
             <StatCard 
                 title="Sedang Berjalan" 
                 value={activeTrips} 
                 description="Tim aktif di lapangan" 
                 iconColor="amber"
+                bgClass="bg-gradient-to-br from-amber-500 to-orange-600 border-transparent shadow-lg shadow-amber-500/20"
+                textColorClass="text-white"
+                titleColorClass="text-amber-100"
+                descColorClass="text-amber-50"
+                blobClass="bg-white/10 group-hover:bg-white/20"
+                iconContainerClass="bg-white/20 text-white"
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -133,44 +216,37 @@
                 </div>
             </StatCard>
 
-            {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
-            <StatCard 
-                title="Penugasan Baru" 
-                value={newAssignments} 
-                description="Menunggu konfirmasi Anda" 
-                iconColor="rose"
-            >
-                <div slot="icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                </div>
-                <div slot="action">
-                    {#if newAssignments > 0}
-                    <a href="/dashboard/pengajuan" class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold tracking-wide text-white bg-rose-500 hover:bg-rose-600 rounded-lg shadow-sm transition-colors shadow-rose-500/20 hover:shadow-rose-500/40">
-                        LIHAT <span class="sr-only">Penugasan Baru</span>
-                    </a>
-                    {/if}
-                </div>
-            </StatCard>
-            {/if}
-
-            <StatCard 
-                title="Laporan Pending" 
-                value={pendingReports} 
-                description="Menunggu kelengkapan dokumen" 
+            <StatCard
+                title="Laporan Pending"
+                value={pendingReports}
+                description="Menunggu kelengkapan dokumen"
                 iconColor="purple"
+                bgClass="bg-gradient-to-br from-purple-500 to-fuchsia-600 border-transparent shadow-lg shadow-purple-500/20"
+                textColorClass="text-white"
+                titleColorClass="text-purple-100"
+                descColorClass="text-purple-50"
+                blobClass="bg-white/10 group-hover:bg-white/20"
+                iconContainerClass="bg-white/20 text-white"
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </div>
+            
+                <div slot="action">
+                    {#if pendingReports > 0 && \.role !== 'super_admin' && \.role !== 'keuangan' && \.role !== 'kasubag'}
+                    <a href="/dashboard/laporan?from=notif" class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold tracking-wide text-white bg-purple-500 hover:bg-purple-600 rounded-lg shadow-sm transition-colors shadow-purple-500/20 hover:shadow-purple-500/40">
+                        LIHAT <span class="sr-only">Laporan Pending</span>
+                    </a>
+                    {/if}
+                </div>
             </StatCard>
+            {/if}
         </StatsGrid>
         
         <!-- 2.5 Charts Section (New) -->
-        {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+        {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
             <PieChart title="Status Pengajuan" data={statusData} />
             <PieChart title="Status Laporan" data={reportData} />

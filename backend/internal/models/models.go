@@ -52,6 +52,7 @@ type TravelRecord struct {
 	Stakeholder  string    `json:"stakeholder"`
 	Agenda       string    `json:"agenda"`
 	Status       string    `gorm:"default:'Draft'" json:"status"`           // Draft, Submitted, Approved, Rejected
+        IsViewed     bool      `gorm:"default:false" json:"isViewed"`
 	ReportStatus string    `gorm:"default:'Pending'" json:"reportStatus"`       // Pending, Completed
 	PaymentStatus string   `gorm:"default:'Unpaid'" json:"paymentStatus"`   // Unpaid, Paid
 	TotalCost    float64   `json:"totalCost"`

@@ -1,6 +1,8 @@
 <script>
     import { recordsStore, updateRecord } from '$lib/stores/records';
     import { userStore } from '$lib/stores/auth';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import { toast } from '$lib/stores/toast';
     import { getStatusBadge } from '$lib/utils';
     
@@ -140,6 +142,11 @@
     function generateRincian(record) {
         window.open(`/print?type=rincian&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
     }
+    onMount(() => {
+        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag' && $userStore.role !== 'keuangan') {
+            goto('/dashboard');
+        }
+    });
 </script>
 
 <div class="space-y-6 pb-20">

@@ -11,23 +11,27 @@ export const POST: RequestHandler = async ({ request }) => {
 
         // Replace relative URLs so Gotenberg can resolve them internally via the frontend container
         let processedHtml = html;
-        processedHtml = processedHtml.replace(/src="\/([^"]+)"/g, 'src="http://frontend:3000/$1"');
-        processedHtml = processedHtml.replace(/href="\/([^"]+)"/g, 'href="http://frontend:3000/$1"');
+        // Regex explanation:
+        // (src|href)     -> Capture group 1: attribute name
+        // \s*=\s*        -> Handle potential spaces around =
+        // ["']           -> Match opening quote (either " or ')
+        // \/             -> Match the first slash (root relative)
+        // (?!\/)         -> Negative lookahead: ensure the next char is NOT a slash (avoid // protocol relative)
+        // ([^"']+)       -> Capture group 2: the rest of the path until the closing quote
+        // ["']           -> Match closing quote
+        processedHtml = processedHtml.replace(/(src|href)\s*=\s*["']\/([^\/][^"']*)["']/g, '$1="http://frontend:3000/$2"');
 
         const formData = new FormData();
         
         // Send the pure, native HTML to Gotenberg
         formData.append('files', new Blob([processedHtml], { type: 'text/html' }), 'index.html');
         
-        // Use exact A4 size in inches to perfectly match Paged.js
-        formData.append('paperWidth', '8.27');
-        formData.append('paperHeight', '11.69');
-        
-        // We let Gotenberg use standard 'print' media type with native margins.
+        // Zero margins from Gotenberg so the DOM layout dictates the bounds perfectly
         formData.append('marginTop', '0');
         formData.append('marginBottom', '0');
         formData.append('marginLeft', '0');
         formData.append('marginRight', '0');
+        formData.append('preferCssPageSize', 'true');
         formData.append('printBackground', 'true');
         
         // Wait long enough for fonts and base64 images to fully load (crucial for heavy base64 images)

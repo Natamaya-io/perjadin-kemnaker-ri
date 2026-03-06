@@ -24,6 +24,11 @@ export interface TravelCost {
     localTransport: number;
     regionalTransport: number;
     transportMode: string;
+    transportAmount?: number;
+    otherCost?: number;
+    otherCostDesc?: string;
+    additionalCosts?: { name: string; amount: number; file?: any }[];
+    boardingPassFiles?: any[];
 }
 
 export interface TravelReport {

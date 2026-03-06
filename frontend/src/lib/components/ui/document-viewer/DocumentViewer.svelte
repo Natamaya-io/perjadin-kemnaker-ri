@@ -17,6 +17,7 @@
     let scale = 1.0;
     let totalPages = 0;
     let currentRenderTask = null;
+    $: finalUrl = (typeof url === 'string' && url.startsWith('/uploads')) ? window.location.origin + url + '?t=' + new Date().getTime() : url;
 
     // Pan & Zoom CSS state
     let cssScale = 1.0;
@@ -41,7 +42,7 @@
                     pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
                 }
                 
-                const loadingTask = pdfjsLib.getDocument(url);
+                const loadingTask = pdfjsLib.getDocument(finalUrl);
                 pdfDoc = await loadingTask.promise;
                 totalPages = pdfDoc.numPages;
                 renderPage(pageNum);
@@ -52,7 +53,7 @@
                 }
 
                 // docx-preview expects a Blob or ArrayBuffer
-                const response = await fetch(url);
+                const response = await fetch(finalUrl);
                 const blob = await response.blob();
                 if (container) {
                     container.innerHTML = ''; // Clear previous
@@ -326,7 +327,7 @@
                     </button>
                 {/if}
                 {#if type === 'image' || type === 'pdf'}
-                    <a href={url} download={filename} class="flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-sm" title="Download">
+                    <a href={finalUrl} download={filename} class="flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all shadow-sm" title="Download">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
@@ -372,7 +373,7 @@
 
         <div class="hidden sm:flex items-center gap-2">
             {#if type === 'image' || type === 'pdf'}
-                <a href={url} download={filename} class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold transition-all shadow-sm hover:shadow" title="Download">
+                <a href={finalUrl} download={filename} class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold transition-all shadow-sm hover:shadow" title="Download">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                     <span>Unduh</span>
                 </a>
@@ -419,7 +420,7 @@
                 {:else if type === 'docx'}
                     <div bind:this={container} class="bg-white shadow-2xl shadow-slate-400/20 p-8 min-h-[800px] w-full max-w-[800px] docx-wrapper ring-1 ring-black/5"></div>
                 {:else if type === 'image'}
-                    <img src={url} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg ring-1 ring-black/5 pointer-events-none" draggable="false" />
+                    <img src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg ring-1 ring-black/5 pointer-events-none" draggable="false" />
                 {/if}
             </div>
         {/if}

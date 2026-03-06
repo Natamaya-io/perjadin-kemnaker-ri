@@ -1,6 +1,8 @@
 <script>
     import { recordsStore, deleteRecordBySpd } from '$lib/stores/records';
     import { userStore } from '$lib/stores/auth';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
     import { toast } from '$lib/stores/toast';
     import { getStatusBadge } from '$lib/utils';
@@ -118,6 +120,11 @@
             }
         }
     }
+    onMount(() => {
+        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
+            goto('/dashboard');
+        }
+    });
 </script>
 
 <div class="space-y-6 pb-20 max-w-7xl mx-auto">
@@ -224,7 +231,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-                                        {#if $userStore?.role === 'super_admin' || (record.employeesList[0].creator?.email || record.employeesList[0].email) === $userStore?.email || (record.employeesList[0].creatorId || record.employeesList[0].creator?.id) === $userStore?.id}
+                                        {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.employeesList[0].creator?.email || record.employeesList[0].email) === $userStore?.email || (record.employeesList[0].creatorId || record.employeesList[0].creator?.id) === $userStore?.id}
                                             <button 
                                                 class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
                                                 title="Hapus"

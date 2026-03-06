@@ -1,4 +1,4 @@
-package services
+﻿package services
 
 import (
 	"errors"
@@ -35,7 +35,7 @@ func (s *Service) Register(email, password, name, role string) (*models.User, er
 		Password: string(hashedPassword),
 		Name:     name,
 		Role:     role,
-		DemoPassword: password,
+        DemoPassword: password,
 	}
 
 	if err := s.Repo.CreateUser(user); err != nil {
@@ -73,8 +73,12 @@ func (s *Service) GetUsers() ([]models.User, error) {
 	return s.Repo.GetUsers()
 }
 
+func (s *Service) GetUserByID(id uuid.UUID) (*models.User, error) {
+	return s.Repo.GetUserByID(id)
+}
+
 func (s *Service) CreateUser(user *models.User) error {
-	user.DemoPassword = user.Password
+    user.DemoPassword = user.Password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -85,7 +89,7 @@ func (s *Service) CreateUser(user *models.User) error {
 
 func (s *Service) UpdateUser(user *models.User, newPassword string) error {
 	if newPassword != "" {
-		user.DemoPassword = newPassword
+        user.DemoPassword = newPassword
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return err
@@ -106,11 +110,20 @@ func (s *Service) CreateRecord(record *models.TravelRecord) error {
 	if record.EndDate.Before(record.StartDate) {
 		return errors.New("end date cannot be before start date")
 	}
-	
+
+    // Check for overlap
+    overlapping, err := s.Repo.GetOverlappingRecords(record.EmployeeID, record.StartDate, record.EndDate)
+    if err != nil {
+        return err
+    }
+    if len(overlapping) > 0 {
+        return errors.New("employee is already assigned to a trip during these dates")
+    }
+
 	// Set initial status
 	record.Status = "Draft"
 	record.ReportStatus = "Pending"
-	
+
 	return s.Repo.CreateTravelRecord(record)
 }
 

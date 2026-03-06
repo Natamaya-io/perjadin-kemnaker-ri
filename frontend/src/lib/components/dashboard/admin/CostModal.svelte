@@ -99,10 +99,45 @@
                 type: file.type,
                 data: ev.target.result
             };
-            editingCosts = editingCosts;
         };
         reader.readAsDataURL(file);
         e.target.value = '';
+    }
+
+    function handleBoardingPassFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 5MB.`);
+            e.target.value = '';
+            return;
+        }
+
+        if (!editingCosts.boardingPassFiles) {
+            editingCosts.boardingPassFiles = [];
+            if (editingCosts.boardingPassFile) {
+                editingCosts.boardingPassFiles.push(editingCosts.boardingPassFile);
+                delete editingCosts.boardingPassFile;
+            }
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            editingCosts.boardingPassFiles = [...editingCosts.boardingPassFiles, {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: ev.target.result
+            }];
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }
+
+    function removeBoardingPassFile(index) {
+        if (editingCosts.boardingPassFiles) {
+            editingCosts.boardingPassFiles = editingCosts.boardingPassFiles.filter((_, i) => i !== index);
+        }
     }
 
     function removeSpecificFile(field) {
@@ -286,13 +321,28 @@
                 <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg md:col-span-2 flex flex-col justify-center">
                     <div class="flex flex-wrap justify-between items-center gap-2">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Boarding Pass</Label>
-                        {#if !editingCosts.boardingPassFile && !isReadOnly}
+                        {#if !isReadOnly}
                             <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-white px-2 py-1.5 rounded border border-blue-200 shadow-sm transition-colors">
-                                Upload Boarding Pass (.pdf / gambar)
-                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'boardingPassFile')} />
+                                + Tambah Boarding Pass (.pdf / gambar)
+                                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={handleBoardingPassFileSelect} />
                             </label>
                         {/if}
                     </div>
+                    
+                    {#if editingCosts.boardingPassFiles && editingCosts.boardingPassFiles.length > 0}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                            {#each editingCosts.boardingPassFiles as bpFile, idx}
+                                <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md w-full">
+                                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
+                                    <div class="flex gap-2 shrink-0 text-[10px]">
+                                        <button type="button" class="text-blue-600 font-medium hover:underline" on:click={() => viewFile(bpFile)}>Lihat</button>
+                                        {#if !isReadOnly}<button type="button" class="text-red-500 font-medium hover:underline" on:click={() => removeBoardingPassFile(idx)}>Hapus</button>{/if}
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+
                     {#if editingCosts.boardingPassFile}
                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md w-full">
                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.boardingPassFile.name}</span>

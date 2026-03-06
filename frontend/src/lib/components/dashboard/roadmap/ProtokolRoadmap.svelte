@@ -1,4 +1,5 @@
 <script>
+    import { userStore } from '$lib/stores/auth';
     import { fade, slide } from 'svelte/transition';
     export let records = [];
 
@@ -38,7 +39,7 @@
                 description: 'Input rincian biaya & laporan',
                 isCompleted: step2Done,
                 isCurrent: step1Done && !step2Done,
-                actionLabel: !step2Done ? 'Buat Laporan' : null,
+                actionLabel: (!step2Done && $userStore.role !== 'kasubag') ? 'Input Laporan' : null,
                 actionLink: '/dashboard/laporan'
             },
             { 

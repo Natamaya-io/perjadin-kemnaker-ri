@@ -6,10 +6,8 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		// Setting biar output folder namanya 'build'
-		adapter: adapter({
-			out: 'build',
-			precompress: false
-		}),
+		adapter: adapter({ out: 'build', precompress: false }),
+                csrf: { checkOrigin: false },
 		output: {
 			preloadStrategy: 'modulepreload'
 		}
@@ -17,3 +15,4 @@ const config = {
 };
 
 export default config;
+

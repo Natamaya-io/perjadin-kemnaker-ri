@@ -11,11 +11,16 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	Fonnte   FonnteConfig
 }
 
 type AppConfig struct {
 	Port string
 	Env  string
+}
+
+type FonnteConfig struct {
+	Token string
 }
 
 type DatabaseConfig struct {
@@ -78,6 +83,8 @@ func LoadConfig() *Config {
 
 	cfg.JWT.Secret = viper.GetString("JWT_SECRET")
 	cfg.JWT.Expiry = viper.GetInt("JWT_EXPIRY")
+
+	cfg.Fonnte.Token = viper.GetString("FONNTE_API")
 
 	return &cfg
 }

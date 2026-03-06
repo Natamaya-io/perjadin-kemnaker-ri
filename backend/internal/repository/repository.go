@@ -1,6 +1,8 @@
-package repository
+﻿package repository
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"gorm.io/gorm"
@@ -77,6 +79,15 @@ func (r *Repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 		return nil, err
 	}
 	return &record, nil
+}
+
+func (r *Repository) GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error) {
+	var records []models.TravelRecord
+	// Overlap logic: (StartA <= EndB) and (EndA >= StartB)
+	// Exclude 'Rejected' status
+	err := r.db.Where("employee_id = ? AND start_date <= ? AND end_date >= ? AND status != 'Rejected'", employeeID, endDate, startDate).
+		Find(&records).Error
+	return records, err
 }
 
 func (r *Repository) UpdateTravelRecord(record *models.TravelRecord) error {

@@ -1,4 +1,16 @@
 <script>
+    function getDisplayName(name) {
+        if (!name) return '';
+        const parts = name.split('/');
+        const cleanName = parts[parts.length - 1];
+        if (cleanName.length > 36 && cleanName.includes('_')) {
+            const splitName = cleanName.split('_');
+            if (splitName[0].length === 36 || splitName[0].length === 32) {
+                return 'Surat_Tugas_' + splitName.slice(1).join('_');
+            }
+        }
+        return cleanName;
+    }
     import { page } from '$app/stores';
     import { recordsStore, updateRecord, loadRecords } from '$lib/stores/records';
     import { userStore } from '$lib/stores/auth';
@@ -22,11 +34,12 @@
     
     $: allRecordsForSpd = spd ? $recordsStore.filter(r => r.spd === decodeURIComponent(spd)) : [];
     $: record = allRecordsForSpd.find(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email)) || allRecordsForSpd[0];
-    $: recordsList = record ? [record] : [];
+    $: recordsList = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? allRecordsForSpd : (record ? [record] : []);
     $: officerIndex = record ? allRecordsForSpd.findIndex(r => r.id === record.id) : 0;
     $: nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
 
     let reportText = '';
+    let manualSuratTugasNumber = '';
     /** @type {Array<{name: string, type: string, data: string, timestamp: string}>} */
     let uploadedFiles = []; 
     let isDragging = false;
@@ -156,6 +169,44 @@
         e.target.value = '';
     }
 
+    function handleBoardingPassFileSelect(empId, e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 5MB.`);
+            e.target.value = '';
+            return;
+        }
+        
+        if (!localCosts[empId].costs.boardingPassFiles) {
+            localCosts[empId].costs.boardingPassFiles = [];
+            if (localCosts[empId].costs.boardingPassFile) {
+                localCosts[empId].costs.boardingPassFiles.push(localCosts[empId].costs.boardingPassFile);
+                delete localCosts[empId].costs.boardingPassFile;
+            }
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            localCosts[empId].costs.boardingPassFiles.push({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: ev.target.result
+            });
+            localCosts = { ...localCosts };
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }
+
+    function removeBoardingPassFile(empId, index) {
+        if (localCosts[empId].costs.boardingPassFiles) {
+            localCosts[empId].costs.boardingPassFiles = localCosts[empId].costs.boardingPassFiles.filter((_, i) => i !== index);
+        }
+        localCosts = { ...localCosts };
+    }
+
     function removeSpecificFile(empId, field) {
         localCosts[empId].costs[field] = null;
         localCosts = { ...localCosts };
@@ -204,11 +255,13 @@
     }
 
     let isDataLoaded = false;
+    $: if (record && !manualSuratTugasNumber && record.suratTugasNumber) { manualSuratTugasNumber = record.suratTugasNumber; }
     $: if (record && record.reportData && !isDataLoaded) {
         reportText = record.reportData.text || '';
         uploadedFiles = record.reportData.files || [];
         sppdFile = record.reportData.sppdFile || null;
         suratTugasFile = record.reportData.suratTugasFile || null;
+        manualSuratTugasNumber = record.suratTugasNumber || '';
         isDataLoaded = true;
     }
 
@@ -410,11 +463,20 @@
                     <span class="font-mono text-slate-700 font-medium bg-white px-2 py-1 rounded border border-slate-200 inline-block">{record.spd}</span>
                 </div>
                 <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NO. SURAT TUGAS</span>
-                    <span class="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">{record.suratTugasNumber || '-'}</span>
+                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">Nomor Surat Tugas</span>
+                    {#if ($userStore.role === 'super_admin') && !record.suratTugasNumber}
+                        <input 
+                            type="text" 
+                            bind:value={manualSuratTugasNumber}
+                            placeholder="Input No. Surat Tugas..."
+                            class="font-mono text-emerald-700 font-bold bg-white px-2 py-1 rounded border border-emerald-300 focus:ring-1 focus:ring-emerald-500 outline-none w-full max-w-[250px] text-sm"
+                        />
+                    {:else}
+                        <span class="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">{manualSuratTugasNumber || record.suratTugasNumber || '-'}</span>
+                    {/if}
                 </div>
                 <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NO. SPD</span>
+                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NOMOR SPD</span>
                     <span class="font-mono text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200 inline-block">{nomorSpdPetugas}</span>
                 </div>
                 <div>
@@ -433,7 +495,7 @@
 
             <div class="p-4 sm:p-6 md:p-8 space-y-8 sm:space-y-12">
                 <!-- Specific Documents Upload (SPPD & Surat Tugas) -->
-                {#if $userStore.role !== 'kasubag'}
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-3">
                         <Label class="text-sm font-bold text-slate-800">Upload Lembar SPPD</Label>
@@ -473,7 +535,7 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-slate-700 truncate">{suratTugasFile.name}</p>
+                                        <p class="text-sm font-medium text-slate-700 truncate" title={getDisplayName(suratTugasFile.name)}>{getDisplayName(suratTugasFile.name)}</p>
                                         <p class="text-[10px] text-slate-500">Berhasil diunggah</p>
                                     </div>
                                     <div class="flex gap-2">
@@ -492,8 +554,7 @@
                             {/if}
                         </div>
                     </div>
-                </div>
-                {/if}
+                    </div>
 
                 <!-- Report Text Section -->
                 <div class="space-y-4">
@@ -517,12 +578,11 @@
                 <div class="space-y-4 pt-4 border-t border-slate-100">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                          <Label class="text-lg font-bold text-slate-800">Dokumentasi Kegiatan</Label>
-                         {#if $userStore.role !== 'kasubag'}
+                         
                              <span class="text-xs text-slate-400">Max 6 File (JPG/PDF), Max 10MB</span>
-                         {/if}
                     </div>
                     
-                    {#if $userStore.role !== 'kasubag'}
+                    
                     <label 
                         class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all group relative
                         {isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-blue-400'}"
@@ -544,7 +604,6 @@
                         {/if}
                         <input type="file" multiple accept="image/*" class="hidden" on:change={handleFileChange} />
                     </label>
-                    {/if}
                     
                     {#if uploadedFiles.length > 0}
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
@@ -589,7 +648,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
-                                            {#if $userStore.role !== 'kasubag'}
+                                            
                                             <button 
                                                 class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
                                                 on:click|stopPropagation={() => removeFile(i)}
@@ -599,7 +658,6 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                             </button>
-                                            {/if}
                                         </div>
                                     </div>
 
@@ -613,7 +671,7 @@
                 </div>
 
                 <!-- Form Input Rincian Biaya (Integrated from CostModal) -->
-                {#if $userStore.role !== 'kasubag'}
+                
                 <div class="space-y-6 pt-8 mt-8">
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-lg text-white">
                         <div class="flex items-center gap-4">
@@ -683,7 +741,7 @@
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Tiket Berangkat</Label>
                                                     <div class="relative">
                                                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                                                        <Input type="text" value={formatInputNumber(localCosts[empId].costs.ticketGo)} on:input={(e) => updateCost(empId, 'ticketGo', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
+                                                        <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(localCosts[empId].costs.ticketGo)} on:input={(e) => updateCost(empId, 'ticketGo', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                     </div>
                                                     {#if !localCosts[empId].costs.ticketGoFile}
                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
@@ -712,7 +770,7 @@
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Tiket Pulang</Label>
                                                     <div class="relative">
                                                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                                                        <Input type="text" value={formatInputNumber(localCosts[empId].costs.ticketBack)} on:input={(e) => updateCost(empId, 'ticketBack', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
+                                                        <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(localCosts[empId].costs.ticketBack)} on:input={(e) => updateCost(empId, 'ticketBack', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                     </div>
                                                     {#if !localCosts[empId].costs.ticketBackFile}
                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
@@ -739,19 +797,22 @@
                                                 <!-- Boarding Pass -->
                                                 <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg md:col-span-2 flex flex-col justify-center">
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Boarding Pass</Label>
-                                                    {#if !localCosts[empId].costs.boardingPassFile}
-                                                        <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
-                                                            <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                                </svg>
-                                                                <p class="text-[9px] text-slate-500 text-center px-2"><span class="font-semibold text-blue-600">Klik untuk unggah</span> atau seret file</p>
-                                                            </div>
-                                                            <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(empId, e, 'boardingPassFile')} />
-                                                        </label>
+                                                    
+                                                    {#if localCosts[empId].costs.boardingPassFiles && localCosts[empId].costs.boardingPassFiles.length > 0}
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                                            {#each localCosts[empId].costs.boardingPassFiles as bpFile, idx}
+                                                                <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md w-full">
+                                                                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
+                                                                    <div class="flex gap-2 shrink-0 text-[10px]">
+                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeBoardingPassFile(empId, idx)}>Hapus</button>
+                                                                    </div>
+                                                                </div>
+                                                            {/each}
+                                                        </div>
                                                     {/if}
                                                     {#if localCosts[empId].costs.boardingPassFile}
-                                                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md w-full">
+                                                        <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md w-full mt-2">
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{localCosts[empId].costs.boardingPassFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(localCosts[empId].costs.boardingPassFile)}>Lihat</button>
@@ -759,6 +820,17 @@
                                                             </div>
                                                         </div>
                                                     {/if}
+       
+
+                                                    <label class="flex flex-col items-center justify-center w-full h-12 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-2">
+                                                        <div class="flex items-center justify-center pointer-events-none gap-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                            </svg>
+                                                            <p class="text-[10px] md:text-xs font-semibold text-blue-600">Tambah Boarding Pass</p>
+                                                        </div>
+                                                        <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleBoardingPassFileSelect(empId, e)} />
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>
@@ -777,13 +849,13 @@
                                             <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">
                                                 <div class="space-y-1.5 col-span-1">
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Malam</Label>
-                                                    <Input type="number" bind:value={localCosts[empId].costs.hotelDays} class="h-9 md:h-10 text-sm bg-slate-50 border-slate-200 px-2" />
+                                                    <Input type="number" disabled={$userStore.role === 'kasubag'} bind:value={localCosts[empId].costs.hotelDays} class="h-9 md:h-10 text-sm bg-slate-50 border-slate-200 px-2" />
                                                 </div>
                                                 <div class="space-y-1.5 col-span-2">
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Rate per Malam</Label>
                                                     <div class="relative">
                                                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                                                        <Input type="text" value={formatInputNumber(localCosts[empId].costs.hotelRate)} on:input={(e) => updateCost(empId, 'hotelRate', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200" />
+                                                        <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(localCosts[empId].costs.hotelRate)} on:input={(e) => updateCost(empId, 'hotelRate', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -826,7 +898,7 @@
                                                 <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Total Biaya (Opsional)</Label>
                                                 <div class="relative">
                                                     <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                                                    <Input type="text" value={formatInputNumber(localCosts[empId].costs.transportAmount)} on:input={(e) => updateCost(empId, 'transportAmount', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200" />
+                                                    <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(localCosts[empId].costs.transportAmount)} on:input={(e) => updateCost(empId, 'transportAmount', e)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200" />
                                                 </div>
                                             </div>
 
@@ -864,8 +936,7 @@
                                                 </h4>
                                                 <Button size="sm" class="h-8 px-4 text-xs font-bold tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all rounded-lg flex items-center gap-1.5 hover:scale-[1.02]" on:click={() => addAdditionalCost(empId)}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                                                    ADD COST
-                                                </Button>
+                                                    ADD COST</Button>
                                             </div>
 
                                             <div class="space-y-3">
@@ -880,13 +951,13 @@
                                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                 <div class="space-y-1.5">
                                                                     <Label class="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Nama Biaya</Label>
-                                                                    <Input type="text" placeholder="Cth: Taksi Bandara" bind:value={localCosts[empId].costs.additionalCosts[index].name} class="h-8 text-xs bg-slate-50 border-slate-200" />
+                                                                    <Input type="text" disabled={$userStore.role === 'kasubag'} placeholder="Cth: Taksi Bandara" bind:value={localCosts[empId].costs.additionalCosts[index].name} class="h-8 text-xs bg-slate-50 border-slate-200" />
                                                                 </div>
                                                                 <div class="space-y-1.5">
                                                                     <Label class="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Nominal</Label>
                                                                     <div class="relative">
                                                                         <span class="absolute left-2 top-1.5 text-slate-400 text-xs">Rp</span>
-                                                                        <Input type="text" value={formatInputNumber(cost.amount)} on:input={(e) => updateAdditionalCostAmount(empId, index, e)} class="pl-7 h-8 text-xs bg-slate-50 border-slate-200" />
+                                                                        <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.amount)} on:input={(e) => updateAdditionalCostAmount(empId, index, e)} class="pl-7 h-8 text-xs bg-slate-50 border-slate-200" />
                                                                     </div>
                                                                 </div>
                                                                 <div class="md:col-span-2 mt-1 pt-3 border-t border-slate-100">
@@ -950,14 +1021,12 @@
                         {/each}
                     </div>
                 </div>
-                {/if}
             </div>
 
-            {#if $userStore.role !== 'kasubag'}
+            
             <div class="bg-slate-50 border-t border-slate-100 p-6 flex justify-end">
                 <Button size="lg" class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8" on:click={handleSubmit}>Simpan Laporan & Biaya Akhir</Button>
             </div>
-            {/if}
         </div>
     {/if}
 
@@ -968,7 +1037,7 @@
                 <div class="flex flex-col min-w-0 pr-4">
                     <h3 class="text-base md:text-lg font-bold text-slate-800 tracking-tight truncate">Pratinjau Dokumen</h3>
                     {#if previewFile}
-                        <p class="text-[10px] md:text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs md:max-w-md">{previewFile.name}</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs md:max-w-md" title={getDisplayName(previewFile.name)}>{getDisplayName(previewFile.name)}</p>
                     {/if}
                 </div>
                 <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>

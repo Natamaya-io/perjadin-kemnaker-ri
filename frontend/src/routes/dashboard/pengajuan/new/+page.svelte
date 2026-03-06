@@ -1,4 +1,5 @@
-<script>
+﻿<script>
+    import { onMount } from 'svelte';
     import { api } from '$lib/api';
     import { userStore, usersStore } from '$lib/stores/auth';
     import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
@@ -70,12 +71,38 @@
         return diffDays > 0 ? diffDays : 0;
     })();
 
-    $: totalCost = rate * days * formData.selectedEmployees.length;
+        $: totalCost = rate * days * formData.selectedEmployees.length;
+
+    $: disabledEmployeeIds = $recordsStore
+        .filter(r => {
+             if (r.status === 'Rejected') return false;
+             if (!formData.startDate || !formData.endDate) return false;
+             const start = new Date(formData.startDate);
+             const end = new Date(formData.endDate);
+             const rStart = new Date(r.startDate);
+             const rEnd = new Date(r.endDate);
+             return (rStart <= end && rEnd >= start);
+        })
+        .map(r => r.employee?.id).filter(Boolean);
+
+    $: {
+        if (formData.startDate && formData.endDate) {
+            const conflicts = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
+            if (conflicts.length > 0) {
+                 formData.selectedEmployees = formData.selectedEmployees.filter(id => !disabledEmployeeIds.includes(id));
+                 toast.warning('Beberapa petugas yang dipilih telah dihapus karena jadwal bentrok.');
+            }
+        }
+    }
 
     /** @param {CustomEvent} event */
     function toggleEmployee(event) {
         if (isReadOnly) return;
         const employeeId = event.detail;
+        if (disabledEmployeeIds.includes(employeeId)) {
+             toast.error('Petugas ini sedang bertugas pada tanggal tersebut.');
+             return;
+        }
         if (formData.selectedEmployees.includes(employeeId)) {
             formData.selectedEmployees = formData.selectedEmployees.filter(id => id !== employeeId);
         } else {
@@ -146,18 +173,7 @@
             await addRecord(tripData);
             toast.success('Pengajuan Berhasil Disimpan!');
             
-            // Send WA Notification to selected users
-            selectedUsers.forEach((user, index) => {
-                if (user.nomorHp) {
-                    // Format phone number to start with 62 instead of 0
-                    let hp = user.nomorHp.startsWith('0') ? '62' + user.nomorHp.slice(1) : user.nomorHp;
-                    const text = `Halo ${user.name}, Anda telah ditugaskan untuk perjalanan dinas ke ${formData.location}, ${formData.province} pada tanggal ${formData.startDate} s/d ${formData.endDate}. Mohon persiapkan diri Anda.`;
-                    
-                    setTimeout(() => {
-                        window.open(`https://wa.me/${hp}?text=${encodeURIComponent(text)}`, '_blank');
-                    }, index * 500); // Stagger to prevent popup blockers from killing all
-                }
-            });
+            // WA Notification is now handled automatically by the backend via Fonnte API.
             
             if ($userStore.role === 'super_admin' || $userStore.role === 'keuangan') {
                 goto('/dashboard/admin/perdin');
@@ -176,6 +192,15 @@
         if (type === 'luar_negeri') return 'Luar Negeri';
         return '';
     }
+    onMount(async () => {
+        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
+            goto('/dashboard');
+            return;
+        }
+        if ($recordsStore.length === 0) {
+            await loadRecords();
+        }
+    });
 </script>
 
 <div class="max-w-6xl mx-auto space-y-8 pb-20">
@@ -302,7 +327,7 @@
                     readonly={isReadOnly}
                 />
                 
-                <EmployeeSelectorCard 
+                <EmployeeSelectorCard disabledIds={disabledEmployeeIds} 
                     employees={protokolOfficers}
                     selectedEmployees={formData.selectedEmployees}
                     readonly={isReadOnly}
@@ -331,3 +356,6 @@
         />
     {/if}
 </div>
+
+
+

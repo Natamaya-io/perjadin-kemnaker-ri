@@ -24,6 +24,9 @@ FROM scratch
 
 WORKDIR /app
 
+# Copy CA certificates to enable HTTPS requests
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 # Copy the compiled, stripped binary
 COPY --from=builder /app/main .
 
@@ -32,3 +35,4 @@ EXPOSE 8081
 
 # Command to run the application
 ENTRYPOINT ["./main"]
+

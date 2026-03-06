@@ -114,59 +114,31 @@
 
             // 3. Inject specific print overrides to ensure Gotenberg's Chromium engine prints the Paged.js DOM perfectly 1:1
             const printOverrides = `
+            <link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
             <style>
                 @media print {
-                    @page { 
-                        size: A4; 
-                        margin: 0 !important; 
-                    }
+                    @page { size: A4; margin: 0 !important; }
                     html, body {
+                        background: white !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        background: white !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
+                    }
+                    .pagedjs_pages {
+                        transform: none !important;
                         width: 100% !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                    }
-                    /* Force Paged.js container to expand fully */
-                    .pagedjs_pages { 
-                        width: 100% !important; 
-                        height: auto !important;
-                        transform: none !important; 
-                        margin: 0 !important; 
+                        margin: 0 !important;
                         padding: 0 !important;
-                        display: block !important; 
-                        overflow: visible !important;
                     }
-                    /* Force each Paged.js page to exactly match a physical printed page */
-                    .pagedjs_page { 
-                        margin: 0 !important; 
-                        padding: 0 !important;
-                        box-shadow: none !important; 
+                    .pagedjs_page {
+                        margin: 0 !important;
                         border: none !important;
-                        page-break-after: always !important; 
-                        break-after: page !important; 
-                        position: relative !important;
+                        box-shadow: none !important;
+                        page-break-after: always !important;
+                        break-after: page !important;
                     }
-                    /* The last page doesn't need a page break */
-                    .pagedjs_page:last-of-type {
-                        page-break-after: auto !important;
-                        break-after: auto !important;
-                    }
-                    /* Hide any visual artifacts Paged.js might leave */
-                    .pagedjs_marks { display: none !important; }
-                    /* Force each document section to absolutely start on a new page */
-                    .document-section {
-                        page-break-before: always !important;
-                        break-before: page !important;
-                    }
-                    /* Remove the forced break on the very first section so it doesn't leave a blank first page */
-                    .document-section:first-child {
-                        page-break-before: auto !important;
-                        break-before: auto !important;
-                    }
+                    .print-toolbar { display: none !important; }
                 }
             </style>`;
 

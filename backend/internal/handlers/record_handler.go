@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/services"
+	"github.com/kemnaker/perjadin-backend/internal/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,6 +21,27 @@ type RecordHandler struct {
 
 func NewRecordHandler(s *services.Service) *RecordHandler {
 	return &RecordHandler{Service: s}
+}
+
+func (h *RecordHandler) notifyEmployee(record *models.TravelRecord) {
+	if h.Service.Config.Fonnte.Token == "" {
+		return
+	}
+
+	user, err := h.Service.GetUserByID(record.EmployeeID)
+	if err != nil || user.NomorHP == "" {
+		return
+	}
+
+	message := fmt.Sprintf("Halo *%s*,\n\nAnda telah ditugaskan untuk melaksanakan perjalanan dinas dengan rincian sebagai berikut:\n\n📍 *Tujuan:* %s, %s\n📅 *Tanggal:* %s s/d %s\n🎯 *Kegiatan:* %s\n\nHarap persiapkan diri Anda dan cek aplikasi untuk detail lebih lanjut.\n\n_Pesan ini dikirim otomatis oleh Sistem Perjadin Protokol Kemnaker RI_", 
+		user.Name, record.Location, record.Province, record.StartDate.Format("02 Jan 2006"), record.EndDate.Format("02 Jan 2006"), record.Purpose)
+
+	err = utils.SendWhatsAppMessage(h.Service.Config, user.NomorHP, message)
+	if err != nil {
+		fmt.Printf("Failed to send WhatsApp message to %s: %v\n", user.NomorHP, err)
+	} else {
+		fmt.Printf("Successfully sent WhatsApp notification to %s\n", user.NomorHP)
+	}
 }
 
 func (h *RecordHandler) UploadFile(c echo.Context) error {
@@ -93,6 +116,8 @@ func (h *RecordHandler) CreateRecord(c echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			createdRecords = append(createdRecords, newRecord)
+			
+			go h.notifyEmployee(&newRecord)
 		}
 		return c.JSON(http.StatusCreated, createdRecords)
 	}
@@ -102,6 +127,8 @@ func (h *RecordHandler) CreateRecord(c echo.Context) error {
 	if err := h.Service.CreateRecord(&record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	go h.notifyEmployee(&record)
 
 	return c.JSON(http.StatusCreated, record)
 }

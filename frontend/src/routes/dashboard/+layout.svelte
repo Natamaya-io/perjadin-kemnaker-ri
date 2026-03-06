@@ -10,6 +10,7 @@
 
     const accessRules = [
         { path: '/dashboard/admin/users', roles: ['super_admin'] },
+        { path: '/dashboard/pengajuan', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/pengajuan/new', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/spj', roles: ['protokol', 'super_admin', 'kasubag'] },
         { path: '/dashboard/admin/perdin', roles: ['super_admin', 'keuangan', 'kasubag'] },
