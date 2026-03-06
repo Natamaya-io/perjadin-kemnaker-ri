@@ -174,7 +174,7 @@
                 </div>
             </StatCard>
 
-            {#if \.role === 'super_admin' || \.role === 'keuangan' || \.role === 'kasubag'}
+            {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
             <StatCard 
                 title="Total Anggaran" 
                 value={formatIDR(totalCost)} 
@@ -196,7 +196,7 @@
             </StatCard>
             {/if}
 
-            {#if \.role !== 'keuangan'}
+            {#if $userStore.role !== 'keuangan'}
             <StatCard 
                 title="Sedang Berjalan" 
                 value={activeTrips} 
@@ -235,7 +235,7 @@
                 </div>
             
                 <div slot="action">
-                    {#if pendingReports > 0 && \.role !== 'super_admin' && \.role !== 'keuangan' && \.role !== 'kasubag'}
+                    {#if pendingReports > 0 && $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
                     <a href="/dashboard/laporan?from=notif" class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold tracking-wide text-white bg-purple-500 hover:bg-purple-600 rounded-lg shadow-sm transition-colors shadow-purple-500/20 hover:shadow-purple-500/40">
                         LIHAT <span class="sr-only">Laporan Pending</span>
                     </a>
