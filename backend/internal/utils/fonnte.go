@@ -10,11 +10,11 @@ import (
 )
 
 type FonntePayload struct {
-        Target      string `json:"target"`
-        Message     string `json:"message"`
-        Delay       string `json:"delay"`
-        Typing      bool   `json:"typing"`
-        CountryCode string `json:"countryCode"`
+	Target      string `json:"target"`
+	Message     string `json:"message"`
+	Delay       string `json:"delay"`
+	Typing      bool   `json:"typing"`
+	CountryCode string `json:"countryCode"`
 }
 
 func SendWhatsAppMessage(cfg *config.Config, target string, message string) error {
@@ -28,13 +28,13 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 
 	url := "https://api.fonnte.com/send"
 
-	        payload := FonntePayload{
-                Target:      target,
-                Message:     message,
-                Delay:       "2-5",
-                Typing:      true,
-                CountryCode: "62",
-        }
+	payload := FonntePayload{
+		Target:      target,
+		Message:     message,
+		Delay:       "2-5",
+		Typing:      true,
+		CountryCode: "62",
+	}
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
@@ -62,5 +62,3 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 
 	return nil
 }
-
-

@@ -22,10 +22,10 @@ This project follows an enterprise monorepo architecture, strictly separating th
 From the root directory, simply run Docker Compose to build and start the entire stack:
 
 ```bash
-docker-compose up --build
+doppler run -- docker-compose up --build
 ```
 
-*(Add `-d` to run it in detached/background mode: `docker-compose up -d --build`)*
+*(Add `-d` to run it in detached/background mode: `doppler run -- docker-compose up -d --build`)*
 
 This single command will:
 1. Spin up a **PostgreSQL** database container.

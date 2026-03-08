@@ -1,8 +1,6 @@
 package config
 
 import (
-	"log"
-
 	"github.com/spf13/viper"
 )
 
@@ -44,11 +42,6 @@ type JWTConfig struct {
 }
 
 func LoadConfig() *Config {
-	viper.SetConfigFile(".env")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("./backend")
-
 	// Defaults
 	viper.SetDefault("APP_PORT", "8080")
 	viper.SetDefault("APP_ENV", "development")
@@ -62,14 +55,10 @@ func LoadConfig() *Config {
 
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("Warning: .env file not found or couldn't be loaded: %v. Using environment variables.", err)
-	}
-
 	var cfg Config
 	cfg.App.Port = viper.GetString("APP_PORT")
 	cfg.App.Env = viper.GetString("APP_ENV")
-	
+
 	cfg.Database.Host = viper.GetString("DB_HOST")
 	cfg.Database.Port = viper.GetString("DB_PORT")
 	cfg.Database.User = viper.GetString("DB_USER")

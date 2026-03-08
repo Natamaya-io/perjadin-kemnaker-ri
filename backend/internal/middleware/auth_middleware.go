@@ -34,7 +34,7 @@ func JWTMiddleware(cfg *config.Config, repo *repository.Repository) echo.Middlew
 			if err != nil || !token.Valid {
 				return echo.NewHTTPError(401, "Invalid or Expired Token")
 			}
-			
+
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
 				return echo.NewHTTPError(401, "Invalid Token Claims")
@@ -45,7 +45,7 @@ func JWTMiddleware(cfg *config.Config, repo *repository.Repository) echo.Middlew
 			if !ok {
 				return echo.NewHTTPError(401, "Invalid User ID in Token")
 			}
-			
+
 			userID, err := uuid.Parse(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(401, "Invalid User ID Format")

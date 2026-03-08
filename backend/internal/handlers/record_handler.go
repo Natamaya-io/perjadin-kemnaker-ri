@@ -33,7 +33,7 @@ func (h *RecordHandler) notifyEmployee(record *models.TravelRecord) {
 		return
 	}
 
-	message := fmt.Sprintf("Halo *%s*,\n\nAnda telah ditugaskan untuk melaksanakan perjalanan dinas dengan rincian sebagai berikut:\n\n📍 *Tujuan:* %s, %s\n📅 *Tanggal:* %s s/d %s\n🎯 *Kegiatan:* %s\n\nHarap persiapkan diri Anda dan cek aplikasi untuk detail lebih lanjut.\n\n_Pesan ini dikirim otomatis oleh Sistem Perjadin Protokol Kemnaker RI_", 
+	message := fmt.Sprintf("Halo *%s*,\n\nAnda telah ditugaskan untuk melaksanakan perjalanan dinas dengan rincian sebagai berikut:\n\n📍 *Tujuan:* %s, %s\n📅 *Tanggal:* %s s/d %s\n🎯 *Kegiatan:* %s\n\nHarap persiapkan diri Anda dan cek aplikasi untuk detail lebih lanjut.\n\n_Pesan ini dikirim otomatis oleh Sistem Perjadin Protokol Kemnaker RI_",
 		user.Name, record.Location, record.Province, record.StartDate.Format("02 Jan 2006"), record.EndDate.Format("02 Jan 2006"), record.Purpose)
 
 	err = utils.SendWhatsAppMessage(h.Service.Config, user.NomorHP, message)
@@ -105,18 +105,18 @@ func (h *RecordHandler) CreateRecord(c echo.Context) error {
 	if len(record.EmployeeIDs) > 0 {
 		var createdRecords []models.TravelRecord
 		for _, empID := range record.EmployeeIDs {
-			newRecord := record // Copy struct
+			newRecord := record     // Copy struct
 			newRecord.ID = uuid.Nil // Ensure new ID generation
 			newRecord.EmployeeID = empID
 			newRecord.CreatorID = creatorID
 			// Clear the bulk field to avoid confusion, though GORM ignores it
-			newRecord.EmployeeIDs = nil 
+			newRecord.EmployeeIDs = nil
 
 			if err := h.Service.CreateRecord(&newRecord); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			createdRecords = append(createdRecords, newRecord)
-			
+
 			go h.notifyEmployee(&newRecord)
 		}
 		return c.JSON(http.StatusCreated, createdRecords)

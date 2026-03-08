@@ -12,7 +12,7 @@ import (
 func NewRedisClient(cfg *config.Config) (*redis.Client, error) {
 	addr := fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port)
 	log.Printf("Connecting to Redis at %s", addr)
-	
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: cfg.Redis.Password,

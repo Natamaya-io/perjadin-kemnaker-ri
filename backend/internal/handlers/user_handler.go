@@ -26,15 +26,15 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 }
 
 type CreateUserRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-	Password string `json:"password"`
-	NIP      string `json:"nip"`
-	NomorHP  string `json:"nomorHp"`
-	Pangkat  string `json:"pangkat"`
-	Golongan string `json:"golongan"`
-	Jabatan  string `json:"jabatan"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	Role         string `json:"role"`
+	Password     string `json:"password"`
+	NIP          string `json:"nip"`
+	NomorHP      string `json:"nomorHp"`
+	Pangkat      string `json:"pangkat"`
+	Golongan     string `json:"golongan"`
+	Jabatan      string `json:"jabatan"`
 	TingkatBiaya string `json:"tingkatBiaya"`
 }
 
@@ -49,15 +49,15 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 	}
 
 	user := models.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Role:     req.Role,
-		Password: req.Password,
-		NIP:      req.NIP,
-		NomorHP:  req.NomorHP,
-		Pangkat:  req.Pangkat,
-		Golongan: req.Golongan,
-		Jabatan:  req.Jabatan,
+		Name:         req.Name,
+		Email:        req.Email,
+		Role:         req.Role,
+		Password:     req.Password,
+		NIP:          req.NIP,
+		NomorHP:      req.NomorHP,
+		Pangkat:      req.Pangkat,
+		Golongan:     req.Golongan,
+		Jabatan:      req.Jabatan,
 		TingkatBiaya: req.TingkatBiaya,
 	}
 
@@ -69,15 +69,15 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 }
 
 type UpdateUserRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-	Password string `json:"password"`
-	NIP      string `json:"nip"`
-	NomorHP  string `json:"nomorHp"`
-	Pangkat  string `json:"pangkat"`
-	Golongan string `json:"golongan"`
-	Jabatan  string `json:"jabatan"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	Role         string `json:"role"`
+	Password     string `json:"password"`
+	NIP          string `json:"nip"`
+	NomorHP      string `json:"nomorHp"`
+	Pangkat      string `json:"pangkat"`
+	Golongan     string `json:"golongan"`
+	Jabatan      string `json:"jabatan"`
 	TingkatBiaya string `json:"tingkatBiaya"`
 }
 
@@ -92,11 +92,11 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
-	
+
 	if req.NomorHP == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Nomor HP is required")
 	}
-	
+
 	// Get existing user
 	existingUser, err := h.Service.Repo.GetUserByID(id)
 	if err != nil {
@@ -113,7 +113,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	existingUser.Golongan = req.Golongan
 	existingUser.Jabatan = req.Jabatan
 	existingUser.TingkatBiaya = req.TingkatBiaya
-	
+
 	// Pass new password (if any) separately
 	if err := h.Service.UpdateUser(existingUser, req.Password); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

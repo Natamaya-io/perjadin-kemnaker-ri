@@ -90,26 +90,26 @@ func seedProvincesAndRates(db *gorm.DB) {
 		if err := db.Where("province_id = ? AND year = ?", province.ID, year).First(&sbm).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				sbm = models.SBMRate{
-					ProvinceID:      province.ID,
-					Year:            year,
-					
+					ProvinceID: province.ID,
+					Year:       year,
+
 					// Uang Harian
 					OutsideCityRate: p.LuarKota,
 					InsideCityRate:  p.DalamKota,
 					DiklatRate:      p.Diklat,
-					
+
 					// Fullboard (Paket Meeting)
-					FullboardRate:   p.LuarKota * 0.4,
-					FullhalfRate:    p.LuarKota * 0.6,
-					
+					FullboardRate: p.LuarKota * 0.4,
+					FullhalfRate:  p.LuarKota * 0.6,
+
 					// Hotel (Pagu Tertinggi) - Estimasi
-					HotelEchelon1:   p.LuarKota * 10,
-					HotelEchelon2:   p.LuarKota * 5,
-					HotelEchelon3:   p.LuarKota * 3,
-					HotelEchelon4:   p.LuarKota * 2.5,
-					HotelStaff:      p.LuarKota * 2,
-					
-					TaxiRate:        150000, // Flat average
+					HotelEchelon1: p.LuarKota * 10,
+					HotelEchelon2: p.LuarKota * 5,
+					HotelEchelon3: p.LuarKota * 3,
+					HotelEchelon4: p.LuarKota * 2.5,
+					HotelStaff:    p.LuarKota * 2,
+
+					TaxiRate: 150000, // Flat average
 				}
 				db.Create(&sbm)
 			}
@@ -270,7 +270,7 @@ func upsertUser(db *gorm.DB, u models.User) {
 			"TingkatBiaya": u.TingkatBiaya,
 			"NIP":          u.NIP,
 			// Do NOT update Password to prevent locking out real users if they changed it
-			// "Password": u.Password, 
+			// "Password": u.Password,
 		}
 		db.Model(&existing).Updates(updates)
 		// log.Printf("Updated user: %s", u.Email)

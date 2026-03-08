@@ -70,7 +70,7 @@ func main() {
 
 	// 4. Auto Migrate
 	sugar.Info("Migrating database schemas...")
-	
+
 	// Drop the unique index to allow multiple records per SPD
 	if err := db.Exec("DROP INDEX IF EXISTS idx_travel_records_spd_number;").Error; err != nil {
 		sugar.Warnf("Failed to drop index idx_travel_records_spd_number: %v", err)
@@ -134,7 +134,7 @@ func main() {
 	protected.Use(middleware.JWTMiddleware(cfg, repo))
 	{
 		protected.POST("/upload", recordHandler.UploadFile)
-		
+
 		protected.GET("/records", recordHandler.GetRecords)
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
@@ -142,7 +142,7 @@ func main() {
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 
 		// Employee Management Removed
-		
+
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)
 		protected.POST("/users", userHandler.CreateUser)
@@ -162,10 +162,10 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal(err)
 	}

@@ -104,4 +104,3 @@ func (h *AuthHandler) GetDemoUsers(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, demoUsers)
 }
-

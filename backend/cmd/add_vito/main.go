@@ -45,4 +45,3 @@ func main() {
 
 	log.Println("Successfully created user vito@kemnaker.go.id!")
 }
-

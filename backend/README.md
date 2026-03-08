@@ -19,21 +19,16 @@ This is a production-grade Go backend for the Perjadin application, built with *
     - PostgreSQL database running.
 
 2.  **Configuration:**
-    - Copy `.env.example` to `.env`.
-    - Update the database credentials in `.env`.
-
-    ```bash
-    cp .env.example .env
-    ```
+    - Use Doppler for environment variable management. Ensure Doppler CLI is installed and configured for the project.
 
 3.  **Run the Application:**
 
     ```bash
     cd backend
-    go run cmd/api/main.go
+    doppler run -- go run cmd/api/main.go
     ```
 
-    The server will start on port `8080` (or as configured in `.env`).
+    The server will start on port `8080` (or as configured in Doppler).
 
 ## API Endpoints
 
