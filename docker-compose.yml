@@ -2,6 +2,27 @@ version: '3.8'
 
 services:
   # ==============================================
+  # Database Service (PostgreSQL)
+  # ==============================================
+  db:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME}_db
+    environment:
+      - POSTGRES_USER=${DB_USER:-perjadin_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-Yuxt2MaJxNhpfvJzCyNEbVTG4JgtpwXH}
+      - POSTGRES_DB=${DB_NAME:-perjadin_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==============================================
   # Redis Service (Caching & Session Store)
   # ==============================================
   redis:
@@ -23,12 +44,12 @@ services:
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME}_backend
     environment:
-      # Hardcoded to WSL host IP for Podman compatibility
-      - DB_HOST=172.29.48.1
+      # Use the 'db' service name for internal container networking
+      - DB_HOST=${DB_HOST:-db}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
+      - DB_NAME=${DB_NAME:-perjadin_db}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -41,13 +62,13 @@ services:
     ports:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - backend_uploads:/app/uploads
     restart: unless-stopped
-    # Using 'host.docker.internal' requires extra_hosts on Linux, usually automatic on Desktop
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   # ==============================================
   # Gotenberg Service (PDF Generation)
@@ -57,7 +78,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}_gotenberg
     shm_size: "2g"
     ports:
-      - "3000" # Internal port mapping, accessible by frontend/backend. Host port not strictly needed unless debugging.
+      - "3000"
     restart: unless-stopped
     command:
       - "gotenberg"
@@ -77,13 +98,9 @@ services:
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME}_frontend
     environment:
-      # Public URL for client-side fetches (browser -> nginx/backend)
       - PUBLIC_API_URL=${PUBLIC_API_URL}
-      # Internal URL for server-side fetches (ssr -> backend container)
       - INTERNAL_API_URL=${INTERNAL_API_URL}
-      # Vite specific env vars if needed
       - VITE_API_URL=${PUBLIC_API_URL}
-      # Allow large payload uploads (50MB)
       - BODY_SIZE_LIMIT=52428800
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
@@ -92,6 +109,8 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
+    driver: local
   redis_data:
     driver: local
   backend_uploads:

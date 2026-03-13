@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-
 	"github.com/spf13/viper"
 )
 
@@ -45,7 +43,7 @@ type JWTConfig struct {
 
 func LoadConfig() *Config {
 	// Defaults
-	viper.SetDefault("APP_PORT", "8080")
+	viper.SetDefault("APP_PORT", "8081")
 	viper.SetDefault("APP_ENV", "development")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_PORT", "5432")
@@ -62,13 +60,7 @@ func LoadConfig() *Config {
 	cfg.App.Env = viper.GetString("APP_ENV")
 
 	dbHost := viper.GetString("DB_HOST")
-	if dbHost == "localhost" || dbHost == "127.0.0.1" {
-		if os.Getenv("container") == "podman" {
-			dbHost = "host.containers.internal"
-		} else if _, err := os.Stat("/.dockerenv"); err == nil {
-			dbHost = "host.docker.internal"
-		}
-	}
+	// Removed auto-detection logic to strictly respect the environment variable
 	cfg.Database.Host = dbHost
 	cfg.Database.Port = viper.GetString("DB_PORT")
 	cfg.Database.User = viper.GetString("DB_USER")

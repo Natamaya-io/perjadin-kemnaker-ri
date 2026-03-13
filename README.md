@@ -68,7 +68,7 @@ Apply the database migrations to your local Postgres instance.
 ```bash
 cd backend
 # Run migrations (assuming default local credentials)
-migrate -path db/migrations -database "postgresql://postgres:postgres@localhost:5432/perjadin?sslmode=disable" up
+migrate -path db/migrations -database "postgresql://postgres:postgres@localhost:5432/perjadin_db?sslmode=disable" up
 ```
 
 ### 4. Run Backend (Native Mode)
@@ -102,7 +102,7 @@ We use a **Schema-First** approach. Do not modify Go structs manually for DB tab
 2.  **Edit SQL:** Modify the generated `.up.sql` and `.down.sql` files in `backend/db/migrations/`.
 3.  **Apply Migration:**
     ```bash
-    migrate -path db/migrations -database "postgresql://postgres:postgres@localhost:5432/perjadin?sslmode=disable" up
+    migrate -path db/migrations -database "postgresql://postgres:postgres@localhost:5432/perjadin_db?sslmode=disable" up
     ```
 4.  **Update Queries:** If you changed queries, edit `.sql` files in `backend/db/queries/`.
 5.  **Generate Go Code:**
@@ -147,7 +147,12 @@ doppler run -- podman-compose up --build
 ## ⚠️ Troubleshooting
 
 **Q: Connection refused to Database?**
-A: Ensure your **local Postgres service** is running and port 5432 is available. Check your Doppler secrets for `DB_HOST` (should be `localhost` when running native Go, or your Host IP when running inside Docker).
+A: Ensure your **local Postgres service** is running and port 5432 is available. Check your Doppler secrets for `DB_HOST` (should be `localhost` when running native Go, or `host.docker.internal` when running inside Docker).
+
+   **If using Docker/Podman on Windows**, you might need to run this once in PowerShell (Admin) to allow connection:
+   ```powershell
+   New-NetFirewallRule -DisplayName "Allow Postgres Port 5432" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5432
+   ```
 
 **Q: `PieChart is not defined` error?**
 A: This was a known issue in the dashboard. Ensure you have pulled the latest changes where the import was fixed.
