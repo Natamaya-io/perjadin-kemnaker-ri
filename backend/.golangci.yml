@@ -1,0 +1,40 @@
+run:
+  timeout: 5m
+  tests: false # Skip linting test files to be less annoying initially
+  skip-dirs:
+    - db/migrations
+    - pkg/database
+
+linters:
+  enable:
+    - errcheck      # check for unchecked errors
+    - govet         # standard go vet
+    - staticcheck   # drop-in replacement for go vet
+    - gosimple      # specialize in simplifying code
+    - ineffassign   # detect when assignments to existing variables are not used
+    - typecheck     # standard go type checker
+    - unused        # check for unused constants, variables, functions and types
+    - cyclop        # check function and package cyclomatic complexity
+    - lll           # line length linter
+    - gocyclo       # check cyclomatic complexity (backup for cyclop)
+    - gocognit      # compute and check the cognitive complexity of functions
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    package-average: 10.0
+    skip-tests: true
+  gocognit:
+    min-complexity: 15
+  gocyclo:
+    min-complexity: 15
+  lll:
+    line-length: 120
+    tab-width: 4
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0

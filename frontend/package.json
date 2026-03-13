@@ -4,14 +4,15 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "doppler run -- vite dev --port 3000",
-		"build": "doppler run -- vite build",
-		"preview": "doppler run -- vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
-	},
-	"devDependencies": {
+	        "dev": "vite dev --port 3000",
+	        "build": "vite build",
+	        "preview": "vite preview",
+	        "prepare": "svelte-kit sync || echo ''",
+	        "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
+	        "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
+	        "lint": "eslint .",
+	        "format": "prettier --write ."
+	},	"devDependencies": {
 		"@sveltejs/adapter-node": "5.5.3",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
@@ -19,9 +20,13 @@
 		"autoprefixer": "10.4.24",
 		"bits-ui": "2.16.1",
 		"docx-preview": "0.3.7",
+		"eslint": "10.0.3",
+		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-svelte": "3.15.2",
 		"lucide-svelte": "0.575.0",
 		"pdfjs-dist": "5.5.207",
 		"postcss": "8.5.6",
+		"prettier": "3.8.1",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.3.6",
 		"tailwindcss": "4.2.0",

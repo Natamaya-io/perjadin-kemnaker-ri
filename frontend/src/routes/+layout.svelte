@@ -1,18 +1,18 @@
 <script>
   import '../app.css';
-  import { userStore } from '$lib/stores/auth';
+  import { userStore } from '$lib/features/auth/store';
   import { page, navigating } from '$app/stores';
   import { browser } from '$app/environment';
   import { fly, fade } from 'svelte/transition';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   
-  import GlobalLoader from '$lib/components/ui/loader/GlobalLoader.svelte';
-  import Toaster from '$lib/components/ui/toast/Toaster.svelte';
+  import GlobalLoader from '$lib/shared/ui/loader/GlobalLoader.svelte';
+  import Toaster from '$lib/shared/ui/toast/Toaster.svelte';
   
   // Layout Components
-  import Sidebar from '$lib/components/layout/Sidebar.svelte';
-  import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
+  import Sidebar from '$lib/shared/ui/layout/Sidebar.svelte';
+  import MobileHeader from '$lib/shared/ui/layout/MobileHeader.svelte';
 
   $: activeRoute = $page.url?.pathname || '';
   $: isBlankPage = activeRoute.startsWith('/login') || activeRoute.startsWith('/print');

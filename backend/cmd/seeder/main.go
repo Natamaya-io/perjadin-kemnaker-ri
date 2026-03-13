@@ -1,41 +1,50 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kemnaker/perjadin-backend/internal/config"
-	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/kemnaker/perjadin-backend/pkg/database"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
-	dsn := "host=" + cfg.Database.Host + " user=" + cfg.Database.User + " password=" + cfg.Database.Password + " dbname=" + cfg.Database.Name + " port=" + cfg.Database.Port + " sslmode=" + cfg.Database.SSLMode
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := database.NewPostgresDB(cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.SSLMode)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+	defer db.Close()
 
 	log.Println("Connected to database.")
 
 	// Ensure Migrations are up to date before seeding
-	log.Println("Running AutoMigrate...")
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.TravelRecord{},
-		&models.TravelCost{},
-		&models.TravelReport{},
-		&models.Province{},
-		&models.SBMRate{},
-	)
-	if err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
+	log.Println("Running Migrations...")
+	runMigrations(db)
 
 	// Call the shared seeder logic
 	seeder.Seed(db)
+}
+
+func runMigrations(db *sql.DB) {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatalf("Could not create postgres driver: %v", err)
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://db/migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Fatalf("Migration init failed: %v", err)
+	}
+	
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Migration failed: %v", err)
+	}
+	log.Println("Migrations applied successfully.")
 }

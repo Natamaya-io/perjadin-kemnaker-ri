@@ -1,21 +1,21 @@
 <script>
-    import { recordsStore, deleteRecordBySpd } from '$lib/stores/records';
-    import { userStore } from '$lib/stores/auth';
+    import { recordsStore, deleteRecordBySpd } from '$lib/features/pengajuan/store';
+    import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
-    import { toast } from '$lib/stores/toast';
-    import { getStatusBadge } from '$lib/utils';
+    import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
+    import { toast } from '$lib/shared/stores/toast';
+    import { getStatusBadge } from '$lib/shared/utils/utils';
     
-    import Table from '$lib/components/ui/table/Table.svelte';
-    import TableHeader from '$lib/components/ui/table/TableHeader.svelte';
-    import TableRow from '$lib/components/ui/table/TableRow.svelte';
-    import TableHead from '$lib/components/ui/table/TableHead.svelte';
-    import TableBody from '$lib/components/ui/table/TableBody.svelte';
-    import TableCell from '$lib/components/ui/table/TableCell.svelte';
-    import ReviewModal from '$lib/components/dashboard/pengajuan/ReviewModal.svelte';
-    import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
-    import AdminTableFilters from '$lib/components/dashboard/admin/AdminTableFilters.svelte';
+    import Table from '$lib/shared/ui/table/Table.svelte';
+    import TableHeader from '$lib/shared/ui/table/TableHeader.svelte';
+    import TableRow from '$lib/shared/ui/table/TableRow.svelte';
+    import TableHead from '$lib/shared/ui/table/TableHead.svelte';
+    import TableBody from '$lib/shared/ui/table/TableBody.svelte';
+    import TableCell from '$lib/shared/ui/table/TableCell.svelte';
+    import ReviewModal from '$lib/features/pengajuan/ui/ReviewModal.svelte';
+    import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
+    import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
 
     // Filter & Sort State
     let searchQuery = '';

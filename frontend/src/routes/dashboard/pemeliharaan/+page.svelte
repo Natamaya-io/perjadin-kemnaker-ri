@@ -1,5 +1,5 @@
 <script>
-    import UnderConstruction from '$lib/components/ui/UnderConstruction.svelte';
+    import UnderConstruction from '$lib/shared/ui/UnderConstruction.svelte';
 </script>
 
 <UnderConstruction title="Pemeliharaan" />

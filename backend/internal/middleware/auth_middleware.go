@@ -6,11 +6,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/config"
-	"github.com/kemnaker/perjadin-backend/internal/repository"
+	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/labstack/echo/v4"
 )
 
-func JWTMiddleware(cfg *config.Config, repo *repository.Repository) echo.MiddlewareFunc {
+func JWTMiddleware(cfg *config.Config, repo user.Repository) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")

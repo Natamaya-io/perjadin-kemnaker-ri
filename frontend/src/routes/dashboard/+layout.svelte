@@ -1,5 +1,5 @@
 <script>
-    import { userStore } from '$lib/stores/auth';
+    import { userStore } from '$lib/features/auth/store';
     import { goto } from '$app/navigation';
     import { onMount, onDestroy } from 'svelte';
     import { browser } from '$app/environment';

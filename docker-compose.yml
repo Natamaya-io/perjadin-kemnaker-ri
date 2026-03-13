@@ -2,22 +2,6 @@ version: '3.8'
 
 services:
   # ==============================================
-  # Database Service (PostgreSQL)
-  # ==============================================
-  postgres:
-    image: postgres:15-alpine
-    container_name: ${COMPOSE_PROJECT_NAME}_postgres
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-perjadin}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  # ==============================================
   # Redis Service (Caching & Session Store)
   # ==============================================
   redis:
@@ -39,7 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME}_backend
     environment:
-      - DB_HOST=postgres
+      # Hardcoded to WSL host IP for Podman compatibility
+      - DB_HOST=172.29.48.1
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -56,7 +41,6 @@ services:
     ports:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:
-      - postgres
       - redis
     volumes:
       - backend_uploads:/app/uploads
@@ -102,14 +86,12 @@ services:
       # Allow large payload uploads (50MB)
       - BODY_SIZE_LIMIT=52428800
     ports:
-      - "${FRONTEND_PORT}:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-    driver: local
   redis_data:
     driver: local
   backend_uploads:

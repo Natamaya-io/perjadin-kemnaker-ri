@@ -1,25 +1,25 @@
 ﻿<script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api';
-    import { userStore, usersStore } from '$lib/stores/auth';
-    import { provincesStore, stakeholdersStore } from '$lib/stores/master-data';
-    import { recordsStore, addRecord } from '$lib/stores/records';
-    import { toast } from '$lib/stores/toast';
+    import { api } from '$lib/shared/api';
+    import { userStore, usersStore } from '$lib/features/auth/store';
+    import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
+    import { recordsStore, addRecord, loadRecords } from '$lib/features/pengajuan/store';
+    import { toast } from '$lib/shared/stores/toast';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     
     // Components
-    import ProposalHeader from '$lib/components/dashboard/pengajuan/ProposalHeader.svelte';
-    import ProposalForm from '$lib/components/dashboard/pengajuan/ProposalForm.svelte';
-    import ProposalSidebar from '$lib/components/dashboard/pengajuan/ProposalSidebar.svelte';
+    import ProposalHeader from '$lib/features/pengajuan/ui/ProposalHeader.svelte';
+    import ProposalForm from '$lib/features/pengajuan/ui/ProposalForm.svelte';
+    import ProposalSidebar from '$lib/features/pengajuan/ui/ProposalSidebar.svelte';
     
-    import BasicInfoCard from '$lib/components/dashboard/pengajuan/BasicInfoCard.svelte';
-    import LocationCard from '$lib/components/dashboard/pengajuan/LocationCard.svelte';
-    import StakeholderCard from '$lib/components/dashboard/pengajuan/StakeholderCard.svelte';
-    import EmployeeSelectorCard from '$lib/components/dashboard/pengajuan/EmployeeSelectorCard.svelte';
-    import CostEstimateCard from '$lib/components/dashboard/pengajuan/CostEstimateCard.svelte';
+    import BasicInfoCard from '$lib/features/pengajuan/ui/BasicInfoCard.svelte';
+    import LocationCard from '$lib/features/pengajuan/ui/LocationCard.svelte';
+    import StakeholderCard from '$lib/features/pengajuan/ui/StakeholderCard.svelte';
+    import EmployeeSelectorCard from '$lib/features/pengajuan/ui/EmployeeSelectorCard.svelte';
+    import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     
-    import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
+    import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
 
     $: selectedType = $page.url.searchParams.get('type');
 

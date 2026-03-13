@@ -1,27 +1,25 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 // Base model for UUID support
 type Base struct {
-	ID        uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type User struct {
 	Base
-	Email        string `gorm:"uniqueIndex;not null" json:"email"`
-	Password     string `gorm:"not null" json:"-"` // Never return password
-	Name         string `gorm:"not null" json:"name"`
-	Role         string `gorm:"not null;default:'protokol'" json:"role"` // super_admin, keuangan, kasubag, protokol
+	Email        string `json:"email"`
+	Password     string `json:"-"` // Never return password
+	Name         string `json:"name"`
+	Role         string `json:"role"` // super_admin, keuangan, kasubag, protokol
 	NIP          string `json:"nip"`
 	NomorHP      string `json:"nomorHp"`
 	Pangkat      string `json:"pangkat"`
@@ -32,29 +30,26 @@ type User struct {
 	DemoPassword string `json:"-"` // Stores plain text password for Demo Banner (INSECURE - DEMO ONLY)
 }
 
-// Employee struct removed as it is replaced by User (Protokol role)
-
 type TravelRecord struct {
 	Base
-	SPDNumber   string      `gorm:"index" json:"spd"`
-	EmployeeID  uuid.UUID   `gorm:"type:uuid;not null" json:"employeeId"`
-	EmployeeIDs []uuid.UUID `gorm:"-" json:"employeeIds,omitempty"`        // For bulk creation
-	Employee    User        `gorm:"foreignKey:EmployeeID" json:"employee"` // Linked to User now
-	CreatorID   uuid.UUID   `gorm:"type:uuid;not null" json:"creatorId"`   // User who created this
-	Creator     User        `gorm:"foreignKey:CreatorID" json:"creator"`
+	SPDNumber   string      `json:"spd"`
+	EmployeeID  uuid.UUID   `json:"employeeId"`
+	EmployeeIDs []uuid.UUID `json:"employeeIds,omitempty"` // For bulk creation
+	Employee    User        `json:"employee"`              // Linked to User now
+	CreatorID   uuid.UUID   `json:"creatorId"`             // User who created this
+	Creator     User        `json:"creator"`
 	StartDate   time.Time   `json:"startDate"`
-	// ... rest identical
-	EndDate       time.Time `json:"endDate"`
-	Location      string    `json:"location"`
-	Province      string    `json:"province"`
-	Type          string    `json:"type"` // dalam_kota, luar_kota, luar_negeri
-	Purpose       string    `json:"purpose"`
-	Stakeholder   string    `json:"stakeholder"`
-	Agenda        string    `json:"agenda"`
-	Status        string    `gorm:"default:'Draft'" json:"status"` // Draft, Submitted, Approved, Rejected
-	IsViewed      bool      `gorm:"default:false" json:"isViewed"`
-	ReportStatus  string    `gorm:"default:'Pending'" json:"reportStatus"` // Pending, Completed
-	PaymentStatus string    `gorm:"default:'Unpaid'" json:"paymentStatus"` // Unpaid, Paid
+	EndDate     time.Time   `json:"endDate"`
+	Location    string      `json:"location"`
+	Province    string      `json:"province"`
+	Type        string      `json:"type"` // dalam_kota, luar_kota, luar_negeri
+	Purpose     string      `json:"purpose"`
+	Stakeholder string      `json:"stakeholder"`
+	Agenda      string      `json:"agenda"`
+	Status      string      `json:"status"` // Draft, Submitted, Approved, Rejected
+	IsViewed    bool        `json:"isViewed"`
+	ReportStatus  string    `json:"reportStatus"` // Pending, Completed
+	PaymentStatus string    `json:"paymentStatus"` // Unpaid, Paid
 	TotalCost     float64   `json:"totalCost"`
 
 	// Documents
@@ -62,12 +57,12 @@ type TravelRecord struct {
 	SuratTugasNumber string `json:"suratTugasNumber"`
 
 	// Relationships
-	Cost   *TravelCost   `gorm:"foreignKey:TravelRecordID;constraint:OnDelete:CASCADE" json:"costs,omitempty"`
-	Report *TravelReport `gorm:"foreignKey:TravelRecordID;constraint:OnDelete:CASCADE" json:"reportData,omitempty"`
+	Cost   *TravelCost   `json:"costs,omitempty"`
+	Report *TravelReport `json:"reportData,omitempty"`
 }
 
 type TravelCost struct {
-	TravelRecordID     uuid.UUID `gorm:"type:uuid;primaryKey" json:"-"`
+	TravelRecordID     uuid.UUID `json:"-"`
 	TicketGo           float64   `json:"ticketGo"`
 	TicketBack         float64   `json:"ticketBack"`
 	DailyAllowanceDays int       `json:"dailyAllowanceDays"`
@@ -84,22 +79,22 @@ type TravelCost struct {
 	OtherCostDesc string  `json:"otherCostDesc"`
 
 	// Receipts and Documents
-	ReceiptFiles     datatypes.JSON `gorm:"type:jsonb" json:"receiptFiles"`
-	TicketGoFile     datatypes.JSON `gorm:"type:jsonb" json:"ticketGoFile"`
-	TicketBackFile   datatypes.JSON `gorm:"type:jsonb" json:"ticketBackFile"`
-	BoardingPassFile datatypes.JSON `gorm:"type:jsonb" json:"boardingPassFile"`
-	HotelFile        datatypes.JSON `gorm:"type:jsonb" json:"hotelFile"`
-	TransportFile    datatypes.JSON `gorm:"type:jsonb" json:"transportFile"`
-	AdditionalCosts  datatypes.JSON `gorm:"type:jsonb" json:"additionalCosts"`
+	ReceiptFiles     json.RawMessage `json:"receiptFiles"`
+	TicketGoFile     json.RawMessage `json:"ticketGoFile"`
+	TicketBackFile   json.RawMessage `json:"ticketBackFile"`
+	BoardingPassFile json.RawMessage `json:"boardingPassFile"`
+	HotelFile        json.RawMessage `json:"hotelFile"`
+	TransportFile    json.RawMessage `json:"transportFile"`
+	AdditionalCosts  json.RawMessage `json:"additionalCosts"`
 }
 
 type TravelReport struct {
-	TravelRecordID uuid.UUID      `gorm:"type:uuid;primaryKey" json:"-"`
+	TravelRecordID uuid.UUID      `json:"-"`
 	Text           string         `json:"text"`
 	SubmittedAt    time.Time      `json:"submittedAt"`
-	Files          datatypes.JSON `gorm:"type:jsonb" json:"files"` // Storing file metadata/links as JSON
-	SppdFile       datatypes.JSON `gorm:"type:jsonb" json:"sppdFile"`
-	SuratTugasFile datatypes.JSON `gorm:"type:jsonb" json:"suratTugasFile"`
+	Files          json.RawMessage `json:"files"` // Storing file metadata/links as JSON
+	SppdFile       json.RawMessage `json:"sppdFile"`
+	SuratTugasFile json.RawMessage `json:"suratTugasFile"`
 }
 
 // ==========================================
@@ -108,16 +103,16 @@ type TravelReport struct {
 
 type Province struct {
 	Base
-	Name string `gorm:"uniqueIndex;not null" json:"name"`
-	Code string `gorm:"uniqueIndex" json:"code"` // e.g., "31" for DKI Jakarta
+	Name string `json:"name"`
+	Code string `json:"code"` // e.g., "31" for DKI Jakarta
 }
 
 type SBMRate struct {
 	Base
-	ProvinceID uuid.UUID `gorm:"type:uuid;not null;index" json:"provinceId"`
-	Province   Province  `gorm:"foreignKey:ProvinceID" json:"province"`
+	ProvinceID uuid.UUID `json:"provinceId"`
+	Province   Province  `json:"province"`
 
-	Year int `gorm:"index;not null" json:"year"` // e.g., 2025
+	Year int `json:"year"` // e.g., 2025
 
 	// Uang Harian (Per diem)
 	FullboardRate   float64 `json:"fullboardRate"`
@@ -135,33 +130,4 @@ type SBMRate struct {
 
 	// Transport Taksi (Perjalanan Dinas Dalam Negeri)
 	TaxiRate float64 `json:"taxiRate"`
-}
-
-// Hooks
-func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	if u.ID == uuid.Nil {
-		u.ID = uuid.New()
-	}
-	return
-}
-
-func (t *TravelRecord) BeforeCreate(tx *gorm.DB) (err error) {
-	if t.ID == uuid.Nil {
-		t.ID = uuid.New()
-	}
-	return
-}
-
-func (p *Province) BeforeCreate(tx *gorm.DB) (err error) {
-	if p.ID == uuid.Nil {
-		p.ID = uuid.New()
-	}
-	return
-}
-
-func (s *SBMRate) BeforeCreate(tx *gorm.DB) (err error) {
-	if s.ID == uuid.Nil {
-		s.ID = uuid.New()
-	}
-	return
 }

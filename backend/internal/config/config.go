@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+
 	"github.com/spf13/viper"
 )
 
@@ -59,7 +61,15 @@ func LoadConfig() *Config {
 	cfg.App.Port = viper.GetString("APP_PORT")
 	cfg.App.Env = viper.GetString("APP_ENV")
 
-	cfg.Database.Host = viper.GetString("DB_HOST")
+	dbHost := viper.GetString("DB_HOST")
+	if dbHost == "localhost" || dbHost == "127.0.0.1" {
+		if os.Getenv("container") == "podman" {
+			dbHost = "host.containers.internal"
+		} else if _, err := os.Stat("/.dockerenv"); err == nil {
+			dbHost = "host.docker.internal"
+		}
+	}
+	cfg.Database.Host = dbHost
 	cfg.Database.Port = viper.GetString("DB_PORT")
 	cfg.Database.User = viper.GetString("DB_USER")
 	cfg.Database.Password = viper.GetString("DB_PASSWORD")

@@ -1,22 +1,22 @@
 <script>
-    import { recordsStore } from '$lib/stores/records';
-    import { userStore } from '$lib/stores/auth';
-    import Button from '$lib/components/ui/button/Button.svelte';
+    import { recordsStore } from '$lib/features/pengajuan/store';
+    import { userStore } from '$lib/features/auth/store';
+    import Button from '$lib/shared/ui/button/Button.svelte';
 
     // Granular Components
-    import WelcomeBanner from '$lib/components/dashboard/welcome/WelcomeBanner.svelte';
-    import WelcomeContent from '$lib/components/dashboard/welcome/WelcomeContent.svelte';
-    import WelcomeActions from '$lib/components/dashboard/welcome/WelcomeActions.svelte';
-    
-    import StatsGrid from '$lib/components/dashboard/stats/StatsGrid.svelte';
-    import StatCard from '$lib/components/dashboard/stats/StatCard.svelte';
-    
-    import RecentActivityCard from '$lib/components/dashboard/recent/RecentActivityCard.svelte';
-    import ActivityItem from '$lib/components/dashboard/recent/ActivityItem.svelte';
-    import EmptyActivity from '$lib/components/dashboard/recent/EmptyActivity.svelte';
-    
-    import PieChart from '$lib/components/ui/charts/PieChart.svelte';
-    import TimelineCalendar from '$lib/components/dashboard/timeline/TimelineCalendar.svelte';
+    import WelcomeBanner from '$lib/features/dashboard/ui/welcome/WelcomeBanner.svelte';
+    import WelcomeContent from '$lib/features/dashboard/ui/welcome/WelcomeContent.svelte';
+    import WelcomeActions from '$lib/features/dashboard/ui/welcome/WelcomeActions.svelte';
+
+    import StatsGrid from '$lib/features/dashboard/ui/stats/StatsGrid.svelte';
+    import StatCard from '$lib/features/dashboard/ui/stats/StatCard.svelte';
+
+    import RecentActivityCard from '$lib/features/dashboard/ui/recent/RecentActivityCard.svelte';
+    import ActivityItem from '$lib/features/dashboard/ui/recent/ActivityItem.svelte';
+    import EmptyActivity from '$lib/features/dashboard/ui/recent/EmptyActivity.svelte';
+
+    import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
+    import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
     // Helper for currency if not in utils
     function formatIDR(amount) {

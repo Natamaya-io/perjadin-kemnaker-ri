@@ -1,25 +1,49 @@
 package seeder
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/google/uuid"
+	"github.com/kemnaker/perjadin-backend/internal/domain/record"
+	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
-func Seed(db *gorm.DB) {
+func Seed(db *sql.DB) {
 	log.Println("Starting Database Seeding...")
 
-	seedProvincesAndRates(db)
-	seedUsers(db)
+	userRepo := user.NewRepository(db)
+	recordRepo := record.NewRepository(db)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		seedProvincesAndRates(db)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		seedUsers(userRepo)
+	}()
+
+	wg.Wait()
+
+	// Runs after users are seeded because it depends on them
+	seedFakerRecords(userRepo, recordRepo)
 
 	log.Println("Database Seeding Completed Successfully.")
 }
 
-func seedProvincesAndRates(db *gorm.DB) {
+func seedProvincesAndRates(db *sql.DB) {
 	log.Println("Seeding Provinces and SBM Rates...")
 
 	provinces := []struct {
@@ -30,109 +54,58 @@ func seedProvincesAndRates(db *gorm.DB) {
 		Diklat    float64
 	}{
 		{"ACEH", "11", 360000, 140000, 110000},
-		{"SUMATERA UTARA", "12", 370000, 150000, 110000},
-		{"SUMATERA BARAT", "13", 380000, 150000, 110000},
-		{"RIAU", "14", 370000, 150000, 110000},
-		{"JAMBI", "15", 370000, 150000, 110000},
-		{"SUMATERA SELATAN", "16", 380000, 150000, 110000},
-		{"BENGKULU", "17", 380000, 150000, 110000},
-		{"LAMPUNG", "18", 380000, 150000, 110000},
-		{"KEPULAUAN BANGKA BELITUNG", "19", 410000, 160000, 120000},
-		{"KEPULAUAN RIAU", "21", 370000, 150000, 110000},
 		{"DKI JAKARTA", "31", 530000, 210000, 160000},
 		{"JAWA BARAT", "32", 430000, 170000, 130000},
 		{"JAWA TENGAH", "33", 370000, 150000, 110000},
 		{"DI YOGYAKARTA", "34", 420000, 170000, 130000},
 		{"JAWA TIMUR", "35", 410000, 160000, 120000},
-		{"BANTEN", "36", 370000, 150000, 110000},
 		{"BALI", "51", 480000, 190000, 140000},
-		{"NUSA TENGGARA BARAT", "52", 440000, 180000, 130000},
-		{"NUSA TENGGARA TIMUR", "53", 430000, 170000, 130000},
-		{"KALIMANTAN BARAT", "61", 380000, 150000, 110000},
-		{"KALIMANTAN TENGAH", "62", 360000, 140000, 110000},
-		{"KALIMANTAN SELATAN", "63", 380000, 150000, 110000},
-		{"KALIMANTAN TIMUR", "64", 430000, 170000, 130000},
-		{"KALIMANTAN UTARA", "65", 430000, 170000, 130000},
-		{"SULAWESI UTARA", "71", 370000, 150000, 110000},
-		{"SULAWESI TENGAH", "72", 370000, 150000, 110000},
-		{"SULAWESI SELATAN", "73", 430000, 170000, 130000},
-		{"SULAWESI TENGGARA", "74", 380000, 150000, 110000},
-		{"GORONTALO", "75", 370000, 150000, 110000},
-		{"SULAWESI BARAT", "76", 410000, 160000, 120000},
-		{"MALUKU", "81", 380000, 150000, 110000},
-		{"MALUKU UTARA", "82", 430000, 170000, 130000},
-		{"PAPUA BARAT", "91", 480000, 190000, 140000},
 		{"PAPUA", "92", 580000, 230000, 170000},
-		{"PAPUA SELATAN", "93", 580000, 230000, 170000},
-		{"PAPUA TENGAH", "94", 580000, 230000, 170000},
-		{"PAPUA PEGUNUNGAN", "95", 580000, 230000, 170000},
-		{"PAPUA BARAT DAYA", "96", 480000, 190000, 140000},
 	}
 
 	for _, p := range provinces {
-		var province models.Province
-		// Upsert Province
-		if err := db.Where("code = ?", p.Code).First(&province).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				province = models.Province{Name: p.Name, Code: p.Code}
-				db.Create(&province)
-			}
-		} else {
-			if province.Name != p.Name {
-				province.Name = p.Name
-				db.Save(&province)
+		var provinceID uuid.UUID
+		err := db.QueryRow("SELECT id FROM provinces WHERE code = $1", p.Code).Scan(&provinceID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				provinceID = uuid.New()
+				_, err = db.Exec("INSERT INTO provinces (id, name, code) VALUES ($1, $2, $3)", provinceID, p.Name, p.Code)
+				if err != nil {
+					log.Printf("Failed to insert province %s: %v", p.Name, err)
+					continue
+				}
+			} else {
+				log.Printf("Error querying province %s: %v", p.Name, err)
+				continue
 			}
 		}
 
-		// Seed SBM Rate for 2025
 		year := 2025
-		var sbm models.SBMRate
-		if err := db.Where("province_id = ? AND year = ?", province.ID, year).First(&sbm).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				sbm = models.SBMRate{
-					ProvinceID: province.ID,
-					Year:       year,
-
-					// Uang Harian
-					OutsideCityRate: p.LuarKota,
-					InsideCityRate:  p.DalamKota,
-					DiklatRate:      p.Diklat,
-
-					// Fullboard (Paket Meeting)
-					FullboardRate: p.LuarKota * 0.4,
-					FullhalfRate:  p.LuarKota * 0.6,
-
-					// Hotel (Pagu Tertinggi) - Estimasi
-					HotelEchelon1: p.LuarKota * 10,
-					HotelEchelon2: p.LuarKota * 5,
-					HotelEchelon3: p.LuarKota * 3,
-					HotelEchelon4: p.LuarKota * 2.5,
-					HotelStaff:    p.LuarKota * 2,
-
-					TaxiRate: 150000, // Flat average
+		var sbmID uuid.UUID
+		err = db.QueryRow("SELECT id FROM sbm_rates WHERE province_id = $1 AND year = $2", provinceID, year).Scan(&sbmID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				_, err = db.Exec(`
+					INSERT INTO sbm_rates (
+						id, province_id, year, fullboard_rate, fullhalf_rate, outside_city_rate, inside_city_rate, diklat_rate, hotel_echelon1, hotel_echelon2, hotel_echelon3, hotel_echelon4, hotel_staff, taxi_rate
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+					uuid.New(), provinceID, year, p.LuarKota*0.4, p.LuarKota*0.6, p.LuarKota, p.DalamKota, p.Diklat, p.LuarKota*10, p.LuarKota*5, p.LuarKota*3, p.LuarKota*2.5, p.LuarKota*2, 150000,
+				)
+				if err != nil {
+					log.Printf("Failed to insert SBM rate for %s: %v", p.Name, err)
 				}
-				db.Create(&sbm)
 			}
-		} else {
-			// Update Existing SBM Record to ensure we have the new rates
-			db.Model(&sbm).Updates(map[string]interface{}{
-				"OutsideCityRate": p.LuarKota,
-				"InsideCityRate":  p.DalamKota,
-				"DiklatRate":      p.Diklat,
-			})
 		}
 	}
 }
 
-func seedUsers(db *gorm.DB) {
+func seedUsers(userRepo user.Repository) {
 	log.Println("Seeding Users...")
 
-	// Default Password "123"
 	password := "123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	hashedPwdStr := string(hashedPassword)
 
-	// Admin Users
 	adminUsers := []models.User{
 		{
 			Name:         "Super Admin",
@@ -150,17 +123,8 @@ func seedUsers(db *gorm.DB) {
 			DemoPassword: password,
 			NomorHP:      "081200000001",
 		},
-		{
-			Name:         "Kasubag",
-			Email:        "kasubag@kemnaker.go.id",
-			Password:     hashedPwdStr,
-			Role:         "kasubag",
-			DemoPassword: password,
-			NomorHP:      "081200000002",
-		},
 	}
 
-	// Protokol Users Data
 	type rawUser struct {
 		Name         string
 		NIP          string
@@ -174,60 +138,12 @@ func seedUsers(db *gorm.DB) {
 		{"Jiyanto", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
 		{"Fathan Asyraf", "-", "-", "-", "-", "Staf Tata Usaha"},
 		{"Auditya Hermawan", "19880920 201403 1 001", "C", "Penata Tk.I", "III/d", "Kabag TU Pimpinan dan Protokol"},
-		{"Amsari B Dulmuti", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Sigit Santoso", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Ramadhan Putra Herdian", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Beni Sanjaya", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Suratno", "-", "-", "-", "-", "Tenaga Administrasi"},
-		{"M. Muhtadin", "-", "-", "-", "-", "Tenaga Administrasi"},
-		{"Muhammad Isa", "19871017 201902 1 003", "C", "Penata Muda Tk.I", "III/c", "Analis Perencanaan Evaluasi dan Pelaporan"},
-		{"Perananta Purba", "19910306 201902 1 003", "C", "Penata Muda Tk. I", "II/b", "Analis Protokoler"},
-		{"Mochamad Gufron", "19940526 201902 1 003", "C", "Penata Muda Tk. I", "III/b", "Kepala Subbagian Protokol"},
-		{"Rezky Aries Munandar", "19960407 201812 1 001", "D", "Penata Muda", "III/a", "Penata Protokoler"},
-		{"Imelda Anggraeni Sibarani", "19941004 201902 2 008", "C", "Penata Muda Tk. I", "III/b", "Analis Protokoler"},
-		{"Efi Kurniawati", "19920106 201503 2004", "C", "Penata", "III/c", "Analis Protokoler"},
-		{"Bobby Rizky", "19940929 201902 1 005", "C", "Penata Muda Tk. I", "III/b", "Analis Protokoler"},
-		{"Nurcahyo Purnomo", "19890404 201503 1 007", "D", "Penata Muda", "III/a", "Petugas Protokoler"},
-		{"Bagas Winektu", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Yudi Santoso", "80090538", "-", "AIPTU", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
-		{"M. Choirul Hidayat", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
-		{"Widada", "75120659", "-", "AIPDA", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
-		{"Nanang", "77060070", "-", "AIPDA", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
-		{"Beny Sanjaya", "-", "-", "-", "-", "Tenaga Administrasi"},
-		{"Muhammad Dienul Islami", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Wahyu Nino Prasangka", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Firman Andriansyah", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Muhammad Afendrianto", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Dudi Erwanto", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Afriyanti", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Muhammad Farras Fadhilsyah", "-", "D", "-", "-", "Pramu Pimpinan"},
-		{"Siti Munzayanah", "19930812 202012 2 021", "C", "Penata Muda", "III/a", "Penelaah Teknis Kebijakan"},
-		{"Syamazka Zakirni", "19950512 202521 2 042", "D", "-", "IX", "Penata Layanan Operasional"},
-		{"Zainal Hafit", "19930609 202521 1 068", "D", "-", "IX", "Pengadministrasi Perkantoran"},
-		{"Taufik Hidayat Sitompul", "198603272009121003", "C", "Penata Muda Tk. I", "III/b", "Analis Persuratan"},
-		{"Mark Hermawan", "-", "D", "-", "-", "Tenaga Administrasi"},
-		{"Widianto", "-", "D", "-", "-", "Tenaga Administrasi"},
-		{"Imam Wahyu Sucipto", "-", "-", "-", "-", "ADC Menteri Ketenagakerjaan"},
-		{"Muhammad Nuril Anwar", "-", "D", "-", "-", "Tenaga Administrasi"},
-		{"Adria Jabartaru Putra", "19890920 201503 1 003", "-", "-", "-", "Auditor muda inspektorat 1"},
-		{"Heru Anggara Tri Susila", "-", "-", "-", "-", "Tenaga Administrasi"},
-		{"Nurin Nashfati", "20010115 202505 2 002", "C", "Penata Muda", "III/a", "Penata Keprotokolan"},
-		{"Citra Anastasya", "20010728 202505 2 007", "C", "Penata Muda", "III/a", "Penata Keprotokolan"},
-		{"Riki Nurkamal Arsandi", "-", "D", "-", "-", "Staf Biro Umum"},
-		{"Mohamad Abdul Baasith", "-", "D", "-", "-", "Petugas Administrasi"},
-		{"Regina Dwita Sari", "20020627 202505 2 004", "C", "Penata Muda", "III/a", "Penata Protokoler"},
-		{"Hendi Rionaldo", "19870518 202521 1010", "-", "-", "IX", "Penata Layanan Operasional"},
-		{"Chandra Hakim", "-", "D", "-", "-", "Pengadministrasi"},
-		{"Doni Renaldi", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Dhika Nur Khaliffa", "-", "-", "-", "-", "Pramu Pimpinan"},
 	}
 
-	// Seed Admins
 	for _, u := range adminUsers {
-		upsertUser(db, u)
+		upsertUser(userRepo, u)
 	}
 
-	// Seed Protokol Users
 	for i, raw := range protokolData {
 		email := strings.ToLower(strings.ReplaceAll(raw.Name, " ", "")) + "@kemnaker.go.id"
 		email = strings.ReplaceAll(email, ".", "")
@@ -245,34 +161,87 @@ func seedUsers(db *gorm.DB) {
 			NIP:          raw.NIP,
 			NomorHP:      fmt.Sprintf("081234567%03d", i+1),
 		}
-		upsertUser(db, user)
+		upsertUser(userRepo, user)
+	}
+
+	gofakeit.Seed(0)
+	for i := 0; i < 5; i++ {
+		email := gofakeit.Email()
+		user := models.User{
+			Name:         gofakeit.Name(),
+			Email:        email,
+			Password:     hashedPwdStr,
+			Role:         "protokol",
+			DemoPassword: password,
+			Jabatan:      gofakeit.JobTitle(),
+			NIP:          gofakeit.DigitN(18),
+			NomorHP:      gofakeit.Phone(),
+		}
+		upsertUser(userRepo, user)
 	}
 }
 
-func upsertUser(db *gorm.DB, u models.User) {
-	var existing models.User
-	if err := db.Where("email = ?", u.Email).First(&existing).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			if err := db.Create(&u).Error; err != nil {
-				log.Printf("Failed to create user %s: %v", u.Email, err)
-			} else {
-				log.Printf("Created user: %s", u.Email)
-			}
+func upsertUser(userRepo user.Repository, u models.User) {
+	existing, err := userRepo.GetUserByEmail(u.Email)
+	if err != nil || existing == nil {
+		if err := userRepo.CreateUser(&u); err != nil {
+			log.Printf("Failed to create user %s: %v", u.Email, err)
+		} else {
+			log.Printf("Created user: %s", u.Email)
 		}
 	} else {
-		// Update existing user details
-		updates := map[string]interface{}{
-			"Name":         u.Name,
-			"Role":         u.Role,
-			"Jabatan":      u.Jabatan,
-			"Pangkat":      u.Pangkat,
-			"Golongan":     u.Golongan,
-			"TingkatBiaya": u.TingkatBiaya,
-			"NIP":          u.NIP,
-			// Do NOT update Password to prevent locking out real users if they changed it
-			// "Password": u.Password,
+		u.ID = existing.ID
+		u.Password = existing.Password // Keep existing password
+		if err := userRepo.UpdateUser(&u); err != nil {
+			log.Printf("Failed to update user %s: %v", u.Email, err)
 		}
-		db.Model(&existing).Updates(updates)
-		// log.Printf("Updated user: %s", u.Email)
 	}
+}
+
+func seedFakerRecords(userRepo user.Repository, recordRepo record.Repository) {
+	log.Println("Seeding Faker Travel Records...")
+	gofakeit.Seed(0)
+
+	users, err := userRepo.GetUsers()
+	if err != nil || len(users) < 2 {
+		return
+	}
+
+	var creatorID uuid.UUID
+	var empID uuid.UUID
+
+	for _, u := range users {
+		if u.Role == "super_admin" {
+			creatorID = u.ID
+		}
+		if u.Role == "protokol" && empID == uuid.Nil {
+			empID = u.ID
+		}
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		
+		// To avoid race conditions in gofakeit and ensure unique generation,
+		// we generate data sequentially but insert concurrently.
+		record := models.TravelRecord{
+			SPDNumber:   gofakeit.UUID(),
+			EmployeeID:  empID,
+			CreatorID:   creatorID,
+			Location:    gofakeit.City(),
+			Province:    gofakeit.State(),
+			Type:        "luar_kota",
+			Purpose:     gofakeit.Sentence(5),
+			Stakeholder: gofakeit.Company(),
+			Agenda:      gofakeit.Paragraph(1, 2, 5, " "),
+			Status:      "Draft",
+		}
+		
+		go func(rec models.TravelRecord) {
+			defer wg.Done()
+			recordRepo.CreateTravelRecord(&rec)
+		}(record)
+	}
+	wg.Wait()
 }

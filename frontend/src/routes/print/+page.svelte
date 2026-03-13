@@ -1,10 +1,10 @@
 <script>
     import { page } from '$app/stores';
-    import { recordsStore, loadRecords } from '$lib/stores/records';
+    import { recordsStore, loadRecords } from '$lib/features/pengajuan/store';
     import { onMount, tick } from 'svelte';
-    import Button from '$lib/components/ui/button/Button.svelte';
-    import { terbilang } from '$lib/utils/terbilang';
-    import { toast } from '$lib/stores/toast';
+    import Button from '$lib/shared/ui/button/Button.svelte';
+    import { terbilang } from '$lib/shared/utils/terbilang';
+    import { toast } from '$lib/shared/stores/toast';
 
     let type = $page.url.searchParams.get('type'); // 'spd', 'rincian', 'laporan'
     let spd = $page.url.searchParams.get('spd');

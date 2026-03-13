@@ -1,0 +1,63 @@
+# Gemini AI & Cursor AI Core Instructions
+
+This file dictates the absolute rules and architectural boundaries that the AI MUST strictly follow when generating, refactoring, or analyzing code in the `perjadin-kemnaker-ri` repository.
+
+## 1. Backend Architecture (Golang)
+
+### 1.1 Domain-Driven Design (DDD) is Mandatory
+*   **NEVER** use the old layer-based pattern (`/internal/handlers`, `/internal/services`).
+*   **ALWAYS** group logic by domain under `/backend/internal/domain/<feature-name>`.
+*   Each domain directory MUST contain its own `handler.go`, `service.go`, and `repository.go`.
+*   If a feature needs to talk to another feature, it MUST use the `Service` interface of the target domain. Do not bypass the service layer to call another domain's repository directly.
+
+### 1.2 strict Interface-Based Repositories
+*   All repositories MUST be defined as an `interface` to allow mocking in unit tests.
+*   **NEVER** use direct struct pointers for repositories inside `Service` structs.
+*   Return standard error strings or custom error types, do not return raw `pq.Error` straight to the handler.
+
+### 1.3 Caching & Concurrency
+*   **READ Operations (GET):** Always use the **Cache-Aside Pattern** with Redis. Fetch from Redis first. If a Cache Miss occurs, fetch from PostgreSQL (`repo`) and save to Redis with a TTL before returning.
+*   **WRITE Operations (POST/PUT/DELETE):** Always execute the database transaction first. If successful, you **MUST** invalidate the relevant Redis cache pattern asynchronously (`go s.invalidateCache(...)`).
+*   **N+1 Queries:** Never use loop-based sequential DB calls. Always use `sync.WaitGroup` and `Goroutines` to fetch relational records concurrently.
+
+### 1.4 Database Queries
+*   **NEVER** place raw SQL queries inside `handler.go` or `service.go`.
+*   All SQL queries MUST reside in `backend/db/queries/*.sql` and be generated into type-safe Go code using `sqlc`.
+*   To add a new query: Write the query in the `.sql` file, then run `sqlc generate`.
+
+---
+
+## 2. Frontend Architecture (SvelteKit)
+
+### 2.1 Feature-Sliced Design (FSD)
+*   **NEVER** place business-specific components in `src/lib/components/`.
+*   **ALWAYS** follow the FSD structure:
+    *   `src/lib/features/<domain>/ui/` -> For smart components specific to a domain (e.g., `pengajuan`, `auth`).
+    *   `src/lib/features/<domain>/store.ts` -> For state management specific to a domain.
+    *   `src/lib/shared/ui/` -> For dumb, reusable, generic components (Buttons, Inputs, Modals).
+    *   `src/lib/shared/utils/` -> For generic helper functions.
+
+### 2.2 Svelte Best Practices
+*   **Reactivity:** When manipulating arrays/objects, prefer Svelte 5 runes (`$state`, `$derived`) if updating, or ensure explicit reassignment (`arr = [...arr, new]`) in Svelte 4.
+*   **State:** Use Svelte stores for global application state. Avoid prop-drilling more than 2 levels deep.
+*   **Types:** Always use strict `JSDoc` comments above functions and components to provide pseudo-type safety, even though this is a `.js`/`.svelte` repository.
+*   **Styling:** Use TailwindCSS utility classes. Do not use `<style>` blocks in Svelte components unless it is absolutely necessary for complex, dynamic visual effects.
+
+---
+
+## 3. DevOps & Tooling
+
+### 3.1 Docker & Podman Workflows
+*   The application relies heavily on environment injection via Doppler.
+*   **NEVER** instruct the user to run `go run` or `npm run dev` directly if it involves database interactions.
+*   **ALWAYS** wrap CLI commands with `doppler run -- ...`.
+*   For container builds, use `doppler run -- podman-compose up -d --build`.
+
+### 3.2 Automated Testing
+*   When implementing a new backend service function, you MUST write the corresponding unit test using `github.com/stretchr/testify/mock` before considering the task complete.
+*   Always ensure `go test -v ./...` passes after major refactoring.
+
+### 3.3 Security
+*   NEVER commit API keys, secrets, or Doppler tokens into the repository.
+*   Always sanitize and validate user input at the Handler layer using standard Echo context binding.
+*   Do not trust client-side validation; always perform duplicate validation in the Go backend.

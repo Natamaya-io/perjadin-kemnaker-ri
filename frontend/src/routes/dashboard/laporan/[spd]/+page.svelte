@@ -12,23 +12,23 @@
         return cleanName;
     }
     import { page } from '$app/stores';
-    import { recordsStore, updateRecord, loadRecords } from '$lib/stores/records';
-    import { userStore } from '$lib/stores/auth';
-    import { provincesStore } from '$lib/stores/master-data';
-    import { toast } from '$lib/stores/toast';
+    import { recordsStore, updateRecord, loadRecords } from '$lib/features/pengajuan/store';
+    import { userStore } from '$lib/features/auth/store';
+    import { provincesStore } from '$lib/shared/stores/master-data';
+    import { toast } from '$lib/shared/stores/toast';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { fade } from 'svelte/transition';
-    import { cn } from '$lib/utils';
+    import { cn } from '$lib/shared/utils/utils';
     
     // UI
-    import Button from '$lib/components/ui/button/Button.svelte';
-    import Label from '$lib/components/ui/label/Label.svelte';
-    import Textarea from '$lib/components/ui/textarea/Textarea.svelte';
-    import Input from '$lib/components/ui/input/Input.svelte';
-    import Select from '$lib/components/ui/select/Select.svelte';
-    import DocumentViewer from '$lib/components/ui/document-viewer/DocumentViewer.svelte';
-    import Dialog from '$lib/components/ui/dialog/Dialog.svelte';
+    import Button from '$lib/shared/ui/button/Button.svelte';
+    import Label from '$lib/shared/ui/label/Label.svelte';
+    import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
+    import Input from '$lib/shared/ui/input/Input.svelte';
+    import Select from '$lib/shared/ui/select/Select.svelte';
+    import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
+    import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
 
     let spd = $page.params.spd || ''; 
     

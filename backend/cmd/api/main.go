@@ -2,24 +2,46 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kemnaker/perjadin-backend/internal/config"
-	"github.com/kemnaker/perjadin-backend/internal/handlers"
+	"github.com/kemnaker/perjadin-backend/internal/domain/auth"
+	"github.com/kemnaker/perjadin-backend/internal/domain/record"
+	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
-	"github.com/kemnaker/perjadin-backend/internal/models"
-	"github.com/kemnaker/perjadin-backend/internal/repository"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
-	"github.com/kemnaker/perjadin-backend/internal/services"
 	"github.com/kemnaker/perjadin-backend/pkg/cache"
 	"github.com/kemnaker/perjadin-backend/pkg/database"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
 )
+
+func runMigrations(db *sql.DB, sugar *zap.SugaredLogger) {
+	sugar.Info("Running migrations...")
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		sugar.Fatalf("Could not create postgres driver: %v", err)
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file:///app/db/migrations",
+		"postgres", driver)
+	if err != nil {
+		sugar.Fatalf("Migration init failed: %v", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		sugar.Fatalf("Migration failed: %v", err)
+	}
+	sugar.Info("Migrations applied successfully.")
+}
 
 func main() {
 	// 1. Load Configuration
@@ -42,15 +64,9 @@ func main() {
 	if err != nil {
 		sugar.Fatalf("Failed to connect to database: %v", err)
 	}
-
-	// Get generic database object sql.DB to use its functions
-	sqlDB, err := db.DB()
-	if err != nil {
-		sugar.Fatalf("Failed to get underlying sql.DB: %v", err)
-	}
 	defer func() {
 		sugar.Info("Closing database connection...")
-		if err := sqlDB.Close(); err != nil {
+		if err := db.Close(); err != nil {
 			sugar.Errorf("Error closing database connection: %v", err)
 		}
 	}()
@@ -68,30 +84,8 @@ func main() {
 		}()
 	}
 
-	// 4. Auto Migrate
-	sugar.Info("Migrating database schemas...")
-
-	// Drop the unique index to allow multiple records per SPD
-	if err := db.Exec("DROP INDEX IF EXISTS idx_travel_records_spd_number;").Error; err != nil {
-		sugar.Warnf("Failed to drop index idx_travel_records_spd_number: %v", err)
-	}
-
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.TravelRecord{},
-		&models.TravelCost{},
-		&models.TravelReport{},
-		// Master Data
-		&models.Province{},
-		&models.SBMRate{},
-	)
-	if err != nil {
-		sugar.Fatalf("Failed to migrate database: %v", err)
-	}
-
-	// Fix missing unique constraint for ON CONFLICT during report update
-	db.Exec("ALTER TABLE travel_reports ADD CONSTRAINT travel_reports_record_id_key UNIQUE (travel_record_id);")
-	db.Exec("ALTER TABLE travel_costs ADD CONSTRAINT travel_costs_record_id_key UNIQUE (travel_record_id);")
+	// 4. Run Migrations
+	runMigrations(db, sugar)
 
 	// 5. Seed Data (if enabled)
 	if os.Getenv("SEED_DB") == "true" {
@@ -100,12 +94,16 @@ func main() {
 	}
 
 	// 6. Initialize Layers
-	repo := repository.NewRepository(db)
-	svc := services.NewService(repo, cfg, rdb)
-	authHandler := handlers.NewAuthHandler(svc)
-	recordHandler := handlers.NewRecordHandler(svc)
-	// employeeHandler := handlers.NewEmployeeHandler(svc) // Removed
-	userHandler := handlers.NewUserHandler(svc)
+	userRepo := user.NewRepository(db)
+	userSvc := user.NewService(userRepo, cfg, rdb)
+	userHandler := user.NewHandler(userSvc)
+
+	recordRepo := record.NewRepository(db)
+	recordSvc := record.NewService(recordRepo, cfg, rdb)
+	recordHandler := record.NewHandler(recordSvc, userRepo, cfg)
+
+	authSvc := auth.NewService(userRepo, cfg, rdb)
+	authHandler := auth.NewHandler(authSvc)
 
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
@@ -131,7 +129,7 @@ func main() {
 
 	// Protected Routes
 	protected := api.Group("")
-	protected.Use(middleware.JWTMiddleware(cfg, repo))
+	protected.Use(middleware.JWTMiddleware(cfg, userRepo))
 	{
 		protected.POST("/upload", recordHandler.UploadFile)
 
@@ -140,8 +138,6 @@ func main() {
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
-
-		// Employee Management Removed
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

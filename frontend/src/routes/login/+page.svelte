@@ -1,16 +1,16 @@
 <script>
-    import { login } from '$lib/stores/auth';
+    import { login } from '$lib/features/auth/store';
     import { goto } from '$app/navigation';
     import { fly } from 'svelte/transition';
     
     // Login Components
-    import LoginBackground from '$lib/components/login/LoginBackground.svelte';
-    import LoginCard from '$lib/components/login/LoginCard.svelte';
-    import LoginHeader from '$lib/components/login/LoginHeader.svelte';
-    import LoginBody from '$lib/components/login/LoginBody.svelte';
-    import DemoBanner from '$lib/components/login/DemoBanner.svelte';
-    import LoginForm from '$lib/components/login/LoginForm.svelte';
-    import LoginFooter from '$lib/components/login/LoginFooter.svelte';
+    import LoginBackground from '$lib/features/auth/ui/LoginBackground.svelte';
+    import LoginCard from '$lib/features/auth/ui/LoginCard.svelte';
+    import LoginHeader from '$lib/features/auth/ui/LoginHeader.svelte';
+    import LoginBody from '$lib/features/auth/ui/LoginBody.svelte';
+    import DemoBanner from '$lib/features/auth/ui/DemoBanner.svelte';
+    import LoginForm from '$lib/features/auth/ui/LoginForm.svelte';
+    import LoginFooter from '$lib/features/auth/ui/LoginFooter.svelte';
 
     let email = '';
     let password = '';

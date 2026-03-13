@@ -1,47 +1,49 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 
-	"github.com/kemnaker/perjadin-backend/internal/models"
+	"github.com/google/uuid"
+	"github.com/kemnaker/perjadin-backend/internal/config"
+	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func main() {
-	dsn := "host=localhost user=postgres password=postgres dbname=perjadin_db port=5432 sslmode=disable TimeZone=Asia/Jakarta"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	cfg := config.LoadConfig()
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		cfg.Database.Host, cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.Port, cfg.Database.SSLMode)
+
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	email := "ramvito@kemnaker.go.id"
+	password := "vito123"
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatal("Failed to hash password:", err)
+		log.Fatalf("Failed to hash password: %v", err)
 	}
 
-	user := models.User{
-		Email:        "vito@kemnaker.go.id",
-		Password:     string(hashedPassword),
-		Name:         "Vito",
-		Role:         "protokol",
-		NomorHP:      "082382012932",
-		NIP:          "-",
-		Pangkat:      "-",
-		Golongan:     "-",
-		Jabatan:      "Staf Protokol",
-		TingkatBiaya: "C",
-		DemoPassword: "password",
+	id := uuid.New()
+	_, err = db.Exec(`
+		INSERT INTO users (id, email, password, name, role, demo_password)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, id, email, string(hashedPassword), "Vito", "super_admin", password)
+
+	if err != nil {
+		log.Fatalf("Failed to create user: %v", err)
 	}
 
-	result := db.Where("email = ?", user.Email).FirstOrCreate(&user)
-	if result.Error != nil {
-		log.Fatal("Failed to create user:", result.Error)
-	}
-
-	log.Println("Successfully created user vito@kemnaker.go.id!")
+	log.Println("User ramvito@kemnaker.go.id created successfully.")
 }

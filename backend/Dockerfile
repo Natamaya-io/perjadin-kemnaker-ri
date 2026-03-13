@@ -30,6 +30,9 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Copy the compiled, stripped binary
 COPY --from=builder /app/main .
 
+# Copy migrations
+COPY --from=builder /app/db/migrations ./db/migrations
+
 # Expose the application port
 EXPOSE 8081
 

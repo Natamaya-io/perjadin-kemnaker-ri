@@ -1,25 +1,25 @@
 <script>
-    import { usersStore, addUser, updateUser, removeUser } from '$lib/stores/auth';
-    import { userStore } from '$lib/stores/auth';
-    import { cn } from '$lib/utils';
+    import { usersStore, addUser, updateUser, removeUser } from '$lib/features/auth/store';
+    import { userStore } from '$lib/features/auth/store';
+    import { cn } from '$lib/shared/utils/utils';
     
     // UI Components
-    import Button from '$lib/components/ui/button/Button.svelte';
-    import Input from '$lib/components/ui/input/Input.svelte';
-    import Label from '$lib/components/ui/label/Label.svelte';
-    import Dialog from '$lib/components/ui/dialog/Dialog.svelte';
-    import DialogHeader from '$lib/components/ui/dialog/DialogHeader.svelte';
-    import DialogTitle from '$lib/components/ui/dialog/DialogTitle.svelte';
-    import DialogFooter from '$lib/components/ui/dialog/DialogFooter.svelte';
-    import Table from '$lib/components/ui/table/Table.svelte';
-    import TableHeader from '$lib/components/ui/table/TableHeader.svelte';
-    import TableRow from '$lib/components/ui/table/TableRow.svelte';
-    import TableHead from '$lib/components/ui/table/TableHead.svelte';
-    import TableBody from '$lib/components/ui/table/TableBody.svelte';
-    import TableCell from '$lib/components/ui/table/TableCell.svelte';
-    import Select from '$lib/components/ui/select/Select.svelte';
-    import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
-    import AlertModal from '$lib/components/ui/alert-modal/AlertModal.svelte';
+    import Button from '$lib/shared/ui/button/Button.svelte';
+    import Input from '$lib/shared/ui/input/Input.svelte';
+    import Label from '$lib/shared/ui/label/Label.svelte';
+    import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
+    import DialogHeader from '$lib/shared/ui/dialog/DialogHeader.svelte';
+    import DialogTitle from '$lib/shared/ui/dialog/DialogTitle.svelte';
+    import DialogFooter from '$lib/shared/ui/dialog/DialogFooter.svelte';
+    import Table from '$lib/shared/ui/table/Table.svelte';
+    import TableHeader from '$lib/shared/ui/table/TableHeader.svelte';
+    import TableRow from '$lib/shared/ui/table/TableRow.svelte';
+    import TableHead from '$lib/shared/ui/table/TableHead.svelte';
+    import TableBody from '$lib/shared/ui/table/TableBody.svelte';
+    import TableCell from '$lib/shared/ui/table/TableCell.svelte';
+    import Select from '$lib/shared/ui/select/Select.svelte';
+    import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
+    import AlertModal from '$lib/shared/ui/alert-modal/AlertModal.svelte';
 
     let searchQuery = '';
     let isModalOpen = false;
@@ -35,7 +35,7 @@
     /** @type {number | string | null} */
     let deleteId = null;
 
-    import { toast } from '$lib/stores/toast';
+    import { toast } from '$lib/shared/stores/toast';
 
     // Form State
     let formData = {

@@ -1,21 +1,21 @@
 <script>
-    import { recordsStore, updateRecord } from '$lib/stores/records';
-    import { userStore } from '$lib/stores/auth';
+    import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
+    import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { toast } from '$lib/stores/toast';
-    import { getStatusBadge } from '$lib/utils';
+    import { toast } from '$lib/shared/stores/toast';
+    import { getStatusBadge } from '$lib/shared/utils/utils';
     
     // Components
-    import AdminHeader from '$lib/components/dashboard/admin/AdminHeader.svelte';
-    import AdminTableFilters from '$lib/components/dashboard/admin/AdminTableFilters.svelte';
+    import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
+    import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
 
-    import AdminTable from '$lib/components/dashboard/admin/AdminTable.svelte';
-    import AdminTableRow from '$lib/components/dashboard/admin/AdminTableRow.svelte';
-    import CostModal from '$lib/components/dashboard/admin/CostModal.svelte';
+    import AdminTable from '$lib/features/admin/ui/AdminTable.svelte';
+    import AdminTableRow from '$lib/features/admin/ui/AdminTableRow.svelte';
+    import CostModal from '$lib/features/admin/ui/CostModal.svelte';
     
     // UI Helpers
-    import { ConfirmationModal } from '$lib/components/ui/confirmation-modal';
+    import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
 
     // Filter & Sort State
     let searchQuery = '';
