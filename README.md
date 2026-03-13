@@ -54,11 +54,13 @@ doppler setup
 # Select Config: dev (or dev_local)
 ```
 
-### 2. Start Infrastructure (Database Only)
-Instead of running the full stack, we only run the database dependencies in containers to save resources.
+### 2. Start Infrastructure (Redis Only)
+Since PostgreSQL runs on **Baremetal (Host Machine)**, we only need to start the Redis container for caching/session management.
+
 ```bash
-# Start PostgreSQL and Redis in the background
-podman-compose up -d postgres redis
+# Start Redis in the background
+podman-compose up -d redis
+# Ensure your local PostgreSQL service is running on port 5432
 ```
 
 ### 3. Initialize Database
@@ -145,7 +147,7 @@ doppler run -- podman-compose up --build
 ## ⚠️ Troubleshooting
 
 **Q: Connection refused to Database?**
-A: Ensure the Postgres container is running (`podman ps`) and port 5432 is exposed. Check your Doppler secrets for `DB_HOST` (should be `localhost` when running native Go, or the service name `postgres` when running inside Docker).
+A: Ensure your **local Postgres service** is running and port 5432 is available. Check your Doppler secrets for `DB_HOST` (should be `localhost` when running native Go, or your Host IP when running inside Docker).
 
 **Q: `PieChart is not defined` error?**
 A: This was a known issue in the dashboard. Ensure you have pulled the latest changes where the import was fixed.
