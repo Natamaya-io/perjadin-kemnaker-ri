@@ -2,10 +2,13 @@ import { writable } from 'svelte/store';
 import { api } from '$lib/shared/api';
 import type { TravelRecord } from '$lib/shared/api/types';
 
+import { browser } from '$app/environment';
+
 // --- Travel Records ---
 export const recordsStore = writable<TravelRecord[]>([]);
 
 export async function loadRecords() {
+    if (typeof window === 'undefined' || !localStorage.getItem('auth_token')) return;
     try {
         const data = await api.getRecords();
         recordsStore.set(data);

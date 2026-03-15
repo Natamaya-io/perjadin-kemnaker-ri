@@ -87,3 +87,16 @@ RETURNING *;
 
 -- name: DeleteTravelReport :exec
 DELETE FROM travel_reports WHERE travel_record_id = $1;
+
+-- name: CreateTravelLocation :one
+INSERT INTO travel_locations (
+  id, travel_record_id, location, province, start_date, end_date
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+) RETURNING *;
+
+-- name: GetTravelLocationsByRecordID :many
+SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL;
+
+-- name: DeleteTravelLocationsByRecordID :exec
+UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1;

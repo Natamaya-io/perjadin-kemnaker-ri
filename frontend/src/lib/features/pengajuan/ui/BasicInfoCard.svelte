@@ -3,8 +3,6 @@
     import Input from '$lib/shared/ui/input/Input.svelte';
 
     export let email = '';
-    export let startDate = '';
-    export let endDate = '';
     /** @type {File | null} */
     export let suratTugas = null;
     export let suratTugasNumber = '';
@@ -97,17 +95,6 @@
             <Input value={email} readonly disabled class="bg-slate-50 text-slate-500 border-slate-200" />
         </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div class="space-y-2">
-                <Label class="text-slate-600">Tanggal Mulai <span class="text-red-500">*</span></Label>
-                <Input type="date" bind:value={startDate} required class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
-            </div>
-            <div class="space-y-2">
-                <Label class="text-slate-600">Tanggal Selesai <span class="text-red-500">*</span></Label>
-                <Input type="date" bind:value={endDate} required class="h-11 {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
-            </div>
-        </div>
-
         <div class="space-y-2 pt-2">
             <Label class="text-slate-600">Surat Tugas <span class="text-xs text-slate-400 font-normal">(Opsional)</span></Label>
             

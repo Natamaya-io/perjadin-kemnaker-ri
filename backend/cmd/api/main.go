@@ -13,6 +13,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kemnaker/perjadin-backend/internal/config"
 	"github.com/kemnaker/perjadin-backend/internal/domain/auth"
+	"github.com/kemnaker/perjadin-backend/internal/domain/master"
 	"github.com/kemnaker/perjadin-backend/internal/domain/record"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
@@ -105,6 +106,10 @@ func main() {
 	authSvc := auth.NewService(userRepo, cfg, rdb)
 	authHandler := auth.NewHandler(authSvc)
 
+	masterRepo := master.NewRepository(db)
+	masterSvc := master.NewService(masterRepo, rdb)
+	masterHandler := master.NewHandler(masterSvc)
+
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
 		sugar.Warnf("Failed to create uploads directory: %v", err)
@@ -144,6 +149,10 @@ func main() {
 		protected.POST("/users", userHandler.CreateUser)
 		protected.PUT("/users/:id", userHandler.UpdateUser)
 		protected.DELETE("/users/:id", userHandler.DeleteUser)
+
+		// Master Data
+		protected.GET("/master/provinces", masterHandler.GetProvinces)
+		protected.GET("/master/sbm-rates", masterHandler.GetSBMRates)
 	}
 
 	// 8. Start Server with Graceful Shutdown

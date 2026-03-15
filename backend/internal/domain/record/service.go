@@ -45,9 +45,25 @@ func (s *service) invalidateCache(ctx context.Context, pattern string) {
 }
 
 func (s *service) CreateRecord(record *models.TravelRecord) error {
-	if record.EndDate.Before(record.StartDate) {
-		return errors.New("end date cannot be before start date")
+	if len(record.Locations) == 0 {
+		return errors.New("at least one location is required")
 	}
+
+	// Calculate overall start and end dates if not provided or to ensure accuracy
+	var minStart, maxEnd time.Time
+	for i, loc := range record.Locations {
+		if loc.EndDate.Before(loc.StartDate) {
+			return fmt.Errorf("location %s: end date cannot be before start date", loc.Location)
+		}
+		if i == 0 || loc.StartDate.Before(minStart) {
+			minStart = loc.StartDate
+		}
+		if i == 0 || loc.EndDate.After(maxEnd) {
+			maxEnd = loc.EndDate
+		}
+	}
+	record.StartDate = minStart
+	record.EndDate = maxEnd
 
 	overlapping, err := s.repo.GetOverlappingRecords(record.EmployeeID, record.StartDate, record.EndDate)
 	if err != nil {
@@ -134,6 +150,24 @@ func (s *service) GetRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
 }
 
 func (s *service) UpdateRecord(record *models.TravelRecord) error {
+	if len(record.Locations) > 0 {
+		// Calculate overall start and end dates
+		var minStart, maxEnd time.Time
+		for i, loc := range record.Locations {
+			if loc.EndDate.Before(loc.StartDate) {
+				return fmt.Errorf("location %s: end date cannot be before start date", loc.Location)
+			}
+			if i == 0 || loc.StartDate.Before(minStart) {
+				minStart = loc.StartDate
+			}
+			if i == 0 || loc.EndDate.After(maxEnd) {
+				maxEnd = loc.EndDate
+			}
+		}
+		record.StartDate = minStart
+		record.EndDate = maxEnd
+	}
+
 	err := s.repo.UpdateTravelRecord(record)
 	if err == nil {
 		s.invalidateCache(context.Background(), "records:*")

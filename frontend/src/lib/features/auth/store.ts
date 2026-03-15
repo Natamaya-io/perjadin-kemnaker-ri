@@ -3,11 +3,14 @@ import { api } from '$lib/shared/api';
 import type { User } from '$lib/shared/api/types';
 import { browser } from '$app/environment';
 import { loadRecords, clearStores } from '$lib/features/pengajuan/store';
+import { loadMasterData } from '$lib/shared/stores/master-data';
+
+const isBrowser = typeof window !== 'undefined';
 
 // --- Session Management ---
 // We initialize from localStorage directly for immediate hydration.
 // But ideally, we should check `api.getCurrentUser()` on mount.
-const storedUser = browser ? localStorage.getItem('user_session_v2') : null;
+const storedUser = isBrowser ? localStorage.getItem('user_session_v2') : null;
 const initialUser = storedUser ? JSON.parse(storedUser) : {
     email: null,
     role: null,
@@ -18,13 +21,14 @@ export const userStore = writable(initialUser);
 
 // Persist to localStorage whenever userStore changes
 userStore.subscribe(val => {
-    if (browser) {
+    if (isBrowser) {
         localStorage.setItem('user_session_v2', JSON.stringify(val));
     }
 });
 
 // Auto-load data if session exists on init
-if (initialUser.loggedIn && browser) {
+if (initialUser.loggedIn && isBrowser) {
+    loadMasterData();
     loadRecords();
 }
 
@@ -34,6 +38,7 @@ export const login = async (email: string, password?: string) => {
         userStore.set({ ...user, loggedIn: true });
         
         // Load data on login
+        loadMasterData();
         loadRecords();
         
         return { success: true, user };
@@ -54,7 +59,7 @@ api.setUnauthorizedHandler(() => {
     console.warn("Session expired or unauthorized. Logging out...");
     userStore.set({ email: null, role: null, loggedIn: false });
     clearStores();
-    if (browser) {
+    if (isBrowser) {
         window.location.href = '/login';
     }
 });
@@ -63,6 +68,7 @@ api.setUnauthorizedHandler(() => {
 export const usersStore = writable<User[]>([]);
 
 export const loadUsers = async () => {
+    if (!isBrowser || !localStorage.getItem('auth_token')) return;
     try {
         const users = await api.getUsers();
         usersStore.set(users);
@@ -80,7 +86,7 @@ userStore.subscribe(u => {
 
 // Sync users to local storage for Demo Banner
 usersStore.subscribe(users => {
-    if (browser && users.length > 0) {
+    if (isBrowser && users.length > 0) {
         // Minimal info for security, though password is '123' for all in demo
         const demoUsers = users.map(u => ({
             name: u.name,

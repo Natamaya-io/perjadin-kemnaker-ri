@@ -42,6 +42,7 @@ type TravelRecord struct {
 	EndDate     time.Time   `json:"endDate"`
 	Location    string      `json:"location"`
 	Province    string      `json:"province"`
+	Locations   []TravelLocation `json:"locations,omitempty"` // Multiple locations support
 	Type        string      `json:"type"` // dalam_kota, luar_kota, luar_negeri
 	Purpose     string      `json:"purpose"`
 	Stakeholder string      `json:"stakeholder"`
@@ -59,6 +60,15 @@ type TravelRecord struct {
 	// Relationships
 	Cost   *TravelCost   `json:"costs,omitempty"`
 	Report *TravelReport `json:"reportData,omitempty"`
+}
+
+type TravelLocation struct {
+	Base
+	TravelRecordID uuid.UUID `json:"travelRecordId"`
+	Location       string    `json:"location"`
+	Province       string    `json:"province"`
+	StartDate      time.Time `json:"startDate"`
+	EndDate        time.Time `json:"endDate"`
 }
 
 type TravelCost struct {

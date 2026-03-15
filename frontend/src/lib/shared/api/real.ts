@@ -8,7 +8,7 @@ export class RealApiClient implements ApiClient {
     private unauthorizedHandler: (() => void) | null = null;
 
     constructor() {
-        if (browser) {
+        if (typeof window !== 'undefined') {
             this.token = localStorage.getItem('auth_token');
         }
     }
@@ -64,7 +64,7 @@ export class RealApiClient implements ApiClient {
         });
         
         this.token = res.token;
-        if (browser) localStorage.setItem('auth_token', res.token);
+        if (typeof window !== 'undefined') localStorage.setItem('auth_token', res.token);
         
         return res;
     }
@@ -78,7 +78,7 @@ export class RealApiClient implements ApiClient {
 
     async logout(): Promise<void> {
         this.token = null;
-        if (browser) localStorage.removeItem('auth_token');
+        if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
         // Optional: Call backend logout endpoint if it exists
     }
 
@@ -153,39 +153,60 @@ export class RealApiClient implements ApiClient {
          const employees = record.employees || [record.employee];
          const createdRecords: TravelRecord[] = [];
 
-         for (const emp of employees) {
-             const safeDate = (d: any) => {
-                 if (!d) return undefined;
-                 const date = new Date(d);
-                 return isNaN(date.getTime()) ? undefined : date.toISOString();
-             };
+         const safeDate = (d: any) => {
+             if (!d) return undefined;
+             const date = new Date(d);
+             return isNaN(date.getTime()) ? undefined : date.toISOString();
+         };
 
+         // Map locations to have ISO dates
+         const locations = (record.locations || []).map((loc: any) => ({
+             ...loc,
+             startDate: safeDate(loc.startDate),
+             endDate: safeDate(loc.endDate)
+         }));
+
+         for (const emp of employees) {
              const singleRecord = {
                  ...record,
                  employeeId: emp.id,
                  employee: undefined,
                  employees: undefined,
                  startDate: safeDate(record.startDate),
-                 endDate: safeDate(record.endDate)
+                 endDate: safeDate(record.endDate),
+                 locations: locations
              };
-
-             // backend expects 'employeeId' (UUID).
-             // Ideally we need the UUID. Assuming frontend sends proper Employee objects with IDs.
 
              const res = await this.request<TravelRecord>('/records', {
                  method: 'POST',
                  body: JSON.stringify(singleRecord)
              });
 
-             // Manually attach employee to response because Create response might not preload it
              createdRecords.push({ ...res, employee: emp });
          }
          return createdRecords;
     }
-    updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
+    async updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
+        const safeDate = (d: any) => {
+            if (!d) return undefined;
+            const date = new Date(d);
+            return isNaN(date.getTime()) ? undefined : date.toISOString();
+        };
+
+        const payload = {
+            ...record,
+            startDate: safeDate(record.startDate),
+            endDate: safeDate(record.endDate),
+            locations: (record.locations || []).map((loc: any) => ({
+                ...loc,
+                startDate: safeDate(loc.startDate),
+                endDate: safeDate(loc.endDate)
+            }))
+        };
+
         return this.request<TravelRecord>(`/records/${id}`, {
             method: 'PUT',
-            body: JSON.stringify(record)
+            body: JSON.stringify(payload)
         });
     }
 
@@ -193,5 +214,14 @@ export class RealApiClient implements ApiClient {
         return this.request<void>(`/records/${id}`, {
             method: 'DELETE'
         });
+    }
+
+    // Master Data
+    getProvinces(): Promise<any[]> {
+        return this.request<any[]>('/master/provinces');
+    }
+
+    getSBMRates(): Promise<any[]> {
+        return this.request<any[]>('/master/sbm-rates');
     }
 }

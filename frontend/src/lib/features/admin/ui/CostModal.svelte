@@ -22,20 +22,26 @@
     $: isReadOnly = $userStore.role === 'kasubag';
 
     // Derived Calculations for SBM Uang Harian
-    $: days = (() => {
-        if (!record?.startDate || !record?.endDate) return 0;
-        const start = new Date(record.startDate);
-        const end = new Date(record.endDate);
-        start.setHours(0,0,0,0);
-        end.setHours(0,0,0,0);
-        const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-        return diffDays > 0 ? diffDays : 0;
-    })();
-    
-    $: sbmRate = $provincesStore.find(p => p.name === record?.province)?.luarKota || 0;
-    $: totalDailyAllowance = days * sbmRate;
+	$: costBreakdown = (record?.locations && record.locations.length > 0 
+    	? record.locations 
+ 	   : [{ startDate: record?.startDate, endDate: record?.endDate, province: record?.province }]
+		).map(loc => {
+    		const provData = $provincesStore.find(p => p.name === loc.province);
+    		const rate = provData ? provData.luarKota : 0;
+    		const start = new Date(loc.startDate);
+    		const end = new Date(loc.endDate);
+    		let locDays = 0;
+    		if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        	const diffTime = end.getTime() - start.getTime();
+        	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        	locDays = diffDays > 0 ? diffDays : 0;
+    	}
+    		return { days: locDays, rate: rate };
+		});
 
+	$: days = costBreakdown.reduce((sum, item) => sum + item.days, 0);
+	$: totalDailyAllowance = costBreakdown.reduce((sum, item) => sum + (item.rate * item.days), 0);
+	$: sbmRateAvg = days > 0 ? totalDailyAllowance / days : 0;
     // Default arrays if undefined
     $: if (open && !editingCosts.additionalCosts) {
         editingCosts.additionalCosts = [];
@@ -248,7 +254,7 @@
                 </div>
                 <div class="flex-1 min-w-0 overflow-hidden">
                     <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi</span>
-                    <span class="font-medium truncate block w-full">{formatCurrency(sbmRate)} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
+                    <span class="font-medium truncate block w-full">{formatCurrency(sbmRateAvg)} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
                 </div>
             </div>
         </div>

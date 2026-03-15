@@ -31,7 +31,14 @@
     </TableCell>
     <TableCell class="py-3 align-top">
         <div class="flex flex-col gap-0.5 max-w-[250px]">
-            <span class="font-medium text-slate-700 text-sm truncate" title="{record.location}, {record.province}">{record.location}, {record.province}</span>
+            <span class="font-medium text-slate-700 text-sm truncate" title="{record.location}, {record.province}">
+                {record.location}, {record.province}
+                {#if record.locations && record.locations.length > 1}
+                    <span class="ml-1 text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                        +{record.locations.length - 1} Lokasi
+                    </span>
+                {/if}
+            </span>
             <span class="text-xs text-slate-500 flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

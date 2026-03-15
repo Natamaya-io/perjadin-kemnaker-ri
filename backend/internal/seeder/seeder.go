@@ -18,6 +18,21 @@ import (
 func Seed(db *sql.DB) {
 	log.Println("Starting Database Seeding...")
 
+	// Clear existing travel data
+	log.Println("Clearing existing travel data...")
+	tables := []string{
+		"travel_reports",
+		"travel_costs",
+		"travel_locations",
+		"travel_records",
+	}
+	for _, table := range tables {
+		_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", table))
+		if err != nil {
+			log.Printf("Warning: Failed to clear table %s: %v", table, err)
+		}
+	}
+
 	userRepo := user.NewRepository(db)
 	recordRepo := record.NewRepository(db)
 

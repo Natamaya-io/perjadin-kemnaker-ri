@@ -149,6 +149,21 @@ func mapDBRecord(dbr db.TravelRecord) models.TravelRecord {
 	}
 }
 
+func mapDBLocation(dbl db.TravelLocation) models.TravelLocation {
+	return models.TravelLocation{
+		Base: models.Base{
+			ID:        dbl.ID,
+			CreatedAt: dbl.CreatedAt.Time,
+			UpdatedAt: dbl.UpdatedAt.Time,
+		},
+		TravelRecordID: dbl.TravelRecordID,
+		Location:       dbl.Location,
+		Province:       dbl.Province,
+		StartDate:      dbl.StartDate,
+		EndDate:        dbl.EndDate,
+	}
+}
+
 func mapDBCost(dbc db.TravelCost) models.TravelCost {
 	return models.TravelCost{
 		TravelRecordID:     dbc.TravelRecordID,
@@ -198,7 +213,8 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 	if record.ID == uuid.Nil {
 		record.ID = uuid.New()
 	}
-	dbr, err := r.q.CreateTravelRecord(context.Background(), db.CreateTravelRecordParams{
+	ctx := context.Background()
+	dbr, err := r.q.CreateTravelRecord(ctx, db.CreateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
 		EmployeeID:       record.EmployeeID,
@@ -222,7 +238,29 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 	if err != nil {
 		return err
 	}
+	
+	// Preserve locations before mapping
+	locations := record.Locations
 	*record = mapDBRecord(dbr)
+	record.Locations = locations
+
+	// Create locations
+	for _, loc := range record.Locations {
+		// Always generate a new ID for the join table record to avoid conflicts
+		locID := uuid.New()
+		_, err := r.q.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
+			ID:             locID,
+			TravelRecordID: record.ID,
+			Location:       loc.Location,
+			Province:       loc.Province,
+			StartDate:      loc.StartDate,
+			EndDate:        loc.EndDate,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -287,6 +325,19 @@ func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.
 				}
 			}()
 
+			relWg.Add(1)
+			go func() {
+				defer relWg.Done()
+				dbls, err := r.q.GetTravelLocationsByRecordID(ctx, rec.ID)
+				if err == nil {
+					locs := make([]models.TravelLocation, len(dbls))
+					for j, dbl := range dbls {
+						locs[j] = mapDBLocation(dbl)
+					}
+					rec.Locations = locs
+				}
+			}()
+
 			relWg.Wait()
 			records[index] = rec
 		}(i, dbr)
@@ -345,6 +396,19 @@ func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dbls, err := r.q.GetTravelLocationsByRecordID(ctx, rec.ID)
+		if err == nil {
+			locs := make([]models.TravelLocation, len(dbls))
+			for j, dbl := range dbls {
+				locs[j] = mapDBLocation(dbl)
+			}
+			rec.Locations = locs
+		}
+	}()
+
 	wg.Wait()
 
 	return &rec, nil
@@ -393,6 +457,23 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	if err != nil {
 		return err
 	}
+
+	// Update locations (simpler to delete and recreate)
+	r.q.DeleteTravelLocationsByRecordID(ctx, record.ID)
+	for _, loc := range record.Locations {
+		if loc.ID == uuid.Nil {
+			loc.ID = uuid.New()
+		}
+		r.q.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
+			ID:             loc.ID,
+			TravelRecordID: record.ID,
+			Location:       loc.Location,
+			Province:       loc.Province,
+			StartDate:      loc.StartDate,
+			EndDate:        loc.EndDate,
+		})
+	}
+
 
 	if record.Cost != nil {
 		_, err := r.q.UpdateTravelCost(ctx, db.UpdateTravelCostParams{

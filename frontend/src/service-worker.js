@@ -42,8 +42,10 @@ self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 
 	// IGNORE non-http(s) schemes completely (e.g. chrome-extension://)
-	// This prevents the "Request scheme 'chrome-extension' is unsupported" error
 	if (!url.protocol.startsWith('http')) return;
+
+	// IGNORE API requests - let them be handled directly by the network
+	if (url.pathname.startsWith('/api')) return;
 
 	async function respond() {
 		const cache = await caches.open(CACHE);

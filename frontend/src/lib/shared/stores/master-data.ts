@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
+import { api } from '$lib/shared/api';
+import { browser } from '$app/environment';
 
 export const PROVINCES = [
     { name: "ACEH", luarKota: 360000 },
@@ -49,4 +51,31 @@ export const STAKEHOLDERS = [
 ];
 
 export const provincesStore = writable(PROVINCES);
+export const sbmRatesStore = writable([]);
 export const stakeholdersStore = writable(STAKEHOLDERS);
+
+export async function loadMasterData() {
+    if (typeof window === 'undefined' || !localStorage.getItem('auth_token')) return;
+    try {
+        const [provinces, rates] = await Promise.all([
+            api.getProvinces(),
+            api.getSBMRates()
+        ]);
+
+        if (provinces && provinces.length > 0) {
+            // Map backend Province to frontend format
+            const mappedProvinces = provinces.map(p => {
+                const rate = rates.find(r => r.province_id === p.id);
+                return {
+                    id: p.id,
+                    name: p.name,
+                    luarKota: (rate && rate.outside_city_rate && rate.outside_city_rate.Valid) ? rate.outside_city_rate.Float64 : 0
+                };
+            });
+            provincesStore.set(mappedProvinces);
+        }
+        sbmRatesStore.set(rates);
+    } catch (e) {
+        console.error("Failed to load master data from API, using defaults", e);
+    }
+}

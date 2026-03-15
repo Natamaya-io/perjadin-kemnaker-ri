@@ -37,6 +37,15 @@ export interface TravelReport {
     files: any[];
 }
 
+export interface TravelLocation {
+    id: string;
+    travelRecordId: string;
+    location: string;
+    province: string;
+    startDate: string;
+    endDate: string;
+}
+
 export interface TravelRecord {
     id: string;
     spd: string;
@@ -50,6 +59,7 @@ export interface TravelRecord {
     suratTugasNumber?: string;
     location: string;
     province: string;
+    locations?: TravelLocation[];
     type?: string;
     purpose: string;
     stakeholder: string;
@@ -83,4 +93,8 @@ export interface ApiClient {
     createRecord(record: Omit<TravelRecord, 'id' | 'spd' | 'status' | 'reportStatus'>): Promise<TravelRecord[]>; // Returns array because one request can create multiple records (bulk)
     updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord>;
     deleteRecord(id: string): Promise<void>;
+
+    // Master Data
+    getProvinces(): Promise<any[]>;
+    getSBMRates(): Promise<any[]>;
 }

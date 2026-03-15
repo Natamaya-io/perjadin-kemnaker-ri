@@ -7,6 +7,7 @@
     import { toast } from '$lib/shared/stores/toast';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import { browser } from '$app/environment';
     
     // Components
     import ProposalHeader from '$lib/features/pengajuan/ui/ProposalHeader.svelte';
@@ -29,12 +30,14 @@
     // Form State
     /** 
      * @type {{
-     *   startDate: string,
-     *   endDate: string,
+     *   locations: Array<{
+     *     startDate: string,
+     *     endDate: string,
+     *     location: string,
+     *     province: string
+     *   }>,
      *   suratTugas: File | null,
      *   suratTugasNumber: string,
-     *   location: string,
-     *   province: string,
      *   purpose: string,
      *   stakeholder: string,
      *   agenda: string,
@@ -42,43 +45,106 @@
      * }} 
      */
     let formData = {
-        startDate: '',
-        endDate: '',
+        locations: [
+            {
+                startDate: '',
+                endDate: '',
+                location: '',
+                province: ''
+            }
+        ],
         suratTugas: null,
         suratTugasNumber: '',
-        location: '',
-        province: '',
         purpose: 'persiapan', // Default
         stakeholder: '',
         agenda: '',
         selectedEmployees: []
     };
 
+    function addLocation() {
+        formData.locations = [
+            ...formData.locations,
+            { startDate: '', endDate: '', location: '', province: '' }
+        ];
+    }
+
+    /** @param {number} index */
+    function removeLocation(index) {
+        if (formData.locations.length <= 1) return;
+        formData.locations = formData.locations.filter((_, i) => i !== index);
+    }
+
     let isReadOnly = false;
 
     let isConfirmOpen = false;
 
+    // Helper to get overall start/end dates
+    $: minStartDate = formData.locations.reduce((min, loc) => {
+        if (!loc.startDate) return min;
+        if (!min || loc.startDate < min) return loc.startDate;
+        return min;
+    }, '');
+
+    $: maxEndDate = formData.locations.reduce((max, loc) => {
+        if (!loc.endDate) return max;
+        if (!max || loc.endDate > max) return loc.endDate;
+        return max;
+    }, '');
+
     // Cost Calculations
-    $: selectedProvinceData = $provincesStore.find(p => p.name === formData.province);
-    $: rate = selectedProvinceData ? selectedProvinceData.luarKota : 0;
-    
-    $: days = (() => {
-        if (!formData.startDate || !formData.endDate) return 0;
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
+    $: days = formData.locations.reduce((total, loc) => {
+        if (!loc.startDate || !loc.endDate) return total;
+        const start = new Date(loc.startDate);
+        const end = new Date(loc.endDate);
         const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-        return diffDays > 0 ? diffDays : 0;
-    })();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return total + (diffDays > 0 ? diffDays : 0);
+    }, 0);
 
-        $: totalCost = rate * days * formData.selectedEmployees.length;
+    // For multi-location, calculate per location then sum up
+    $: totalCost = formData.locations.reduce((total, loc) => {
+        const provData = $provincesStore.find(p => p.name === loc.province);
+        const rate = provData ? provData.luarKota : 0;
+        
+        const start = new Date(loc.startDate);
+        const end = new Date(loc.endDate);
+        let locDays = 0;
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const diffTime = end.getTime() - start.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            locDays = diffDays > 0 ? diffDays : 0;
+        }
+        
+        return total + (rate * locDays * formData.selectedEmployees.length);
+    }, 0);
 
+	$: costBreakdown = Object.values(formData.locations.reduce((acc, loc) => {
+	    const provData = $provincesStore.find(p => p.name === loc.province);
+    	const rate = provData ? provData.luarKota : 0;
+    	const start = new Date(loc.startDate);
+    	const end = new Date(loc.endDate);
+    	let locDays = 0;
+    	if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        	const diffTime = end.getTime() - start.getTime();
+        	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        	locDays = diffDays > 0 ? diffDays : 0;
+   		}
+        
+        if (locDays > 0 && loc.province) {
+            if (!acc[loc.province]) {
+                acc[loc.province] = { id: loc.province, province: loc.province, days: 0, rate: rate };
+            }
+            acc[loc.province].days += locDays;
+        }
+        return acc;
+	}, {}));
+    
     $: disabledEmployeeIds = $recordsStore
         .filter(r => {
              if (r.status === 'Rejected') return false;
-             if (!formData.startDate || !formData.endDate) return false;
-             const start = new Date(formData.startDate);
-             const end = new Date(formData.endDate);
+             if (!minStartDate || !maxEndDate) return false;
+             const start = new Date(minStartDate);
+             const end = new Date(maxEndDate);
              const rStart = new Date(r.startDate);
              const rEnd = new Date(r.endDate);
              return (rStart <= end && rEnd >= start);
@@ -86,7 +152,7 @@
         .map(r => r.employee?.id).filter(Boolean);
 
     $: {
-        if (formData.startDate && formData.endDate) {
+        if (minStartDate && maxEndDate) {
             const conflicts = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
             if (conflicts.length > 0) {
                  formData.selectedEmployees = formData.selectedEmployees.filter(id => !disabledEmployeeIds.includes(id));
@@ -100,7 +166,7 @@
         if (isReadOnly) return;
         const employeeId = event.detail;
         if (disabledEmployeeIds.includes(employeeId)) {
-             toast.error('Petugas ini sedang bertugas pada tanggal tersebut.');
+             toast.error('Petugas ini sedang bertugas pada rentang tanggal tersebut.');
              return;
         }
         if (formData.selectedEmployees.includes(employeeId)) {
@@ -122,13 +188,17 @@
             return;
         }
 
-        if (!formData.startDate || !formData.endDate || !formData.province || formData.selectedEmployees.length === 0) {
-            toast.error('Harap lengkapi semua field wajib dan pilih minimal satu pegawai.');
+        if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province) || formData.selectedEmployees.length === 0) {
+            toast.error('Harap lengkapi semua field wajib di setiap lokasi dan pilih minimal satu pegawai.');
             return;
         }
 
-        if (days <= 0) {
-            toast.error('Tanggal selesai tidak boleh mendahului tanggal mulai.');
+        if (formData.locations.some(loc => {
+            const start = new Date(loc.startDate);
+            const end = new Date(loc.endDate);
+            return end < start;
+        })) {
+            toast.error('Ada tanggal selesai yang mendahului tanggal mulai.');
             return;
         }
 
@@ -155,12 +225,14 @@
         const tripData = {
             spd: generateId(),
             email: $userStore.email,
-            startDate: formData.startDate,
-            endDate: formData.endDate,
+            startDate: minStartDate,
+            endDate: maxEndDate,
             suratTugasPath: uploadedSuratTugasPath,
             suratTugasNumber: formData.suratTugasNumber,
-            location: formData.location,
-            province: formData.province,
+            locations: formData.locations, // New structure
+            // Backward compatibility for summary
+            location: formData.locations[0].location,
+            province: formData.locations[0].province,
             purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
             stakeholder: formData.stakeholder,
             agenda: formData.agenda,
@@ -193,11 +265,14 @@
         return '';
     }
     onMount(async () => {
+        if (typeof window === 'undefined') return;
+        
         if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
             goto('/dashboard');
             return;
         }
-        if ($recordsStore.length === 0) {
+
+        if (localStorage.getItem('auth_token') && $recordsStore.length === 0) {
             await loadRecords();
         }
     });
@@ -303,20 +378,19 @@
             <ProposalForm>
                 <BasicInfoCard 
                     email={$userStore.email} 
-                    bind:startDate={formData.startDate}
-                    bind:endDate={formData.endDate}
                     bind:suratTugas={formData.suratTugas}
                     bind:suratTugasNumber={formData.suratTugasNumber}
                     readonly={isReadOnly}
                 />
                 
                 <LocationCard 
-                    bind:location={formData.location}
-                    bind:province={formData.province}
+                    bind:locations={formData.locations}
                     bind:purpose={formData.purpose}
                     bind:agenda={formData.agenda}
                     provinces={$provincesStore}
                     readonly={isReadOnly}
+                    on:add={addLocation}
+                    on:remove={(e) => removeLocation(e.detail)}
                 />
             </ProposalForm>
 
@@ -335,10 +409,9 @@
                     on:submit={handleSubmit}
                 />
 
-                {#if formData.province && days > 0 && formData.selectedEmployees.length > 0}
+                {#if days > 0 && formData.selectedEmployees.length > 0}
                     <CostEstimateCard
-                        days={days}
-                        rate={rate}
+                        breakdown={costBreakdown}
                         employeeCount={formData.selectedEmployees.length}
                         totalCost={totalCost}
                         readonly={isReadOnly}

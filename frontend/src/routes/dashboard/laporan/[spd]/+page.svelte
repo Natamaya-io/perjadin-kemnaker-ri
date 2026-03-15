@@ -73,9 +73,8 @@
                 const empId = r.id;
                 if (localCosts[empId]) {
                     const costs = localCosts[empId].costs;
-                    const days = getDays(r);
-                    const sbmRate = getSbmRate(r);
-                    const totalDailyAllowance = days * sbmRate;
+                    const days = getTotalDays(r);
+                    const totalDailyAllowance = getTotalDailyAllowance(r);
                     
                     const totalHotel = (costs.hotelDays || 0) * (costs.hotelRate || 0);
                     const totalTicket = Number(costs.ticketGo || 0) + Number(costs.ticketBack || 0);
@@ -96,20 +95,48 @@
         }
     }
 
-    function getDays(empRecord) {
-        if (!empRecord?.startDate || !empRecord?.endDate) return 0;
-        const start = new Date(empRecord.startDate);
-        const end = new Date(empRecord.endDate);
-        start.setHours(0,0,0,0);
-        end.setHours(0,0,0,0);
-        const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-        return diffDays > 0 ? diffDays : 0;
-    }
+	function getTotalDays(empRecord) {
+    	const locs = empRecord?.locations && empRecord.locations.length > 0 
+       	 ? empRecord.locations 
+        	: [{ startDate: empRecord?.startDate, endDate: empRecord?.endDate, province: empRecord?.province }];
+    
+    	return locs.reduce((total, loc) => {
+        	const start = new Date(loc.startDate);
+        	const end = new Date(loc.endDate);
+        	let locDays = 0;
+        	if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            	const diffTime = end.getTime() - start.getTime();
+            	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            	locDays = diffDays > 0 ? diffDays : 0;
+        	}
+        	return total + locDays;
+    	}, 0);
+	}
 
     function getSbmRate(empRecord) {
-        return $provincesStore.find(p => p.name === empRecord?.province)?.luarKota || 0;
+        const provData = $provincesStore.find(p => p.name === empRecord.province);
+        return provData ? provData.luarKota : 0;
     }
+
+	function getTotalDailyAllowance(empRecord) {
+    	const locs = empRecord?.locations && empRecord.locations.length > 0 
+       	 ? empRecord.locations 
+        	: [{ startDate: empRecord?.startDate, endDate: empRecord?.endDate, province: empRecord?.province }];
+    
+    	return locs.reduce((total, loc) => {
+        	const provData = $provincesStore.find(p => p.name === loc.province);
+        	const rate = provData ? provData.luarKota : 0;
+        	const start = new Date(loc.startDate);
+        	const end = new Date(loc.endDate);
+        	let locDays = 0;
+        	if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            	const diffTime = end.getTime() - start.getTime();
+            	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            	locDays = diffDays > 0 ? diffDays : 0;
+        	}
+        	return total + (rate * locDays);
+    	}, 0);
+	}
 
     function formatCurrency(amount) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount || 0);
@@ -235,7 +262,7 @@
     }
 
     function removeAdditionalFile(empId, index) {
-        localCosts[empId].costs.additionalCosts[index].file = null;
+        localCosts[empId].costs[index].file = null;
         localCosts = { ...localCosts };
     }
 
@@ -393,7 +420,7 @@
         }
 
         const words = reportText.trim().split(/\s+/).length;
-        if (words > 200) {
+        if (words > 2000) {
             toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 2000 kata.`);
             return;
         }
@@ -411,7 +438,7 @@
                 const costsToSave = { ...(local?.costs || r.costs) };
                 
                 // Inject daily allowance details automatically
-                costsToSave.dailyAllowanceDays = getDays(r);
+                costsToSave.dailyAllowanceDays = getTotalDays(r);
                 costsToSave.dailyAllowanceRate = getSbmRate(r);
 
                 return updateRecord(r.id, {
@@ -712,19 +739,19 @@
                                                     </svg>
                                                     Uang Harian (SBM)
                                                 </h4>
-                                                <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(getDays(empRecord) * getSbmRate(empRecord))}</span>
-                                            </div>
-                                            <div class="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-600 bg-white p-2 md:p-3 rounded-lg border border-blue-50/50 shadow-sm w-full">
-                                                <div class="flex-none pr-2 border-r border-slate-100">
-                                                    <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
-                                                    <span class="font-medium whitespace-nowrap">{getDays(empRecord)} Hari</span>
-                                                </div>
-                                                <div class="flex-1 min-w-0 overflow-hidden">
-                                                    <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi</span>
-                                                    <span class="font-medium truncate block w-full">{formatCurrency(getSbmRate(empRecord))} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        		<span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(getTotalDailyAllowance(empRecord))}</span>
+												</div>
+												<div class="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-600 bg-white p-2 md:p-3 rounded-lg border border-blue-50/50 shadow-sm w-full">
+    												<div class="flex-none pr-2 border-r border-slate-100">
+        												<span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
+        												<span class="font-medium whitespace-nowrap">{getTotalDays(empRecord)} Hari</span>
+    												</div>
+    												<div class="flex-1 min-w-0 overflow-hidden">
+        												<span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate Estimasi (Avg)</span>
+        												<span class="font-medium truncate block w-full">{formatCurrency(getTotalDailyAllowance(empRecord) / (getTotalDays(empRecord) || 1))} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
+    												</div>
+											</div>
+										</div>
 
                                         <!-- Tiket & Boarding Pass -->
                                         <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">

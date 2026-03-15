@@ -13,7 +13,15 @@
     let demoUsers = [];
 
     onMount(async () => {
-        if (browser) {
+        if (typeof window !== 'undefined') {
+            // Try loading from localStorage first for immediate results
+            const stored = localStorage.getItem('demo_users_v2');
+            if (stored) {
+                try {
+                    demoUsers = JSON.parse(stored);
+                } catch (e) { /* ignore */ }
+            }
+
             try {
                 const res = await fetch(`${API_URL}/auth/demo-users`);
                 if (res.ok) {
@@ -24,10 +32,12 @@
                             email: u.email,
                             password: u.password // From backend
                         }));
+                        // Update cache
+                        localStorage.setItem('demo_users_v2', JSON.stringify(demoUsers));
                     }
                 }
             } catch (e) {
-                console.error("Failed to fetch demo users", e);
+                console.warn("Failed to fetch demo users from network, using local cache if available", e);
             }
         }
     });

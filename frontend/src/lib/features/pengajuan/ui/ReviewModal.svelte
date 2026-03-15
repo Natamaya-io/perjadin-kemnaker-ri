@@ -8,6 +8,7 @@
     import Select from '$lib/shared/ui/select/Select.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     
     import { updateRecord, deleteRecord, addRecord } from '$lib/features/pengajuan/store';
     import { usersStore, userStore } from '$lib/features/auth/store';
@@ -38,15 +39,24 @@
     
     // Form state initialized when records change
     let formData = {
-        startDate: '',
-        endDate: '',
-        location: '',
-        province: '',
+        locations: [],
         purpose: '',
         stakeholder: '',
         agenda: '',
         suratTugasNumber: ''
     };
+
+    function addLocation() {
+        formData.locations = [
+            ...formData.locations,
+            { startDate: '', endDate: '', location: '', province: '' }
+        ];
+    }
+
+    function removeLocation(index) {
+        if (formData.locations.length <= 1) return;
+        formData.locations = formData.locations.filter((_, i) => i !== index);
+    }
     
     $: if (open && !prevOpen) {
         prevOpen = true;
@@ -60,10 +70,19 @@
             };
             
             formData = {
-                startDate: formatForInput(firstRecord.startDate),
-                endDate: formatForInput(firstRecord.endDate),
-                location: firstRecord.location || '',
-                province: firstRecord.province || '',
+                locations: firstRecord.locations && firstRecord.locations.length > 0
+                    ? firstRecord.locations.map(l => ({
+                        startDate: formatForInput(l.startDate),
+                        endDate: formatForInput(l.endDate),
+                        location: l.location || '',
+                        province: l.province || ''
+                    }))
+                    : [{
+                        startDate: formatForInput(firstRecord.startDate),
+                        endDate: formatForInput(firstRecord.endDate),
+                        location: firstRecord.location || '',
+                        province: firstRecord.province || ''
+                    }],
                 purpose: firstRecord.purpose || '',
                 stakeholder: firstRecord.stakeholder || '',
                 agenda: firstRecord.agenda || '',
@@ -82,26 +101,56 @@
     $: isEditable = ((baseRecord.status === 'Draft' || baseRecord.status === 'Submitted' || baseRecord.status === 'In Progress') && $userStore?.role !== 'kasubag') || $userStore?.role === 'super_admin';
     
     // Calculate SBM Cost
-    $: selectedProvinceData = provinces.find(p => p.name === formData.province);
-    $: rate = selectedProvinceData ? selectedProvinceData.luarKota : 0;
-    
-    $: days = (() => {
-        if (!formData.startDate || !formData.endDate) return 0;
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-        return diffDays > 0 ? diffDays : 0;
-    })();
-    
-    $: totalCostPerPerson = rate * days;
-    // When editing, cost is based on new selection. Otherwise based on records length.
-    $: currentEmployeeCount = isEditing ? selectedEmployeeIds.length : records.length;
-    $: totalSBMCost = totalCostPerPerson * currentEmployeeCount;
+	$: costBreakdown = Object.values((formData.locations && formData.locations.length > 0
+		? formData.locations
+		: []
+		).reduce((acc, loc) => {
+			const provData = provinces.find(p => p.name === loc.province);
+			const rate = provData ? provData.luarKota : 0;
+			const start = new Date(loc.startDate);
+			const end = new Date(loc.endDate) ;
+			let locDays = 0;
+			if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+				const diffTime = end.getTime() - start.getTime();
+				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+				locDays = diffDays > 0 ? diffDays : 0;
+			}
+            
+            if (locDays > 0 && loc.province) {
+                if (!acc[loc.province]) {
+                    acc[loc.province] = { id: loc.province, province: loc.province, days: 0, rate: rate };
+                }
+                acc[loc.province].days += locDays;
+            }
+			return acc;
+		}, {}));
 
-    async function handleSave() {
-        if (!formData.startDate || !formData.endDate || !formData.province) {
-            toast.error('Harap lengkapi field wajib.');
+	$: days = costBreakdown.reduce((sum, item) => sum + item.days, 0);
+	$: totalCostPerPerson = costBreakdown.reduce((sum, item) => sum + (item.rate * item.days), 0);
+	$: sbmRateAvg = days > 0 ? totalCostPerPerson / days : 0;
+
+    // Overall start/end for the record
+    $: minStartDate = formData.locations.reduce((min, loc) => {
+        if (!loc.startDate) return min;
+        if (!min || loc.startDate < min) return loc.startDate;
+        return min;
+    }, '');
+
+    $: maxEndDate = formData.locations.reduce((max, loc) => {
+        if (!loc.endDate) return max;
+        if (!max || loc.endDate > max) return loc.endDate;
+        return max;
+    }, '');
+
+	// When editing, cost is based on new selection. Otherwise based on records length.
+	$: currentEmployeeCount = isEditing ? selectedEmployeeIds.length : records.length;
+	$: totalSBMCost = totalCostPerPerson * currentEmployeeCount;
+
+	// ... rest of logic ...
+
+	async function handleSave() {
+        if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province)) {
+            toast.error('Harap lengkapi field wajib di setiap lokasi.');
             return;
         }
         
@@ -119,8 +168,11 @@
         try {
             const commonData = {
                 ...formData,
-                startDate: new Date(formData.startDate).toISOString(),
-                endDate: new Date(formData.endDate).toISOString(),
+                startDate: minStartDate ? new Date(minStartDate).toISOString() : null,
+                endDate: maxEndDate ? new Date(maxEndDate).toISOString() : null,
+                // Backward compatibility for summary
+                location: formData.locations[0]?.location || '',
+                province: formData.locations[0]?.province || '',
                 totalCost: totalCostPerPerson // Store per-person cost
             };
 
@@ -177,10 +229,10 @@
 {#if open && records.length > 0}
   <div use:portal>
     <!-- Backdrop -->
-    <div transition:fade={{duration: 200}} class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" role="button" tabindex="0" aria-label="Close modal" on:click={close} on:keydown={(e) => e.key === 'Escape' && close()}></div>
+    <div transition:fade={{duration: 200}} class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm" role="button" tabindex="0" aria-label="Close modal" on:click={close} on:keydown={(e) => e.key === 'Escape' && close()}></div>
     
     <!-- Modal Dialog -->
-    <div transition:fly={{y: 20, duration: 300}} class="fixed left-[50%] top-[50%] z-50 w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div transition:fly={{y: 20, duration: 300}} class="fixed left-[50%] top-[50%] z-[100] w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-white">
             <div class="flex-1 min-w-0 pr-4">
@@ -215,32 +267,60 @@
                             Informasi Dasar
                         </h3>
                         
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="space-y-1.5">
-                                    <Label class="text-slate-600 text-xs">Tanggal Mulai <span class="text-red-500">*</span></Label>
-                                    <Input type="date" bind:value={formData.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                        <div class="space-y-6">
+                            {#each formData.locations as loc, i}
+                                <div class="space-y-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30 relative group">
+                                    {#if formData.locations.length > 1 && isEditing}
+                                        <button 
+                                            type="button"
+                                            on:click={() => removeLocation(i)}
+                                            class="absolute -top-2 -right-2 p-1 bg-white border border-red-100 text-red-400 rounded-full shadow-sm hover:text-red-600 z-10"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    {/if}
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="space-y-1.5">
+                                            <Label class="text-slate-600 text-xs">Lokasi Dinas (Kab/Kota)</Label>
+                                            <Input bind:value={loc.location} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <Label class="text-slate-600 text-xs">Provinsi *</Label>
+                                            <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'}>
+                                                <option value="" disabled>Pilih Provinsi</option>
+                                                {#each provinces as prov}
+                                                    <option value={prov.name}>{prov.name}</option>
+                                                {/each}
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="space-y-1.5">
+                                            <Label class="text-slate-600 text-xs">Tanggal Mulai *</Label>
+                                            <Input type="date" bind:value={loc.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <Label class="text-slate-600 text-xs">Tanggal Selesai *</Label>
+                                            <Input type="date" bind:value={loc.endDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="space-y-1.5">
-                                    <Label class="text-slate-600 text-xs">Tanggal Selesai <span class="text-red-500">*</span></Label>
-                                    <Input type="date" bind:value={formData.endDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                            {/each}
+
+                            {#if isEditing}
+                                <div class="flex justify-center pt-2">
+                                    <Button variant="outline" size="sm" class="text-indigo-600 border-indigo-200 hover:bg-indigo-50 flex items-center gap-1.5 h-8" on:click={addLocation}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        Tambah Lokasi
+                                    </Button>
                                 </div>
-                            </div>
-                            
-                            <div class="space-y-1.5">
-                                <Label class="text-slate-600 text-xs">Provinsi Tujuan <span class="text-red-500">*</span></Label>
-                                <Select bind:value={formData.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'}>
-                                    <option value="" disabled>Pilih Provinsi</option>
-                                    {#each provinces as prov}
-                                        <option value={prov.name}>{prov.name}</option>
-                                    {/each}
-                                </Select>
-                            </div>
-                            
-                            <div class="space-y-1.5">
-                                <Label class="text-slate-600 text-xs">Lokasi / Kota Tujuan</Label>
-                                <Input bind:value={formData.location} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
-                            </div>
+                            {/if}
 
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs">Surat Tugas</Label>
@@ -378,33 +458,13 @@
                         </div>
                     </div>
                     
-                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 p-5 shadow-sm relative overflow-hidden">
-                        <div class="absolute -right-6 -top-6 text-emerald-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-emerald-900 mb-4 flex items-center gap-2 relative z-10">
-                            Estimasi Total SBM
-                        </h3>
-                        <div class="space-y-2.5 text-sm text-emerald-800 mb-4 relative z-10">
-                            <div class="flex justify-between items-center border-b border-emerald-200/50 pb-2">
-                                <span class="text-xs">Durasi Perjalanan</span>
-                                <span class="font-semibold bg-white/50 px-2 py-0.5 rounded text-xs">{days} Hari</span>
-                            </div>
-                            <div class="flex justify-between items-center border-b border-emerald-200/50 pb-2">
-                                <span class="text-xs">Tarif / Hari</span>
-                                <span class="font-semibold bg-white/50 px-2 py-0.5 rounded text-xs">{formatCurrency(rate)}</span>
-                            </div>
-                            <div class="flex justify-between items-center border-b border-emerald-200/50 pb-2">
-                                <span class="text-xs">Subtotal / Orang</span>
-                                <span class="font-semibold bg-white/50 px-2 py-0.5 rounded text-xs">{formatCurrency(totalCostPerPerson)}</span>
-                            </div>
-                        </div>
-                        <div class="pt-2 flex justify-between items-end relative z-10">
-                            <span class="font-bold text-emerald-900 text-xs uppercase tracking-wider">Total Akhir<br/><span class="text-[10px] font-normal normal-case text-emerald-700">({currentEmployeeCount} Petugas)</span></span>
-                            <span class="text-2xl font-black text-emerald-600">{formatCurrency(totalSBMCost)}</span>
-                        </div>
+                    <div class="mt-4">
+                        <CostEstimateCard 
+                            breakdown={costBreakdown}
+                            employeeCount={currentEmployeeCount}
+                            totalCost={totalSBMCost}
+                            readonly={true}
+                        />
                     </div>
                 </div>
             </div>
