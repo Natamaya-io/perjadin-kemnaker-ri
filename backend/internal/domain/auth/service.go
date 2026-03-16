@@ -117,7 +117,7 @@ func (s *service) GetDemoUsers() ([]map[string]string, error) {
 			"name":     u.Name,
 			"email":    u.Email,
 			"role":     u.Role,
-			"password": "123", // Exposed for demo
+			"password": u.DemoPassword, // Exposed for demo
 		})
 	}
 

@@ -7,13 +7,106 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
-	"github.com/kemnaker/perjadin-backend/internal/domain/record"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type rawUser struct {
+	Name         string
+	NIP          string
+	TingkatBiaya string
+	Pangkat      string
+	Golongan     string
+	Jabatan      string
+}
+
+func getOriginalUsers() ([]models.User, []rawUser) {
+	password := "123"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPwdStr := string(hashedPassword)
+
+	adminUsers := []models.User{
+		{
+			Name:         "Super Admin",
+			Email:        "superadmin@kemnaker.go.id",
+			Password:     hashedPwdStr,
+			Role:         "super_admin",
+			DemoPassword: password,
+			NomorHP:      "081200000000",
+		},
+		{
+			Name:         "Keuangan",
+			Email:        "keuangan@kemnaker.go.id",
+			Password:     hashedPwdStr,
+			Role:         "keuangan",
+			DemoPassword: password,
+			NomorHP:      "081200000001",
+		},
+		{
+			Name:         "Kasubag",
+			Email:        "kasubag@kemnaker.go.id",
+			Password:     hashedPwdStr,
+			Role:         "kasubag",
+			DemoPassword: password,
+			NomorHP:      "081200000002",
+		},
+	}
+
+	protokolData := []rawUser{
+		{"Jiyanto", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
+		{"Fathan Asyraf", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Auditya Hermawan", "19880920 201403 1 001", "C", "Penata Tk.I", "III/d", "Kabag TU Pimpinan dan Protokol"},
+		{"Amsari B Dulmuti", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Sigit Santoso", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Ramadhan Putra Herdian", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Beni Sanjaya", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Suratno", "-", "-", "-", "-", "Tenaga Administrasi"},
+		{"M. Muhtadin", "-", "-", "-", "-", "Tenaga Administrasi"},
+		{"Muhammad Isa", "19871017 201902 1 003", "C", "Penata Muda Tk.I", "III/c", "Analis Perencanaan Evaluasi dan Pelaporan"},
+		{"Perananta Purba", "19910306 201902 1 003", "C", "Penata Muda Tk. I", "III/b", "Analis Protokoler"},
+		{"Mochamad Gufron", "19940526 201902 1 003", "C", "Penata Muda Tk. I", "III/b", "Kepala Subbagian Protokol"},
+		{"Rezky Aries Munandar", "19960407 201812 1 001", "D", "Penata Muda", "III/a", "Penata Protokoler"},
+		{"Imelda Anggraeni Sibarani", "19941004 201902 2 008", "C", "Penata Muda Tk. I", "III/b", "Analis Protokoler"},
+		{"Efi Kurniawati", "19920106 201503 2 004", "C", "Penata", "III/c", "Analis Protokoler"},
+		{"Bobby Rizky", "19940929 201902 1 005", "C", "Penata Muda Tk. I", "III/b", "Analis Protokoler"},
+		{"Nurcahyo Purnomo", "19890404 201503 1 007", "D", "Penata Muda", "III/a", "Petugas Protokoler"},
+		{"Bagas Winektu", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Yudi Santoso", "80090538", "-", "AIPTU", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
+		{"M. Choirul Hidayat", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
+		{"Widada", "75120659", "-", "AIPDA", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
+		{"Nanang", "77060070", "-", "AIPDA", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
+		{"Beny Sanjaya", "-", "-", "-", "-", "Tenaga Administrasi"},
+		{"Muhammad Dienul Islami", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Wahyu Nino Prasangka", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Firman Andriansyah", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Muhammad Afendrianto", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Dudi Erwanto", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Afriyanti", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Muhammad Farras Fadhilsyah", "-", "D", "-", "-", "Pramu Pimpinan"},
+		{"Siti Munzayanah", "19930812 202012 2 021", "C", "Penata Muda", "III/a", "Penelaah Teknis Kebijakan"},
+		{"Syamazka Zakirni", "19950512 202521 2 042", "D", "IX", "-", "Penata Layanan Operasional"},
+		{"Zainal Hafit", "19930609 202521 1 068", "D", "IX", "-", "Pengadministrasi Perkantoran"},
+		{"Taufik Hidayat Sitompul", "198603272009121003", "C", "Penata Muda Tk. I", "III/b", "Analis Persuratan"},
+		{"Mark Hermawan", "-", "D", "-", "-", "Tenaga Administrasi"},
+		{"Widianto", "-", "D", "-", "-", "Tenaga Administrasi"},
+		{"Imam Wahyu Sucipto", "-", "-", "-", "-", "ADC Menteri Ketenagakerjaan"},
+		{"Muhammad Nuril Anwar", "-", "D", "-", "-", "Tenaga Administrasi"},
+		{"Adria Jabartaru Putra", "19890920 201503 1 003", "-", "-", "-", "Auditor muda inspektorat 1"},
+		{"Heru Anggara Tri Susila", "-", "-", "-", "-", "Tenaga Administrasi"},
+		{"Nurin Nashfati", "20010115 202505 2 002", "C", "Penata Muda", "III/a", "Penata Keprotokolan"},
+		{"Citra Anastasya", "20010728 202505 2 007", "C", "Penata Muda", "III/a", "Penata Keprotokolan"},
+		{"Riki Nurkamal Arsandi", "-", "D", "-", "-", "Staf Biro Umum"},
+		{"Mohamad Abdul Baasith", "-", "D", "-", "-", "Petugas Administrasi"},
+		{"Regina Dwita Sari", "20020627 202505 2 004", "C", "Penata Muda", "III/a", "Penata Protokoler"},
+		{"Hendi Rionaldo", "19870518 202521 1 010", "-", "IX", "-", "Penata Layanan Operasional"},
+		{"Chandra Hakim", "-", "D", "-", "-", "Pengadministrasi"},
+		{"Doni Renaldi", "-", "-", "-", "-", "Staf Tata Usaha"},
+		{"Dhika Nur Khaliffa", "-", "-", "-", "-", "Pramu Pimpinan"},
+	}
+	return adminUsers, protokolData
+}
 
 func Seed(db *sql.DB) {
 	log.Println("Starting Database Seeding...")
@@ -33,8 +126,28 @@ func Seed(db *sql.DB) {
 		}
 	}
 
+	adminUsers, protokolData := getOriginalUsers()
+	
+	validEmails := []string{}
+	for _, u := range adminUsers {
+		validEmails = append(validEmails, "'" + u.Email + "'")
+	}
+	for _, raw := range protokolData {
+		namePart := strings.ToLower(strings.ReplaceAll(raw.Name, " ", ""))
+		namePart = strings.ReplaceAll(namePart, ".", "")
+		email := namePart + "@kemnaker.go.id"
+		validEmails = append(validEmails, "'" + email + "'")
+	}
+
+	// Remove any users outside of the original requested ones or non kemnaker.go.id domain
+	log.Println("Removing users outside of original data...")
+	query := fmt.Sprintf("DELETE FROM users WHERE email NOT IN (%s)", strings.Join(validEmails, ","))
+	_, err := db.Exec(query)
+	if err != nil {
+		log.Printf("Warning: Failed to remove outside users: %v", err)
+	}
+
 	userRepo := user.NewRepository(db)
-	recordRepo := record.NewRepository(db)
 
 	var wg sync.WaitGroup
 
@@ -47,13 +160,10 @@ func Seed(db *sql.DB) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		seedUsers(userRepo)
+		seedUsers(userRepo, adminUsers, protokolData)
 	}()
 
 	wg.Wait()
-
-	// Runs after users are seeded because it depends on them
-	seedFakerRecords(userRepo, recordRepo)
 
 	log.Println("Database Seeding Completed Successfully.")
 }
@@ -114,54 +224,20 @@ func seedProvincesAndRates(db *sql.DB) {
 	}
 }
 
-func seedUsers(userRepo user.Repository) {
+func seedUsers(userRepo user.Repository, adminUsers []models.User, protokolData []rawUser) {
 	log.Println("Seeding Users...")
-
 	password := "123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	hashedPwdStr := string(hashedPassword)
-
-	adminUsers := []models.User{
-		{
-			Name:         "Super Admin",
-			Email:        "superadmin@kemnaker.go.id",
-			Password:     hashedPwdStr,
-			Role:         "super_admin",
-			DemoPassword: password,
-			NomorHP:      "081200000000",
-		},
-		{
-			Name:         "Keuangan",
-			Email:        "keuangan@kemnaker.go.id",
-			Password:     hashedPwdStr,
-			Role:         "keuangan",
-			DemoPassword: password,
-			NomorHP:      "081200000001",
-		},
-	}
-
-	type rawUser struct {
-		Name         string
-		NIP          string
-		TingkatBiaya string
-		Pangkat      string
-		Golongan     string
-		Jabatan      string
-	}
-
-	protokolData := []rawUser{
-		{"Jiyanto", "-", "-", "-", "-", "Petugas Pamwal Menteri Ketenagakerjaan"},
-		{"Fathan Asyraf", "-", "-", "-", "-", "Staf Tata Usaha"},
-		{"Auditya Hermawan", "19880920 201403 1 001", "C", "Penata Tk.I", "III/d", "Kabag TU Pimpinan dan Protokol"},
-	}
 
 	for _, u := range adminUsers {
 		upsertUser(userRepo, u)
 	}
 
 	for i, raw := range protokolData {
-		email := strings.ToLower(strings.ReplaceAll(raw.Name, " ", "")) + "@kemnaker.go.id"
-		email = strings.ReplaceAll(email, ".", "")
+		namePart := strings.ToLower(strings.ReplaceAll(raw.Name, " ", ""))
+		namePart = strings.ReplaceAll(namePart, ".", "")
+		email := namePart + "@kemnaker.go.id"
 
 		user := models.User{
 			Name:         raw.Name,
@@ -175,22 +251,6 @@ func seedUsers(userRepo user.Repository) {
 			TingkatBiaya: raw.TingkatBiaya,
 			NIP:          raw.NIP,
 			NomorHP:      fmt.Sprintf("081234567%03d", i+1),
-		}
-		upsertUser(userRepo, user)
-	}
-
-	gofakeit.Seed(0)
-	for i := 0; i < 5; i++ {
-		email := gofakeit.Email()
-		user := models.User{
-			Name:         gofakeit.Name(),
-			Email:        email,
-			Password:     hashedPwdStr,
-			Role:         "protokol",
-			DemoPassword: password,
-			Jabatan:      gofakeit.JobTitle(),
-			NIP:          gofakeit.DigitN(18),
-			NomorHP:      gofakeit.Phone(),
 		}
 		upsertUser(userRepo, user)
 	}
@@ -211,52 +271,4 @@ func upsertUser(userRepo user.Repository, u models.User) {
 			log.Printf("Failed to update user %s: %v", u.Email, err)
 		}
 	}
-}
-
-func seedFakerRecords(userRepo user.Repository, recordRepo record.Repository) {
-	log.Println("Seeding Faker Travel Records...")
-	gofakeit.Seed(0)
-
-	users, err := userRepo.GetUsers()
-	if err != nil || len(users) < 2 {
-		return
-	}
-
-	var creatorID uuid.UUID
-	var empID uuid.UUID
-
-	for _, u := range users {
-		if u.Role == "super_admin" {
-			creatorID = u.ID
-		}
-		if u.Role == "protokol" && empID == uuid.Nil {
-			empID = u.ID
-		}
-	}
-
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		
-		// To avoid race conditions in gofakeit and ensure unique generation,
-		// we generate data sequentially but insert concurrently.
-		record := models.TravelRecord{
-			SPDNumber:   gofakeit.UUID(),
-			EmployeeID:  empID,
-			CreatorID:   creatorID,
-			Location:    gofakeit.City(),
-			Province:    gofakeit.State(),
-			Type:        "luar_kota",
-			Purpose:     gofakeit.Sentence(5),
-			Stakeholder: gofakeit.Company(),
-			Agenda:      gofakeit.Paragraph(1, 2, 5, " "),
-			Status:      "Draft",
-		}
-		
-		go func(rec models.TravelRecord) {
-			defer wg.Done()
-			recordRepo.CreateTravelRecord(&rec)
-		}(record)
-	}
-	wg.Wait()
 }

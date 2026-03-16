@@ -408,30 +408,32 @@
                             </div>
                         </div>
 
-                        <div class="mt-8 flex justify-end text-sm break-inside-avoid">
-                            <div class="w-[350px]">
-                                <p class="mb-4">Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                                <p class="font-bold mb-4">Pelaksana Perjalanan Dinas</p>
-                                
-                                <table class="w-full">
-                                    <tbody>
-                                        {#each allRecordsForSpd as empRecord, i}
-                                            <tr>
-                                                <td class="w-8 align-top py-4">{i + 1}.</td>
-                                                <td class="align-top py-4">
-                                                    <span class="block">{empRecord.employee.name}</span>
-                                                    <span class="block">NIP. {empRecord.employee.nip}</span>
-                                                </td>
-                                                <td class="w-32 align-bottom py-4 text-right">{i + 1}......................</td>
-                                            </tr>
-                                        {/each}
-                                    </tbody>
-                                </table>
+                        <div class="mt-8 text-sm break-inside-avoid px-8">
+                            <div class="flex justify-end mb-8">
+                                <p>Jakarta, {record.reportData?.submittedAt ? new Date(record.reportData.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'}) : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
+                            <p class="font-bold mb-6 underline">Pelaksana Perjalanan Dinas</p>
+
+                            <table class="w-full">
+                                <tbody>
+                                    {#each allRecordsForSpd as empRecord, i}
+                                        <tr>
+                                            <td class="w-12 align-top py-6 text-right pr-4">{i + 1}.</td>
+                                            <td class="align-top py-6 w-1/2">
+                                                <span class="block">{empRecord.employee?.name || '-'}</span>
+                                                <span class="block">NIP. {empRecord.employee?.nip || '-'}</span>
+                                            </td>
+                                            <td class="align-bottom py-6">
+                                                {i + 1}........................................
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
+                        </div>
+                        </div>
                 {#if allFiles.length > 0}
                     <div class="document-section" style="page-break-before: always; break-before: page;">
                         <div class="text-center space-y-1 mb-8">

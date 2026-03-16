@@ -174,7 +174,7 @@
                 <table class="w-full text-left text-sm border-collapse min-w-[800px]">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500">
                         <tr>
-                            <th class="px-6 py-4 whitespace-nowrap">ID SPD</th>
+                            <th class="px-6 py-4 whitespace-nowrap">ID SPJ</th>
                             <th class="px-6 py-4 whitespace-nowrap">Lokasi</th>
                             <th class="px-6 py-4 whitespace-nowrap">Tanggal</th>
                             <th class="px-6 py-4 whitespace-nowrap text-right">Total Biaya Akhir</th>

@@ -484,104 +484,124 @@
     {:else}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <!-- Header Info -->
-            <div class="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 text-sm">
-                <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">ID SPD</span>
-                    <span class="font-mono text-slate-700 font-medium bg-white px-2 py-1 rounded border border-slate-200 inline-block">{record.spd}</span>
+            <div class="p-4 sm:p-6 border-b border-slate-100">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 text-sm">
+                    <div>
+                        <span class="block text-slate-500 mb-1">ID SPJ</span>
+                        <span class="font-bold text-slate-800">{record.spd}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1">Nomor Surat Tugas</span>
+                        {#if ($userStore.role === 'super_admin') && !record.suratTugasNumber}
+                            <input 
+                                type="text" 
+                                bind:value={manualSuratTugasNumber}
+                                placeholder="Input No. Surat Tugas..."
+                                class="font-bold text-slate-800 bg-white px-2 py-1 rounded border border-slate-300 focus:ring-1 focus:ring-blue-500 outline-none w-full max-w-[250px] text-sm"
+                            />
+                        {:else}
+                            <span class="font-bold text-slate-800">{manualSuratTugasNumber || record.suratTugasNumber || '-'}</span>
+                        {/if}
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1">Nomor SPD</span>
+                        <span class="font-bold text-slate-800">{nomorSpdPetugas}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1">Lokasi Tujuan</span>
+                        <span class="font-bold text-slate-800">{record.location}, {record.province}</span>
+                    </div>
                 </div>
-                <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">Nomor Surat Tugas</span>
-                    {#if ($userStore.role === 'super_admin') && !record.suratTugasNumber}
-                        <input 
-                            type="text" 
-                            bind:value={manualSuratTugasNumber}
-                            placeholder="Input No. Surat Tugas..."
-                            class="font-mono text-emerald-700 font-bold bg-white px-2 py-1 rounded border border-emerald-300 focus:ring-1 focus:ring-emerald-500 outline-none w-full max-w-[250px] text-sm"
-                        />
-                    {:else}
-                        <span class="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block">{manualSuratTugasNumber || record.suratTugasNumber || '-'}</span>
-                    {/if}
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 text-sm">
+                    <div>
+                        <span class="block text-slate-500 mb-1">No. SPD</span>
+                        <div class="flex flex-col gap-1">
+                            {#each allRecordsForSpd as r, i}
+                                <span class="font-bold text-slate-800">{String(i + 1).padStart(2, '0')}</span>
+                            {/each}
+                        </div>
+                    </div>
+                    <div class="col-span-1 md:col-span-1">
+                        <span class="block text-slate-500 mb-1">Nama Pegawai</span>
+                        <div class="flex flex-col gap-1">
+                            {#each allRecordsForSpd as r}
+                                <span class="font-bold text-slate-800">{r.employee?.name || '-'}</span>
+                            {/each}
+                        </div>
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <span class="block text-slate-500 mb-1">Tanggal Pelaksanaan</span>
+                        <span class="font-bold text-slate-800">
+                            {new Date(record.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).replace(/ /g, ' ')} s/d {new Date(record.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).replace(/ /g, ' ')}
+                        </span>
+                    </div>
                 </div>
-                <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">NOMOR SPD</span>
-                    <span class="font-mono text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200 inline-block">{nomorSpdPetugas}</span>
-                </div>
-                <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">Nama Pegawai</span>
-                    <span class="font-medium text-slate-800">{record.employee?.name || '-'}</span>
-                </div>
-                <div>
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">Lokasi & Tujuan</span>
-                    <span class="font-medium text-slate-800">{record.location}, {record.province}</span>
-                </div>
-                <div class="md:col-span-2 lg:col-span-1">
-                    <span class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">Periode Perjalanan</span>
-                    <span class="font-medium text-slate-800">{new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} &mdash; {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</span>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Upload SPPD -->
+                    <div class="relative">
+                        {#if sppdFile}
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                <div class="flex items-center gap-3 w-full">
+                                    <div class="w-8 h-8 rounded bg-blue-100 flex items-center justify-center shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-700 truncate">{sppdFile.name}</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" class="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" on:click={() => openPreview(sppdFile)}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                        <button type="button" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors" on:click={() => sppdFile = null}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                    </div>
+                                </div>
+                            </div>
+                        {:else}
+                            <label class="flex items-center justify-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors w-full">
+                                <span class="inline-flex items-center gap-2 text-slate-700 text-[15px]">
+                                    <span class="flex items-center justify-center w-5 h-5 bg-blue-600 rounded text-white shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                                    </span>
+                                    Klik untuk unggah SPPD (PDF/Gambar)
+                                </span>
+                                <input type="file" accept="image/*,application/pdf" class="hidden" on:change={handleSppdFileChange} />
+                            </label>
+                        {/if}
+                    </div>
+
+                    <!-- Upload Surat Tugas -->
+                    <div class="relative">
+                        {#if suratTugasFile}
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                <div class="flex items-center gap-3 w-full">
+                                    <div class="w-8 h-8 rounded bg-emerald-100 flex items-center justify-center shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-700 truncate" title={getDisplayName(suratTugasFile.name)}>{getDisplayName(suratTugasFile.name)}</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" class="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" on:click={() => openPreview(suratTugasFile)}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                        <button type="button" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors" on:click={() => suratTugasFile = null}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                    </div>
+                                </div>
+                            </div>
+                        {:else}
+                            <label class="flex items-center justify-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors w-full">
+                                <span class="inline-flex items-center gap-2 text-slate-700 text-[15px]">
+                                    <span class="flex items-center justify-center w-5 h-5 bg-blue-600 rounded text-white shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                                    </span>
+                                    Klik untuk unggah Surat Tugas
+                                </span>
+                                <input type="file" accept="image/*,application/pdf" class="hidden" on:change={handleSuratTugasFileChange} />
+                            </label>
+                        {/if}
+                    </div>
                 </div>
             </div>
 
             <div class="p-4 sm:p-6 md:p-8 space-y-8 sm:space-y-12">
-                <!-- Specific Documents Upload (SPPD & Surat Tugas) -->
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-3">
-                        <Label class="text-sm font-bold text-slate-800">Upload Lembar SPPD</Label>
-                        <div class="p-4 border border-slate-200 rounded-xl bg-slate-50 relative group flex items-center justify-between">
-                            {#if sppdFile}
-                                <div class="flex items-center gap-3 w-full">
-                                    <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-slate-700 truncate">{sppdFile.name}</p>
-                                        <p class="text-[10px] text-slate-500">Berhasil diunggah</p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button class="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" on:click={() => openPreview(sppdFile)}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
-                                        <button class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors" on:click={() => sppdFile = null}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                    </div>
-                                </div>
-                            {:else}
-                                <label class="flex-1 text-center cursor-pointer py-2 text-sm text-slate-500 hover:text-blue-600 transition-colors w-full">
-                                    <span class="inline-flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                        Klik untuk unggah SPPD (PDF/Gambar)
-                                    </span>
-                                    <input type="file" accept="image/*,application/pdf" class="hidden" on:change={handleSppdFileChange} />
-                                </label>
-                            {/if}
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <Label class="text-sm font-bold text-slate-800">Upload Surat Tugas</Label>
-                        <div class="p-4 border border-slate-200 rounded-xl bg-slate-50 relative group flex items-center justify-between">
-                            {#if suratTugasFile}
-                                <div class="flex items-center gap-3 w-full">
-                                    <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-slate-700 truncate" title={getDisplayName(suratTugasFile.name)}>{getDisplayName(suratTugasFile.name)}</p>
-                                        <p class="text-[10px] text-slate-500">Berhasil diunggah</p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button class="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" on:click={() => openPreview(suratTugasFile)}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
-                                        <button class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors" on:click={() => suratTugasFile = null}><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                    </div>
-                                </div>
-                            {:else}
-                                <label class="flex-1 text-center cursor-pointer py-2 text-sm text-slate-500 hover:text-emerald-600 transition-colors w-full">
-                                    <span class="inline-flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                        Klik untuk unggah Surat Tugas
-                                    </span>
-                                    <input type="file" accept="image/*,application/pdf" class="hidden" on:change={handleSuratTugasFileChange} />
-                                </label>
-                            {/if}
-                        </div>
-                    </div>
-                    </div>
 
                 <!-- Report Text Section -->
                 <div class="space-y-4">
@@ -714,12 +734,26 @@
                         </div>
                     </div>
 
-                    <div class="space-y-8">
+                    <div class="space-y-4">
                         {#each recordsList as empRecord, index}
                             {@const empId = empRecord.id}
                             {#if localCosts[empId]}
-                                <div id="form-rincian-{empId}" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-24">
-                                    <div class="p-4 md:p-6 bg-slate-50/30 grid gap-4 md:gap-6">
+                                <div id="form-rincian-{empId}" class="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24 border border-slate-200">
+                                    <button 
+                                        class="w-full flex items-center justify-between p-4 bg-indigo-600 hover:bg-indigo-700 transition-colors text-white font-bold text-left rounded-t-xl {localCosts[empId]._expanded ? 'rounded-b-none' : 'rounded-b-xl'}"
+                                        on:click={() => {
+                                            localCosts[empId]._expanded = !localCosts[empId]._expanded;
+                                            localCosts = { ...localCosts };
+                                        }}
+                                    >
+                                        <span class="text-sm">{empRecord.employee?.name || 'Petugas'}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform duration-200 {localCosts[empId]._expanded ? 'rotate-180' : ''}" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    {#if localCosts[empId]._expanded}
+                                        <div class="p-4 md:p-6 bg-slate-50/30 grid gap-4 md:gap-6 border-t border-slate-200" transition:fade={{ duration: 150 }}>
                                         <!-- Mode Transportasi -->
                                         <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5">
                                             <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
@@ -1042,7 +1076,8 @@
                                             </div>
                                         </div>
 
-                                    </div>
+                                        </div>
+                                    {/if}
                                 </div>
                             {/if}
                         {/each}
@@ -1051,9 +1086,11 @@
             </div>
 
             
-            <div class="bg-slate-50 border-t border-slate-100 p-6 flex justify-end">
-                <Button size="lg" class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8" on:click={handleSubmit}>Simpan Laporan & Biaya Akhir</Button>
-            </div>
+            {#if $userStore.role !== 'kasubag'}
+                <div class="bg-slate-50 border-t border-slate-100 p-6 flex justify-end">
+                    <Button size="lg" class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8" on:click={handleSubmit}>Simpan Laporan & Biaya Akhir</Button>
+                </div>
+            {/if}
         </div>
     {/if}
 

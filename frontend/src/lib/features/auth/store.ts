@@ -84,19 +84,6 @@ userStore.subscribe(u => {
     }
 });
 
-// Sync users to local storage for Demo Banner
-usersStore.subscribe(users => {
-    if (isBrowser && users.length > 0) {
-        // Minimal info for security, though password is '123' for all in demo
-        const demoUsers = users.map(u => ({
-            name: u.name,
-            email: u.email,
-            role: u.role
-        }));
-        localStorage.setItem('demo_users_v2', JSON.stringify(demoUsers));
-    }
-});
-
 export async function addUser(user: Omit<User, 'id'>) {
     try {
         const newUser = await api.createUser(user);
