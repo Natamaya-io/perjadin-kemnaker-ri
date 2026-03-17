@@ -14,10 +14,12 @@ import (
 )
 
 type Repository interface {
+	GetLatestSpdNumber(ctx context.Context) (string, error)
 	CreateTravelRecord(record *models.TravelRecord) error
 	GetTravelRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
 	GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, error)
 	GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateTravelRecord(record *models.TravelRecord) error
 	DeleteTravelRecord(id uuid.UUID) error
 }
@@ -200,7 +202,7 @@ func mapDBReport(dbrep db.TravelReport) models.TravelReport {
 	}
 }
 
-func (r *repository) getUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	dbu, err := r.q.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -209,12 +211,32 @@ func (r *repository) getUserByID(ctx context.Context, id uuid.UUID) (*models.Use
 	return &u, nil
 }
 
+func (r *repository) GetLatestSpdNumber(ctx context.Context) (string, error) {
+	ns, err := r.q.GetLatestSpdNumber(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+	return fromNullString(ns), nil
+}
+
 func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
+	ctx := context.Background()
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	qtx := r.q.WithTx(tx)
+
 	if record.ID == uuid.Nil {
 		record.ID = uuid.New()
 	}
-	ctx := context.Background()
-	dbr, err := r.q.CreateTravelRecord(ctx, db.CreateTravelRecordParams{
+
+	dbr, err := qtx.CreateTravelRecord(ctx, db.CreateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
 		EmployeeID:       record.EmployeeID,
@@ -248,7 +270,7 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 	for _, loc := range record.Locations {
 		// Always generate a new ID for the join table record to avoid conflicts
 		locID := uuid.New()
-		_, err := r.q.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
+		_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
 			ID:             locID,
 			TravelRecordID: record.ID,
 			Location:       loc.Location,
@@ -261,7 +283,7 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 		}
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.TravelRecord, error) {
@@ -290,7 +312,7 @@ func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				emp, _ := r.getUserByID(ctx, rec.EmployeeID)
+				emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
 				if emp != nil {
 					rec.Employee = *emp
 				}
@@ -299,7 +321,7 @@ func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				creator, _ := r.getUserByID(ctx, rec.CreatorID)
+				creator, _ := r.GetUserByID(ctx, rec.CreatorID)
 				if creator != nil {
 					rec.Creator = *creator
 				}
@@ -361,7 +383,7 @@ func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		emp, _ := r.getUserByID(ctx, rec.EmployeeID)
+		emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
 		if emp != nil {
 			rec.Employee = *emp
 		}
@@ -370,7 +392,7 @@ func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		creator, _ := r.getUserByID(ctx, rec.CreatorID)
+		creator, _ := r.GetUserByID(ctx, rec.CreatorID)
 		if creator != nil {
 			rec.Creator = *creator
 		}
@@ -433,7 +455,15 @@ func (r *repository) GetOverlappingRecords(employeeID uuid.UUID, startDate, endD
 
 func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	ctx := context.Background()
-	_, err := r.q.UpdateTravelRecord(ctx, db.UpdateTravelRecordParams{
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	qtx := r.q.WithTx(tx)
+
+	_, err = qtx.UpdateTravelRecord(ctx, db.UpdateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
 		EmployeeID:       record.EmployeeID,
@@ -459,12 +489,14 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	}
 
 	// Update locations (simpler to delete and recreate)
-	r.q.DeleteTravelLocationsByRecordID(ctx, record.ID)
+	if err := qtx.DeleteTravelLocationsByRecordID(ctx, record.ID); err != nil {
+		return err
+	}
 	for _, loc := range record.Locations {
 		if loc.ID == uuid.Nil {
 			loc.ID = uuid.New()
 		}
-		r.q.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
+		_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
 			ID:             loc.ID,
 			TravelRecordID: record.ID,
 			Location:       loc.Location,
@@ -472,11 +504,14 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			StartDate:      loc.StartDate,
 			EndDate:        loc.EndDate,
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 
 	if record.Cost != nil {
-		_, err := r.q.UpdateTravelCost(ctx, db.UpdateTravelCostParams{
+		_, err := qtx.UpdateTravelCost(ctx, db.UpdateTravelCostParams{
 			TravelRecordID:     record.ID,
 			TicketGo:           toNullFloat(record.Cost.TicketGo),
 			TicketBack:         toNullFloat(record.Cost.TicketBack),
@@ -499,7 +534,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
 		})
 		if err != nil {
-			r.q.CreateTravelCost(ctx, db.CreateTravelCostParams{
+			_, err = qtx.CreateTravelCost(ctx, db.CreateTravelCostParams{
 				TravelRecordID:     record.ID,
 				TicketGo:           toNullFloat(record.Cost.TicketGo),
 				TicketBack:         toNullFloat(record.Cost.TicketBack),
@@ -521,11 +556,14 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				TransportFile:      toJsonb(record.Cost.TransportFile),
 				AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
 			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	if record.Report != nil {
-		_, err := r.q.UpdateTravelReport(ctx, db.UpdateTravelReportParams{
+		_, err := qtx.UpdateTravelReport(ctx, db.UpdateTravelReportParams{
 			TravelRecordID: record.ID,
 			Text:           toNullString(record.Report.Text),
 			SubmittedAt:    toNullTime(record.Report.SubmittedAt),
@@ -534,7 +572,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
 		})
 		if err != nil {
-			r.q.CreateTravelReport(ctx, db.CreateTravelReportParams{
+			_, err = qtx.CreateTravelReport(ctx, db.CreateTravelReportParams{
 				TravelRecordID: record.ID,
 				Text:           toNullString(record.Report.Text),
 				SubmittedAt:    toNullTime(record.Report.SubmittedAt),
@@ -542,10 +580,13 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				SppdFile:       toJsonb(record.Report.SppdFile),
 				SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
 			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (r *repository) DeleteTravelRecord(id uuid.UUID) error {

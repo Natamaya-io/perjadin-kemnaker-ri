@@ -99,11 +99,17 @@
         });
 
     $: groupedRecords = filteredRecords.reduce((acc, record) => {
-        if (!acc[record.spd]) {
+        const isMyRecord = record.email === $userStore.email || (record.employee && record.employee.email === $userStore.email);
+
+        if (!acc[record.spd] || isMyRecord) {
             const allEmployeesForSpd = $recordsStore.filter(r => r.spd === record.spd);
             const officerIndex = allEmployeesForSpd.findIndex(r => r.id === record.id);
             const nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
-            acc[record.spd] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
+            
+            // Create group if not exists, or overwrite if it's MY record (to show my number)
+            if (!acc[record.spd] || isMyRecord) {
+                acc[record.spd] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
+            }
         }
         return acc;
     }, {});
@@ -158,7 +164,7 @@
                         {#each uniqueRecords as record (record.id || record.spd)}
                             <TableRow class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
                                 <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-top">
-                                    {$userStore.role !== 'protokol' ? record.spd : record.nomorSpdPetugas}
+                                    {$userStore.role === 'protokol' && (record.email === $userStore.email || record.employee?.email === $userStore.email) ? record.nomorSpdPetugas : record.spd}
                                     <div class="mt-1">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                             {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
@@ -228,7 +234,7 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex justify-between items-start gap-2">
                         <div class="flex-1 min-w-0">
-                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{$userStore.role !== 'protokol' ? record.spd : record.nomorSpdPetugas}</span>
+                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{$userStore.role === 'protokol' && (record.email === $userStore.email || record.employee?.email === $userStore.email) ? record.nomorSpdPetugas : record.spd}</span>
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                     {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}

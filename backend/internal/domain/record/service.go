@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/config"
 	"github.com/kemnaker/perjadin-backend/internal/models"
+	"github.com/kemnaker/perjadin-backend/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
 
 type Service interface {
+	GenerateSpdNumber() (string, error)
 	CreateRecord(record *models.TravelRecord) error
 	GetRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
 	GetRecordByID(id uuid.UUID) (*models.TravelRecord, error)
@@ -29,6 +33,32 @@ type service struct {
 
 func NewService(repo Repository, cfg *config.Config, rdb *redis.Client) Service {
 	return &service{repo: repo, cfg: cfg, redisClient: rdb}
+}
+
+func (s *service) GenerateSpdNumber() (string, error) {
+	ctx := context.Background()
+	latestSpd, err := s.repo.GetLatestSpdNumber(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if latestSpd == "" {
+		return "ID-SPJ-001", nil
+	}
+
+	// Extract the number part from "ID-SPJ-XXX"
+	parts := strings.Split(latestSpd, "-")
+	if len(parts) != 3 {
+		return "ID-SPJ-001", nil
+	}
+
+	numStr := parts[2]
+	num, err := strconv.Atoi(numStr)
+	if err != nil {
+		return "ID-SPJ-001", nil
+	}
+
+	return fmt.Sprintf("ID-SPJ-%03d", num+1), nil
 }
 
 func (s *service) invalidateCache(ctx context.Context, pattern string) {
@@ -79,6 +109,28 @@ func (s *service) CreateRecord(record *models.TravelRecord) error {
 	err = s.repo.CreateTravelRecord(record)
 	if err == nil {
 		s.invalidateCache(context.Background(), "records:*")
+
+		// Send WhatsApp Notification
+		go func() {
+			user, err := s.repo.GetUserByID(context.Background(), record.EmployeeID)
+			if err == nil && user != nil && user.NomorHP != "" {
+				msg := fmt.Sprintf("*PEMBERITAHUAN PERJALANAN DINAS*\n\nHalo %s,\nAnda telah ditugaskan untuk perjalanan dinas baru.\n\n*Detail Penugasan:*\nNo. SPD: %s\nTujuan: %s, %s\nTanggal: %s s/d %s\nKeperluan: %s\n\nSilakan cek aplikasi Perjadin untuk detail selengkapnya dan mengunduh Surat Tugas.",
+					user.Name,
+					record.SPDNumber,
+					record.Location,
+					record.Province,
+					record.StartDate.Format("02 Jan 2006"),
+					record.EndDate.Format("02 Jan 2006"),
+					record.Purpose,
+				)
+				
+				if err := utils.SendWhatsAppMessage(s.cfg, user.NomorHP, msg); err != nil {
+					fmt.Printf("Failed to send WhatsApp message to %s: %v\n", user.NomorHP, err)
+				} else {
+					fmt.Printf("WhatsApp notification sent to %s for SPD %s\n", user.NomorHP, record.SPDNumber)
+				}
+			}
+		}()
 	}
 	return err
 }
