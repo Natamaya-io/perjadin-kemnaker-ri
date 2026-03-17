@@ -130,6 +130,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 			if err := h.svc.CreateRecord(&newRecord); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
+			go h.notifyEmployee(&newRecord)
 			createdRecords = append(createdRecords, newRecord)
 
 
@@ -141,6 +142,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	if err := h.svc.CreateRecord(&record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	go h.notifyEmployee(&record)
 
 	return c.JSON(http.StatusCreated, record)
 }
