@@ -21,7 +21,7 @@
     import TripStepper from '$lib/features/dashboard/ui/roadmap/TripStepper.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
 
-    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag');
+    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag' || $userStore.role === 'protokol');
 
     // Filter & Sort State
     let searchQuery = '';
@@ -147,7 +147,7 @@
                 <Table class="w-full text-sm text-left">
                     <TableHeader class="bg-slate-50 border-b border-slate-200">
                         <TableRow class="hover:bg-slate-50/50">
-                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">No. SPD</TableHead>
+                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">{$userStore.role !== 'protokol' ? 'ID SPJ' : 'No. SPD'}</TableHead>
                             <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
                             <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
                             <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status Laporan</TableHead>
@@ -158,7 +158,7 @@
                         {#each uniqueRecords as record (record.id || record.spd)}
                             <TableRow class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
                                 <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-top">
-                                    {record.nomorSpdPetugas}
+                                    {$userStore.role !== 'protokol' ? record.spd : record.nomorSpdPetugas}
                                     <div class="mt-1">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                             {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
@@ -196,47 +196,23 @@
                                     </div>
                                 </TableCell>
                                 <TableCell class="text-center pr-4 py-4 align-top">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`}>
-                                            <button 
-                                                class={cn("px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-all whitespace-nowrap border flex items-center gap-1.5", 
-                                                    record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
-                                                    ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-blue-600" 
-                                                    : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
-                                            >
-                                                {#if record.reportStatus !== 'Completed' && $userStore.role !== 'kasubag' && $userStore.role !== 'keuangan'}
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="flex-1">
+                                                <button 
+                                                    class={cn("w-full px-2 py-1.5 rounded-lg text-[11px] font-medium shadow-sm transition-all border flex items-center justify-center gap-1.5", 
+                                                        record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
+                                                        ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-blue-600" 
+                                                        : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                {:else}
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                                                    </svg>
-                                                {/if}
-                                                {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
-                                            </button>
-                                        </a>
-                                        {#if record.reportStatus === 'Completed'}
-                                            <a
-                                                href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`}
-                                                target="_blank"
-                                                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors border border-blue-200 shadow-sm"
-                                                title="Cetak Laporan"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2-2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                                </svg>
-                                            </a>                                        {/if}
-                                        <button 
-                                            class="text-slate-600 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-lg transition-colors border border-slate-200 shadow-sm" 
-                                            title="Detail Selengkapnya"
-                                            on:click={() => openDetailModal(record)}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </button>
+                                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Review')}
+                                                </button>
+                                            </a>
+                                        </div>
+
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -252,7 +228,7 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex justify-between items-start gap-2">
                         <div class="flex-1 min-w-0">
-                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{record.nomorSpdPetugas}</span>
+                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{$userStore.role !== 'protokol' ? record.spd : record.nomorSpdPetugas}</span>
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                     {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
@@ -292,46 +268,19 @@
                         <div class="flex items-center gap-2">
                             <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="flex-1">
                                 <button 
-                                    class={cn("w-full py-2.5 rounded-lg text-[11px] sm:text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 border", 
+                                    class={cn("w-full py-2.5 rounded-lg text-[10px] sm:text-[11px] font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 border", 
                                         record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
                                         ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50" 
                                         : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
                                 >
-                                    {#if record.reportStatus !== 'Completed' && $userStore.role !== 'kasubag' && $userStore.role !== 'keuangan'}
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                    {:else}
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                                        </svg>
-                                    {/if}
-                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Review')}
                                 </button>
                             </a>
-                            {#if record.reportStatus === 'Completed'}
-                                <a
-                                    href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`}
-                                    target="_blank"
-                                    class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2.5 rounded-lg transition-colors border border-blue-200 shadow-sm shrink-0 flex items-center justify-center" 
-                                    title="Cetak Laporan"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2-2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                </a>
-                            {/if}
                         </div>
-                        <button 
-                            class="w-full py-2 rounded-lg text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center justify-center gap-1.5"
-                            on:click={() => openDetailModal(record)}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Selengkapnya
-                        </button>
+
                     </div>
                 </div>
             {/each}
@@ -364,7 +313,7 @@
                     </div>
                     <div class="space-y-4.5 flex-1 relative z-10">
                         <div>
-                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPD</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPJ</span>
                             <span class="font-mono text-slate-800 font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block text-sm shadow-sm">{selectedDetailRecord.spd}</span>
                         </div>
                         <div>
