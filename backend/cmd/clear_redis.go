@@ -1,0 +1,1 @@
+package main; import ("context"; "github.com/redis/go-redis/v9"; "fmt"); func main() { rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"}); err := rdb.FlushAll(context.Background()).Err(); if err != nil { fmt.Println("Error:", err) } else { fmt.Println("Redis cleared") } }

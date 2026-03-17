@@ -101,6 +101,10 @@
     overflow: hidden; /* Prevent page scrolling */
     overscroll-behavior: none; /* Prevent rubber-banding on mobile */
   }
+  button:hover,
+  [role="button"]:hover {
+    cursor: pointer;
+  }
   /* Keep scrollbar hiding utility */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

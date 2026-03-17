@@ -171,15 +171,14 @@
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <!-- Desktop Table View -->
             <div class="hidden md:block overflow-x-auto w-full">
-                <table class="w-full text-left text-sm border-collapse min-w-[800px]">
+                <table class="w-full text-left text-sm border-collapse min-w-[800px] table-fixed">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500">
                         <tr>
-                            <th class="px-6 py-4 whitespace-nowrap">ID SPJ</th>
-                            <th class="px-6 py-4 whitespace-nowrap">Lokasi</th>
-                            <th class="px-6 py-4 whitespace-nowrap">Tanggal</th>
-                            <th class="px-6 py-4 whitespace-nowrap text-right">Total Biaya Akhir</th>
-                            <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
-                            <th class="px-6 py-4 whitespace-nowrap text-right">Aksi</th>
+                            <th class="px-6 py-4 whitespace-nowrap w-[12%]">ID SPJ</th>
+                            <th class="px-6 py-4 whitespace-nowrap w-[28%]">Lokasi</th>
+                            <th class="px-6 py-4 whitespace-nowrap w-[20%]">Tanggal</th>
+                            <th class="px-6 py-4 whitespace-nowrap text-right w-[25%]">Total Biaya Akhir</th>
+                            <th class="px-6 py-4 whitespace-nowrap text-center w-[15%]">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -217,86 +216,73 @@
                                         {getStatusBadge(record).label}
                                     </span>
                                 </td>
-                                <td class="px-6 py-3 whitespace-nowrap text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <!-- Keep empty or add action later if requested -->
-                                    </div>
-                                </td>
                             </tr>
                             <!-- Employee Rows -->
                             {#if expandedGroups[record.spd]}
-                                <!-- Nested Table Head for Employee Data -->
-                                <tr class="bg-slate-100 border-y border-slate-200 text-[11px] uppercase tracking-wider font-semibold text-slate-500 shadow-inner">
-                                    <th class="px-6 py-3 text-left font-semibold">NO. SPD</th>
-                                    <th class="px-6 py-3 text-left font-semibold">Nama Pegawai</th>
-                                    <th class="px-6 py-3 text-left font-semibold">Nomor Telepon</th>
-                                    <th class="px-6 py-3 text-right font-semibold">Total Biaya</th>
-                                    <th class="px-6 py-3 text-center font-semibold">Kelengkapan</th>
-                                    <th class="px-6 py-3 text-right font-semibold">Aksi</th>
+                                <!-- Nested Table Head for Employee Data inside a single spanning cell to break column dependency -->
+                                <tr>
+                                    <td colspan="5" class="p-0 border-b border-slate-200">
+                                        <table class="w-full text-left text-sm border-collapse bg-white">
+                                            <thead class="bg-slate-100/50 border-y border-slate-200 text-[11px] uppercase tracking-wider font-semibold text-slate-500 shadow-inner">
+                                                <tr>
+                                                    <th class="px-6 py-3 text-left font-semibold w-[12%]">NO. SPJ</th>
+                                                    <th class="px-6 py-3 text-left font-semibold w-[28%]">Nama Pegawai & Kontak</th>
+                                                    <th class="px-6 py-3 text-left font-semibold w-[20%]">Kelengkapan</th>
+                                                    <th class="px-6 py-3 text-right font-semibold w-[25%]">Total Biaya</th>
+                                                    <th class="px-6 py-3 text-center font-semibold w-[15%]">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                {#each record.employeesList as empRecord, index}
+                                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                                        <td class="px-6 py-4 align-middle">
+                                                            <div class="flex items-center gap-3 pl-2">
+                                                                <div class="w-2 h-2 rounded-full bg-slate-300 shrink-0"></div>
+                                                                <div class="font-mono font-bold text-slate-700">{String(index + 1).padStart(3, '0')}</div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-6 py-4 align-middle">
+                                                            <div class="font-medium text-slate-900">{empRecord.employee?.name || '-'}</div>
+                                                            <div class="text-xs text-slate-500 mb-1">
+                                                                {#if empRecord.employee?.jabatan && empRecord.employee.jabatan !== '-'}
+                                                                    <div class="font-medium text-slate-600">{empRecord.employee.jabatan}</div>
+                                                                {/if}
+                                                                {#if empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-' && empRecord.employee?.golongan && empRecord.employee.golongan !== '-'}
+                                                                    <div class="mt-0.5">{empRecord.employee.pangkat} ({empRecord.employee.golongan})</div>
+                                                                {:else if empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-'}
+                                                                    <div class="mt-0.5">{empRecord.employee.pangkat}</div>
+                                                                {:else if empRecord.employee?.golongan && empRecord.employee.golongan !== '-'}
+                                                                    <div class="mt-0.5">{empRecord.employee.golongan}</div>
+                                                                {:else if empRecord.employee?.rank && empRecord.employee.rank !== '-'}
+                                                                    <div class="mt-0.5">{empRecord.employee.rank}</div>
+                                                                {/if}
+                                                            </div>
+                                                            <div class="flex items-center gap-1.5 text-sm text-slate-600">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                                <span class="text-xs">{empRecord.employee?.nomorHp || '-'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-6 py-4 align-middle text-left">
+                                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {empRecord.status === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
+                                                                {empRecord.status === 'Draft' ? 'Belum Lengkap' : 'Lengkap'}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-6 py-4 align-middle text-right font-mono font-medium text-blue-600">
+                                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(empRecord.totalCost || 0)}
+                                                        </td>
+                                                        <td class="px-6 py-4 align-middle pr-6">
+                                                            <div class="flex items-center justify-center gap-2">
+                                                                <button class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
+                                                                    {empRecord.status === 'Approved' ? 'Detail & Edit' : 'Review'}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                {/each}
+                                            </tbody>
+                                        </table>
+                                    </td>
                                 </tr>
-
-                                {#each record.employeesList as empRecord, index}
-                                    <tr class="hover:bg-slate-50 transition-colors bg-white">
-                                        <td class="px-6 py-4 align-middle">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-4 h-6 border-l-2 border-b-2 border-slate-200 rounded-bl-lg opacity-60 shrink-0"></div>
-                                                <div class="font-mono font-bold text-slate-700">{String(index + 1).padStart(3, '0')}</div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 align-middle">
-                                            <div class="font-medium text-slate-900">{empRecord.employee?.name || '-'}</div>
-                                            <div class="text-xs text-slate-500 mb-2">
-                                                {#if empRecord.employee?.jabatan && empRecord.employee.jabatan !== '-'}
-                                                    <div class="font-medium text-slate-600">{empRecord.employee.jabatan}</div>
-                                                {/if}
-                                                {#if empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-' && empRecord.employee?.golongan && empRecord.employee.golongan !== '-'}
-                                                    <div class="mt-0.5">{empRecord.employee.pangkat} ({empRecord.employee.golongan})</div>
-                                                {:else if empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-'}
-                                                    <div class="mt-0.5">{empRecord.employee.pangkat}</div>
-                                                {:else if empRecord.employee?.golongan && empRecord.employee.golongan !== '-'}
-                                                    <div class="mt-0.5">{empRecord.employee.golongan}</div>
-                                                {:else if empRecord.employee?.rank && empRecord.employee.rank !== '-'}
-                                                    <div class="mt-0.5">{empRecord.employee.rank}</div>
-                                                {/if}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 align-middle text-sm text-slate-600 whitespace-nowrap">
-                                            <div class="flex items-center gap-1.5">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                                {empRecord.employee?.nomorHp || '-'}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 align-middle text-right font-mono font-medium text-blue-600">
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(empRecord.totalCost || 0)}
-                                        </td>
-                                        <td class="px-6 py-4 align-middle text-center">
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {empRecord.status === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
-                                                {empRecord.status === 'Draft' ? 'Belum Lengkap' : 'Lengkap'}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 align-middle">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <a href={`/print?type=spd&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak SPD" on:click={(e) => e.stopPropagation()}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                                                </a>
-                                                <a href={`/print?type=rincian&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak Rincian" on:click={(e) => e.stopPropagation()}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                                                </a>
-                                                {#if $userStore.role !== 'kasubag'}
-                                                    {#if empRecord.status === 'Submitted'}
-                                                        <button class="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
-                                                            Review Biaya
-                                                        </button>
-                                                    {:else if empRecord.status === 'Approved'}
-                                                        <button class="bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
-                                                            Edit Review
-                                                        </button>
-                                                    {/if}
-                                                {/if}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {/each}
                             {/if}
                         {/each}
                         {#if uniqueRecords.length === 0}
@@ -387,23 +373,9 @@
                                                 </span>
                                             </div>
                                             <div class="flex items-center gap-2 w-full">
-                                                <a href={`/print?type=spd&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak SPD" on:click={(e) => e.stopPropagation()}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                                                </a>
-                                                <a href={`/print?type=rincian&id=${empRecord.id}&spd=${encodeURIComponent(empRecord.spd)}`} target="_blank" class="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors bg-white border border-slate-200 shadow-sm inline-flex items-center justify-center" title="Cetak Rincian" on:click={(e) => e.stopPropagation()}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                                                </a>
-                                                {#if $userStore.role !== 'kasubag'}
-                                                    {#if empRecord.status === 'Submitted'}
-                                                        <button class="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
-                                                            Review Biaya
-                                                        </button>
-                                                    {:else if empRecord.status === 'Approved'}
-                                                        <button class="bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
-                                                            Edit Review
-                                                        </button>
-                                                    {/if}
-                                                {/if}
+                                                <button class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
+                                                    {empRecord.status === 'Approved' ? 'Detail & Edit' : 'Review'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

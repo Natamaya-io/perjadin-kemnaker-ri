@@ -111,42 +111,8 @@ func getOriginalUsers() ([]models.User, []rawUser) {
 func Seed(db *sql.DB) {
 	log.Println("Starting Database Seeding...")
 
-	// Clear existing travel data
-	log.Println("Clearing existing travel data...")
-	tables := []string{
-		"travel_reports",
-		"travel_costs",
-		"travel_locations",
-		"travel_records",
-	}
-	for _, table := range tables {
-		_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", table))
-		if err != nil {
-			log.Printf("Warning: Failed to clear table %s: %v", table, err)
-		}
-	}
-
 	adminUsers, protokolData := getOriginalUsers()
 	
-	validEmails := []string{}
-	for _, u := range adminUsers {
-		validEmails = append(validEmails, "'" + u.Email + "'")
-	}
-	for _, raw := range protokolData {
-		namePart := strings.ToLower(strings.ReplaceAll(raw.Name, " ", ""))
-		namePart = strings.ReplaceAll(namePart, ".", "")
-		email := namePart + "@kemnaker.go.id"
-		validEmails = append(validEmails, "'" + email + "'")
-	}
-
-	// Remove any users outside of the original requested ones or non kemnaker.go.id domain
-	log.Println("Removing users outside of original data...")
-	query := fmt.Sprintf("DELETE FROM users WHERE email NOT IN (%s)", strings.Join(validEmails, ","))
-	_, err := db.Exec(query)
-	if err != nil {
-		log.Printf("Warning: Failed to remove outside users: %v", err)
-	}
-
 	userRepo := user.NewRepository(db)
 
 	var wg sync.WaitGroup
@@ -178,19 +144,49 @@ func seedProvincesAndRates(db *sql.DB) {
 		DalamKota float64
 		Diklat    float64
 	}{
-		{"ACEH", "11", 360000, 140000, 110000},
-		{"DKI JAKARTA", "31", 530000, 210000, 160000},
-		{"JAWA BARAT", "32", 430000, 170000, 130000},
-		{"JAWA TENGAH", "33", 370000, 150000, 110000},
-		{"DI YOGYAKARTA", "34", 420000, 170000, 130000},
-		{"JAWA TIMUR", "35", 410000, 160000, 120000},
-		{"BALI", "51", 480000, 190000, 140000},
-		{"PAPUA", "92", 580000, 230000, 170000},
+		{"ACEH", "01", 360000, 140000, 110000},
+		{"SUMATRA UTARA", "02", 370000, 150000, 110000},
+		{"RIAU", "03", 370000, 150000, 110000},
+		{"KEPULAUAN RIAU", "04", 370000, 150000, 110000},
+		{"JAMBI", "05", 370000, 150000, 110000},
+		{"SUMATRA BARAT", "06", 380000, 150000, 110000},
+		{"SUMATRA SELATAN", "07", 380000, 150000, 110000},
+		{"LAMPUNG", "08", 380000, 150000, 110000},
+		{"BENGKULU", "09", 380000, 150000, 110000},
+		{"BANGKA BELITUNG", "10", 410000, 160000, 120000},
+		{"BANTEN", "11", 370000, 150000, 110000},
+		{"JAWA BARAT", "12", 430000, 170000, 130000},
+		{"DKI JAKARTA", "13", 530000, 210000, 160000},
+		{"JAWA TENGAH", "14", 370000, 150000, 110000},
+		{"DI YOGYAKARTA", "15", 420000, 170000, 130000},
+		{"JAWA TIMUR", "16", 410000, 160000, 120000},
+		{"BALI", "17", 480000, 190000, 140000},
+		{"NUSA TENGGARA BARAT", "18", 440000, 180000, 130000},
+		{"NUSA TENGGARA TIMUR", "19", 430000, 170000, 130000},
+		{"KALIMANTAN BARAT", "20", 380000, 150000, 110000},
+		{"KALIMANTAN TENGAH", "21", 360000, 140000, 110000},
+		{"KALIMANTAN SELATAN", "22", 380000, 150000, 110000},
+		{"KALIMANTAN TIMUR", "23", 430000, 170000, 130000},
+		{"KALIMANTAN UTARA", "24", 430000, 170000, 130000},
+		{"SULAWESI UTARA", "25", 370000, 150000, 110000},
+		{"GORONTALO", "26", 370000, 150000, 110000},
+		{"SULAWESI BARAT", "27", 410000, 160000, 120000},
+		{"SULAWESI SELATAN", "28", 430000, 170000, 130000},
+		{"SULAWESI TENGAH", "29", 370000, 150000, 110000},
+		{"SULAWESI TENGGARA", "30", 380000, 150000, 110000},
+		{"MALUKU", "31", 380000, 150000, 110000},
+		{"MALUKU UTARA", "32", 430000, 170000, 130000},
+		{"PAPUA", "33", 580000, 230000, 170000},
+		{"PAPUA BARAT", "34", 480000, 190000, 140000},
+		{"PAPUA BARAT DAYA", "35", 480000, 190000, 140000},
+		{"PAPUA TENGAH", "36", 580000, 230000, 170000},
+		{"PAPUA SELATAN", "37", 580000, 230000, 170000},
+		{"PAPUA PEGUNUNGAN", "38", 580000, 230000, 170000},
 	}
 
 	for _, p := range provinces {
 		var provinceID uuid.UUID
-		err := db.QueryRow("SELECT id FROM provinces WHERE code = $1", p.Code).Scan(&provinceID)
+		err := db.QueryRow("SELECT id FROM provinces WHERE name = $1", p.Name).Scan(&provinceID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				provinceID = uuid.New()
@@ -202,6 +198,12 @@ func seedProvincesAndRates(db *sql.DB) {
 			} else {
 				log.Printf("Error querying province %s: %v", p.Name, err)
 				continue
+			}
+		} else {
+			// Update code if necessary
+			_, err = db.Exec("UPDATE provinces SET code = $1 WHERE id = $2", p.Code, provinceID)
+			if err != nil {
+				log.Printf("Failed to update province code %s: %v", p.Name, err)
 			}
 		}
 
@@ -219,6 +221,17 @@ func seedProvincesAndRates(db *sql.DB) {
 				if err != nil {
 					log.Printf("Failed to insert SBM rate for %s: %v", p.Name, err)
 				}
+			}
+		} else {
+			// Update SBM rate if necessary
+			_, err = db.Exec(`
+				UPDATE sbm_rates SET 
+					fullboard_rate=$1, fullhalf_rate=$2, outside_city_rate=$3, inside_city_rate=$4, diklat_rate=$5, hotel_echelon1=$6, hotel_echelon2=$7, hotel_echelon3=$8, hotel_echelon4=$9, hotel_staff=$10, taxi_rate=$11
+				WHERE id = $12`,
+				p.LuarKota*0.4, p.LuarKota*0.6, p.LuarKota, p.DalamKota, p.Diklat, p.LuarKota*10, p.LuarKota*5, p.LuarKota*3, p.LuarKota*2.5, p.LuarKota*2, 150000, sbmID,
+			)
+			if err != nil {
+				log.Printf("Failed to update SBM rate for %s: %v", p.Name, err)
 			}
 		}
 	}

@@ -357,7 +357,7 @@
             </div>
         {:else}
             <!-- 1. LAPORAN SECTION -->
-            {#if type === 'laporan'}
+            {#if type === 'laporan' || type === 'gabungan'}
                 <div class="document-section" style="page-break-after: always; break-after: page;">
                     <!-- Kop Surat Laporan -->
                     <div class="flex items-start justify-center gap-6 border-b-[3px] border-black pb-4 mb-8">
@@ -379,8 +379,8 @@
                         <div class="mb-4">
                             <h3 class="font-bold mb-2 text-base">I. PENDAHULUAN</h3>
                             <div class="flex text-sm leading-relaxed text-justify">
-                                <div class="w-24">Dasar</div>
-                                <div class="w-4">:</div>
+                                <div class="w-24 shrink-0">Dasar</div>
+                                <div class="w-4 shrink-0">:</div>
                                 <div class="flex-1">
                                     <ol class="list-decimal pl-4 space-y-1">
                                         <li>Surat Tugas Kepala Biro Umum Sekretariat Jenderal Kementerian Ketenagakerjaan Nomor {record.suratTugasNumber || '1/ /UM.06.00/...../2026'} Tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { month: 'long'})} {new Date().getFullYear()} dalam rangka {record.purpose};</li>
@@ -449,8 +449,7 @@
                     </div>
                 {/if}
 
-                <!-- PHYSICAL SPACER -->
-                <div style="height: 100vh; display: block; width: 100%;"></div>
+                <!-- Page break handled by document-section -->
             {/if}
 
             <!-- 2. RINCIAN BIAYA SECTION -->
@@ -629,10 +628,7 @@
                     </div>
                 </div>
 
-                <!-- PHYSICAL SPACER IF LAPORAN IS FULL (Meaning SPD is next) -->
-                {#if type === 'laporan'}
-                    <div style="height: 100vh; display: block; width: 100%;"></div>
-                {/if}
+                <!-- Page break handled by document-section -->
             {/if}
 
             <!-- 3. SURAT PERJALANAN DINAS (SPD) SECTION -->

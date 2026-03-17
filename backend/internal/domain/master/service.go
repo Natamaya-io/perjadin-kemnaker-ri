@@ -24,7 +24,7 @@ func NewService(repo Repository, rdb *redis.Client) Service {
 }
 
 func (s *service) GetProvinces(ctx context.Context) ([]db.Province, error) {
-	cacheKey := "master:provinces"
+	cacheKey := "master:provinces:v2"
 	if s.rdb != nil {
 		if val, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
 			var provinces []db.Province
@@ -49,7 +49,7 @@ func (s *service) GetProvinces(ctx context.Context) ([]db.Province, error) {
 }
 
 func (s *service) GetSBMRates(ctx context.Context) ([]db.SbmRate, error) {
-	cacheKey := "master:sbm_rates"
+	cacheKey := "master:sbm_rates:v2"
 	if s.rdb != nil {
 		if val, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
 			var rates []db.SbmRate

@@ -77,6 +77,7 @@
     let isReadOnly = false;
 
     let isConfirmOpen = false;
+    let isSubmitting = false;
 
     // Helper to get overall start/end dates
     $: minStartDate = formData.locations.reduce((min, loc) => {
@@ -152,7 +153,7 @@
         .map(r => r.employee?.id).filter(Boolean);
 
     $: {
-        if (minStartDate && maxEndDate) {
+        if (!isSubmitting && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
             const conflicts = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
             if (conflicts.length > 0) {
                  formData.selectedEmployees = formData.selectedEmployees.filter(id => !disabledEmployeeIds.includes(id));
@@ -177,9 +178,17 @@
     }
 
     function generateId() {
-        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        return `PERDIN-${date}-${random}`;
+        let maxId = 0;
+        for (const record of $recordsStore) {
+            if (record.spd && record.spd.startsWith('ID-SPJ-')) {
+                const numStr = record.spd.substring(7);
+                const num = parseInt(numStr, 10);
+                if (!isNaN(num) && num > maxId) {
+                    maxId = num;
+                }
+            }
+        }
+        return `ID-SPJ-${(maxId + 1).toString().padStart(3, '0')}`;
     }
     
     function handleSubmit() {
@@ -206,6 +215,7 @@
     }
 
     async function processSubmit() {
+        isSubmitting = true;
         // Map selected IDs back to full user objects
         const selectedUsers = protokolOfficers.filter(u => formData.selectedEmployees.includes(u.id));
 
@@ -218,6 +228,7 @@
             } catch (e) {
                 toast.error('Gagal mengunggah Surat Tugas.');
                 isConfirmOpen = false;
+                isSubmitting = false;
                 return;
             }
         }
@@ -247,12 +258,15 @@
             
             // WA Notification is now handled automatically by the backend via Fonnte API.
             
-            if ($userStore.role === 'super_admin' || $userStore.role === 'keuangan') {
+            if ($userStore.role === 'keuangan') {
                 goto('/dashboard/admin/perdin');
+            } else if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') {
+                goto('/dashboard/pengajuan');
             } else {
                 goto('/dashboard');
             }
         } catch (e) {
+            isSubmitting = false;
             toast.error('Gagal menyimpan pengajuan.');
         }
     }

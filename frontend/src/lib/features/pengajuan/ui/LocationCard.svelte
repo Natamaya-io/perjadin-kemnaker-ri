@@ -14,6 +14,10 @@
 
     const dispatch = createEventDispatcher();
 
+    // Get today's date in YYYY-MM-DD format based on local timezone for min date validation
+    const _d = new Date();
+    const today = new Date(_d.getTime() - (_d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
     function addLocation() {
         dispatch('add');
     }
@@ -71,11 +75,11 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <Label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold">Tanggal Mulai</Label>
-                            <Input type="date" bind:value={loc.startDate} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
+                            <Input type="date" bind:value={loc.startDate} min={i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || today) : today} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
                         </div>
                         <div class="space-y-1">
                             <Label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold">Tanggal Selesai</Label>
-                            <Input type="date" bind:value={loc.endDate} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
+                            <Input type="date" bind:value={loc.endDate} min={loc.startDate || (i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || today) : today)} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
                         </div>
                     </div>
                 </div>

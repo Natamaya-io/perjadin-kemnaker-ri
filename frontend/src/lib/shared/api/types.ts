@@ -29,6 +29,7 @@ export interface TravelCost {
     otherCostDesc?: string;
     additionalCosts?: { name: string; amount: number; file?: any }[];
     boardingPassFiles?: any[];
+    details?: TravelCost[]; // Per-location cost breakdown
 }
 
 export interface TravelReport {

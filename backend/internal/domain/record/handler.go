@@ -110,6 +110,14 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		}
 	}
 
+	if record.SPDNumber == "" {
+		spjNumber, err := h.svc.GenerateSpdNumber()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate SPJ number")
+		}
+		record.SPDNumber = spjNumber
+	}
+
 	if len(record.EmployeeIDs) > 0 {
 		var createdRecords []models.TravelRecord
 		for _, empID := range record.EmployeeIDs {
@@ -124,7 +132,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 			}
 			createdRecords = append(createdRecords, newRecord)
 
-			go h.notifyEmployee(&newRecord)
+
 		}
 		return c.JSON(http.StatusCreated, createdRecords)
 	}
@@ -133,8 +141,6 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	if err := h.svc.CreateRecord(&record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	go h.notifyEmployee(&record)
 
 	return c.JSON(http.StatusCreated, record)
 }
