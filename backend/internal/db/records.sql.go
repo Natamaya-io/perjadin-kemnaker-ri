@@ -140,10 +140,10 @@ func (q *Queries) CreateTravelLocation(ctx context.Context, arg CreateTravelLoca
 
 const createTravelRecord = `-- name: CreateTravelRecord :one
 INSERT INTO travel_records (
-  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number
+  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-) RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+) RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 `
 
 type CreateTravelRecordParams struct {
@@ -166,6 +166,7 @@ type CreateTravelRecordParams struct {
 	TotalCost        sql.NullFloat64 `json:"total_cost"`
 	SuratTugasPath   sql.NullString  `json:"surat_tugas_path"`
 	SuratTugasNumber sql.NullString  `json:"surat_tugas_number"`
+	SuratTugasDate   sql.NullTime    `json:"surat_tugas_date"`
 }
 
 func (q *Queries) CreateTravelRecord(ctx context.Context, arg CreateTravelRecordParams) (TravelRecord, error) {
@@ -189,6 +190,7 @@ func (q *Queries) CreateTravelRecord(ctx context.Context, arg CreateTravelRecord
 		arg.TotalCost,
 		arg.SuratTugasPath,
 		arg.SuratTugasNumber,
+		arg.SuratTugasDate,
 	)
 	var i TravelRecord
 	err := row.Scan(
@@ -214,6 +216,7 @@ func (q *Queries) CreateTravelRecord(ctx context.Context, arg CreateTravelRecord
 		&i.TotalCost,
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
+		&i.SuratTugasDate,
 	)
 	return i, err
 }
@@ -294,7 +297,7 @@ func (q *Queries) DeleteTravelReport(ctx context.Context, travelRecordID uuid.UU
 
 const getLatestSpdNumber = `-- name: GetLatestSpdNumber :one
 SELECT spd_number FROM travel_records
-WHERE spd_number LIKE 'ID-SPJ-%'
+WHERE spd_number LIKE 'ID-SPD-%'
 ORDER BY CAST(SUBSTRING(spd_number FROM 8) AS INTEGER) DESC
 LIMIT 1
 `
@@ -307,7 +310,7 @@ func (q *Queries) GetLatestSpdNumber(ctx context.Context) (sql.NullString, error
 }
 
 const getOverlappingRecords = `-- name: GetOverlappingRecords :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number FROM travel_records 
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records 
 WHERE employee_id = $1 
   AND start_date <= $2 
   AND end_date >= $3 
@@ -353,6 +356,7 @@ func (q *Queries) GetOverlappingRecords(ctx context.Context, arg GetOverlappingR
 			&i.TotalCost,
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
+			&i.SuratTugasDate,
 		); err != nil {
 			return nil, err
 		}
@@ -438,7 +442,7 @@ func (q *Queries) GetTravelLocationsByRecordID(ctx context.Context, travelRecord
 }
 
 const getTravelRecordByID = `-- name: GetTravelRecordByID :one
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1
 `
 
 func (q *Queries) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (TravelRecord, error) {
@@ -467,12 +471,13 @@ func (q *Queries) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (Travel
 		&i.TotalCost,
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
+		&i.SuratTugasDate,
 	)
 	return i, err
 }
 
 const getTravelRecords = `-- name: GetTravelRecords :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number FROM travel_records
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records
 WHERE deleted_at IS NULL
   AND (NULLIF($1::text, '') IS NULL OR status = $1)
 ORDER BY created_at DESC
@@ -511,6 +516,7 @@ func (q *Queries) GetTravelRecords(ctx context.Context, dollar_1 string) ([]Trav
 			&i.TotalCost,
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
+			&i.SuratTugasDate,
 		); err != nil {
 			return nil, err
 		}
@@ -645,9 +651,10 @@ UPDATE travel_records SET
   total_cost = $17,
   surat_tugas_path = $18,
   surat_tugas_number = $19,
+  surat_tugas_date = $20,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number
+RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 `
 
 type UpdateTravelRecordParams struct {
@@ -670,6 +677,7 @@ type UpdateTravelRecordParams struct {
 	TotalCost        sql.NullFloat64 `json:"total_cost"`
 	SuratTugasPath   sql.NullString  `json:"surat_tugas_path"`
 	SuratTugasNumber sql.NullString  `json:"surat_tugas_number"`
+	SuratTugasDate   sql.NullTime    `json:"surat_tugas_date"`
 }
 
 func (q *Queries) UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecordParams) (TravelRecord, error) {
@@ -693,6 +701,7 @@ func (q *Queries) UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecord
 		arg.TotalCost,
 		arg.SuratTugasPath,
 		arg.SuratTugasNumber,
+		arg.SuratTugasDate,
 	)
 	var i TravelRecord
 	err := row.Scan(
@@ -718,6 +727,7 @@ func (q *Queries) UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecord
 		&i.TotalCost,
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
+		&i.SuratTugasDate,
 	)
 	return i, err
 }

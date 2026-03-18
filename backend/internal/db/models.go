@@ -100,6 +100,7 @@ type TravelRecord struct {
 	TotalCost        sql.NullFloat64 `json:"total_cost"`
 	SuratTugasPath   sql.NullString  `json:"surat_tugas_path"`
 	SuratTugasNumber sql.NullString  `json:"surat_tugas_number"`
+	SuratTugasDate   sql.NullTime    `json:"surat_tugas_date"`
 }
 
 type TravelReport struct {
