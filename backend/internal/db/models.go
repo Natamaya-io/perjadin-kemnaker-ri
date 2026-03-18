@@ -62,6 +62,7 @@ type TravelCost struct {
 	HotelFile          pqtype.NullRawMessage `json:"hotel_file"`
 	TransportFile      pqtype.NullRawMessage `json:"transport_file"`
 	AdditionalCosts    pqtype.NullRawMessage `json:"additional_costs"`
+	Details            pqtype.NullRawMessage `json:"details"`
 }
 
 type TravelLocation struct {

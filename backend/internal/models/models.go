@@ -96,6 +96,7 @@ type TravelCost struct {
 	HotelFile        json.RawMessage `json:"hotelFile"`
 	TransportFile    json.RawMessage `json:"transportFile"`
 	AdditionalCosts  json.RawMessage `json:"additionalCosts"`
+	Details          json.RawMessage `json:"details"`
 }
 
 type TravelReport struct {

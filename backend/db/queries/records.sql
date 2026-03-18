@@ -58,9 +58,9 @@ UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1;
 
 -- name: CreateTravelCost :one
 INSERT INTO travel_costs (
-  travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs
+  travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
 ) RETURNING *;
 
 -- name: GetTravelCostByRecordID :one
@@ -68,7 +68,7 @@ SELECT * FROM travel_costs WHERE travel_record_id = $1 LIMIT 1;
 
 -- name: UpdateTravelCost :one
 UPDATE travel_costs SET
-  ticket_go = $2, ticket_back = $3, daily_allowance_days = $4, daily_allowance_rate = $5, hotel_days = $6, hotel_rate = $7, local_transport = $8, regional_transport = $9, transport_mode = $10, transport_amount = $11, other_cost = $12, other_cost_desc = $13, receipt_files = $14, ticket_go_file = $15, ticket_back_file = $16, boarding_pass_file = $17, hotel_file = $18, transport_file = $19, additional_costs = $20
+  ticket_go = $2, ticket_back = $3, daily_allowance_days = $4, daily_allowance_rate = $5, hotel_days = $6, hotel_rate = $7, local_transport = $8, regional_transport = $9, transport_mode = $10, transport_amount = $11, other_cost = $12, other_cost_desc = $13, receipt_files = $14, ticket_go_file = $15, ticket_back_file = $16, boarding_pass_file = $17, hotel_file = $18, transport_file = $19, additional_costs = $20, details = $21
 WHERE travel_record_id = $1
 RETURNING *;
 
@@ -102,7 +102,7 @@ INSERT INTO travel_locations (
 ) RETURNING *;
 
 -- name: GetTravelLocationsByRecordID :many
-SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL;
+SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL ORDER BY start_date ASC, created_at ASC;
 
 -- name: DeleteTravelLocationsByRecordID :exec
 UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1;

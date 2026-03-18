@@ -193,16 +193,18 @@ export class RealApiClient implements ApiClient {
             return isNaN(date.getTime()) ? undefined : date.toISOString();
         };
 
-        const payload = {
+        const payload: any = {
             ...record,
-            startDate: safeDate(record.startDate),
-            endDate: safeDate(record.endDate),
-            locations: (record.locations || []).map((loc: any) => ({
+        };
+        if (record.startDate !== undefined) payload.startDate = safeDate(record.startDate);
+        if (record.endDate !== undefined) payload.endDate = safeDate(record.endDate);
+        if (record.locations !== undefined) {
+            payload.locations = record.locations.map((loc: any) => ({
                 ...loc,
                 startDate: safeDate(loc.startDate),
                 endDate: safeDate(loc.endDate)
-            }))
-        };
+            }));
+        }
 
         return this.request<TravelRecord>(`/records/${id}`, {
             method: 'PUT',

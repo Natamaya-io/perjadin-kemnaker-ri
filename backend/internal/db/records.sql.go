@@ -16,10 +16,10 @@ import (
 
 const createTravelCost = `-- name: CreateTravelCost :one
 INSERT INTO travel_costs (
-  travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs
+  travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-) RETURNING travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+) RETURNING travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details
 `
 
 type CreateTravelCostParams struct {
@@ -43,6 +43,7 @@ type CreateTravelCostParams struct {
 	HotelFile          pqtype.NullRawMessage `json:"hotel_file"`
 	TransportFile      pqtype.NullRawMessage `json:"transport_file"`
 	AdditionalCosts    pqtype.NullRawMessage `json:"additional_costs"`
+	Details            pqtype.NullRawMessage `json:"details"`
 }
 
 func (q *Queries) CreateTravelCost(ctx context.Context, arg CreateTravelCostParams) (TravelCost, error) {
@@ -67,6 +68,7 @@ func (q *Queries) CreateTravelCost(ctx context.Context, arg CreateTravelCostPara
 		arg.HotelFile,
 		arg.TransportFile,
 		arg.AdditionalCosts,
+		arg.Details,
 	)
 	var i TravelCost
 	err := row.Scan(
@@ -90,6 +92,7 @@ func (q *Queries) CreateTravelCost(ctx context.Context, arg CreateTravelCostPara
 		&i.HotelFile,
 		&i.TransportFile,
 		&i.AdditionalCosts,
+		&i.Details,
 	)
 	return i, err
 }
@@ -365,7 +368,7 @@ func (q *Queries) GetOverlappingRecords(ctx context.Context, arg GetOverlappingR
 }
 
 const getTravelCostByRecordID = `-- name: GetTravelCostByRecordID :one
-SELECT travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs FROM travel_costs WHERE travel_record_id = $1 LIMIT 1
+SELECT travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details FROM travel_costs WHERE travel_record_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetTravelCostByRecordID(ctx context.Context, travelRecordID uuid.UUID) (TravelCost, error) {
@@ -392,12 +395,13 @@ func (q *Queries) GetTravelCostByRecordID(ctx context.Context, travelRecordID uu
 		&i.HotelFile,
 		&i.TransportFile,
 		&i.AdditionalCosts,
+		&i.Details,
 	)
 	return i, err
 }
 
 const getTravelLocationsByRecordID = `-- name: GetTravelLocationsByRecordID :many
-SELECT id, created_at, updated_at, deleted_at, travel_record_id, location, province, start_date, end_date FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL
+SELECT id, created_at, updated_at, deleted_at, travel_record_id, location, province, start_date, end_date FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL ORDER BY start_date ASC, created_at ASC
 `
 
 func (q *Queries) GetTravelLocationsByRecordID(ctx context.Context, travelRecordID uuid.UUID) ([]TravelLocation, error) {
@@ -541,9 +545,9 @@ func (q *Queries) GetTravelReportByRecordID(ctx context.Context, travelRecordID 
 
 const updateTravelCost = `-- name: UpdateTravelCost :one
 UPDATE travel_costs SET
-  ticket_go = $2, ticket_back = $3, daily_allowance_days = $4, daily_allowance_rate = $5, hotel_days = $6, hotel_rate = $7, local_transport = $8, regional_transport = $9, transport_mode = $10, transport_amount = $11, other_cost = $12, other_cost_desc = $13, receipt_files = $14, ticket_go_file = $15, ticket_back_file = $16, boarding_pass_file = $17, hotel_file = $18, transport_file = $19, additional_costs = $20
+  ticket_go = $2, ticket_back = $3, daily_allowance_days = $4, daily_allowance_rate = $5, hotel_days = $6, hotel_rate = $7, local_transport = $8, regional_transport = $9, transport_mode = $10, transport_amount = $11, other_cost = $12, other_cost_desc = $13, receipt_files = $14, ticket_go_file = $15, ticket_back_file = $16, boarding_pass_file = $17, hotel_file = $18, transport_file = $19, additional_costs = $20, details = $21
 WHERE travel_record_id = $1
-RETURNING travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs
+RETURNING travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details
 `
 
 type UpdateTravelCostParams struct {
@@ -567,6 +571,7 @@ type UpdateTravelCostParams struct {
 	HotelFile          pqtype.NullRawMessage `json:"hotel_file"`
 	TransportFile      pqtype.NullRawMessage `json:"transport_file"`
 	AdditionalCosts    pqtype.NullRawMessage `json:"additional_costs"`
+	Details            pqtype.NullRawMessage `json:"details"`
 }
 
 func (q *Queries) UpdateTravelCost(ctx context.Context, arg UpdateTravelCostParams) (TravelCost, error) {
@@ -591,6 +596,7 @@ func (q *Queries) UpdateTravelCost(ctx context.Context, arg UpdateTravelCostPara
 		arg.HotelFile,
 		arg.TransportFile,
 		arg.AdditionalCosts,
+		arg.Details,
 	)
 	var i TravelCost
 	err := row.Scan(
@@ -614,6 +620,7 @@ func (q *Queries) UpdateTravelCost(ctx context.Context, arg UpdateTravelCostPara
 		&i.HotelFile,
 		&i.TransportFile,
 		&i.AdditionalCosts,
+		&i.Details,
 	)
 	return i, err
 }

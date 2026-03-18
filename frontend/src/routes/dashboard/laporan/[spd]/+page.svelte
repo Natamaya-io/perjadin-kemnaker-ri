@@ -78,8 +78,11 @@
             if (details.length < locations.length) {
                 for (let i = details.length; i < locations.length; i++) {
                     details.push({
-                        ticketGo: 0, ticketBack: 0, 
-                        hotelDays: 0, hotelRate: 0,
+                        transportMode: 'Pesawat',
+                        ticketGo: 0,
+                        ticketBack: 0,
+                        hotelDays: 0,
+                        hotelRate: 0,
                         transportAmount: 0,
                         additionalCosts: [],
                         boardingPassFiles: []
@@ -1012,8 +1015,8 @@
 
                                                 <!-- Mode Transportasi -->
                                                 <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
-                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
-                                                    <Select bind:value={localCosts[empId].costs.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
+                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({loc.province})</Label>
+                                                    <Select bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
                                                         <option value="Pesawat">Pesawat Udara</option>
                                                         <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
                                                         <option value="Kendaraan Dinas">Kendaraan Dinas</option>

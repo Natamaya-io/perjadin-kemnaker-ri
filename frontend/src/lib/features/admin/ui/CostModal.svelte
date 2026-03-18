@@ -43,20 +43,61 @@
     		return { days: locDays, rate: rate, province: loc.province };
 		});
 
+    let selectedLocationIndex = 0;
+
+    $: if (open && record) {
+        const locationsCount = costBreakdown.length;
+        if (!editingCosts.details) {
+            editingCosts.details = [];
+        }
+        
+        // Migration from legacy flat structure
+        if (editingCosts.details.length === 0 && (editingCosts.hotelDays || editingCosts.transportAmount || editingCosts.ticketGo || editingCosts.transportMode)) {
+            editingCosts.details = [{
+                ...editingCosts,
+                details: undefined
+            }];
+        }
+
+        // Fill missing locations
+        while (editingCosts.details.length < locationsCount) {
+            editingCosts.details.push({
+                transportMode: 'Pesawat',
+                ticketGo: 0, ticketBack: 0,
+                hotelDays: 0, hotelRate: 0,
+                transportAmount: 0,
+                additionalCosts: [],
+                boardingPassFiles: []
+            });
+        }
+        
+        // Reset selected index if out of bounds
+        if (selectedLocationIndex >= locationsCount) {
+            selectedLocationIndex = 0;
+        }
+
+        editingCosts = editingCosts;
+    }
+
 	$: days = costBreakdown.reduce((sum, item) => sum + item.days, 0);
 	$: totalDailyAllowance = costBreakdown.reduce((sum, item) => sum + (item.rate * item.days), 0);
 	$: sbmRateAvg = days > 0 ? totalDailyAllowance / days : 0;
-    // Default arrays if undefined
-    $: if (open && !editingCosts.additionalCosts) {
-        editingCosts.additionalCosts = [];
-    }
 
-    $: totalHotel = (editingCosts.hotelDays || 0) * (editingCosts.hotelRate || 0);
-    $: totalTicket = Number(editingCosts.ticketGo || 0) + Number(editingCosts.ticketBack || 0);
-    $: totalTransportAmount = Number(editingCosts.transportAmount || 0);
-    $: totalAdditional = (editingCosts.additionalCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+    $: grandTotal = (editingCosts.details || []).reduce((acc, detail, idx) => {
+        const sbmTotal = costBreakdown[idx] ? (costBreakdown[idx].rate * costBreakdown[idx].days) : 0;
+        const hotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+        const ticket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
+        const transport = Number(detail.transportAmount || 0);
+        const addCosts = (detail.additionalCosts || []).reduce((sum, c) => sum + (c.amount || 0), 0);
+        return acc + sbmTotal + hotel + ticket + transport + addCosts;
+    }, 0);
+
+    // Current tab helpers
+    $: detail = editingCosts.details && editingCosts.details[selectedLocationIndex] ? editingCosts.details[selectedLocationIndex] : {};
+    $: currentLocSbm = costBreakdown[selectedLocationIndex] || { rate: 0, days: 0, province: '' };
     
-    $: grandTotal = totalTicket + totalDailyAllowance + totalHotel + totalTransportAmount + totalAdditional;
+    $: currentTotalHotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+    $: currentTotalAdditional = (detail.additionalCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
 
     // Preview State
     let previewFile = null;
@@ -94,7 +135,7 @@
     function updateCost(field, event) {
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
-        editingCosts[field] = isNaN(num) ? undefined : num;
+        editingCosts.details[selectedLocationIndex][field] = isNaN(num) ? undefined : num;
         editingCosts = editingCosts;
     }
 
@@ -108,12 +149,13 @@
         }
         const reader = new FileReader();
         reader.onload = (ev) => {
-            editingCosts[field] = {
+            editingCosts.details[selectedLocationIndex][field] = {
                 name: file.name,
                 size: file.size,
                 type: file.type,
                 data: ev.target.result
             };
+            editingCosts = editingCosts;
         };
         reader.readAsDataURL(file);
         e.target.value = '';
@@ -128,53 +170,54 @@
             return;
         }
 
-        if (!editingCosts.boardingPassFiles) {
-            editingCosts.boardingPassFiles = [];
-            if (editingCosts.boardingPassFile) {
-                editingCosts.boardingPassFiles.push(editingCosts.boardingPassFile);
-                delete editingCosts.boardingPassFile;
-            }
+        if (!editingCosts.details[selectedLocationIndex].boardingPassFiles) {
+            editingCosts.details[selectedLocationIndex].boardingPassFiles = [];
         }
 
         const reader = new FileReader();
         reader.onload = (ev) => {
-            editingCosts.boardingPassFiles = [...editingCosts.boardingPassFiles, {
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                data: ev.target.result
-            }];
+            editingCosts.details[selectedLocationIndex].boardingPassFiles = [
+                ...editingCosts.details[selectedLocationIndex].boardingPassFiles, 
+                {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    data: ev.target.result
+                }
+            ];
+            editingCosts = editingCosts;
         };
         reader.readAsDataURL(file);
         e.target.value = '';
     }
 
     function removeBoardingPassFile(index) {
-        if (editingCosts.boardingPassFiles) {
-            editingCosts.boardingPassFiles = editingCosts.boardingPassFiles.filter((_, i) => i !== index);
+        if (editingCosts.details[selectedLocationIndex].boardingPassFiles) {
+            editingCosts.details[selectedLocationIndex].boardingPassFiles = editingCosts.details[selectedLocationIndex].boardingPassFiles.filter((_, i) => i !== index);
+            editingCosts = editingCosts;
         }
     }
 
     function removeSpecificFile(field) {
-        editingCosts[field] = null;
+        editingCosts.details[selectedLocationIndex][field] = null;
         editingCosts = editingCosts;
     }
 
     function addAdditionalCost() {
-        if (!editingCosts.additionalCosts) editingCosts.additionalCosts = [];
-        editingCosts.additionalCosts = [...editingCosts.additionalCosts, { name: '', amount: undefined, file: null }];
+        if (!editingCosts.details[selectedLocationIndex].additionalCosts) editingCosts.details[selectedLocationIndex].additionalCosts = [];
+        editingCosts.details[selectedLocationIndex].additionalCosts = [...editingCosts.details[selectedLocationIndex].additionalCosts, { name: '', amount: undefined, file: null }];
         editingCosts = editingCosts;
     }
 
     function removeAdditionalCost(index) {
-        editingCosts.additionalCosts = editingCosts.additionalCosts.filter((_, i) => i !== index);
+        editingCosts.details[selectedLocationIndex].additionalCosts = editingCosts.details[selectedLocationIndex].additionalCosts.filter((_, i) => i !== index);
         editingCosts = editingCosts;
     }
 
     function updateAdditionalCostAmount(index, event) {
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
-        editingCosts.additionalCosts[index].amount = isNaN(num) ? undefined : num;
+        editingCosts.details[selectedLocationIndex].additionalCosts[index].amount = isNaN(num) ? undefined : num;
         editingCosts = editingCosts;
     }
 
@@ -188,7 +231,7 @@
         }
         const reader = new FileReader();
         reader.onload = (ev) => {
-            editingCosts.additionalCosts[index].file = {
+            editingCosts.details[selectedLocationIndex].additionalCosts[index].file = {
                 name: file.name,
                 size: file.size,
                 type: file.type,
@@ -201,13 +244,17 @@
     }
 
     function validateCosts() {
-        if ((editingCosts.ticketGo || 0) < 0) return "Biaya Tiket Berangkat tidak boleh negatif";
-        if ((editingCosts.ticketBack || 0) < 0) return "Biaya Tiket Pulang tidak boleh negatif";
-        if ((editingCosts.hotelDays || 0) < 0) return "Durasi Penginapan tidak boleh negatif";
-        if ((editingCosts.hotelRate || 0) < 0) return "Rate Penginapan tidak boleh negatif";
-        if ((editingCosts.transportAmount || 0) < 0) return "Biaya Transportasi tidak boleh negatif";
-        for (const cost of (editingCosts.additionalCosts || [])) {
-            if ((cost.amount || 0) < 0) return "Biaya Tambahan tidak boleh negatif";
+        for (let i = 0; i < (editingCosts.details || []).length; i++) {
+            const d = editingCosts.details[i];
+            const provName = costBreakdown[i] ? costBreakdown[i].province : 'Lokasi';
+            if ((d.ticketGo || 0) < 0) return `Biaya Tiket Berangkat di ${provName} tidak boleh negatif`;
+            if ((d.ticketBack || 0) < 0) return `Biaya Tiket Pulang di ${provName} tidak boleh negatif`;
+            if ((d.hotelDays || 0) < 0) return `Durasi Penginapan di ${provName} tidak boleh negatif`;
+            if ((d.hotelRate || 0) < 0) return `Rate Penginapan di ${provName} tidak boleh negatif`;
+            if ((d.transportAmount || 0) < 0) return `Biaya Transportasi di ${provName} tidak boleh negatif`;
+            for (const cost of (d.additionalCosts || [])) {
+                if ((cost.amount || 0) < 0) return `Biaya Tambahan di ${provName} tidak boleh negatif`;
+            }
         }
         return null;
     }
@@ -219,6 +266,28 @@
             toast.error(error);
             return;
         }
+
+        // Map back primary location details to root for backend compatibility
+        // because the backend only supports saving a flat cost structure per record.
+        if (editingCosts.details && editingCosts.details.length > 0) {
+            const primary = editingCosts.details[0];
+            editingCosts = {
+                ...editingCosts,
+                transportMode: primary.transportMode,
+                ticketGo: primary.ticketGo,
+                ticketBack: primary.ticketBack,
+                hotelDays: primary.hotelDays,
+                hotelRate: primary.hotelRate,
+                transportAmount: primary.transportAmount,
+                additionalCosts: primary.additionalCosts,
+                boardingPassFiles: primary.boardingPassFiles,
+                ticketGoFile: primary.ticketGoFile,
+                ticketBackFile: primary.ticketBackFile,
+                hotelFile: primary.hotelFile,
+                transportFile: primary.transportFile
+            };
+        }
+
         dispatch('save', { editingCosts, grandTotal });
     }
 </script>
@@ -233,12 +302,31 @@
         <p class="text-xs md:text-sm text-slate-500 mt-1">Rincian komponen biaya untuk pegawai <span class="font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{record?.employee?.name}</span>.</p>
     </DialogHeader>
     
+    <!-- Location Tabs -->
+    {#if costBreakdown.length > 1}
+    <div class="px-4 md:px-6 pt-4 pb-2 bg-slate-50/50 border-b border-slate-100 shrink-0 overflow-x-auto">
+        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider mb-2 block">Pilih Provinsi / Lokasi</Label>
+        <div class="flex gap-2 w-max">
+            {#each costBreakdown as loc, idx}
+                <button
+                    class="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors border {selectedLocationIndex === idx ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'}"
+                    on:click={() => selectedLocationIndex = idx}
+                >
+                    {loc.province}
+                </button>
+            {/each}
+        </div>
+    </div>
+    {/if}
+
     <div class="grid gap-4 md:gap-6 p-4 md:p-6 overflow-y-auto overflow-x-hidden bg-slate-50/50 custom-scrollbar flex-1 min-h-0 relative">
-        
+
+        {#if editingCosts.details && editingCosts.details[selectedLocationIndex]}
+
         <!-- Mode Transportasi -->
-        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5">
-            <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
-            <Select bind:value={editingCosts.transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}">
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5 mb-4">
+            <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({currentLocSbm.province})</Label>
+            <Select bind:value={editingCosts.details[selectedLocationIndex].transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}">
                 <option value="Pesawat">Pesawat Udara</option>
                 <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
                 <option value="Kendaraan Dinas">Kendaraan Dinas</option>
@@ -252,32 +340,26 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Uang Harian (SBM)
+                    Uang Harian (SBM) - {currentLocSbm.province}
                 </h4>
-                <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(totalDailyAllowance)}</span>
+                <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(currentLocSbm.rate * currentLocSbm.days)}</span>
             </div>
             
             <div class="space-y-2">
-                {#each costBreakdown as item}
-                    <div class="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-600 bg-white p-2 md:p-3 rounded-lg border border-blue-50/50 shadow-sm w-full">
-                        <div class="flex-none pr-2 border-r border-slate-100 min-w-[80px]">
-                             <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Provinsi</span>
-                             <span class="font-medium whitespace-nowrap text-blue-600">{item.province}</span>
-                        </div>
-                        <div class="flex-none pr-2 border-r border-slate-100">
-                            <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
-                            <span class="font-medium whitespace-nowrap">{item.days} Hari</span>
-                        </div>
-                        <div class="flex-1 min-w-0 overflow-hidden">
-                            <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate SBM</span>
-                            <span class="font-medium truncate block w-full">{formatCurrency(item.rate)} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
-                        </div>
-                        <div class="flex-none pl-2 border-l border-slate-100 text-right">
-                             <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Total</span>
-                             <span class="font-bold text-slate-800">{formatCurrency(item.rate * item.days)}</span>
-                        </div>
+                <div class="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-600 bg-white p-2 md:p-3 rounded-lg border border-blue-50/50 shadow-sm w-full">
+                    <div class="flex-none pr-2 border-r border-slate-100 min-w-[80px]">
+                         <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Provinsi</span>
+                         <span class="font-medium whitespace-nowrap text-blue-600">{currentLocSbm.province}</span>
                     </div>
-                {/each}
+                    <div class="flex-none pr-2 border-r border-slate-100">
+                        <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Durasi</span>
+                        <span class="font-medium whitespace-nowrap">{currentLocSbm.days} Hari</span>
+                    </div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <span class="block text-[9px] md:text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Rate SBM</span>
+                        <span class="font-medium truncate block w-full">{formatCurrency(currentLocSbm.rate)} <span class="text-[10px] md:text-xs text-slate-400 font-normal">/ hari</span></span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -287,7 +369,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Tiket & Boarding Pass
+                Tiket & Boarding Pass - {currentLocSbm.province}
             </h4>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -295,7 +377,7 @@
                 <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
                     <div class="flex justify-between items-center">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
-                        {#if !editingCosts.ticketGoFile && !isReadOnly}
+                        {#if !detail.ticketGoFile && !isReadOnly}
                             <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Upload Kwitansi
@@ -305,13 +387,13 @@
                     </div>
                     <div class="relative">
                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                        <Input type="text" value={formatInputNumber(editingCosts.ticketGo)} on:input={(e) => updateCost('ticketGo', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
+                        <Input type="text" value={formatInputNumber(detail.ticketGo)} on:input={(e) => updateCost('ticketGo', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
                     </div>
-                    {#if editingCosts.ticketGoFile}
+                    {#if detail.ticketGoFile}
                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
-                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.ticketGoFile.name}</span>
+                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketGoFile.name}</span>
                             <div class="flex gap-2 shrink-0 text-[10px]">
-                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(editingCosts.ticketGoFile)}>Lihat</button>
+                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketGoFile)}>Lihat</button>
                                 {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketGoFile')}>Hapus</button>{/if}
                             </div>
                         </div>
@@ -322,7 +404,7 @@
                 <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
                     <div class="flex justify-between items-center">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Pulang</Label>
-                        {#if !editingCosts.ticketBackFile && !isReadOnly}
+                        {#if !detail.ticketBackFile && !isReadOnly}
                             <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Upload Kwitansi
@@ -332,13 +414,13 @@
                     </div>
                     <div class="relative">
                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                        <Input type="text" value={formatInputNumber(editingCosts.ticketBack)} on:input={(e) => updateCost('ticketBack', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                        <Input type="text" value={formatInputNumber(detail.ticketBack)} on:input={(e) => updateCost('ticketBack', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                     </div>
-                    {#if editingCosts.ticketBackFile}
+                    {#if detail.ticketBackFile}
                         <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
-                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.ticketBackFile.name}</span>
+                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketBackFile.name}</span>
                             <div class="flex gap-2 shrink-0 text-[10px]">
-                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(editingCosts.ticketBackFile)}>Lihat</button>
+                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketBackFile)}>Lihat</button>
                                 {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketBackFile')}>Hapus</button>{/if}
                             </div>
                         </div>
@@ -357,9 +439,9 @@
                         {/if}
                     </div>
                     
-                    {#if editingCosts.boardingPassFiles && editingCosts.boardingPassFiles.length > 0}
+                    {#if detail.boardingPassFiles && detail.boardingPassFiles.length > 0}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                            {#each editingCosts.boardingPassFiles as bpFile, idx}
+                            {#each detail.boardingPassFiles as bpFile, idx}
                                 <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md w-full">
                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
                                     <div class="flex gap-2 shrink-0 text-[10px]">
@@ -368,16 +450,6 @@
                                     </div>
                                 </div>
                             {/each}
-                        </div>
-                    {/if}
-
-                    {#if editingCosts.boardingPassFile}
-                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md w-full">
-                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.boardingPassFile.name}</span>
-                            <div class="flex gap-2 shrink-0 text-[10px]">
-                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(editingCosts.boardingPassFile)}>Lihat</button>
-                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('boardingPassFile')}>Hapus</button>{/if}
-                            </div>
                         </div>
                     {/if}
                 </div>
@@ -391,9 +463,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    Penginapan (Hotel)
+                    Penginapan (Hotel) - {currentLocSbm.province}
                 </h4>
-                {#if !editingCosts.hotelFile && !isReadOnly}
+                {#if !detail.hotelFile && !isReadOnly}
                     <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
                         + Upload Kwitansi
                         <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'hotelFile')} />
@@ -404,28 +476,29 @@
             <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">
                 <div class="space-y-1.5 col-span-1">
                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Malam</Label>
-                    <Input type="number" bind:value={editingCosts.hotelDays} disabled={isReadOnly} class="h-9 md:h-10 text-sm bg-slate-50 border-slate-200 px-2 {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
+                    <Input type="number" bind:value={detail.hotelDays} disabled={isReadOnly} class="h-9 md:h-10 text-sm bg-slate-50 border-slate-200 px-2 {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
                 </div>
                 <div class="space-y-1.5 col-span-2">
                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Rate per Malam</Label>
                     <div class="relative">
                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                        <Input type="text" value={formatInputNumber(editingCosts.hotelRate)} on:input={(e) => updateCost('hotelRate', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
+                        <Input type="text" value={formatInputNumber(detail.hotelRate)} on:input={(e) => updateCost('hotelRate', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
                     </div>
-                    </div>            </div>
+                </div>
+            </div>
             
-            {#if editingCosts.hotelFile}
+            {#if detail.hotelFile}
                 <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
-                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.hotelFile.name}</span>
+                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.hotelFile.name}</span>
                     <div class="flex gap-2 shrink-0 text-[10px]">
-                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(editingCosts.hotelFile)}>Lihat</button>
+                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.hotelFile)}>Lihat</button>
                         {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('hotelFile')}>Hapus</button>{/if}
                     </div>
                 </div>
             {/if}
 
             <div class="text-right text-xs md:text-sm font-mono font-medium text-slate-600 border-t border-slate-100 pt-2 mt-1">
-                Subtotal Hotel: <span class="text-slate-800">{formatCurrency(totalHotel)}</span>
+                Subtotal Hotel: <span class="text-slate-800">{formatCurrency(currentTotalHotel)}</span>
             </div>
         </div>
 
@@ -436,9 +509,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
-                    Transport Darat / Rental
+                    Transport Darat / Rental - {currentLocSbm.province}
                 </h4>
-                {#if !editingCosts.transportFile && !isReadOnly}
+                {#if !detail.transportFile && !isReadOnly}
                     <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
                         + Upload Bukti
                         <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'transportFile')} />
@@ -450,15 +523,15 @@
                 <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Total Biaya (Opsional)</Label>
                 <div class="relative">
                     <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                    <Input type="text" value={formatInputNumber(editingCosts.transportAmount)} on:input={(e) => updateCost('transportAmount', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
+                    <Input type="text" value={formatInputNumber(detail.transportAmount)} on:input={(e) => updateCost('transportAmount', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-slate-50 border-slate-200 {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                 </div>
             </div>
 
-            {#if editingCosts.transportFile}
+            {#if detail.transportFile}
                 <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
-                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{editingCosts.transportFile.name}</span>
+                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.transportFile.name}</span>
                     <div class="flex gap-2 shrink-0 text-[10px]">
-                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(editingCosts.transportFile)}>Lihat</button>
+                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.transportFile)}>Lihat</button>
                         {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('transportFile')}>Hapus</button>{/if}
                     </div>
                 </div>
@@ -472,7 +545,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Biaya Tambahan Lainnya
+                    Biaya Tambahan - {currentLocSbm.province}
                 </h4>
                 {#if !isReadOnly}
                     <Button size="sm" class="h-7 px-3 text-[10px] font-bold tracking-wider bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm transition-colors rounded-md flex items-center gap-1" on:click={addAdditionalCost}>
@@ -483,8 +556,8 @@
             </div>
 
             <div class="space-y-3">
-                {#if editingCosts.additionalCosts && editingCosts.additionalCosts.length > 0}
-                    {#each editingCosts.additionalCosts as cost, index}
+                {#if detail.additionalCosts && detail.additionalCosts.length > 0}
+                    {#each detail.additionalCosts as cost, index}
                         <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
                             {#if !isReadOnly}
                                 <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(index)}>
@@ -526,21 +599,23 @@
                         </div>
                     {/each}
                     <div class="text-right text-xs md:text-sm font-mono font-medium text-slate-600 pt-2">
-                        Subtotal Tambahan: <span class="text-slate-800">{formatCurrency(totalAdditional)}</span>
+                        Subtotal Tambahan: <span class="text-slate-800">{formatCurrency(currentTotalAdditional)}</span>
                     </div>
                 {:else}
                     <div class="text-center p-4 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500">
-                        Belum ada biaya tambahan diinputkan.
+                        Belum ada biaya tambahan diinputkan untuk provinsi ini.
                     </div>
                 {/if}
             </div>
         </div>
+
+        {/if}
     </div>
 
     <DialogFooter class="p-4 md:p-6 pt-0 bg-white shrink-0 z-10 border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
         <div class="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4">
             <div class="w-full md:w-auto text-left">
-                <span class="block text-[10px] md:text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Estimasi</span>
+                <span class="block text-[10px] md:text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Grand Total Estimasi (Seluruh Provinsi)</span>
                 <span class="text-xl font-bold text-blue-700 font-mono tracking-tight">{formatCurrency(grandTotal)}</span>
             </div>
             <div class="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
@@ -557,16 +632,19 @@
                     <span class="text-xs">Cetak Rincian</span>
                 </Button>
                 {#if isReadOnly}
-                    <div class="col-span-2">
-                        <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 px-3" on:click={() => dispatch('close')}>
+                    <div class="col-span-2 md:col-span-1 md:w-auto w-full">
+                        <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => dispatch('close')}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             <span class="text-xs">Tutup</span>
                         </Button>
                     </div>
                 {:else}
-                    <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 px-3" on:click={() => dispatch('close')}>
+                    <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => dispatch('close')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         <span class="text-xs">Tutup</span>
                     </Button>
-                    <Button class="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-3" on:click={handleSave}>
+                    <Button class="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-3 flex justify-center items-center" on:click={handleSave}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                         <span class="text-xs">Simpan Rincian</span>
                     </Button>
                 {/if}

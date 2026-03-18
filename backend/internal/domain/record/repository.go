@@ -188,6 +188,7 @@ func mapDBCost(dbc db.TravelCost) models.TravelCost {
 		HotelFile:          fromJsonb(dbc.HotelFile),
 		TransportFile:      fromJsonb(dbc.TransportFile),
 		AdditionalCosts:    fromJsonb(dbc.AdditionalCosts),
+		Details:            fromJsonb(dbc.Details),
 	}
 }
 
@@ -492,10 +493,11 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	if err := qtx.DeleteTravelLocationsByRecordID(ctx, record.ID); err != nil {
 		return err
 	}
-	for _, loc := range record.Locations {
-		if loc.ID == uuid.Nil {
-			loc.ID = uuid.New()
-		}
+	for i, loc := range record.Locations {
+		// Always generate a new ID to prevent primary key conflict with the soft-deleted row
+		loc.ID = uuid.New()
+		record.Locations[i].ID = loc.ID
+		
 		_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
 			ID:             loc.ID,
 			TravelRecordID: record.ID,
@@ -532,6 +534,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			HotelFile:          toJsonb(record.Cost.HotelFile),
 			TransportFile:      toJsonb(record.Cost.TransportFile),
 			AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
+			Details:            toJsonb(record.Cost.Details),
 		})
 		if err != nil {
 			_, err = qtx.CreateTravelCost(ctx, db.CreateTravelCostParams{
@@ -555,6 +558,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				HotelFile:          toJsonb(record.Cost.HotelFile),
 				TransportFile:      toJsonb(record.Cost.TransportFile),
 				AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
+				Details:            toJsonb(record.Cost.Details),
 			})
 			if err != nil {
 				return err
