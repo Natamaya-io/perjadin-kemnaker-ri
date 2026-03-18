@@ -102,7 +102,7 @@
         return total + (diffDays > 0 ? diffDays : 0);
     }, 0);
 
-    // For multi-location, calculate per location then sum up
+    // For multi-location, calculate per location then sum up (PER PERSON)
     $: totalCost = formData.locations.reduce((total, loc) => {
         const provData = $provincesStore.find(p => p.name === loc.province);
         const rate = provData ? provData.luarKota : 0;
@@ -116,7 +116,7 @@
             locDays = diffDays > 0 ? diffDays : 0;
         }
         
-        return total + (rate * locDays * formData.selectedEmployees.length);
+        return total + (rate * locDays);
     }, 0);
 
 	$: costBreakdown = Object.values(formData.locations.reduce((acc, loc) => {
@@ -180,7 +180,7 @@
     function generateId() {
         let maxId = 0;
         for (const record of $recordsStore) {
-            if (record.spd && record.spd.startsWith('ID-SPJ-')) {
+            if (record.spd && record.spd.startsWith('ID-SPD-')) {
                 const numStr = record.spd.substring(7);
                 const num = parseInt(numStr, 10);
                 if (!isNaN(num) && num > maxId) {
@@ -188,7 +188,7 @@
                 }
             }
         }
-        return `ID-SPJ-${(maxId + 1).toString().padStart(3, '0')}`;
+        return `ID-SPD-${(maxId + 1).toString().padStart(3, '0')}`;
     }
     
     function handleSubmit() {
@@ -427,7 +427,7 @@
                     <CostEstimateCard
                         breakdown={costBreakdown}
                         employeeCount={formData.selectedEmployees.length}
-                        totalCost={totalCost}
+                        totalCost={totalCost * formData.selectedEmployees.length}
                         readonly={isReadOnly}
                     />
                 {/if}

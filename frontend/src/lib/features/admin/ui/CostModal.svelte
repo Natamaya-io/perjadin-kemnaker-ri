@@ -26,22 +26,22 @@
     $: isReadOnly = isReadOnlyOverride || $userStore.role === 'kasubag' || (record?.status === 'Approved' && $userStore.role !== 'keuangan' && $userStore.role !== 'super_admin');
 
     // Derived Calculations for SBM Uang Harian
-	$: costBreakdown = (record?.locations && record.locations.length > 0 
-    	? record.locations 
- 	   : [{ startDate: record?.startDate, endDate: record?.endDate, province: record?.province }]
-		).map(loc => {
-    		const provData = $provincesStore.find(p => p.name === loc.province);
-    		const rate = provData ? provData.luarKota : 0;
-    		const start = new Date(loc.startDate);
-    		const end = new Date(loc.endDate);
-    		let locDays = 0;
-    		if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        	const diffTime = end.getTime() - start.getTime();
-        	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        	locDays = diffDays > 0 ? diffDays : 0;
-    	}
-    		return { days: locDays, rate: rate, province: loc.province };
-		});
+    $: costBreakdown = (record?.locations && record.locations.length > 0 
+        ? record.locations 
+        : []
+    ).map(loc => {
+        const provData = $provincesStore.find(p => p.name === loc.province);
+        const rate = provData ? provData.luarKota : 0;
+        const start = new Date(loc.startDate);
+        const end = new Date(loc.endDate);
+        let locDays = 0;
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const diffTime = end.getTime() - start.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            locDays = diffDays > 0 ? diffDays : 0;
+        }
+        return { days: locDays, rate: rate, province: loc.province };
+    });
 
     let selectedLocationIndex = 0;
 
@@ -84,6 +84,7 @@
 	$: sbmRateAvg = days > 0 ? totalDailyAllowance / days : 0;
 
     $: grandTotal = (editingCosts.details || []).reduce((acc, detail, idx) => {
+        // Individual SBM for this person at this location
         const sbmTotal = costBreakdown[idx] ? (costBreakdown[idx].rate * costBreakdown[idx].days) : 0;
         const hotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
         const ticket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);

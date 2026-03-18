@@ -98,13 +98,16 @@
             return 0;
         });
 
+    $: allRecordsSorted = [...$recordsStore].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
+
     $: groupedRecords = filteredRecords.reduce((acc, record) => {
         const isMyRecord = record.email === $userStore.email || (record.employee && record.employee.email === $userStore.email);
 
         if (!acc[record.spd] || isMyRecord) {
             const allEmployeesForSpd = $recordsStore.filter(r => r.spd === record.spd);
-            const officerIndex = allEmployeesForSpd.findIndex(r => r.id === record.id);
-            const nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
+            const globalIndex = recordToIndexMap.get(record.id) || 0;
+            const nomorSpdPetugas = String(globalIndex).padStart(3, '0');
             
             // Create group if not exists, or overwrite if it's MY record (to show my number)
             if (!acc[record.spd] || isMyRecord) {
@@ -153,7 +156,7 @@
                 <Table class="w-full text-sm text-left">
                     <TableHeader class="bg-slate-50 border-b border-slate-200">
                         <TableRow class="hover:bg-slate-50/50">
-                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">{$userStore.role !== 'protokol' ? 'ID SPJ' : 'No. SPD'}</TableHead>
+                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">{$userStore.role !== 'protokol' ? 'ID SPD' : 'No. SPD'}</TableHead>
                             <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
                             <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
                             <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status Laporan</TableHead>
@@ -319,7 +322,7 @@
                     </div>
                     <div class="space-y-4.5 flex-1 relative z-10">
                         <div>
-                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPJ</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPD</span>
                             <span class="font-mono text-slate-800 font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block text-sm shadow-sm">{selectedDetailRecord.spd}</span>
                         </div>
                         <div>

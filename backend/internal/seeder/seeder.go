@@ -1,15 +1,18 @@
 package seeder
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -108,12 +111,33 @@ func getOriginalUsers() ([]models.User, []rawUser) {
 	return adminUsers, protokolData
 }
 
-func Seed(db *sql.DB) {
+func Seed(db *sql.DB, rdb *redis.Client) {
 	log.Println("Starting Database Seeding...")
+
+	// 0. Clean up all transaction data (everything except users, provinces, and sbm_rates)
+	log.Println("Cleaning up transaction data...")
+	tables := []string{"travel_reports", "travel_costs", "travel_locations", "travel_records"}
+	for _, table := range tables {
+		_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
+		if err != nil {
+			log.Printf("Warning: failed to truncate %s: %v", table, err)
+		}
+	}
 
 	adminUsers, protokolData := getOriginalUsers()
 	
 	userRepo := user.NewRepository(db)
+
+	// 2. Delete users that don't have @kemnaker.go.id domain (cleanup stale/faker data)
+	existingUsers, err := userRepo.GetUsers()
+	if err == nil {
+		for _, u := range existingUsers {
+			if !strings.HasSuffix(strings.ToLower(u.Email), "@kemnaker.go.id") {
+				log.Printf("Deleting non-kemnaker user: %s", u.Email)
+				userRepo.DeleteUser(u.ID)
+			}
+		}
+	}
 
 	var wg sync.WaitGroup
 
@@ -130,6 +154,27 @@ func Seed(db *sql.DB) {
 	}()
 
 	wg.Wait()
+
+	// 3. Clear Redis Cache after seeding
+	if rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Clear demo users key
+		if err := rdb.Del(ctx, "demo_users").Err(); err != nil {
+			log.Printf("Failed to clear demo_users cache: %v", err)
+		}
+
+		// Clear users:* keys
+		iter := rdb.Scan(ctx, 0, "users:*", 0).Iterator()
+		for iter.Next(ctx) {
+			if err := rdb.Del(ctx, iter.Val()).Err(); err != nil {
+				log.Printf("Failed to clear cache key %s: %v", iter.Val(), err)
+			}
+		}
+
+		log.Println("Redis cache cleared after seeding.")
+	}
 
 	log.Println("Database Seeding Completed Successfully.")
 }

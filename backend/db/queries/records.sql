@@ -1,8 +1,8 @@
 -- name: CreateTravelRecord :one
 INSERT INTO travel_records (
-  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number
+  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 ) RETURNING *;
 
 -- name: GetTravelRecords :many
@@ -17,7 +17,7 @@ SELECT * FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1;
 
 -- name: GetLatestSpdNumber :one
 SELECT spd_number FROM travel_records
-WHERE spd_number LIKE 'ID-SPJ-%'
+WHERE spd_number LIKE 'ID-SPD-%'
 ORDER BY CAST(SUBSTRING(spd_number FROM 8) AS INTEGER) DESC
 LIMIT 1;
 
@@ -49,6 +49,7 @@ UPDATE travel_records SET
   total_cost = $17,
   surat_tugas_path = $18,
   surat_tugas_number = $19,
+  surat_tugas_date = $20,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;

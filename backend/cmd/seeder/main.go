@@ -9,6 +9,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kemnaker/perjadin-backend/internal/config"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
+	"github.com/kemnaker/perjadin-backend/pkg/cache"
 	"github.com/kemnaker/perjadin-backend/pkg/database"
 )
 
@@ -23,12 +24,19 @@ func main() {
 
 	log.Println("Connected to database.")
 
+	rdb, err := cache.NewRedisClient(cfg)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to Redis: %v. Cache will not be cleared.", err)
+	} else {
+		defer rdb.Close()
+	}
+
 	// Ensure Migrations are up to date before seeding
 	log.Println("Running Migrations...")
 	runMigrations(db)
 
 	// Call the shared seeder logic
-	seeder.Seed(db)
+	seeder.Seed(db, rdb)
 }
 
 func runMigrations(db *sql.DB) {

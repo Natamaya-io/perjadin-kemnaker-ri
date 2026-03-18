@@ -43,11 +43,15 @@
     // Allow access to all records if user is in the group (representative) or is admin/kasubag
     $: recordsList = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag' || $userStore.role === 'protokol' || isUserInSpdGroup) ? allRecordsForSpd : [];
     
+    $: allRecordsSorted = [...$recordsStore].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
+
     $: officerIndex = record ? allRecordsForSpd.findIndex(r => r.id === record.id) : 0;
-    $: nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
+    $: nomorSpdPetugas = record ? String(recordToIndexMap.get(record.id) || 0).padStart(3, '0') : '000';
 
     let reportText = '';
     let manualSuratTugasNumber = '';
+    let manualSuratTugasDate = '';
     /** @type {Array<{name: string, type: string, data: string, timestamp: string}>} */
     let uploadedFiles = []; 
     let isDragging = false;
@@ -351,6 +355,9 @@
 
     let isDataLoaded = false;
     $: if (record && !manualSuratTugasNumber && record.suratTugasNumber) { manualSuratTugasNumber = record.suratTugasNumber; }
+    $: if (record && !manualSuratTugasDate && record.suratTugasDate && record.suratTugasDate !== '0001-01-01T00:00:00Z') { 
+        manualSuratTugasDate = new Date(record.suratTugasDate).toISOString().split('T')[0]; 
+    }
     $: if (record && record.reportData && !isDataLoaded) {
         reportText = record.reportData.text || '';
         uploadedFiles = record.reportData.files || [];
@@ -495,6 +502,7 @@
                 return updateRecord(r.id, {
                     reportStatus: 'Draft',
                     suratTugasNumber: manualSuratTugasNumber,
+                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                     reportData: {
                         text: reportText,
                         files: uploadedFiles,
@@ -538,6 +546,7 @@
                 return updateRecord(r.id, {
                     reportStatus: 'Completed',
                     suratTugasNumber: manualSuratTugasNumber,
+                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                     reportData: {
                         text: reportText,
                         files: uploadedFiles,
@@ -666,7 +675,7 @@
                 <!-- ... existing header code ... -->
                 <div class="p-4 sm:p-6 border-b border-slate-100">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                         <!-- Left: SPJ Details -->
+                         <!-- Left: SPD Details -->
                          <div class="space-y-6">
                              <div class="flex items-start gap-4">
                                  <div class="p-3 bg-blue-50 text-blue-600 rounded-xl shrink-0 border border-blue-100">
@@ -675,16 +684,16 @@
                                      </svg>
                                  </div>
                                  <div>
-                                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ID SPJ</h3>
+                                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ID SPD</h3>
                                      <div class="text-xl font-bold text-slate-900 tracking-tight">{record.spd}</div>
                                  </div>
                              </div>
 
-                             <!-- Grid for Surat Tugas & No. SPD -->
-                             <div class="grid grid-cols-2 gap-6 pt-2">
+                             <!-- Grid for Surat Tugas & Date -->
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                  <div>
                                      <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nomor Surat Tugas</span>
-                                     {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && !record.suratTugasNumber}
+                                     {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed')}
                                          <input 
                                              type="text" 
                                              bind:value={manualSuratTugasNumber}
@@ -698,10 +707,18 @@
                                      {/if}
                                  </div>
                                  <div>
-                                     <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nomor SPD</span>
-                                     <div class="font-mono font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block text-sm">
-                                         {nomorSpdPetugas}
-                                     </div>
+                                     <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tanggal Surat Tugas</span>
+                                     {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed')}
+                                         <input 
+                                             type="date" 
+                                             bind:value={manualSuratTugasDate}
+                                             class="font-semibold text-slate-800 bg-white px-3 py-1.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none w-full text-sm transition-all shadow-sm"
+                                         />
+                                     {:else}
+                                         <div class="font-medium text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block text-sm">
+                                             {manualSuratTugasDate ? new Date(manualSuratTugasDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}
+                                         </div>
+                                     {/if}
                                  </div>
                              </div>
                          </div>
@@ -765,7 +782,7 @@
                                      <div class="flex-1 min-w-0">
                                          <div class="text-sm font-bold text-slate-800 truncate leading-tight mb-1">{emp.employee?.name || '-'}</div>
                                          <div class="text-xs text-slate-500 flex items-center gap-1.5">
-                                             <span class="bg-slate-50 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-slate-500 border border-slate-200 group-hover:border-blue-200 group-hover:text-blue-600 transition-colors">SPD {String(i + 1).padStart(2, '0')}</span>
+                                             <span class="bg-slate-50 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-slate-500 border border-slate-200 group-hover:border-blue-200 group-hover:text-blue-600 transition-colors">SPD {String(recordToIndexMap.get(emp.id) || 0).padStart(3, '0')}</span>
                                          </div>
                                      </div>
                                 </div>

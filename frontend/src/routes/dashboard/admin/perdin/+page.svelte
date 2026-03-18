@@ -40,6 +40,9 @@
         expandedGroups = expandedGroups; // Trigger reactivity
     }
 
+    $: allRecordsSorted = [...$recordsStore].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
+
     // Derived Records
     $: filteredRecords = $recordsStore
         .filter(r => {
@@ -82,9 +85,8 @@
             acc[record.spd] = { ...record, employeesList: [record] };
         } else {
             acc[record.spd].employeesList.push(record);
-            // DO NOT accumulate total cost. The record totalCost is per-SPD, not per-employee.
-            // Ensure we use the latest/highest cost or just the base one.
-            acc[record.spd].totalCost = record.totalCost || acc[record.spd].totalCost || 0;
+            // The group object's totalCost will be calculated on the fly in the template 
+            // by summing up all employees in employeesList.
         }
         return acc;
     }, {});
@@ -174,7 +176,7 @@
                 <table class="w-full text-left text-sm border-collapse min-w-[800px] table-fixed">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500">
                         <tr>
-                            <th class="px-6 py-4 whitespace-nowrap w-[12%]">ID SPJ</th>
+                            <th class="px-6 py-4 whitespace-nowrap w-[12%]">ID SPD</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[28%]">Lokasi</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[20%]">Tanggal</th>
                             <th class="px-6 py-4 whitespace-nowrap text-right w-[25%]">Total Biaya Akhir</th>
@@ -225,7 +227,7 @@
                                         <table class="w-full text-left text-sm border-collapse bg-white">
                                             <thead class="bg-slate-100/50 border-y border-slate-200 text-[11px] uppercase tracking-wider font-semibold text-slate-500 shadow-inner">
                                                 <tr>
-                                                    <th class="px-6 py-3 text-left font-semibold w-[12%]">NO. SPJ</th>
+                                                    <th class="px-6 py-3 text-left font-semibold w-[12%]">NO. SPD</th>
                                                     <th class="px-6 py-3 text-left font-semibold w-[28%]">Nama Pegawai & Kontak</th>
                                                     <th class="px-6 py-3 text-left font-semibold w-[20%]">Kelengkapan</th>
                                                     <th class="px-6 py-3 text-right font-semibold w-[25%]">Total Biaya</th>
@@ -233,12 +235,12 @@
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-slate-100">
-                                                {#each record.employeesList as empRecord, index}
+                                                {#each record.employeesList as empRecord}
                                                     <tr class="hover:bg-slate-50/50 transition-colors">
                                                         <td class="px-6 py-4 align-middle">
                                                             <div class="flex items-center gap-3 pl-2">
                                                                 <div class="w-2 h-2 rounded-full bg-slate-300 shrink-0"></div>
-                                                                <div class="font-mono font-bold text-slate-700">{String(index + 1).padStart(3, '0')}</div>
+                                                                <div class="font-mono font-bold text-slate-700">{String(recordToIndexMap.get(empRecord.id) || 0).padStart(3, '0')}</div>
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle">
@@ -341,42 +343,20 @@
                             <div class="flex flex-col divide-y divide-slate-100 bg-white">
                                 {#each record.employeesList as empRecord}
                                     <div class="p-4 flex flex-col gap-3">
+                                        <div class="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                            <span>NO. SPD: {String(recordToIndexMap.get(empRecord.id) || 0).padStart(3, '0')}</span>
+                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
+                                                {getStatusBadge(empRecord).label}
+                                            </span>
+                                        </div>
                                         <div class="flex justify-between items-start gap-2">
                                             <div class="flex flex-col">
                                                 <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Pegawai</span>
                                                 <div class="font-medium text-sm text-slate-900 leading-tight">{empRecord.employee?.name || '-'}</div>
-                                                <div class="text-xs text-slate-500 mb-2">
-                                                    {#if empRecord.employee?.jabatan}
-                                                        <div class="font-medium text-slate-700">{empRecord.employee.jabatan}</div>
-                                                    {/if}
-                                                    {#if (empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-') || (empRecord.employee?.golongan && empRecord.employee.golongan !== '-') || (empRecord.employee?.rank && empRecord.employee.rank !== '-')}
-                                                        <div class="mt-0.5">
-                                                            {#if (empRecord.employee?.pangkat && empRecord.employee.pangkat !== '-') && (empRecord.employee?.golongan && empRecord.employee.golongan !== '-')}
-                                                                {empRecord.employee.pangkat} ({empRecord.employee.golongan})
-                                                            {:else}
-                                                                {(empRecord.employee?.pangkat !== '-' ? empRecord.employee?.pangkat : null) || (empRecord.employee?.golongan !== '-' ? empRecord.employee?.golongan : null) || (empRecord.employee?.rank !== '-' ? empRecord.employee?.rank : '')}
-                                                            {/if}
-                                                        </div>
-                                                    {/if}
-                                                </div>
                                             </div>
                                             <span class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
                                                 {getStatusBadge(empRecord).label}
                                             </span>
-                                        </div>
-
-                                        <div class="flex flex-col gap-3 border-t border-slate-50 pt-3">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Total Biaya</span>
-                                                <span class="font-mono font-bold text-blue-600 text-sm">
-                                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(empRecord.totalCost || 0)}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-2 w-full">
-                                                <button class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm flex-1" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
-                                                    {empRecord.status === 'Approved' ? 'Detail & Edit' : 'Review'}
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 {/each}

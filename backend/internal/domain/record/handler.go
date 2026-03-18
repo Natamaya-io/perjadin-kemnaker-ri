@@ -121,19 +121,24 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	if len(record.EmployeeIDs) > 0 {
 		var createdRecords []models.TravelRecord
 		for _, empID := range record.EmployeeIDs {
+			// Create a deep copy of the base record
 			newRecord := record
 			newRecord.ID = uuid.Nil
 			newRecord.EmployeeID = empID
 			newRecord.CreatorID = creatorID
 			newRecord.EmployeeIDs = nil
+			
+			// Crucial: Copy locations to prevent sharing slices between records
+			if len(record.Locations) > 0 {
+				newRecord.Locations = make([]models.TravelLocation, len(record.Locations))
+				copy(newRecord.Locations, record.Locations)
+			}
 
 			if err := h.svc.CreateRecord(&newRecord); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			go h.notifyEmployee(&newRecord)
 			createdRecords = append(createdRecords, newRecord)
-
-
 		}
 		return c.JSON(http.StatusCreated, createdRecords)
 	}

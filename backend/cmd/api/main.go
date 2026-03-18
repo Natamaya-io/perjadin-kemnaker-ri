@@ -91,7 +91,7 @@ func main() {
 	// 5. Seed Data (if enabled)
 	if os.Getenv("SEED_DB") == "true" {
 		sugar.Info("Seeding database...")
-		seeder.Seed(db)
+		seeder.Seed(db, rdb)
 	}
 
 	// 6. Initialize Layers

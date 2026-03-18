@@ -43,22 +43,22 @@ func (s *service) GenerateSpdNumber() (string, error) {
 	}
 
 	if latestSpd == "" {
-		return "ID-SPJ-001", nil
+		return "ID-SPD-001", nil
 	}
 
-	// Extract the number part from "ID-SPJ-XXX"
+	// Extract the number part from "ID-SPD-XXX"
 	parts := strings.Split(latestSpd, "-")
 	if len(parts) != 3 {
-		return "ID-SPJ-001", nil
+		return "ID-SPD-001", nil
 	}
 
 	numStr := parts[2]
 	num, err := strconv.Atoi(numStr)
 	if err != nil {
-		return "ID-SPJ-001", nil
+		return "ID-SPD-001", nil
 	}
 
-	return fmt.Sprintf("ID-SPJ-%03d", num+1), nil
+	return fmt.Sprintf("ID-SPD-%03d", num+1), nil
 }
 
 func (s *service) invalidateCache(ctx context.Context, pattern string) {

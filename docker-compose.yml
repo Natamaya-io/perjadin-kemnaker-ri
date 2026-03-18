@@ -12,7 +12,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-Yuxt2MaJxNhpfvJzCyNEbVTG4JgtpwXH}
       - POSTGRES_DB=${DB_NAME:-perjadin_db}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -78,7 +78,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}_gotenberg
     shm_size: "2g"
     ports:
-      - "3000"
+      - "3001:3000"
     restart: unless-stopped
     command:
       - "gotenberg"

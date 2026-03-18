@@ -30,7 +30,7 @@
             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs tracking-wider border-b border-slate-100">
                 <tr>
                     {#if isProtokol}
-                        <th class="px-6 py-4 font-medium">Nomor SPJ</th>
+                        <th class="px-6 py-4 font-medium">Nomor SPD</th>
                         <th class="px-6 py-4 font-medium">Tujuan & Lokasi</th>
                         <th class="px-6 py-4 font-medium">Tanggal</th>
                         <th class="px-6 py-4 font-medium text-center">Status</th>

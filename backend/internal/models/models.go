@@ -56,6 +56,7 @@ type TravelRecord struct {
 	// Documents
 	SuratTugasPath   string `json:"suratTugasPath"`
 	SuratTugasNumber string `json:"suratTugasNumber"`
+	SuratTugasDate   time.Time `json:"suratTugasDate"`
 
 	// Relationships
 	Cost   *TravelCost   `json:"costs,omitempty"`

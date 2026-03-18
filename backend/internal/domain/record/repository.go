@@ -148,6 +148,7 @@ func mapDBRecord(dbr db.TravelRecord) models.TravelRecord {
 		TotalCost:        fromNullFloat(dbr.TotalCost),
 		SuratTugasPath:   fromNullString(dbr.SuratTugasPath),
 		SuratTugasNumber: fromNullString(dbr.SuratTugasNumber),
+		SuratTugasDate:   fromNullTime(dbr.SuratTugasDate),
 	}
 }
 
@@ -257,19 +258,19 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 		TotalCost:        toNullFloat(record.TotalCost),
 		SuratTugasPath:   toNullString(record.SuratTugasPath),
 		SuratTugasNumber: toNullString(record.SuratTugasNumber),
+		SuratTugasDate:   toNullTime(record.SuratTugasDate),
 	})
 	if err != nil {
 		return err
 	}
 	
-	// Preserve locations before mapping
-	locations := record.Locations
+	// Preserve locations before mapping (mapDBRecord might clear them as they aren't in the DB TravelRecord struct)
+	originalLocations := record.Locations
 	*record = mapDBRecord(dbr)
-	record.Locations = locations
+	record.Locations = originalLocations
 
-	// Create locations
+	// Create locations - only if they don't already exist or as a clean batch
 	for _, loc := range record.Locations {
-		// Always generate a new ID for the join table record to avoid conflicts
 		locID := uuid.New()
 		_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
 			ID:             locID,
@@ -484,6 +485,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 		TotalCost:        toNullFloat(record.TotalCost),
 		SuratTugasPath:   toNullString(record.SuratTugasPath),
 		SuratTugasNumber: toNullString(record.SuratTugasNumber),
+		SuratTugasDate:   toNullTime(record.SuratTugasDate),
 	})
 	if err != nil {
 		return err
