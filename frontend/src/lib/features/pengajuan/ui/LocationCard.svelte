@@ -3,8 +3,9 @@
     import Label from '$lib/shared/ui/label/Label.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
-    import SelectNew from '$lib/shared/ui/select/Select.svelte'; // Keeping imports consistent
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
+    import { toTitleCase } from '$lib/shared/utils/utils';
+    import regenciesData from '$lib/shared/assets/regencies.json';
 
     export let locations = [];
     export let purpose = '';
@@ -25,6 +26,12 @@
     /** @param {number} index */
     function removeLocation(index) {
         dispatch('remove', index);
+    }
+
+    /** @param {string} provinceName */
+    function getRegencies(provinceName) {
+        const found = regenciesData.find(p => p.province === provinceName.toUpperCase());
+        return found ? found.regencies : [];
     }
 </script>
 
@@ -58,17 +65,26 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <Label class="text-slate-600 text-sm">Lokasi Dinas (Kab/Kota)</Label>
-                            <Input placeholder="Contoh: Surabaya" bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} />
-                        </div>
-                        <div class="space-y-2">
                             <Label class="text-slate-600 text-sm">Provinsi *</Label>
-                            <Select bind:value={loc.province} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly}>
+                            <Select bind:value={loc.province} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} on:change={() => loc.location = ''}>
                                 <option value="" disabled selected>Pilih Provinsi</option>
                                 {#each provinces as prov}
                                     <option value={prov.name}>{prov.name}</option>
                                 {/each}
                             </Select>
+                        </div>
+                        <div class="space-y-2">
+                            <Label class="text-slate-600 text-sm">Lokasi Dinas (Kab/Kota)</Label>
+                            {#if loc.province && getRegencies(loc.province).length > 0}
+                                <Select bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly}>
+                                    <option value="" disabled selected>Pilih Kab/Kota</option>
+                                    {#each getRegencies(loc.province) as regency}
+                                        <option value={toTitleCase(regency)}>{toTitleCase(regency)}</option>
+                                    {/each}
+                                </Select>
+                            {:else}
+                                <Input placeholder="Pilih provinsi terlebih dahulu" bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly || !loc.province} />
+                            {/if}
                         </div>
                     </div>
 
