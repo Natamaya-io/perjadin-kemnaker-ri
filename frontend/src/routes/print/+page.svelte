@@ -360,12 +360,40 @@
             {#if type === 'laporan' || type === 'gabungan'}
                 <div class="document-section" style="page-break-after: always; break-after: page;">
                     <!-- Kop Surat Laporan -->
-                    <div class="flex items-start justify-center gap-6 border-b-[3px] border-black pb-4 mb-8">
-                        <img src="/kemnaker-ri.webp" alt="Logo Kemnaker" class="h-24 w-auto object-contain" />
-                        <div class="text-center flex-1 pt-1">
-                            <h2 class="text-xl font-bold uppercase tracking-wide leading-tight text-black">KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA<br/>SEKRETARIAT JENDERAL</h2>
-                            <p class="text-[11px] mt-2 leading-tight text-black">Jalan Jenderal Gatot Subroto Kaveling 51 Jakarta Selatan 12950 Telepon (021) 5255685 , Faximile 5256559</p>
-                            <p class="text-[11px] leading-tight text-black">Laman: http: //www.kemnaker.go.id; Surel: persuratan@kemnaker.go.id</p>
+                    <div class="flex items-center justify-center gap-4 border-b-[3px] border-black pb-4 mb-8">
+                        <div class="flex flex-col items-center">
+                            <img src="/kemnaker-ri.webp" alt="Logo Kemnaker" class="h-20 w-auto object-contain" />
+                            <span class="text-[10px] font-bold mt-1 tracking-wider text-[#1e3a5f]">KEMNAKER</span>
+                        </div>
+                        
+                        <!-- Vertical Divider Line -->
+                        <div class="w-[2.5px] h-24 bg-[#1e3a5f]"></div>
+                        
+                        <div class="flex-1 pt-1">
+                            <h2 class="text-[22px] font-bold uppercase tracking-tight leading-none text-black">KEMENTERIAN KETENAGAKERJAAN REPUBLIK INDONESIA</h2>
+                            <h3 class="text-[26px] font-bold uppercase tracking-tight leading-tight text-[#005792] mb-1">SEKRETARIAT JENDERAL</h3>
+                            <p class="text-[11px] font-medium leading-tight text-black italic">Jalan Jenderal Gatot Subroto Kaveling 51, Kelurahan Kuningan Timur, Kecamatan Setiabudi, Kota Jakarta Selatan, Provinsi DKI Jakarta 12950</p>
+                            
+                            <div class="flex items-center gap-6 mt-1">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-4 h-4 rounded-full bg-[#005792] flex items-center justify-center text-white">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-black">www.kemnaker.go.id</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-4 h-4 rounded-full bg-[#005792] flex items-center justify-center text-white">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-black">persuratan@kemnaker.go.id</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-4 h-4 rounded-full bg-[#005792] flex items-center justify-center text-white">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-black">1500630</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
