@@ -22,6 +22,17 @@ export function formatCurrency(amount: number) {
     }).format(amount);
 }
 
+export function toTitleCase(str: string) {
+    if (!str) return '';
+    return str.split(' ').map(word => {
+        if (!word) return '';
+        // Special case for DKI, DI
+        const upper = word.toUpperCase();
+        if (upper === 'DKI' || upper === 'DI' || upper === 'NTB' || upper === 'NTT' || upper === 'RI') return upper;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+}
+
 export function getStatusBadge(record: any) {
     if (!record) return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
 
