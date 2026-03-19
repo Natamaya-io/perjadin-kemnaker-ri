@@ -296,7 +296,7 @@
                                             <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''}>
                                                 <option value="" disabled>Pilih Provinsi</option>
                                                 {#each provinces as prov}
-                                                    <option value={prov.name}>{prov.name}</option>
+                                                    <option value={prov.name}>{toTitleCase(prov.name)}</option>
                                                 {/each}
                                             </Select>
                                         </div>
