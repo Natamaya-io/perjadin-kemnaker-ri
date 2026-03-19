@@ -12,11 +12,9 @@ frontend/build
 .DS_Store
 Thumbs.db
 
-# Env
+# Env (Safety net for Doppler users)
 .env
 .env.*
-!.env.example
-!.env.test
 
 # Vite
 vite.config.js.timestamp-*

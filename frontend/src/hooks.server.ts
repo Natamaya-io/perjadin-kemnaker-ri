@@ -2,37 +2,46 @@ import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Proxy request ke backend untuk path /api dan /uploads
 	if (event.url.pathname.startsWith('/api') || event.url.pathname.startsWith('/uploads')) {
 		const target = env.INTERNAL_API_URL || 'http://backend:8081';
 		const url = `${target}${event.url.pathname}${event.url.search}`;
 
-		// Filter headers
+		// Persiapkan headers, hapus header yang bisa menyebabkan masalah proxy
 		const headers = new Headers(event.request.headers);
 		headers.delete('host');
 		headers.delete('connection');
-		// Remove origin to allow backend to accept request from "server" if strict
-		// headers.delete('origin'); 
 
 		try {
-			const options: RequestInit = {
+			// Gunakan clone() agar request asli tetap tersedia jika dibutuhkan SvelteKit
+			const requestClone = event.request.clone();
+			
+			const fetchOptions: RequestInit = {
 				method: event.request.method,
 				headers: headers,
-				// @ts-ignore
-				body: event.request.method !== 'GET' && event.request.method !== 'HEAD' ? event.request.body : undefined,
+				// duplex: 'half' wajib ada untuk mem-proxy body stream di Node.js
 				// @ts-ignore
 				duplex: 'half'
 			};
 
-			const response = await fetch(url, options);
+			if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
+				fetchOptions.body = requestClone.body;
+			}
 
-			return new Response(response.body, {
+			const response = await fetch(url, fetchOptions);
+
+			// Ambil body sebagai ArrayBuffer untuk memastikan integritas data (terutama file upload)
+			const responseData = await response.arrayBuffer();
+
+			return new Response(responseData, {
 				status: response.status,
 				statusText: response.statusText,
 				headers: response.headers
 			});
-		} catch (err) {
-			console.error('Proxy Error:', err);
-			return new Response('Proxy Error', { status: 502 });
+		} catch (err: any) {
+			// Log ini akan muncul di 'podman logs <frontend_container>'
+			console.error(`[Proxy Error] ${event.request.method} ${url} ->`, err.message);
+			return new Response(`Proxy Error: ${err.message}`, { status: 502 });
 		}
 	}
 

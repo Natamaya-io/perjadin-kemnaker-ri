@@ -100,7 +100,7 @@ services:
     environment:
       - PUBLIC_API_URL=${PUBLIC_API_URL}
       - INTERNAL_API_URL=${INTERNAL_API_URL}
-      - VITE_API_URL=${PUBLIC_API_URL}
+      - VITE_API_URL=${VITE_API_URL:-/api/v1}
       - BODY_SIZE_LIMIT=52428800
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

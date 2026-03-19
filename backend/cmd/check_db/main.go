@@ -13,7 +13,7 @@ func main() {
 	cfg := config.LoadConfig()
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		"localhost", cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.Port, cfg.Database.SSLMode)
+		"localhost", cfg.Database.User, cfg.Database.Password, cfg.Database.Name, "5433", cfg.Database.SSLMode)
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
