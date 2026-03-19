@@ -160,7 +160,7 @@
                             <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
                             <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
                             <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status Laporan</TableHead>
-                            <TableHead class="w-[140px] min-w-[140px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
+                            <TableHead class="w-[200px] min-w-[200px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
