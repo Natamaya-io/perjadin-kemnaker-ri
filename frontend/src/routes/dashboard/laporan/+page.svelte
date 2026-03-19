@@ -160,7 +160,7 @@
                             <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
                             <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
                             <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status Laporan</TableHead>
-                            <TableHead class="w-[200px] min-w-[200px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
+                            <TableHead class="w-[150px] min-w-[150px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -209,7 +209,7 @@
                                         <div class="flex items-center justify-center gap-2">
                                             <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="flex-1">
                                                 <button 
-                                                    class={cn("w-full px-2 py-1.5 rounded-lg text-[11px] font-medium shadow-sm transition-all border flex items-center justify-center gap-1.5", 
+                                                    class={cn("w-full px-2 py-1.5 rounded-lg text-[11px] font-medium shadow-sm transition-all border flex items-center justify-center gap-1.5 whitespace-nowrap", 
                                                         record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
                                                         ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-blue-600" 
                                                         : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
@@ -217,7 +217,7 @@
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan & Rincian Biaya')}
+                                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
                                                 </button>
                                             </a>
                                         </div>
