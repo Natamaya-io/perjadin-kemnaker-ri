@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
     
     // Components
     import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
@@ -73,11 +73,16 @@
             return matchSearch && matchStatus && matchDate;
         })
         .sort((a, b) => {
-            if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-            if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            if (sortOption === 'cost-desc') return b.totalCost - a.totalCost;
-            if (sortOption === 'cost-asc') return a.totalCost - b.totalCost;
-            return 0;
+            let diff = 0;
+            if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+            else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+            else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
+            else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+            
+            if (diff === 0) {
+                return (b.spd || '').localeCompare(a.spd || '');
+            }
+            return diff;
         });
 
     $: groupedRecords = filteredRecords.reduce((acc, record) => {
@@ -91,7 +96,18 @@
         return acc;
     }, {});
 
-    $: uniqueRecords = Object.values(groupedRecords);
+    $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
+        let diff = 0;
+        if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
+        else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+        
+        if (diff === 0) {
+            return (b.spd || '').localeCompare(a.spd || '');
+        }
+        return diff;
+    });
 
     function openEditModal(record) {
         selectedRecord = record;
@@ -145,7 +161,7 @@
         window.open(`/print?type=rincian&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
     }
     onMount(() => {
-        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag' && $userStore.role !== 'keuangan') {
+        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
             goto('/dashboard');
         }
     });
@@ -168,7 +184,7 @@
             bind:endDate
         />
     </div>
-    {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+    {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <!-- Desktop Table View -->
@@ -198,7 +214,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-3">
-                                    <div class="text-sm text-slate-800 font-medium line-clamp-1" title="{record.location}, {record.province}">{record.location}, {record.province}</div>
+                                    <div class="text-sm text-slate-800 font-medium line-clamp-1" title="{toTitleCase(record.location)}, {toTitleCase(record.province)}">{toTitleCase(record.location)}, {toTitleCase(record.province)}</div>
                                 </td>
                                 <td class="px-6 py-3 whitespace-nowrap">
                                     <div class="text-xs text-slate-500 flex items-center gap-1.5">
@@ -324,7 +340,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    <span class="truncate">{record.location}, {record.province}</span>
+                                    <span class="truncate">{toTitleCase(record.location)}, {toTitleCase(record.province)}</span>
                                 </div>
                                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-0 mt-1">
                                     <div class="flex items-center gap-1.5 text-slate-500 min-w-0">
@@ -377,7 +393,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <h3 class="text-lg font-medium text-slate-900">Akses Dibatasi</h3>
-            <p class="text-slate-500 max-w-sm mt-1">Halaman ini khusus untuk Admin Keuangan.</p>
+            <p class="text-slate-500 max-w-sm mt-1">Halaman ini khusus untuk Admin.</p>
         </div>
     {/if}
 

@@ -24,10 +24,10 @@
     }
 
     $: records = $recordsStore;
-    $: myRecords = ($userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag') ? records : records.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email));
+    $: myRecords = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : records.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email));
 
     // Stats Logic (Scoped to Role)
-    $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag') ? records : myRecords;
+    $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : myRecords;
 
     // Group by SPD to avoid counting multiple employees in the same trip as multiple trips
     $: uniqueTrips = Object.values(statsSource.reduce((acc, r) => {
@@ -93,7 +93,7 @@
                 </Button>
             </a>
             {/if}
-            {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+            {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
                     <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl backdrop-blur-sm transition-transform active:scale-95 whitespace-nowrap">
                         Kelola Keuangan
@@ -104,7 +104,7 @@
     </WelcomeBanner>
 
     <!-- 1.5 Alert Penugasan Baru (Khusus Protokol) -->
-    {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+    {#if $userStore.role !== 'super_admin' && $userStore.role !== 'kasubag'}
         {#if newAssignments > 0}
         <div class="bg-gradient-to-r from-rose-500 to-pink-600 rounded-2xl p-6 shadow-lg shadow-rose-500/20 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden mb-8 animate-in fade-in slide-in-from-bottom-2">
             <div class="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
@@ -174,7 +174,7 @@
                 </div>
             </StatCard>
 
-            {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+            {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <StatCard 
                 title="Total Anggaran" 
                 value={formatIDR(totalCost)} 
@@ -196,7 +196,6 @@
             </StatCard>
             {/if}
 
-            {#if $userStore.role !== 'keuangan'}
             <StatCard 
                 title="Sedang Berjalan" 
                 value={activeTrips} 
@@ -235,14 +234,13 @@
                 </div>
             
                 <div slot="action">
-                    {#if pendingReports > 0 && $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+                    {#if pendingReports > 0 && $userStore.role !== 'super_admin' && $userStore.role !== 'kasubag'}
                     <a href="/dashboard/laporan?from=notif" class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold tracking-wide text-white bg-purple-500 hover:bg-purple-600 rounded-lg shadow-sm transition-colors shadow-purple-500/20 hover:shadow-purple-500/40">
                         LIHAT <span class="sr-only">Laporan Pending</span>
                     </a>
                     {/if}
                 </div>
             </StatCard>
-            {/if}
         </StatsGrid>
         
         <!-- 2.5 Charts Section (New) -->
@@ -255,8 +253,8 @@
 
         <!-- 3. Recent Activity Section (Organism) -->
         <RecentActivityCard 
-            title={$userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag' ? "Riwayat Terbaru" : "Aktivitas Terbaru"}
-            viewAllLink={$userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag' ? "/dashboard/admin/perdin" : ""}
+            title={$userStore.role !== 'super_admin' && $userStore.role !== 'kasubag' ? "Riwayat Terbaru" : "Aktivitas Terbaru"}
+            viewAllLink={$userStore.role === 'super_admin' || $userStore.role === 'kasubag' ? "/dashboard/admin/perdin" : ""}
         >
             {#each recentRecords as record (record.id)}
                 <ActivityItem {record} {formatIDR} />
@@ -268,7 +266,7 @@
         </RecentActivityCard>
 
         <!-- 4. Timeline Calendar (Protokol User) -->
-        {#if $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag'}
+        {#if $userStore.role !== 'super_admin' && $userStore.role !== 'kasubag'}
             <div class="pt-4">
                 <TimelineCalendar records={myUniqueTrips} />
             </div>

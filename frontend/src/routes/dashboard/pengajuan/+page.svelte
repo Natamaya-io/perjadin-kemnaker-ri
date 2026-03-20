@@ -5,7 +5,7 @@
     import { goto } from '$app/navigation';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
     
     import Table from '$lib/shared/ui/table/Table.svelte';
     import TableHeader from '$lib/shared/ui/table/TableHeader.svelte';
@@ -81,11 +81,16 @@
     }, {});
     
     $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
-        if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-        if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        if (sortOption === 'cost-desc') return b.totalCost - a.totalCost;
-        if (sortOption === 'cost-asc') return a.totalCost - b.totalCost;
-        return 0;
+        let diff = 0;
+        if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
+        else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+        
+        if (diff === 0) {
+            return (b.spd || '').localeCompare(a.spd || '');
+        }
+        return diff;
     });
 
     let isReviewOpen = false;
@@ -195,7 +200,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        {record.location}, {record.province}
+                                        {toTitleCase(record.location)}, {toTitleCase(record.province)}
                                     </div>
                                 </TableCell>
                                 <TableCell class="py-4 align-top text-xs text-slate-600">

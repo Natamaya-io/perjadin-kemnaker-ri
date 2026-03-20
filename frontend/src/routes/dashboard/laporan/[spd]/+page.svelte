@@ -18,7 +18,7 @@
     import { toast } from '$lib/shared/stores/toast';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { getInitials } from '$lib/shared/utils/utils';
+    import { getInitials, toTitleCase } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
     
@@ -488,6 +488,29 @@
         uploadedFiles = uploadedFiles.filter((_, i) => i !== index);
     }
 
+    async function saveSuratTugasInfoOnly() {
+        if (!manualSuratTugasNumber) {
+            toast.error('Nomor Surat Tugas tidak boleh kosong.');
+            return;
+        }
+
+        try {
+            const updatePromises = recordsList.map(r => {
+                return updateRecord(r.id, {
+                    suratTugasNumber: manualSuratTugasNumber,
+                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined
+                });
+            });
+            await Promise.all(updatePromises);
+
+            toast.success('Informasi Surat Tugas berhasil diperbarui.');
+            // Refresh record logic if needed, but the store usually handles it
+        } catch (error) {
+            toast.error('Gagal memperbarui informasi Surat Tugas.');
+            console.error('Save ST info error:', error);
+        }
+    }
+
     async function saveDraftLaporan() {
         if (!recordsList.length) return;
         
@@ -692,7 +715,17 @@
                              <!-- Grid for Surat Tugas & Date -->
                              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                  <div>
-                                     <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nomor Surat Tugas</span>
+                                     <div class="flex justify-between items-center mb-1.5">
+                                         <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Nomor Surat Tugas</span>
+                                         {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed') && (manualSuratTugasNumber !== (record.suratTugasNumber || ''))}
+                                             <button 
+                                                 on:click={saveSuratTugasInfoOnly}
+                                                 class="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
+                                             >
+                                                 Simpan
+                                             </button>
+                                         {/if}
+                                     </div>
                                      {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed')}
                                          <input 
                                              type="text" 
@@ -707,7 +740,17 @@
                                      {/if}
                                  </div>
                                  <div>
-                                     <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tanggal Surat Tugas</span>
+                                     <div class="flex justify-between items-center mb-1.5">
+                                         <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Tanggal Surat Tugas</span>
+                                         {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed') && (manualSuratTugasDate !== (record.suratTugasDate && record.suratTugasDate !== '0001-01-01T00:00:00Z' ? new Date(record.suratTugasDate).toISOString().split('T')[0] : ''))}
+                                             <button 
+                                                 on:click={saveSuratTugasInfoOnly}
+                                                 class="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
+                                             >
+                                                 Simpan
+                                             </button>
+                                         {/if}
+                                     </div>
                                      {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (record.reportStatus !== 'Completed')}
                                          <input 
                                              type="date" 
@@ -738,7 +781,7 @@
                                      <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Lokasi Tujuan</span>
                                      {#each getLocations(record) as loc}
                                          <div class="font-bold text-lg text-slate-800 leading-snug mb-1 last:mb-0">
-                                             {loc.location ? loc.location + ', ' : ''}{loc.province}
+                                             {loc.location ? toTitleCase(loc.location) + ', ' : ''}{toTitleCase(loc.province)}
                                          </div>
                                      {/each}
                                  </div>
@@ -1017,7 +1060,7 @@
                                                             )}
                                                             on:click={() => { localCosts[empId].selectedLocationIndex = idx; localCosts = {...localCosts}; }}
                                                         >
-                                                            {loc.province || empRecord.province}
+                                                            {loc.province ? toTitleCase(loc.province) : toTitleCase(empRecord.province)}
                                                         </button>
                                                     {/each}
                                                 </div>
@@ -1032,7 +1075,7 @@
 
                                                 <!-- Mode Transportasi -->
                                                 <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
-                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({loc.province})</Label>
+                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({toTitleCase(loc.province || empRecord.province)})</Label>
                                                     <Select bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
                                                         <option value="Pesawat">Pesawat Udara</option>
                                                         <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
@@ -1047,7 +1090,7 @@
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
-                                                            Uang Harian (SBM) - {loc.province || empRecord.province}
+                                                            Uang Harian (SBM) - {toTitleCase(loc.province || empRecord.province)}
                                                         </h4>
                                                         <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(sbmTotal)}</span>
                                                     </div>

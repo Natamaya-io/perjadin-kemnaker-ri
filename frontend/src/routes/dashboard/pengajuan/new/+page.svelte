@@ -21,6 +21,7 @@
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
+    import GlobalLoader from '$lib/shared/ui/loader/GlobalLoader.svelte';
 
     $: selectedType = $page.url.searchParams.get('type');
 
@@ -258,9 +259,7 @@
             
             // WA Notification is now handled automatically by the backend via Fonnte API.
             
-            if ($userStore.role === 'keuangan') {
-                goto('/dashboard/admin/perdin');
-            } else if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') {
+            if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') {
                 goto('/dashboard/pengajuan');
             } else {
                 goto('/dashboard');
@@ -441,6 +440,10 @@
             confirmText="Ya, Simpan"
             onConfirm={processSubmit}
         />
+    {/if}
+
+    {#if isSubmitting}
+        <GlobalLoader />
     {/if}
 </div>
 

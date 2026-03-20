@@ -43,24 +43,24 @@
     const menuGroups = [
         {
             items: [
-                { label: "Dashboard", href: "/dashboard", icon: icons.dashboard, role: ['super_admin', 'keuangan', 'kasubag', 'protokol'] }
+                { label: "Dashboard", href: "/dashboard", icon: icons.dashboard, role: ['super_admin', 'kasubag', 'protokol'] }
             ]
         },
         {
             header: "Perjalanan Dinas",
             items: [
                 { label: "Pengajuan Perjalanan", href: "/dashboard/pengajuan", icon: icons.plus, role: ['super_admin', 'kasubag'] },
-                { label: "Rekap & Kalkulasi", href: "/dashboard/admin/perdin", icon: icons.cash, role: ['super_admin', 'keuangan', 'kasubag'] },
+                { label: "Rekap & Kalkulasi", href: "/dashboard/admin/perdin", icon: icons.cash, role: ['super_admin', 'kasubag'] },
                 { label: "Laporan Perjadin", href: "/dashboard/laporan", icon: icons.map, role: ['protokol', 'super_admin', 'kasubag'] }
             ]
         },
         {
             header: "Keuangan & Umum",
             items: [
-                { label: "VIP Bandara Halim", href: "/dashboard/vip-bandara", icon: icons.star, role: ['super_admin', 'keuangan', 'kasubag'] },
-                { label: "Total Penarikan", href: "/dashboard/total-penarikan", icon: icons.cash, role: ['super_admin', 'keuangan', 'kasubag'] },
-                { label: "Sewa Kendaraan", href: "/dashboard/sewa-kendaraan", icon: icons.car, role: ['super_admin', 'keuangan', 'kasubag'] },
-                { label: "Pemeliharaan", href: "/dashboard/pemeliharaan", icon: icons.wrench, role: ['super_admin', 'keuangan', 'kasubag'] }
+                { label: "VIP Bandara Halim", href: "/dashboard/vip-bandara", icon: icons.star, role: ['super_admin', 'kasubag'] },
+                { label: "Total Penarikan", href: "/dashboard/total-penarikan", icon: icons.cash, role: ['super_admin', 'kasubag'] },
+                { label: "Sewa Kendaraan", href: "/dashboard/sewa-kendaraan", icon: icons.car, role: ['super_admin', 'kasubag'] },
+                { label: "Pemeliharaan", href: "/dashboard/pemeliharaan", icon: icons.wrench, role: ['super_admin', 'kasubag'] }
             ]
         },
         {

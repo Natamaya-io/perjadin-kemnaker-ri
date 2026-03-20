@@ -19,7 +19,7 @@ type User struct {
 	Email        string `json:"email"`
 	Password     string `json:"-"` // Never return password
 	Name         string `json:"name"`
-	Role         string `json:"role"` // super_admin, keuangan, kasubag, protokol
+	Role         string `json:"role"` // super_admin, kasubag, protokol
 	NIP          string `json:"nip"`
 	NomorHP      string `json:"nomorHp"`
 	Pangkat      string `json:"pangkat"`

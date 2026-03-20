@@ -2,8 +2,7 @@
     import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
     import { onMount } from 'svelte';
     import { userStore } from '$lib/features/auth/store';
-    import { getInitials, getStatusBadge } from '$lib/shared/utils/utils';
-    import { cn } from '$lib/shared/utils/utils';
+    import { getInitials, getStatusBadge, toTitleCase, cn } from '$lib/shared/utils/utils';
 
     // Components
     import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
@@ -21,7 +20,7 @@
     import TripStepper from '$lib/features/dashboard/ui/roadmap/TripStepper.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
 
-    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag' || $userStore.role === 'protokol');
+    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'kasubag' || $userStore.role === 'protokol');
 
     // Filter & Sort State
     let searchQuery = '';
@@ -184,7 +183,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        {record.location}, {record.province}
+                                        {toTitleCase(record.location)}, {toTitleCase(record.province)}
                                     </div>
                                 </TableCell>
                                 <TableCell class="py-4 align-top text-xs text-slate-600">
@@ -210,14 +209,14 @@
                                             <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="flex-1">
                                                 <button 
                                                     class={cn("w-full px-2 py-1.5 rounded-lg text-[11px] font-medium shadow-sm transition-all border flex items-center justify-center gap-1.5 whitespace-nowrap", 
-                                                        record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
+                                                        record.reportStatus === 'Completed' || $userStore.role === 'kasubag'
                                                         ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-blue-600" 
                                                         : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
+                                                    {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
                                                 </button>
                                             </a>
                                         </div>
@@ -260,7 +259,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span class="line-clamp-2 leading-relaxed">{record.location}, {record.province}</span>
+                            <span class="line-clamp-2 leading-relaxed">{toTitleCase(record.location)}, {toTitleCase(record.province)}</span>
                         </div>
                     </div>
 
@@ -278,14 +277,14 @@
                             <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="flex-1">
                                 <button 
                                     class={cn("w-full py-2.5 rounded-lg text-[10px] sm:text-[11px] font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 border", 
-                                        record.reportStatus === 'Completed' || $userStore.role === 'kasubag' || $userStore.role === 'keuangan'
+                                        record.reportStatus === 'Completed' || $userStore.role === 'kasubag'
                                         ? "bg-white text-slate-700 border-slate-200 hover:bg-slate-50" 
                                         : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                    {$userStore.role === 'kasubag' || $userStore.role === 'keuangan' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan & Rincian Biaya')}
+                                    {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan & Rincian Biaya')}
                                 </button>
                             </a>
                         </div>
@@ -359,11 +358,11 @@
                             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Destinasi Utama</span>
                             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                                 <span class="font-bold text-slate-800 block text-sm leading-snug">
-                                    {selectedDetailRecord.province}
+                                    {toTitleCase(selectedDetailRecord.province)}
                                 </span>
                                 <span class="text-emerald-600 font-semibold text-xs mt-0.5 block flex items-center gap-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                                    {selectedDetailRecord.location}
+                                    {toTitleCase(selectedDetailRecord.location)}
                                 </span>
                             </div>
                         </div>

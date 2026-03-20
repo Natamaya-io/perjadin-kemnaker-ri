@@ -69,7 +69,7 @@
                             <Select bind:value={loc.province} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} on:change={() => loc.location = ''}>
                                 <option value="" disabled selected>Pilih Provinsi</option>
                                 {#each provinces as prov}
-                                    <option value={prov.name}>{toTitleCase(prov.name)}</option>
+                                    <option value={toTitleCase(prov.name)}>{toTitleCase(prov.name)}</option>
                                 {/each}
                             </Select>
                         </div>

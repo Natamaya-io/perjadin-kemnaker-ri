@@ -22,8 +22,8 @@
     const dispatch = createEventDispatcher();
 
     // The modal is read-only if the user is a kasubag or if the record is already Approved (meaning it's just for review/printing) or if overridden
-    // Allow 'keuangan' and 'super_admin' to edit even if Approved
-    $: isReadOnly = isReadOnlyOverride || $userStore.role === 'kasubag' || (record?.status === 'Approved' && $userStore.role !== 'keuangan' && $userStore.role !== 'super_admin');
+    // Allow 'super_admin' to edit even if Approved
+    $: isReadOnly = isReadOnlyOverride || $userStore.role === 'kasubag' || (record?.status === 'Approved' && $userStore.role !== 'super_admin');
 
     // Derived Calculations for SBM Uang Harian
     $: costBreakdown = (record?.locations && record.locations.length > 0 

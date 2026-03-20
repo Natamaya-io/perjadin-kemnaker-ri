@@ -4,7 +4,7 @@ export interface User {
     id: string | number;
     email: string;
     name: string;
-    role: 'super_admin' | 'keuangan' | 'kasubag' | 'protokol';
+    role: 'super_admin' | 'kasubag' | 'protokol';
     token?: string; // JWT for real API
     nip?: string;
     pangkat?: string;

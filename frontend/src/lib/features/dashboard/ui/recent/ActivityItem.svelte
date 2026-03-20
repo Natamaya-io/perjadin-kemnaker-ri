@@ -1,12 +1,12 @@
 <script>
-    import { getInitials, getStatusBadge } from '$lib/shared/utils/utils';
+    import { getInitials, getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
     import { userStore } from '$lib/features/auth/store';
 
     export let record;
     export let formatIDR;
 
     $: badge = getStatusBadge(record);
-    $: isProtokol = $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag';
+    $: isProtokol = $userStore.role !== 'super_admin' && $userStore.role !== 'kasubag';
 </script>
 
 <tr class="group hover:bg-slate-50/80 transition-all duration-200 cursor-default">
@@ -27,7 +27,7 @@
                     </svg>
                     {record.location}
                 </div>
-                <span class="text-xs text-slate-500 pl-5">{record.province}</span>
+                <span class="text-xs text-slate-500 pl-5">{toTitleCase(record.province)}</span>
             </div>
         </td>
 
@@ -74,7 +74,7 @@
                     </svg>
                     {record.location}
                 </div>
-                <span class="text-xs text-slate-500 pl-5">{record.province}</span>
+                <span class="text-xs text-slate-500 pl-5">{toTitleCase(record.province)}</span>
             </div>
         </td>
 

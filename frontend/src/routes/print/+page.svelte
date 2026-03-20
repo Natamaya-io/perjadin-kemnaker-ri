@@ -401,7 +401,14 @@
                     <div class="space-y-6">
                         <div class="text-center space-y-1 mb-8">
                             <h1 class="text-lg font-bold uppercase">LAPORAN</h1>
-                            <p class="text-base font-normal">Perjalanan Dinas ke {toTitleCase(record.location)}, {toTitleCase(record.province)}</p>
+                            <p class="text-base font-normal">
+                                Perjalanan Dinas ke 
+                                {#if record.locations && record.locations.length > 0}
+                                    {record.locations.map(loc => `${toTitleCase(loc.location)}, ${toTitleCase(loc.province)}`).join(' & ')}
+                                {:else}
+                                    {toTitleCase(record.location)}, {toTitleCase(record.province)}
+                                {/if}
+                            </p>
                             <p class="text-base font-normal">{new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
                         </div>
 
@@ -515,7 +522,13 @@
                                     <td class="border-l border-r border-black p-2 font-bold align-top">Transport PP</td>
                                     <td class="border-l border-r border-black p-2 align-top"></td>
                                     <td class="border-l border-r border-black p-2 align-top" rowspan="5">
-                                        Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} ke {toTitleCase(record.location)}, Provinsi {toTitleCase(record.province)} selama {Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} ({terbilang(Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}) Hari pada tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})};
+                                        Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} ke 
+                                        {#if record.locations && record.locations.length > 0}
+                                            {record.locations.map(loc => `${toTitleCase(loc.location)}, ${toTitleCase(loc.province)}`).join(' & ')}
+                                        {:else}
+                                            {toTitleCase(record.location)}, Provinsi {toTitleCase(record.province)}
+                                        {/if}
+                                        selama {Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} ({terbilang(Math.ceil((new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}) Hari pada tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})};
                                         </td>
                                         </tr>                                <tr>
                                     <td class="border-l border-r border-black p-2 text-center align-top">1</td>
@@ -728,7 +741,12 @@
                                     <div class="flex"><span class="w-4">a.</span> Maksud Perjalanan Dinas</div>
                                 </td>
                                 <td class="border-b border-black p-2 align-top">
-                                    Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} di {toTitleCase(record.location)}, Provinsi {toTitleCase(record.province)};
+                                    Biaya Perjalanan Dinas dalam rangka {record.purpose} kunjungan kerja {record.employee.name} di 
+                                    {#if record.locations && record.locations.length > 0}
+                                        {record.locations.map(loc => `${toTitleCase(loc.location)}, ${toTitleCase(loc.province)}`).join(' & ')}
+                                    {:else}
+                                        {toTitleCase(record.location)}, Provinsi {toTitleCase(record.province)}
+                                    {/if};
                                 </td>
                             </tr>
                             <tr>
@@ -747,7 +765,13 @@
                                 <td class="border-b border-black p-2 align-top">
                                     <div class="space-y-1">
                                         <div class="flex"><span class="w-6">a.</span> Jakarta</div>
-                                        <div class="flex"><span class="w-6">b.</span> {toTitleCase(record.location)}</div>
+                                        <div class="flex"><span class="w-6">b.</span> 
+                                            {#if record.locations && record.locations.length > 0}
+                                                {record.locations.map(loc => toTitleCase(loc.location)).join(' & ')}
+                                            {:else}
+                                                {toTitleCase(record.location)}
+                                            {/if}
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

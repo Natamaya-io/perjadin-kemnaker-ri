@@ -1,46 +1,47 @@
 import { writable } from 'svelte/store';
 import { api } from '$lib/shared/api';
 import { browser } from '$app/environment';
+import { toTitleCase } from '$lib/shared/utils/utils';
 
 export const PROVINCES = [
-    { name: "ACEH", luarKota: 360000 },
-    { name: "SUMATRA UTARA", luarKota: 370000 },
-    { name: "RIAU", luarKota: 370000 },
-    { name: "KEPULAUAN RIAU", luarKota: 370000 },
-    { name: "JAMBI", luarKota: 370000 },
-    { name: "SUMATRA BARAT", luarKota: 380000 },
-    { name: "SUMATRA SELATAN", luarKota: 380000 },
-    { name: "LAMPUNG", luarKota: 380000 },
-    { name: "BENGKULU", luarKota: 380000 },
-    { name: "BANGKA BELITUNG", luarKota: 410000 },
-    { name: "BANTEN", luarKota: 370000 },
-    { name: "JAWA BARAT", luarKota: 430000 },
-    { name: "DKI JAKARTA", luarKota: 530000 },
-    { name: "JAWA TENGAH", luarKota: 370000 },
-    { name: "DI YOGYAKARTA", luarKota: 420000 },
-    { name: "JAWA TIMUR", luarKota: 410000 },
-    { name: "BALI", luarKota: 480000 },
-    { name: "NUSA TENGGARA BARAT", luarKota: 440000 },
-    { name: "NUSA TENGGARA TIMUR", luarKota: 430000 },
-    { name: "KALIMANTAN BARAT", luarKota: 380000 },
-    { name: "KALIMANTAN TENGAH", luarKota: 360000 },
-    { name: "KALIMANTAN SELATAN", luarKota: 380000 },
-    { name: "KALIMANTAN TIMUR", luarKota: 430000 },
-    { name: "KALIMANTAN UTARA", luarKota: 430000 },
-    { name: "SULAWESI UTARA", luarKota: 370000 },
-    { name: "GORONTALO", luarKota: 370000 },
-    { name: "SULAWESI BARAT", luarKota: 410000 },
-    { name: "SULAWESI SELATAN", luarKota: 430000 },
-    { name: "SULAWESI TENGAH", luarKota: 370000 },
-    { name: "SULAWESI TENGGARA", luarKota: 380000 },
-    { name: "MALUKU", luarKota: 380000 },
-    { name: "MALUKU UTARA", luarKota: 430000 },
-    { name: "PAPUA", luarKota: 580000 },
-    { name: "PAPUA BARAT", luarKota: 480000 },
-    { name: "PAPUA BARAT DAYA", luarKota: 480000 },
-    { name: "PAPUA TENGAH", luarKota: 580000 },
-    { name: "PAPUA SELATAN", luarKota: 580000 },
-    { name: "PAPUA PEGUNUNGAN", luarKota: 580000 }
+    { name: "Aceh", luarKota: 360000 },
+    { name: "Sumatra Utara", luarKota: 370000 },
+    { name: "Riau", luarKota: 370000 },
+    { name: "Kepulauan Riau", luarKota: 370000 },
+    { name: "Jambi", luarKota: 370000 },
+    { name: "Sumatra Barat", luarKota: 380000 },
+    { name: "Sumatra Selatan", luarKota: 380000 },
+    { name: "Lampung", luarKota: 380000 },
+    { name: "Bengkulu", luarKota: 380000 },
+    { name: "Bangka Belitung", luarKota: 410000 },
+    { name: "Banten", luarKota: 370000 },
+    { name: "Jawa Barat", luarKota: 430000 },
+    { name: "DKI Jakarta", luarKota: 530000 },
+    { name: "Jawa Tengah", luarKota: 370000 },
+    { name: "DI Yogyakarta", luarKota: 420000 },
+    { name: "Jawa Timur", luarKota: 410000 },
+    { name: "Bali", luarKota: 480000 },
+    { name: "Nusa Tenggara Barat", luarKota: 440000 },
+    { name: "Nusa Tenggara Timur", luarKota: 430000 },
+    { name: "Kalimantan Barat", luarKota: 380000 },
+    { name: "Kalimantan Tengah", luarKota: 360000 },
+    { name: "Kalimantan Selatan", luarKota: 380000 },
+    { name: "Kalimantan Timur", luarKota: 430000 },
+    { name: "Kalimantan Utara", luarKota: 430000 },
+    { name: "Sulawesi Utara", luarKota: 370000 },
+    { name: "Gorontalo", luarKota: 370000 },
+    { name: "Sulawesi Barat", luarKota: 410000 },
+    { name: "Sulawesi Selatan", luarKota: 430000 },
+    { name: "Sulawesi Tengah", luarKota: 370000 },
+    { name: "Sulawesi Tenggara", luarKota: 380000 },
+    { name: "Maluku", luarKota: 380000 },
+    { name: "Maluku Utara", luarKota: 430000 },
+    { name: "Papua", luarKota: 580000 },
+    { name: "Papua Barat", luarKota: 480000 },
+    { name: "Papua Barat Daya", luarKota: 480000 },
+    { name: "Papua Tengah", luarKota: 580000 },
+    { name: "Papua Selatan", luarKota: 580000 },
+    { name: "Papua Pegunungan", luarKota: 580000 }
 ];
 
 export const STAKEHOLDERS = [
@@ -68,7 +69,7 @@ export async function loadMasterData() {
                 const rate = rates.find(r => r.province_id === p.id);
                 return {
                     id: p.id,
-                    name: p.name,
+                    name: toTitleCase(p.name),
                     luarKota: (rate && rate.outside_city_rate && rate.outside_city_rate.Valid) ? rate.outside_city_rate.Float64 : 0
                 };
             });
@@ -79,3 +80,4 @@ export async function loadMasterData() {
         console.error("Failed to load master data from API, using defaults", e);
     }
 }
+

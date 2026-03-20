@@ -6,7 +6,7 @@
 </script>
 
 <nav class="mobile-nav-root md:hidden sticky bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] flex-none print:hidden">
-    <div class="mobile-nav-grid grid {$userStore.role === 'super_admin' ? 'grid-cols-6' : ($userStore.role === 'kasubag' ? 'grid-cols-4' : 'grid-cols-3')} h-16 w-full">
+    <div class="mobile-nav-grid grid {$userStore.role === 'super_admin' ? 'grid-cols-5' : ($userStore.role === 'kasubag' ? 'grid-cols-4' : 'grid-cols-3')} h-16 w-full">
         
         <!-- Home Link -->
         <div class="nav-item-wrapper h-full w-full">
@@ -22,7 +22,6 @@
             </a>
         </div>
 
-        {#if $userStore.role !== 'keuangan'}
         <!-- Pengajuan Link -->
         <div class="nav-item-wrapper h-full w-full">
             <a href="/dashboard/pengajuan/new" class="nav-link flex flex-col items-center justify-center space-y-1 h-full w-full group {activeRoute.includes('/dashboard/pengajuan') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}">
@@ -36,9 +35,8 @@
                 </div>
             </a>
         </div>
-        {/if}
 
-        {#if $userStore.role === 'super_admin' || $userStore.role === 'keuangan' || $userStore.role === 'kasubag'}
+        {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
         <!-- Admin Link -->
         <div class="nav-item-wrapper h-full w-full">
             <a href="/dashboard/admin/perdin" class="nav-link flex flex-col items-center justify-center space-y-1 h-full w-full group {activeRoute.includes('/dashboard/admin/perdin') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}">

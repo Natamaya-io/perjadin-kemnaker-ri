@@ -12,13 +12,13 @@
         { path: '/dashboard/admin/users', roles: ['super_admin'] },
         { path: '/dashboard/pengajuan', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/pengajuan/new', roles: ['super_admin', 'kasubag'] },
-        { path: '/dashboard/admin/perdin', roles: ['super_admin', 'keuangan', 'kasubag'] },
-        { path: '/dashboard/billing-protokol', roles: ['protokol', 'super_admin', 'keuangan', 'kasubag'] },
+        { path: '/dashboard/admin/perdin', roles: ['super_admin', 'kasubag'] },
+        { path: '/dashboard/billing-protokol', roles: ['protokol', 'super_admin', 'kasubag'] },
         { path: '/dashboard/laporan', roles: ['protokol', 'super_admin', 'kasubag'] },
-        { path: '/dashboard/vip-bandara', roles: ['super_admin', 'keuangan', 'kasubag'] },
-        { path: '/dashboard/total-penarikan', roles: ['super_admin', 'keuangan', 'kasubag'] },
-        { path: '/dashboard/sewa-kendaraan', roles: ['super_admin', 'keuangan', 'kasubag'] },
-        { path: '/dashboard/pemeliharaan', roles: ['super_admin', 'keuangan', 'kasubag'] }
+        { path: '/dashboard/vip-bandara', roles: ['super_admin', 'kasubag'] },
+        { path: '/dashboard/total-penarikan', roles: ['super_admin', 'kasubag'] },
+        { path: '/dashboard/sewa-kendaraan', roles: ['super_admin', 'kasubag'] },
+        { path: '/dashboard/pemeliharaan', roles: ['super_admin', 'kasubag'] }
     ];
 
     function checkAccess(pathname, role) {

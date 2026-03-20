@@ -156,6 +156,31 @@
 
 	// ... rest of logic ...
 
+	async function saveSuratTugasNumberOnly() {
+        if (!formData.suratTugasNumber) {
+            toast.error('Nomor Surat Tugas tidak boleh kosong.');
+            return;
+        }
+
+        isLoading = true;
+        try {
+            // Update all records in the SPD group
+            for (const record of records) {
+                await updateRecord(record.id, {
+                    suratTugasNumber: formData.suratTugasNumber
+                });
+            }
+
+            toast.success('Nomor Surat Tugas berhasil diperbarui.');
+            dispatch('saved');
+            // We don't close the modal, just let them see the updated state
+        } catch (e) {
+            toast.error('Gagal memperbarui Nomor Surat Tugas.');
+        } finally {
+            isLoading = false;
+        }
+    }
+
 	async function handleSave() {
         if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province)) {
             toast.error('Harap lengkapi field wajib di setiap lokasi.');
@@ -296,7 +321,7 @@
                                             <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''}>
                                                 <option value="" disabled>Pilih Provinsi</option>
                                                 {#each provinces as prov}
-                                                    <option value={prov.name}>{toTitleCase(prov.name)}</option>
+                                                    <option value={toTitleCase(prov.name)}>{toTitleCase(prov.name)}</option>
                                                 {/each}
                                             </Select>
                                         </div>
@@ -310,7 +335,7 @@
                                                     {/each}
                                                 </Select>
                                             {:else}
-                                                <Input bind:value={loc.location} disabled={!isEditing || !loc.province} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder={!loc.province ? 'Pilih provinsi terlebih dahulu' : 'Contoh: Surabaya'} />
+                                                <Input value={toTitleCase(loc.location)} on:input={(e) => loc.location = e.target.value} disabled={!isEditing || !loc.province} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder={!loc.province ? 'Pilih provinsi terlebih dahulu' : 'Contoh: Surabaya'} />
                                             {/if}
                                         </div>
                                     </div>
@@ -361,8 +386,32 @@
                             </div>
 
                             <div class="space-y-1.5 pt-2">
-                                <Label class="text-slate-600 text-xs">Nomor Surat Tugas</Label>
-                                <Input bind:value={formData.suratTugasNumber} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder="Cth: 1/B/2026/01" />
+                                <Label class="text-slate-600 text-xs flex justify-between items-center">
+                                    <span>Nomor Surat Tugas</span>
+                                    {#if !isEditing && isEditable && formData.suratTugasNumber !== (records[0]?.suratTugasNumber || '')}
+                                        <button 
+                                            on:click={saveSuratTugasNumberOnly}
+                                            class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-tight flex items-center gap-1"
+                                            disabled={isLoading}
+                                        >
+                                            {#if isLoading}
+                                                <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            {:else}
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                                            {/if}
+                                            Simpan Nomor
+                                        </button>
+                                    {/if}
+                                </Label>
+                                <Input 
+                                    bind:value={formData.suratTugasNumber} 
+                                    disabled={!isEditing && !isEditable} 
+                                    class={(!isEditing && !isEditable) ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : (isEditing ? 'bg-white border-blue-200 focus:border-blue-500' : 'bg-emerald-50/30 border-emerald-200 focus:border-emerald-500')} 
+                                    placeholder="Cth: 1/B/2026/01" 
+                                />
+                                {#if !isEditing && isEditable}
+                                    <p class="text-[10px] text-slate-400 italic">Nomor ini dapat diubah langsung tanpa menekan tombol "Edit Pengajuan".</p>
+                                {/if}
                             </div>
                         </div>
                     </div>

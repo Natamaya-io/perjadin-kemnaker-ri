@@ -1,5 +1,5 @@
 <script>
-    import { formatCurrency } from '$lib/shared/utils/utils';
+    import { formatCurrency, toTitleCase } from '$lib/shared/utils/utils';
 
     export let breakdown = [];
     export let employeeCount = 0;
@@ -41,7 +41,7 @@
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <div class="text-sm font-bold text-slate-800 truncate">{item.province}</div>
+                            <div class="text-sm font-bold text-slate-800 truncate">{toTitleCase(item.province)}</div>
                             <div class="text-[10px] text-slate-500 font-medium">{item.days} hari × {formatRawNumber(item.rate)}</div>
                         </div>
                     </div>

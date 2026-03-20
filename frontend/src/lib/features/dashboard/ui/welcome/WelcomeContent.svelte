@@ -4,7 +4,6 @@
     
     $: greetingName = $userStore.name || (
         role === 'super_admin' ? 'Super Admin' : 
-        role === 'keuangan' ? 'Keuangan' : 
         role === 'kasubag' ? 'Kasubag' :
         role === 'protokol' ? 'Protokol' : 'Staf'
     );

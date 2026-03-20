@@ -52,9 +52,11 @@
     };
 
     $: filteredUsers = $usersStore.filter(u => 
-        (u.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
-        (u.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (u.nip || '').includes(searchQuery)
+        u.role !== 'keuangan' && (
+            (u.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
+            (u.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (u.nip || '').includes(searchQuery)
+        )
     );
 
     function openAddModal() {
@@ -220,7 +222,6 @@
                         <div class="flex gap-4 items-center justify-between border-t border-slate-100 pt-3 mt-2">
                              <span class={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                                 user.role === 'super_admin' ? "bg-purple-50 text-purple-700 border border-purple-100" :
-                                user.role === 'keuangan' ? "bg-indigo-50 text-indigo-700 border border-indigo-100" :
                                 user.role === 'kasubag' ? "bg-amber-50 text-amber-700 border border-amber-100" :
                                 "bg-blue-50 text-blue-700 border border-blue-100")}>
                                 {user.role}
@@ -287,7 +288,6 @@
                     <Select bind:value={formData.role} class="bg-white border-slate-200">
                         <option value="protokol">Protokol (Staf Pengaju)</option>
                         <option value="super_admin">Super Admin</option>
-                        <option value="keuangan">Admin Keuangan</option>
                         <option value="kasubag">Kasubag (Approval)</option>
                     </Select>
                 </div>

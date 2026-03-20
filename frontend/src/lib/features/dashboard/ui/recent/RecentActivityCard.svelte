@@ -4,7 +4,7 @@
     export let title = 'Aktivitas Terbaru';
     export let viewAllLink = '';
     
-    $: isProtokol = $userStore.role !== 'super_admin' && $userStore.role !== 'keuangan' && $userStore.role !== 'kasubag';
+    $: isProtokol = $userStore.role !== 'super_admin' && $userStore.role !== 'kasubag';
 </script>
 
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
