@@ -43,7 +43,7 @@
     $: totalTrips = uniqueTrips.length;
     $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
     
-    $: activeTrips = uniqueTrips.filter(r => {
+    $: activeTrips = statsSource.filter(r => {
         if (!r.startDate || !r.endDate) return false;
         const now = new Date();
         const start = new Date(r.startDate);
@@ -96,10 +96,9 @@
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
                     <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl backdrop-blur-sm transition-transform active:scale-95 whitespace-nowrap">
-                        Kelola Keuangan
+                       Kelola Biaya
                     </Button>
-                </a>
-            {/if}
+                 </a>            {/if}
         </WelcomeActions>
     </WelcomeBanner>
 

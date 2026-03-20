@@ -419,7 +419,7 @@
                                 <div class="w-4 shrink-0">:</div>
                                 <div class="flex-1">
                                     <ol class="list-decimal pl-4 space-y-1">
-                                        <li>Surat Tugas Kepala Biro Umum Sekretariat Jenderal Kementerian Ketenagakerjaan Nomor {record.suratTugasNumber || '1/ /UM.06.00/...../2026'} Tanggal {new Date(record.startDate).toLocaleDateString('id-ID', { month: 'long'})} {new Date().getFullYear()} dalam rangka {record.purpose};</li>
+                                        <li>Surat Tugas Kepala Biro Umum Sekretariat Jenderal Kementerian Ketenagakerjaan Nomor {record.suratTugasNumber || '1/ /UM.06.00/...../2026'} Tanggal {record.suratTugasDate && record.suratTugasDate !== '0001-01-01T00:00:00Z' ? new Date(record.suratTugasDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'}) : '.................... 2026'} dalam rangka {record.purpose};</li>
                                         <li>Peraturan Menteri Keuangan No. 119 Tahun 2023 tentang Perubahan atas PMK No. 113/PMK.05/2012 tentang Perjalanan Dinas dalam negeri bagi Pejabat Negara, Pegawai Negeri dan Pegawai Tidak Tetap;</li>
                                         <li>Peraturan Menteri Ketenagakerjaan Nomor 20 Tahun 2024 tanggal 30 Desember 2024 tentang Organisasi dan Tata Kerja Kementerian Ketenagakerjaan;</li>
                                         <li>Keputusan Menteri Ketenagakerjaan Nomor 460 tanggal 23 Desember 2025, tentang Pengangkatan Pejabat Perbendaharaan Negara selaku Kuasa Pengguna Anggaran (KPA)/Kuasa Pengguna Barang (KPB) Daftar Isian Pelaksanaan Anggaran (DIPA) Bidang Ketenagakerjaan pada Kantor Pusat Kementerian Ketenagakerjaan;</li>
@@ -499,7 +499,7 @@
                         <div class="space-y-1 text-sm mb-6">
                             <div class="flex">
                                 <span class="w-48">Lampiran SPPD Nomor</span>
-                                <span>: {record.spd}</span>
+                                <span>: {record.suratTugasNumber || '1/ /UM.06.00/...../2026'}</span>
                             </div>
                             <div class="flex">
                                 <span class="w-48">Tanggal</span>
