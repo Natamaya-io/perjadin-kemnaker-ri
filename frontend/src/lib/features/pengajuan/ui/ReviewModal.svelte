@@ -154,8 +154,6 @@
 	$: currentEmployeeCount = isEditing ? selectedEmployeeIds.length : records.length;
 	$: totalSBMCost = totalCostPerPerson * currentEmployeeCount;
 
-	let isLoading = false;
-    let isEditing = false;
     let newSuratTugasFile = null;
 
     function handleFileChange(event) {
