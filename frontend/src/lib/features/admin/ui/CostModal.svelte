@@ -293,7 +293,7 @@
     }
 </script>
 
-<Dialog bind:open={open} class="w-[calc(100vw-2rem)] md:w-full max-w-[95vw] md:max-w-2xl lg:max-w-3xl overflow-hidden flex flex-col p-0 h-[calc(100vh-2rem)] max-h-[90vh] md:max-h-[85vh] mx-auto my-auto md:mt-10 rounded-2xl shadow-2xl border-0" on:close={() => dispatch('close')}>
+<Dialog bind:open={open} class="w-[calc(100vw-2rem)] md:w-full max-w-[95vw] md:max-w-2xl lg:max-w-4xl overflow-hidden flex flex-col p-0 h-[calc(100vh-2rem)] max-h-[90vh] md:max-h-[85vh] mx-auto my-auto md:mt-10 rounded-2xl shadow-2xl border-0" on:close={() => dispatch('close')}>
     <DialogHeader class="border-b border-slate-100 p-4 md:p-6 shrink-0 bg-white/95 backdrop-blur z-10 sticky top-0">
         <DialogTitle class="text-lg md:text-xl font-bold text-slate-800">
             {$userStore.role === 'protokol' 
@@ -325,7 +325,7 @@
         {#if editingCosts.details && editingCosts.details[selectedLocationIndex]}
 
         <!-- Mode Transportasi -->
-        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5 mb-4">
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5 mb-2">
             <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({currentLocSbm.province})</Label>
             <Select bind:value={editingCosts.details[selectedLocationIndex].transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}">
                 <option value="Pesawat">Pesawat Udara</option>
@@ -335,7 +335,7 @@
         </div>
 
         <!-- Uang Harian SBM -->
-        <div class="p-3 md:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2.5 md:space-y-3 w-full">
+        <div class="p-3 md:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2.5 md:space-y-3 w-full mb-2">
             <div class="flex flex-wrap justify-between items-center gap-2">
                 <h4 class="text-xs md:text-sm font-semibold text-blue-800 flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,7 +365,7 @@
         </div>
 
         <!-- Tiket & Boarding Pass -->
-        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full mb-2">
             <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -375,13 +375,13 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Tiket Berangkat -->
-                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
-                    <div class="flex justify-between items-center">
+                <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                    <div class="flex justify-between items-center min-h-[32px]">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
                         {#if !detail.ticketGoFile && !isReadOnly}
-                            <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                Upload Kwitansi
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Kwitansi
                                 <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'ticketGoFile')} />
                             </label>
                         {/if}
@@ -391,24 +391,27 @@
                         <Input type="text" value={formatInputNumber(detail.ticketGo)} on:input={(e) => updateCost('ticketGo', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
                     </div>
                     {#if detail.ticketGoFile}
-                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
-                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketGoFile.name}</span>
-                            <div class="flex gap-2 shrink-0 text-[10px]">
-                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketGoFile)}>Lihat</button>
-                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketGoFile')}>Hapus</button>{/if}
+                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <span class="text-[10px] md:text-xs text-slate-700 truncate">{detail.ticketGoFile.name}</span>
+                            </div>
+                            <div class="flex gap-1.5 shrink-0 ml-2">
+                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketGoFile)}>Lihat</button>
+                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketGoFile')}>Hapus</button>{/if}
                             </div>
                         </div>
                     {/if}
                 </div>
 
                 <!-- Tiket Pulang -->
-                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg">
-                    <div class="flex justify-between items-center">
+                <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                    <div class="flex justify-between items-center min-h-[32px]">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Pulang</Label>
                         {#if !detail.ticketBackFile && !isReadOnly}
-                            <label class="cursor-pointer text-[9px] md:text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 md:px-2.5 md:py-1 rounded-md border border-blue-200 font-medium transition-colors flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                Upload Kwitansi
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Kwitansi
                                 <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'ticketBackFile')} />
                             </label>
                         {/if}
@@ -418,36 +421,43 @@
                         <Input type="text" value={formatInputNumber(detail.ticketBack)} on:input={(e) => updateCost('ticketBack', e)} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}" />
                     </div>
                     {#if detail.ticketBackFile}
-                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md">
-                            <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketBackFile.name}</span>
-                            <div class="flex gap-2 shrink-0 text-[10px]">
-                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketBackFile)}>Lihat</button>
-                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketBackFile')}>Hapus</button>{/if}
+                        <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <span class="text-[10px] md:text-xs text-slate-700 truncate">{detail.ticketBackFile.name}</span>
+                            </div>
+                            <div class="flex gap-1.5 shrink-0 ml-2">
+                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketBackFile)}>Lihat</button>
+                                {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeSpecificFile('ticketBackFile')}>Hapus</button>{/if}
                             </div>
                         </div>
                     {/if}
                 </div>
 
                 <!-- Boarding Pass -->
-                <div class="space-y-1.5 p-3 border border-slate-100 bg-slate-50 rounded-lg md:col-span-2 flex flex-col justify-center">
-                    <div class="flex flex-wrap justify-between items-center gap-2">
+                <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg md:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center gap-2 min-h-[32px]">
                         <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Boarding Pass</Label>
                         {#if !isReadOnly}
-                            <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-white px-2 py-1.5 rounded border border-blue-200 shadow-sm transition-colors">
-                                + Tambah Boarding Pass (.pdf / gambar)
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 text-white border border-blue-700 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                Tambah Boarding Pass
                                 <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={handleBoardingPassFileSelect} />
                             </label>
                         {/if}
                     </div>
                     
                     {#if detail.boardingPassFiles && detail.boardingPassFiles.length > 0}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
                             {#each detail.boardingPassFiles as bpFile, idx}
-                                <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md w-full">
-                                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
-                                    <div class="flex gap-2 shrink-0 text-[10px]">
-                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
-                                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeBoardingPassFile(idx)}>Hapus</button>{/if}
+                                <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                                        <span class="text-[10px] md:text-xs text-slate-700 truncate">{bpFile.name}</span>
+                                    </div>
+                                    <div class="flex gap-1.5 shrink-0 ml-2">
+                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeBoardingPassFile(idx)}>Hapus</button>{/if}
                                     </div>
                                 </div>
                             {/each}
@@ -458,8 +468,8 @@
         </div>
 
         <!-- Hotel -->
-        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
-            <div class="flex justify-between items-center mb-1">
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full mb-2">
+            <div class="flex justify-between items-center mb-1 min-h-[32px]">
                 <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5 md:gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -467,8 +477,9 @@
                     Penginapan (Hotel) - {currentLocSbm.province}
                 </h4>
                 {#if !detail.hotelFile && !isReadOnly}
-                    <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
-                        + Upload Kwitansi
+                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Kwitansi
                         <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'hotelFile')} />
                     </label>
                 {/if}
@@ -489,11 +500,14 @@
             </div>
             
             {#if detail.hotelFile}
-                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
-                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.hotelFile.name}</span>
-                    <div class="flex gap-2 shrink-0 text-[10px]">
-                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.hotelFile)}>Lihat</button>
-                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('hotelFile')}>Hapus</button>{/if}
+                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md shadow-sm w-full">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span class="text-[10px] md:text-xs text-slate-700 truncate">{detail.hotelFile.name}</span>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0 ml-2">
+                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(detail.hotelFile)}>Lihat</button>
+                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeSpecificFile('hotelFile')}>Hapus</button>{/if}
                     </div>
                 </div>
             {/if}
@@ -504,8 +518,8 @@
         </div>
 
         <!-- Bukti Transportasi atau Rental -->
-        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
-            <div class="flex justify-between items-center mb-1">
+        <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full mb-2">
+            <div class="flex justify-between items-center mb-1 min-h-[32px]">
                 <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -513,8 +527,9 @@
                     Transport Darat / Rental - {currentLocSbm.province}
                 </h4>
                 {#if !detail.transportFile && !isReadOnly}
-                    <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 transition-colors">
-                        + Upload Bukti
+                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Bukti
                         <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" on:change={(e) => handleSpecificFileSelect(e, 'transportFile')} />
                     </label>
                 {/if}
@@ -529,19 +544,22 @@
             </div>
 
             {#if detail.transportFile}
-                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md w-full">
-                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.transportFile.name}</span>
-                    <div class="flex gap-2 shrink-0 text-[10px]">
-                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.transportFile)}>Lihat</button>
-                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile('transportFile')}>Hapus</button>{/if}
+                <div class="flex items-center justify-between p-2 mt-2 bg-slate-50 border border-slate-200 rounded-md shadow-sm w-full">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span class="text-[10px] md:text-xs text-slate-700 truncate">{detail.transportFile.name}</span>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0 ml-2">
+                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(detail.transportFile)}>Lihat</button>
+                        {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeSpecificFile('transportFile')}>Hapus</button>{/if}
                     </div>
                 </div>
             {/if}
         </div>
 
         <!-- Add Cost / Additional Costs -->
-        <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
-            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+        <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full mb-2">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2 min-h-[32px]">
                 <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -549,19 +567,19 @@
                     Biaya Tambahan - {currentLocSbm.province}
                 </h4>
                 {#if !isReadOnly}
-                    <Button size="sm" class="h-7 px-3 text-[10px] font-bold tracking-wider bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm transition-colors rounded-md flex items-center gap-1" on:click={addAdditionalCost}>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                        ADD COST
-                    </Button>
+                    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 text-white border border-indigo-700 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-sm" on:click={addAdditionalCost}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        Tambah Biaya
+                    </button>
                 {/if}
             </div>
 
             <div class="space-y-3">
                 {#if detail.additionalCosts && detail.additionalCosts.length > 0}
                     {#each detail.additionalCosts as cost, index}
-                        <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
+                        <div class="bg-white p-3 border border-slate-200 rounded-lg relative group shadow-sm">
                             {#if !isReadOnly}
-                                <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(index)}>
+                                <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-md z-10" on:click={() => removeAdditionalCost(index)}>
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
@@ -580,19 +598,23 @@
                                     </div>
                                 </div>
                                 <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between mt-1 pt-2 border-t border-slate-100 gap-2">
-                                    <span class="text-[10px] font-medium text-slate-500">Kwitansi / Bukti (.pdf):</span>
+                                    <span class="text-[10px] font-medium text-slate-500 uppercase tracking-tight">Kwitansi / Bukti (.pdf):</span>
                                     {#if !cost.file && !isReadOnly}
-                                        <label class="cursor-pointer text-[10px] text-blue-600 font-medium hover:underline bg-slate-50 px-2 py-1.5 rounded border border-slate-200 w-fit">
+                                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                             Upload Kwitansi
                                             <input type="file" class="hidden" accept=".pdf" on:change={(e) => handleAdditionalFileSelect(e, index)} />
                                         </label>
                                     {:else if cost.file}
-                                        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 w-full sm:w-auto">
-                                            <span class="text-[10px] text-slate-700 truncate max-w-[150px]">{cost.file.name}</span>
-                                            <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
-                                            {#if !isReadOnly}
-                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => { cost.file = null; editingCosts = editingCosts; }}>Hapus</button>
-                                            {/if}
+                                        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 w-full sm:w-auto shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            <span class="text-[10px] text-slate-700 truncate max-w-[120px]">{cost.file.name}</span>
+                                            <div class="flex gap-1.5 ml-auto sm:ml-2">
+                                                <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[9px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                {#if !isReadOnly}
+                                                    <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => { cost.file = null; editingCosts = editingCosts; }}>Hapus</button>
+                                                {/if}
+                                            </div>
                                         </div>
                                     {/if}
                                 </div>
@@ -613,40 +635,37 @@
         {/if}
     </div>
 
-    <DialogFooter class="p-4 md:p-6 pt-0 bg-white shrink-0 z-10 border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
-        <div class="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4">
-            <div class="w-full md:w-auto text-left">
-                <span class="block text-[10px] md:text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Grand Total Estimasi (Seluruh Provinsi)</span>
-                <span class="text-xl font-bold text-blue-700 font-mono tracking-tight">{formatCurrency(grandTotal)}</span>
+    <DialogFooter class="p-4 md:p-6 bg-white shrink-0 z-10 border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+        <div class="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="w-full lg:w-auto text-left flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span class="block text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Grand Total Estimasi</span>
+                <span class="text-xl md:text-2xl font-black text-blue-700 font-mono tracking-tight">{formatCurrency(grandTotal)}</span>
             </div>
-            <div class="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
-                <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => {
+            <div class="flex flex-wrap items-center justify-end gap-2.5 w-full lg:w-auto">
+                <Button variant="outline" class="h-10 md:h-11 border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50 bg-white px-4 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl shadow-sm" on:click={() => {
                     window.open(`/print?type=spd&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
                 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                    <span class="text-xs">Cetak SPD</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Cetak SPD</span>
                 </Button>
-                <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => {
+                <Button variant="outline" class="h-10 md:h-11 border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50 bg-white px-4 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl shadow-sm" on:click={() => {
                     window.open(`/print?type=rincian&id=${record.id}&spd=${encodeURIComponent(record.spd)}`, '_blank');
                 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                    <span class="text-xs">Cetak Rincian</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Cetak Rincian</span>
                 </Button>
-                {#if isReadOnly}
-                    <div class="col-span-2 md:col-span-1 md:w-auto w-full">
-                        <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => dispatch('close')}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                            <span class="text-xs">Tutup</span>
-                        </Button>
-                    </div>
-                {:else}
-                    <Button variant="outline" class="w-full h-10 border-slate-200 text-slate-600 bg-white px-3 flex justify-center items-center" on:click={() => dispatch('close')}>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                        <span class="text-xs">Tutup</span>
-                    </Button>
-                    <Button class="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-3 flex justify-center items-center" on:click={handleSave}>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        <span class="text-xs">Simpan Rincian</span>
+                
+                <div class="w-px h-8 bg-slate-200 hidden sm:block mx-1"></div>
+
+                <Button variant="outline" class="h-10 md:h-11 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 bg-white px-4 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl shadow-sm" on:click={() => dispatch('close')}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Tutup</span>
+                </Button>
+
+                {#if !isReadOnly}
+                    <Button class="h-10 md:h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/25 px-6 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl" on:click={handleSave}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        <span class="text-xs font-bold uppercase tracking-wider">Simpan Perubahan</span>
                     </Button>
                 {/if}
             </div>
