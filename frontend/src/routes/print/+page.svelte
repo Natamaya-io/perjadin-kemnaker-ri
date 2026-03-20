@@ -503,8 +503,7 @@
                             </div>
                             <div class="flex">
                                 <span class="w-48">Tanggal</span>
-                                <span>: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric'})}</span>
-                            </div>
+                                <span>: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</span>                            </div>
                         </div>
 
                         <table class="w-full border-collapse border-2 border-black text-sm">
