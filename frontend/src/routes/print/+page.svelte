@@ -647,11 +647,11 @@
                                     </div>
                                     <div class="flex">
                                         <span class="w-48">Yang telah dibayar semula</span>
-                                        <span>: Rp 0 ,-</span>
+                                        <span>: Rp {new Intl.NumberFormat('id-ID').format(record.totalCost)} ,-</span>
                                     </div>
                                     <div class="flex">
                                         <span class="w-48">Sisa kurang/lebih</span>
-                                        <span>: Rp {new Intl.NumberFormat('id-ID').format(record.totalCost)} ,-</span>
+                                        <span>: Rp 0 ,-</span>
                                     </div>
                                 </div>
                                 <div class="text-center space-y-24 mt-[-1.5rem]">
