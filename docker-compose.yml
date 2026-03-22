@@ -99,7 +99,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}_frontend
     environment:
       - PUBLIC_API_URL=${PUBLIC_API_URL}
-      - INTERNAL_API_URL=${INTERNAL_API_URL}
+      - INTERNAL_API_URL=http://backend:8081
       - VITE_API_URL=${VITE_API_URL:-/api/v1}
       - BODY_SIZE_LIMIT=52428800
     ports:

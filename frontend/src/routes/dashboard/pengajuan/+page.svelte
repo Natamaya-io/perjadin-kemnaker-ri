@@ -163,9 +163,9 @@
                     <TableRow class="hover:bg-slate-50/50">
                         <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">No. SPD</TableHead>
                         <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
-                        <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
-                        <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status</TableHead>
-                        <TableHead class="min-w-[140px] font-semibold text-slate-700 text-right py-3">Total SBM</TableHead>
+                        <TableHead class="min-w-[130px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
+                        <TableHead class="min-w-[160px] font-semibold text-slate-700 text-center py-3">Status</TableHead>
+                        <TableHead class="min-w-[180px] font-semibold text-slate-700 text-center py-3">Total SBM</TableHead>
                         <TableHead class="w-[140px] min-w-[140px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -182,7 +182,7 @@
                     {:else}
                         {#each uniqueRecords as record (record.id)}
                             <TableRow class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
-                                <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-top">
+                                <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-middle">
                                     {record.spd}
                                     <div class="mt-1">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -193,7 +193,7 @@
                                         {record.employeesList.length} Petugas
                                     </div>
                                 </TableCell>
-                                <TableCell class="py-4 align-top">
+                                <TableCell class="py-4 align-middle">
                                     <div class="font-medium text-slate-800 text-sm line-clamp-2">{record.purpose}</div>
                                     <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,7 +203,7 @@
                                         {toTitleCase(record.location)}, {toTitleCase(record.province)}
                                     </div>
                                 </TableCell>
-                                <TableCell class="py-4 align-top text-xs text-slate-600">
+                                <TableCell class="py-4 align-middle text-xs text-slate-600">
                                     <div class="whitespace-nowrap">
                                         {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
                                     </div>
@@ -212,19 +212,19 @@
                                         {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
                                     </div>
                                 </TableCell>
-                                <TableCell class="py-4 align-top">
-                                    <div class="flex flex-col gap-1.5 items-start">
+                                <TableCell class="py-4 align-middle">
+                                    <div class="flex flex-col gap-1.5 items-center justify-center">
                                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
                                             {getStatusBadge(record).label}
                                         </span>
                                     </div>
                                 </TableCell>
-                                <TableCell class="text-right py-4 align-top">
+                                <TableCell class="text-center py-4 align-middle">
                                     <span class="font-mono font-semibold text-slate-700 text-sm whitespace-nowrap">
                                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(record.totalCost || 0)}
                                     </span>
                                 </TableCell>
-                                <TableCell class="text-center pr-4 py-4 align-top">
+                                <TableCell class="text-center pr-4 py-4 align-middle">
                                     <div class="flex items-center justify-center gap-2">
                                         <button 
                                             class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
