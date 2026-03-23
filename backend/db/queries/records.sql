@@ -17,7 +17,7 @@ SELECT * FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1;
 
 -- name: GetLatestSpdNumber :one
 SELECT spd_number FROM travel_records
-WHERE spd_number LIKE 'ID-SPD-%'
+WHERE spd_number LIKE 'ID-SPJ-%'
 ORDER BY CAST(SUBSTRING(spd_number FROM 8) AS INTEGER) DESC
 LIMIT 1;
 

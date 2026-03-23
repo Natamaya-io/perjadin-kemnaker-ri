@@ -181,7 +181,7 @@
     function generateId() {
         let maxId = 0;
         for (const record of $recordsStore) {
-            if (record.spd && record.spd.startsWith('ID-SPD-')) {
+            if (record.spd && record.spd.startsWith('ID-SPJ-')) {
                 const numStr = record.spd.substring(7);
                 const num = parseInt(numStr, 10);
                 if (!isNaN(num) && num > maxId) {
@@ -189,7 +189,7 @@
                 }
             }
         }
-        return `ID-SPD-${(maxId + 1).toString().padStart(3, '0')}`;
+        return `ID-SPJ-${(maxId + 1).toString().padStart(3, '0')}`;
     }
     
     function handleSubmit() {

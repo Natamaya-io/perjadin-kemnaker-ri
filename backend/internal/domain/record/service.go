@@ -45,7 +45,7 @@ func (s *service) GenerateSpdNumber() (string, error) {
 	}
 
 	if latestSpd == "" {
-		return "ID-SPD-001", nil
+		return "ID-SPJ-001", nil
 	}
 
 	// Extract the last sequence of numbers using regex
@@ -53,12 +53,12 @@ func (s *service) GenerateSpdNumber() (string, error) {
 	match := re.FindString(latestSpd)
 	
 	if match == "" {
-		return "ID-SPD-001", nil
+		return "ID-SPJ-001", nil
 	}
 
 	num, err := strconv.Atoi(match)
 	if err != nil {
-		return "ID-SPD-001", nil
+		return "ID-SPJ-001", nil
 	}
 
 	// Determine the prefix
