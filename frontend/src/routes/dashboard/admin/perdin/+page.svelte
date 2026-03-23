@@ -94,16 +94,15 @@
         return acc;
     }, {});
 
-    // Sort employeesList within each group by their global index (descending NO. SPD, smallest at bottom)
-    $: Object.values(groupedRecords).forEach(group => {
-        group.employeesList.sort((a, b) => {
+    $: uniqueRecords = Object.values(groupedRecords).map(group => {
+        // Sort employeesList within each group by their global index (descending NO. SPD, smallest at bottom)
+        const sortedEmployees = [...group.employeesList].sort((a, b) => {
             const indexA = recordToIndexMap.get(a.id) || 0;
             const indexB = recordToIndexMap.get(b.id) || 0;
             return indexB - indexA;
         });
-    });
-
-    $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
+        return { ...group, employeesList: sortedEmployees };
+    }).sort((a, b) => {
         let diff = 0;
         if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
         else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
