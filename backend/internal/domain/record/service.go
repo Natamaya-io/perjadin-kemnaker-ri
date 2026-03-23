@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -47,19 +48,29 @@ func (s *service) GenerateSpdNumber() (string, error) {
 		return "ID-SPD-001", nil
 	}
 
-	// Extract the number part from "ID-SPD-XXX"
-	parts := strings.Split(latestSpd, "-")
-	if len(parts) != 3 {
+	// Extract the last sequence of numbers using regex
+	re := regexp.MustCompile(`[0-9]+$`)
+	match := re.FindString(latestSpd)
+	
+	if match == "" {
 		return "ID-SPD-001", nil
 	}
 
-	numStr := parts[2]
-	num, err := strconv.Atoi(numStr)
+	num, err := strconv.Atoi(match)
 	if err != nil {
 		return "ID-SPD-001", nil
 	}
 
-	return fmt.Sprintf("ID-SPD-%03d", num+1), nil
+	// Determine the prefix
+	prefix := strings.TrimSuffix(latestSpd, match)
+	
+	// Determine the padding length based on the original match length, defaulting to 3
+	padding := len(match)
+	if padding < 3 {
+		padding = 3
+	}
+
+	return fmt.Sprintf("%s%0*d", prefix, padding, num+1), nil
 }
 
 func (s *service) invalidateCache(ctx context.Context, pattern string) {

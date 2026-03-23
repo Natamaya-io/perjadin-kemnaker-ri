@@ -90,11 +90,18 @@
             acc[record.spd] = { ...record, employeesList: [record] };
         } else {
             acc[record.spd].employeesList.push(record);
-            // The group object's totalCost will be calculated on the fly in the template 
-            // by summing up all employees in employeesList.
         }
         return acc;
     }, {});
+
+    // Sort employeesList within each group by their global index (descending NO. SPD, smallest at bottom)
+    $: Object.values(groupedRecords).forEach(group => {
+        group.employeesList.sort((a, b) => {
+            const indexA = recordToIndexMap.get(a.id) || 0;
+            const indexB = recordToIndexMap.get(b.id) || 0;
+            return indexB - indexA;
+        });
+    });
 
     $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
         let diff = 0;

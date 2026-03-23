@@ -30,7 +30,7 @@
 <div 
     in:fly={{ y: 20, duration: 300 }} 
     out:fade={{ duration: 200 }}
-    class="flex items-center w-full max-w-sm p-4 mb-3 rounded-xl border shadow-lg shadow-black/5 {colors[item.type]} backdrop-blur-sm relative overflow-hidden group"
+    class="flex items-center w-[calc(100vw-2rem)] sm:w-[380px] p-4 mb-3 rounded-xl border shadow-lg shadow-black/5 {colors[item.type]} backdrop-blur-sm relative overflow-hidden group"
     role="alert"
 >
     <!-- Icon -->
