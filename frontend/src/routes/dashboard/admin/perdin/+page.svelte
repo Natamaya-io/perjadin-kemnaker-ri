@@ -40,10 +40,22 @@
         expandedGroups = expandedGroups; // Trigger reactivity
     }
 
-    // The store ($recordsStore) inherently holds newest records first.
-    // By reversing it, we get oldest-first order, which guarantees stable, 
-    // sequential index numbering (1, 2, 3...) regardless of timestamp precision.
-    $: allRecordsSorted = [...$recordsStore].reverse();
+    // We MUST use a deterministic sort based on timestamp and a static identifier (UUID).
+    // Relying on array order (.reverse()) fails because the backend SQL query might
+    // return rows with identical timestamps in random order.
+    // Sorting ascending (oldest first) gives us a stable 1, 2, 3... global numbering.
+    $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        
+        if (timeA !== timeB) {
+            return timeA - timeB;
+        }
+        
+        // Tie-breaker: If timestamps are identical (e.g. bulk insert in production DB),
+        // we sort by UUID. This guarantees the EXACT same order before and after a refresh.
+        return (a.id || '').localeCompare(b.id || '');
+    });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
 
     // Derived Records
