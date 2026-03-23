@@ -268,7 +268,7 @@
 <ConfirmationModal 
     bind:open={isDeleteModalOpen}
     title="Hapus Pengajuan"
-    description="Apakah Anda yakin ingin membatalkan dan menghapus pengajuan SPD {spdToDelete}? Tindakan ini tidak dapat dibatalkan."
+    description="Apakah Anda yakin ingin membatalkan dan menghapus pengajuan SPJ {spdToDelete}? Tindakan ini tidak dapat dibatalkan."
     confirmText="Ya, Hapus"
     cancelText="Batal"
     onConfirm={processDelete}
