@@ -286,6 +286,15 @@ func (q *Queries) DeleteTravelRecord(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteTravelRecordBySpd = `-- name: DeleteTravelRecordBySpd :exec
+UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE spd_number = $1
+`
+
+func (q *Queries) DeleteTravelRecordBySpd(ctx context.Context, spdNumber sql.NullString) error {
+	_, err := q.db.ExecContext(ctx, deleteTravelRecordBySpd, spdNumber)
+	return err
+}
+
 const deleteTravelReport = `-- name: DeleteTravelReport :exec
 DELETE FROM travel_reports WHERE travel_record_id = $1
 `

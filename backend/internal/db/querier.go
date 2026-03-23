@@ -22,6 +22,7 @@ type Querier interface {
 	DeleteTravelCost(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteTravelLocationsByRecordID(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteTravelRecord(ctx context.Context, id uuid.UUID) error
+	DeleteTravelRecordBySpd(ctx context.Context, spdNumber sql.NullString) error
 	DeleteTravelReport(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetLatestSpdNumber(ctx context.Context) (sql.NullString, error)
