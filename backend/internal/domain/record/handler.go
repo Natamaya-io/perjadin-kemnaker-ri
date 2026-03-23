@@ -218,3 +218,16 @@ func (h *Handler) DeleteRecord(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
+	spd := c.Param("spd")
+	if spd == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "SPD number is required")
+	}
+
+	if err := h.svc.DeleteRecordsBySpd(spd); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}

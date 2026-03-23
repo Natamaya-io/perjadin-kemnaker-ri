@@ -94,6 +94,7 @@ export interface ApiClient {
     createRecord(record: Omit<TravelRecord, 'id' | 'spd' | 'status' | 'reportStatus'>): Promise<TravelRecord[]>; // Returns array because one request can create multiple records (bulk)
     updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord>;
     deleteRecord(id: string): Promise<void>;
+    deleteRecordsBySpd(spd: string): Promise<void>;
 
     // Master Data
     getProvinces(): Promise<any[]>;

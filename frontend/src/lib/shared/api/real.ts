@@ -218,6 +218,12 @@ export class RealApiClient implements ApiClient {
         });
     }
 
+    deleteRecordsBySpd(spd: string): Promise<void> {
+        return this.request<void>(`/records/spd/${spd}`, {
+            method: 'DELETE'
+        });
+    }
+
     // Master Data
     getProvinces(): Promise<any[]> {
         return this.request<any[]>('/master/provinces');

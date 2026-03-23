@@ -58,17 +58,7 @@ export async function deleteRecord(id: string) {
 
 export async function deleteRecordBySpd(spd: string) {
     try {
-        // Find all records with this SPD
-        let recordsToDelete: TravelRecord[] = [];
-        recordsStore.subscribe(records => {
-            recordsToDelete = records.filter(r => r.spd === spd);
-        })();
-
-        // Delete each via API
-        for (const record of recordsToDelete) {
-            await api.deleteRecord(record.id);
-        }
-
+        await api.deleteRecordsBySpd(spd);
         // Update local store
         recordsStore.update(current => current.filter(r => r.spd !== spd));
     } catch (e) {

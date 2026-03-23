@@ -22,6 +22,7 @@ type Repository interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateTravelRecord(record *models.TravelRecord) error
 	DeleteTravelRecord(id uuid.UUID) error
+	DeleteTravelRecordsBySpd(spd string) error
 }
 
 type repository struct {
@@ -597,4 +598,8 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 
 func (r *repository) DeleteTravelRecord(id uuid.UUID) error {
 	return r.q.DeleteTravelRecord(context.Background(), id)
+}
+
+func (r *repository) DeleteTravelRecordsBySpd(spd string) error {
+	return r.q.DeleteTravelRecordBySpd(context.Background(), toNullString(spd))
 }
