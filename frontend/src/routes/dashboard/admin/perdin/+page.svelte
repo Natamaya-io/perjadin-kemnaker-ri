@@ -40,20 +40,27 @@
         expandedGroups = expandedGroups; // Trigger reactivity
     }
 
-    // We MUST use a deterministic sort based on timestamp and a static identifier (UUID).
-    // Relying on array order (.reverse()) fails because the backend SQL query might
-    // return rows with identical timestamps in random order.
-    // Sorting ascending (oldest first) gives us a stable 1, 2, 3... global numbering.
+    // We MUST use a deterministic sort based on timestamp, but we MUST group by SPD first
+    // if the timestamps are identical, to prevent numbers scattering across different SPDs.
     $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
         const timeA = new Date(a.createdAt).getTime();
         const timeB = new Date(b.createdAt).getTime();
         
+        // 1. Primary Sort: Time (Oldest first)
         if (timeA !== timeB) {
             return timeA - timeB;
         }
         
-        // Tie-breaker: If timestamps are identical (e.g. bulk insert in production DB),
-        // we sort by UUID. This guarantees the EXACT same order before and after a refresh.
+        // 2. Secondary Sort: SPD Number
+        // Keeps index numbers contiguous for the same SPD if created simultaneously
+        const spdA = a.spd || '';
+        const spdB = b.spd || '';
+        if (spdA !== spdB) {
+            return spdA.localeCompare(spdB);
+        }
+
+        // 3. Tertiary Sort: Name or UUID
+        // Guarantees absolute stability inside the accordion
         return (a.id || '').localeCompare(b.id || '');
     });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
