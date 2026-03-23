@@ -40,20 +40,10 @@
         expandedGroups = expandedGroups; // Trigger reactivity
     }
 
-    // Use a stable sort: if createdAt is identical, fall back to comparing employee names or IDs to guarantee order
-    $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        if (timeA !== timeB) return timeA - timeB;
-        
-        // Tie-breaker: if created at the exact same millisecond (happens in bulk create), sort by name
-        const nameA = a.employee?.name || '';
-        const nameB = b.employee?.name || '';
-        if (nameA !== nameB) return nameA.localeCompare(nameB);
-
-        // Ultimate tie-breaker
-        return (a.id || '').localeCompare(b.id || '');
-    });
+    // The store ($recordsStore) inherently holds newest records first.
+    // By reversing it, we get oldest-first order, which guarantees stable, 
+    // sequential index numbering (1, 2, 3...) regardless of timestamp precision.
+    $: allRecordsSorted = [...$recordsStore].reverse();
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
 
     // Derived Records
