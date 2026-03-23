@@ -225,9 +225,11 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "SPD number is required")
 	}
 
-	if err := h.svc.DeleteRecordsBySpd(spd); err != nil {
+	if err := h.svc.DeleteRecordsBySpd(c.Request().Context(), spd); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Successfully deleted records for SPD " + spd,
+	})
 }

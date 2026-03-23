@@ -60,6 +60,10 @@ UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1;
 -- name: DeleteTravelRecordBySpd :exec
 UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE spd_number = $1;
 
+-- name: DeleteTravelLocationsBySpd :exec
+UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP 
+WHERE travel_record_id IN (SELECT id FROM travel_records WHERE spd_number = $1);
+
 -- name: CreateTravelCost :one
 INSERT INTO travel_costs (
   travel_record_id, ticket_go, ticket_back, daily_allowance_days, daily_allowance_rate, hotel_days, hotel_rate, local_transport, regional_transport, transport_mode, transport_amount, other_cost, other_cost_desc, receipt_files, ticket_go_file, ticket_back_file, boarding_pass_file, hotel_file, transport_file, additional_costs, details

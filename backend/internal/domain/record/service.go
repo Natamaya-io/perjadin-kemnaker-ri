@@ -23,7 +23,7 @@ type Service interface {
 	GetRecordByID(id uuid.UUID) (*models.TravelRecord, error)
 	UpdateRecord(record *models.TravelRecord) error
 	DeleteRecord(id uuid.UUID) error
-	DeleteRecordsBySpd(spd string) error
+	DeleteRecordsBySpd(ctx context.Context, spd string) error
 }
 
 type service struct {
@@ -231,15 +231,15 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 func (s *service) DeleteRecord(id uuid.UUID) error {
 	err := s.repo.DeleteTravelRecord(id)
 	if err == nil {
-		s.invalidateCache(context.Background(), "records:*")
+		go s.invalidateCache(context.Background(), "records:*")
 	}
 	return err
 }
 
-func (s *service) DeleteRecordsBySpd(spd string) error {
-	err := s.repo.DeleteTravelRecordsBySpd(spd)
+func (s *service) DeleteRecordsBySpd(ctx context.Context, spd string) error {
+	err := s.repo.DeleteTravelRecordsBySpd(ctx, spd)
 	if err == nil {
-		s.invalidateCache(context.Background(), "records:*")
+		go s.invalidateCache(context.Background(), "records:*")
 	}
 	return err
 }

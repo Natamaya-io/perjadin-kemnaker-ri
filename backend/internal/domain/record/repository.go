@@ -22,7 +22,7 @@ type Repository interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateTravelRecord(record *models.TravelRecord) error
 	DeleteTravelRecord(id uuid.UUID) error
-	DeleteTravelRecordsBySpd(spd string) error
+	DeleteTravelRecordsBySpd(ctx context.Context, spd string) error
 }
 
 type repository struct {
@@ -600,6 +600,23 @@ func (r *repository) DeleteTravelRecord(id uuid.UUID) error {
 	return r.q.DeleteTravelRecord(context.Background(), id)
 }
 
-func (r *repository) DeleteTravelRecordsBySpd(spd string) error {
-	return r.q.DeleteTravelRecordBySpd(context.Background(), toNullString(spd))
+func (r *repository) DeleteTravelRecordsBySpd(ctx context.Context, spd string) error {
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	qtx := r.q.WithTx(tx)
+	spdStr := toNullString(spd)
+
+	if err := qtx.DeleteTravelLocationsBySpd(ctx, spdStr); err != nil {
+		return err
+	}
+
+	if err := qtx.DeleteTravelRecordBySpd(ctx, spdStr); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

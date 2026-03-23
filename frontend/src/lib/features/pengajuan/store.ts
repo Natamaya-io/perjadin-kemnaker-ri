@@ -57,12 +57,32 @@ export async function deleteRecord(id: string) {
 }
 
 export async function deleteRecordBySpd(spd: string) {
+    // Optimistic update: remove from UI immediately
+    recordsStore.update(current => current.filter(r => r.spd !== spd));
+
     try {
         await api.deleteRecordsBySpd(spd);
-        // Update local store
-        recordsStore.update(current => current.filter(r => r.spd !== spd));
-    } catch (e) {
+    } catch (e: any) {
+        // If it's a 502, it might have actually succeeded in the backend
+        // We check if the records are actually gone
+        if (e.message?.includes('502')) {
+             console.warn("Detected 502 during delete, verifying data status...");
+             await loadRecords();
+             
+             let exists = false;
+             recordsStore.subscribe(recs => {
+                 exists = recs.some(r => r.spd === spd);
+             })();
+
+             if (!exists) {
+                 // Success! Data is gone despite the 502 error
+                 return;
+             }
+        }
+
         console.error(`Failed to delete records for SPD ${spd}`, e);
+        // Rollback: reload from server if it actually failed
+        await loadRecords();
         throw e;
     }
 }
