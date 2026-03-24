@@ -13,6 +13,7 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/utils"
+	"github.com/kemnaker/perjadin-backend/internal/utils/pdf"
 	"github.com/labstack/echo/v4"
 )
 
@@ -232,4 +233,28 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Successfully deleted records for SPD " + spd,
 	})
+}
+
+func (h *Handler) ExportSpdPDF(c echo.Context) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data perjalanan tidak ditemukan: %v", err))
+	}
+
+	pdfBytes, err := pdf.GenerateSpdOverlay(record)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat PDF: %v", err))
+	}
+
+	filename := fmt.Sprintf("SPD_%s_%s.pdf", record.Employee.Name, record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Response().Header().Set(echo.HeaderContentType, "application/pdf")
+
+	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }

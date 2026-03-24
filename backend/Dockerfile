@@ -31,7 +31,12 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/main .
 
 # Copy migrations
-COPY --from=builder /app/db/migrations ./db/migrations
+COPY db/migrations ./db/migrations
+
+# Copy PDF templates (sourced from the local build context)
+COPY ["Berkas Luar Kota - SPD.pdf", "./"]
+COPY ["Berkas Luar Kota - Laporan.pdf", "./"]
+COPY ["Berkas Luar Kota - rincian pembayaran.pdf", "./"]
 
 # Expose the application port
 EXPOSE 8081

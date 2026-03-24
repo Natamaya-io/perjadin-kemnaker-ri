@@ -149,6 +149,34 @@ export class RealApiClient implements ApiClient {
         return this.request<TravelRecord>(`/records/${id}`);
     }
 
+    async exportSpdPdf(id: string): Promise<Blob> {
+        const headers: HeadersInit = {
+            ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
+        };
+
+        const response = await fetch(`${BASE_URL}/records/${id}/spd-pdf`, {
+            method: 'GET',
+            headers
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 && this.unauthorizedHandler) {
+                this.unauthorizedHandler();
+            }
+            const errorText = await response.text();
+            let errorMessage = response.statusText;
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (errorJson.message) errorMessage = errorJson.message;
+            } catch (e) {
+                if (errorText) errorMessage = errorText;
+            }
+            throw new Error(`Export PDF failed: ${errorMessage}`);
+        }
+
+        return response.blob();
+    }
+
     async createRecord(record: any): Promise<TravelRecord[]> {
          const employees = record.employees || [record.employee];
          const createdRecords: TravelRecord[] = [];
