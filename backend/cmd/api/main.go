@@ -142,6 +142,8 @@ func main() {
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
 		protected.GET("/records/:id/spd-pdf", recordHandler.ExportSpdPDF)
+		protected.GET("/records/:id/laporan-pdf", recordHandler.ExportLaporanPDF)
+		protected.GET("/records/:id/rincian-pdf", recordHandler.ExportRincianPDF)
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 		protected.DELETE("/records/spd/:spd", recordHandler.DeleteRecordsBySpd)

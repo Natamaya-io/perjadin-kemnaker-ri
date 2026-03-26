@@ -59,6 +59,7 @@ services:
       - SEED_DB=${SEED_DB:-true}
       - GIN_MODE=${GIN_MODE}
       - FONNTE_API=${FONNTE_API}
+      - GOTENBERG_URL=http://gotenberg:3000
     ports:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:

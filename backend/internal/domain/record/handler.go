@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,18 +14,32 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/utils"
-	"github.com/kemnaker/perjadin-backend/internal/utils/pdf"
+	"github.com/kemnaker/perjadin-backend/internal/utils/document"
+	"github.com/kemnaker/perjadin-backend/internal/utils/terbilang"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Handler struct {
 	svc      Service
 	userRepo user.Repository
 	cfg      *config.Config
+	docGen   *document.Generator
 }
 
 func NewHandler(s Service, userRepo user.Repository, cfg *config.Config) *Handler {
-	return &Handler{svc: s, userRepo: userRepo, cfg: cfg}
+	gotenbergURL := os.Getenv("GOTENBERG_URL")
+	if gotenbergURL == "" {
+		gotenbergURL = "http://gotenberg:3000"
+	}
+
+	return &Handler{
+		svc:      s,
+		userRepo: userRepo,
+		cfg:      cfg,
+		docGen:   document.NewGenerator(gotenbergURL, "templates"),
+	}
 }
 
 func (h *Handler) notifyEmployee(record *models.TravelRecord) {
@@ -57,6 +72,113 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 	} else {
 		fmt.Printf("Successfully sent WhatsApp notification to %s\n", u.NomorHP)
 	}
+}
+
+func (h *Handler) mapTravelToDocument(record *models.TravelRecord) map[string]interface{} {
+	titleCaser := cases.Title(language.Indonesian)
+	
+	formatDate := func(t time.Time) string {
+		if t.IsZero() {
+			return "-"
+		}
+		months := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+		return fmt.Sprintf("%d %s %d", t.Day(), months[int(t.Month())], t.Year())
+	}
+
+	days := int(record.EndDate.Sub(record.StartDate).Hours()/24) + 1
+	
+	dest := record.Location
+	prov := record.Province
+	if len(record.Locations) > 0 {
+		var locs []string
+		for _, l := range record.Locations {
+			locs = append(locs, titleCaser.String(l.Location))
+		}
+		dest = strings.Join(locs, " & ")
+		prov = titleCaser.String(record.Locations[0].Province)
+	}
+
+	transportMode := "-"
+	if record.Cost != nil && record.Cost.TransportMode != "" {
+		transportMode = record.Cost.TransportMode
+	}
+
+	vars := map[string]interface{}{
+		"no_spd":            record.SPDNumber,
+		"nama":              record.Employee.Name,
+		"nip":               record.Employee.NIP,
+		"pangkat_gol":       fmt.Sprintf("%s / %s", record.Employee.Pangkat, record.Employee.Golongan),
+		"jabatan":           record.Employee.Jabatan,
+		"tingkat_biaya":     record.Employee.TingkatBiaya,
+		"maksud_perjalanan": record.Purpose,
+		"tujuan":            dest,
+		"provinsi":          prov,
+		"transportasi":      transportMode,
+		"tgl_berangkat":     formatDate(record.StartDate),
+		"tgl_kembali":       formatDate(record.EndDate),
+		"lama_hari":         fmt.Sprintf("%d ( %s )", days, terbilang.FormatTerbilang(days)),
+		"tgl_surat_tugas":   formatDate(record.SuratTugasDate),
+		"tgl_cetak":         formatDate(time.Now()),
+		"nama_ppk":          "Arief Hafidiyanto",
+		"nip_ppk":           "19720827 200312 1 002",
+	}
+
+	if record.Report != nil {
+		vars["isi_laporan"] = record.Report.Text
+		vars["tgl_laporan"] = formatDate(record.Report.SubmittedAt)
+	}
+
+	if record.Cost != nil {
+		total := record.TotalCost
+		vars["total_biaya"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(total))
+		vars["terbilang_biaya"] = fmt.Sprintf("%s Rupiah", titleCaser.String(terbilang.FormatTerbilang(int(total))))
+		vars["biaya_harian"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.DailyAllowanceRate * float64(record.Cost.DailyAllowanceDays)))
+		vars["biaya_hotel"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.HotelRate * float64(record.Cost.HotelDays)))
+		vars["biaya_pesawat"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.TicketGo + record.Cost.TicketBack))
+	}
+
+	return vars
+}
+
+func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
+	}
+
+	payload := document.DocumentRequest{
+		TemplateName: templateName,
+		Variables:    h.mapTravelToDocument(record),
+	}
+
+	pdfBytes, err := h.docGen.Generate(c.Request().Context(), payload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen: %v", err))
+	}
+
+	filename := fmt.Sprintf("%s_%s_%s.pdf", prefix, record.Employee.Name, record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Response().Header().Set(echo.HeaderContentType, "application/pdf")
+
+	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
+}
+
+func (h *Handler) ExportSpdPDF(c echo.Context) error {
+	return h.exportDocument(c, "Berkas Luar Kota - SPD.docx", "SPD")
+}
+
+func (h *Handler) ExportLaporanPDF(c echo.Context) error {
+	return h.exportDocument(c, "Berkas Luar Kota - Laporan.docx", "Laporan")
+}
+
+func (h *Handler) ExportRincianPDF(c echo.Context) error {
+	return h.exportDocument(c, "Berkas Luar Kota - rincian pembayaran.docx", "Rincian")
 }
 
 func (h *Handler) UploadFile(c echo.Context) error {
@@ -122,14 +244,12 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	if len(record.EmployeeIDs) > 0 {
 		var createdRecords []models.TravelRecord
 		for _, empID := range record.EmployeeIDs {
-			// Create a deep copy of the base record
 			newRecord := record
 			newRecord.ID = uuid.Nil
 			newRecord.EmployeeID = empID
 			newRecord.CreatorID = creatorID
 			newRecord.EmployeeIDs = nil
 			
-			// Crucial: Copy locations to prevent sharing slices between records
 			if len(record.Locations) > 0 {
 				newRecord.Locations = make([]models.TravelLocation, len(record.Locations))
 				copy(newRecord.Locations, record.Locations)
@@ -233,28 +353,4 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Successfully deleted records for SPD " + spd,
 	})
-}
-
-func (h *Handler) ExportSpdPDF(c echo.Context) error {
-	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
-	}
-
-	record, err := h.svc.GetRecordByID(id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data perjalanan tidak ditemukan: %v", err))
-	}
-
-	pdfBytes, err := pdf.GenerateSpdOverlay(record)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat PDF: %v", err))
-	}
-
-	filename := fmt.Sprintf("SPD_%s_%s.pdf", record.Employee.Name, record.SPDNumber)
-	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	c.Response().Header().Set(echo.HeaderContentType, "application/pdf")
-
-	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }

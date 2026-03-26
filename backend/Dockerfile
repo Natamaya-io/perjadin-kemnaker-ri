@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install SSL ca certificates and UPX
 RUN apk --no-cache add ca-certificates tzdata upx
@@ -20,12 +20,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -extldflags '
 RUN upx --best --lzma main
 
 # Stage 2: Ultra-lightweight runtime
-FROM scratch
+FROM alpine:latest
+
+# Install tzdata for proper time handling in Go
+RUN apk --no-cache add tzdata ca-certificates
 
 WORKDIR /app
-
-# Copy CA certificates to enable HTTPS requests
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the compiled, stripped binary
 COPY --from=builder /app/main .
@@ -33,10 +33,8 @@ COPY --from=builder /app/main .
 # Copy migrations
 COPY db/migrations ./db/migrations
 
-# Copy PDF templates (sourced from the local build context)
-COPY ["Berkas Luar Kota - SPD.pdf", "./"]
-COPY ["Berkas Luar Kota - Laporan.pdf", "./"]
-COPY ["Berkas Luar Kota - rincian pembayaran.pdf", "./"]
+# Copy DOCX templates folder
+COPY templates ./templates
 
 # Expose the application port
 EXPOSE 8081

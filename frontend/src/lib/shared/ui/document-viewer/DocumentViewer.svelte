@@ -414,8 +414,8 @@
             <!-- Pan/Zoom Wrapper -->
             <div use:panzoom={{cssScale, panX, panY}} class="relative flex justify-center items-center z-10 transform-origin-center will-change-transform max-w-full max-h-full p-4 md:p-8">
                 {#if type === 'pdf'}
-                    <div class="shadow-2xl shadow-slate-400/20 rounded-sm overflow-hidden ring-1 ring-black/5 bg-white">
-                        <canvas bind:this={canvas} class="block max-w-full h-auto pointer-events-none"></canvas>
+                    <div class="shadow-2xl shadow-slate-400/20 rounded-sm overflow-hidden ring-1 ring-black/5 bg-white flex max-h-full">
+                        <canvas bind:this={canvas} class="block max-w-full max-h-[80vh] object-contain pointer-events-none"></canvas>
                     </div>
                 {:else if type === 'docx'}
                     <div bind:this={container} class="bg-white shadow-2xl shadow-slate-400/20 p-8 min-h-[800px] w-full max-w-[800px] docx-wrapper ring-1 ring-black/5"></div>

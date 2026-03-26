@@ -149,12 +149,12 @@ export class RealApiClient implements ApiClient {
         return this.request<TravelRecord>(`/records/${id}`);
     }
 
-    async exportSpdPdf(id: string): Promise<Blob> {
+    private async exportPdf(id: string, type: 'spd' | 'laporan' | 'rincian'): Promise<Blob> {
         const headers: HeadersInit = {
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
         };
 
-        const response = await fetch(`${BASE_URL}/records/${id}/spd-pdf`, {
+        const response = await fetch(`${BASE_URL}/records/${id}/${type}-pdf`, {
             method: 'GET',
             headers
         });
@@ -171,10 +171,22 @@ export class RealApiClient implements ApiClient {
             } catch (e) {
                 if (errorText) errorMessage = errorText;
             }
-            throw new Error(`Export PDF failed: ${errorMessage}`);
+            throw new Error(`Export ${type.toUpperCase()} PDF failed: ${errorMessage}`);
         }
 
         return response.blob();
+    }
+
+    async exportSpdPdf(id: string): Promise<Blob> {
+        return this.exportPdf(id, 'spd');
+    }
+
+    async exportLaporanPdf(id: string): Promise<Blob> {
+        return this.exportPdf(id, 'laporan');
+    }
+
+    async exportRincianPdf(id: string): Promise<Blob> {
+        return this.exportPdf(id, 'rincian');
     }
 
     async createRecord(record: any): Promise<TravelRecord[]> {
