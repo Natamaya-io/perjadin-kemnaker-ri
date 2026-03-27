@@ -92,6 +92,11 @@ func (g *Generator) convertToPDF(ctx context.Context, docxBytes []byte) ([]byte,
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
+	// Ensure native page size is used (e.g., for F4/Legal size templates)
+	if err := writer.WriteField("nativePageSize", "true"); err != nil {
+		return nil, err
+	}
+
 	part, err := writer.CreateFormFile("files", "document.docx")
 	if err != nil {
 		return nil, err
