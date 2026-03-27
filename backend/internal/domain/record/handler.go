@@ -186,6 +186,8 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }
 
+// ExportSpdPDF handles the request to export a TravelRecord as an SPD PDF.
+// It uses the docx template and converts it to PDF via Gotenberg.
 func (h *Handler) ExportSpdPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - SPD.docx", "SPD")
 }
