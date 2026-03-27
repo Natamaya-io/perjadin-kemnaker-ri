@@ -58,11 +58,21 @@
     $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft') && r.reportStatus !== 'Completed').length;
     $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
     
+    // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
+    $: allRecordsSorted = [...records].sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        const spdA = a.spd || '';
+        const spdB = b.spd || '';
+        if (spdA !== spdB) return spdA.localeCompare(spdB);
+        return (a.id || '').localeCompare(b.id || '');
+    });
+    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
+
     // Recent Logic
     $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5).map(record => {
-        const allRecordsForSpd = records.filter(r => r.spd === record.spd);
-        const officerIndex = allRecordsForSpd.findIndex(r => r.id === record.id);
-        const nomorSpdPetugas = String(officerIndex + 1).padStart(3, '0');
+        const nomorSpdPetugas = String(recordToIndexMap.get(record.id) || 0).padStart(3, '0');
         return { ...record, nomorSpdPetugas };
     });    
     

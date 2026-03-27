@@ -20,7 +20,7 @@
     import TripStepper from '$lib/features/dashboard/ui/roadmap/TripStepper.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
 
-    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'kasubag' || $userStore.role === 'protokol');
+    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'kasubag');
 
     // Filter & Sort State
     let searchQuery = '';
@@ -96,8 +96,16 @@
             if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             return 0;
         });
-
-    $: allRecordsSorted = [...$recordsStore].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
+    $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        const spdA = a.spd || '';
+        const spdB = b.spd || '';
+        if (spdA !== spdB) return spdA.localeCompare(spdB);
+        return (a.id || '').localeCompare(b.id || '');
+    });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
 
     $: groupedRecords = filteredRecords.reduce((acc, record) => {
@@ -108,10 +116,7 @@
             const globalIndex = recordToIndexMap.get(record.id) || 0;
             const nomorSpdPetugas = String(globalIndex).padStart(3, '0');
             
-            // Create group if not exists, or overwrite if it's MY record (to show my number)
-            if (!acc[record.spd] || isMyRecord) {
-                acc[record.spd] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
-            }
+            acc[record.spd] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
         }
         return acc;
     }, {});
