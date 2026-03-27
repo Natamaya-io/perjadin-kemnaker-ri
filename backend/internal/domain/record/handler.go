@@ -75,6 +75,8 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 }
 
 func (h *Handler) mapTravelToDocument(record *models.TravelRecord) map[string]interface{} {
+	// mapTravelToDocument maps TravelRecord data to placeholders used in DOCX templates.
+	// Ensure keys match the {{placeholder}} names in 'templates/Berkas Luar Kota - SPD.docx'
 	titleCaser := cases.Title(language.Indonesian)
 	
 	formatDate := func(t time.Time) string {
