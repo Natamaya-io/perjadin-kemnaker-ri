@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -74,7 +75,7 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 	}
 }
 
-func (h *Handler) mapTravelToDocument(record *models.TravelRecord) map[string]interface{} {
+func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex int) map[string]interface{} {
 	// mapTravelToDocument maps TravelRecord data to placeholders used in DOCX templates.
 	// Ensure keys match the {{placeholder}} names in 'templates/Berkas Luar Kota - SPD.docx'
 	titleCaser := cases.Title(language.Indonesian)
@@ -105,10 +106,14 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord) map[string]in
 		transportMode = record.Cost.TransportMode
 	}
 
+	// Roman numeral months
+	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+	spdSubNumber := fmt.Sprintf("%03d", globalIndex)
+
 	vars := map[string]interface{}{
-		"no_spd":               record.SPDNumber,
-		"no_surat":            record.SPDNumber,
-		"bulan":               fmt.Sprintf("%02d", record.StartDate.Month()),
+		"no_spd":               spdSubNumber,
+		"no_surat":            spdSubNumber,
+		"bulan":               romanMonths[int(record.StartDate.Month())],
 		"tahun":               record.StartDate.Year(),
 		"nama":                record.Employee.Name,
 		"nama_petugas":        record.Employee.Name,
@@ -137,6 +142,8 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord) map[string]in
 		"tgl_cetak":           formatDate(time.Now()),
 		"nama_ppk":            "Arief Hafidiyanto",
 		"nip_ppk":             "19720827 200312 1 002",
+		"nama ppk":            "Arief Hafidiyanto",
+		"nip ppk":             "19720827 200312 1 002",
 		"keterangan":          "-",
 	}
 
@@ -169,9 +176,37 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
 
+	// Compute global index using the same deterministic sort as the frontend admin page
+	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
+	globalIndex := 0
+	if err == nil && len(allRecords) > 0 {
+		sort.Slice(allRecords, func(i, j int) bool {
+			ti := allRecords[i].CreatedAt.Unix()
+			tj := allRecords[j].CreatedAt.Unix()
+			if ti != tj {
+				return ti < tj
+			}
+			si := allRecords[i].SPDNumber
+			sj := allRecords[j].SPDNumber
+			if si != sj {
+				return si < sj
+			}
+			return allRecords[i].ID.String() < allRecords[j].ID.String()
+		})
+		for idx, r := range allRecords {
+			if r.ID == record.ID {
+				globalIndex = idx + 1
+				break
+			}
+		}
+	}
+	if globalIndex == 0 {
+		globalIndex = 1 // fallback
+	}
+
 	payload := document.DocumentRequest{
 		TemplateName: templateName,
-		Variables:    h.mapTravelToDocument(record),
+		Variables:    h.mapTravelToDocument(record, globalIndex),
 	}
 
 	pdfBytes, err := h.docGen.Generate(c.Request().Context(), payload)

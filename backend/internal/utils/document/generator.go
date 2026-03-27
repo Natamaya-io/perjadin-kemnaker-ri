@@ -72,11 +72,13 @@ func (g *Generator) Generate(ctx context.Context, req DocumentRequest) ([]byte, 
 	// Coba satukan placeholder yang terpecah oleh Word formatting
 	d.SetContent(fixSplitRuns(d.GetContent()))
 
-	// Replace variables
+	// Replace variables in document body, headers, and footers
 	for k, v := range req.Variables {
 		placeholder := fmt.Sprintf("{{%s}}", k)
 		val := fmt.Sprintf("%v", v)
 		d.Replace(placeholder, val, -1)
+		d.ReplaceFooter(placeholder, val)
+		d.ReplaceHeader(placeholder, val)
 	}
 
 	var docxBuf bytes.Buffer

@@ -293,7 +293,7 @@
     }
 </script>
 
-<Dialog bind:open={open} class="w-[calc(100vw-2rem)] md:w-full max-w-[95vw] md:max-w-2xl lg:max-w-4xl overflow-hidden flex flex-col p-0 h-[calc(100vh-2rem)] max-h-[90vh] md:max-h-[85vh] mx-auto my-auto md:mt-10 rounded-2xl shadow-2xl border-0" on:close={() => dispatch('close')}>
+<Dialog bind:open={open} class="w-[calc(100vw-2rem)] md:w-full max-w-[95vw] md:max-w-2xl lg:max-w-4xl overflow-hidden flex flex-col p-0 h-[calc(100vh-2rem)] max-h-[90vh] md:max-h-[85vh] mx-auto my-auto rounded-2xl shadow-2xl border-0" on:close={() => dispatch('close')}>
     <DialogHeader class="border-b border-slate-100 p-4 md:p-6 shrink-0 bg-white/95 backdrop-blur z-10 sticky top-0">
         <DialogTitle class="text-lg md:text-xl font-bold text-slate-800">
             {$userStore.role === 'protokol' 

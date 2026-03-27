@@ -8,9 +8,12 @@
 
     let type = $page.url.searchParams.get('type'); // 'spd', 'rincian', 'laporan'
     let spd = $page.url.searchParams.get('spd');
+    let recordId = $page.url.searchParams.get('id');
     
     $: allRecordsForSpd = $recordsStore.filter(r => r.spd === spd);
-    $: record = allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null;
+    $: record = recordId 
+        ? $recordsStore.find(r => r.id === recordId) || (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null)
+        : (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null);
 
     let pdfUrl = '';
     let isGeneratingPdf = false;
