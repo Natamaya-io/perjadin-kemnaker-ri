@@ -92,7 +92,8 @@ func (g *Generator) convertToPDF(ctx context.Context, docxBytes []byte) ([]byte,
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Ensure native page size is used (e.g., for F4/Legal size templates)
+	// Ensure native page size is used (e.g., for F4/Legal/Folio size templates)
+	// This prevents the bottom of the document from being cut off in Gotenberg.
 	if err := writer.WriteField("nativePageSize", "true"); err != nil {
 		return nil, err
 	}
