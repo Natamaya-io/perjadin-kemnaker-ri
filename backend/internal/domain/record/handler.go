@@ -1,6 +1,7 @@
 package record
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -228,8 +229,201 @@ func (h *Handler) ExportSpdPDF(c echo.Context) error {
 }
 
 func (h *Handler) ExportLaporanPDF(c echo.Context) error {
-	return h.exportDocument(c, "Berkas Luar Kota - Laporan.docx", "Laporan")
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
+	}
+
+	// Get all records with the same SPD number for multi-employee mapping
+	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal mengambil data records")
+	}
+
+	// Filter records by same SPD number
+	var spdGroupRecords []models.TravelRecord
+	for _, r := range allRecords {
+		if r.SPDNumber == record.SPDNumber {
+			spdGroupRecords = append(spdGroupRecords, r)
+		}
+	}
+
+	// Sort by creation time for consistent ordering
+	sort.Slice(spdGroupRecords, func(i, j int) bool {
+		ti := spdGroupRecords[i].CreatedAt.Unix()
+		tj := spdGroupRecords[j].CreatedAt.Unix()
+		if ti != tj {
+			return ti < tj
+		}
+		return spdGroupRecords[i].ID.String() < spdGroupRecords[j].ID.String()
+	})
+
+	titleCaser := cases.Title(language.Indonesian)
+	formatDate := func(t time.Time) string {
+		if t.IsZero() {
+			return "-"
+		}
+		months := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+		return fmt.Sprintf("%d %s %d", t.Day(), months[int(t.Month())], t.Year())
+	}
+
+	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+
+	// Build destination string
+	dest := record.Location
+	prov := record.Province
+	if len(record.Locations) > 0 {
+		var locs []string
+		for _, l := range record.Locations {
+			locs = append(locs, titleCaser.String(l.Location))
+		}
+		dest = strings.Join(locs, " & ")
+		prov = titleCaser.String(record.Locations[0].Province)
+	}
+
+	// Surat Tugas info
+	noSuratTugas := record.SuratTugasNumber
+	if noSuratTugas == "" {
+		noSuratTugas = "-"
+	}
+
+	// Bulan for surat tugas number
+	bulanNoSurat := ""
+	tanggalNoSurat := ""
+	if !record.SuratTugasDate.IsZero() {
+		bulanNoSurat = romanMonths[int(record.SuratTugasDate.Month())]
+		tanggalNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Day())
+	}
+
+	// Isi Laporan
+	isiLaporan := "-"
+	tanggalLaporan := formatDate(time.Now())
+	if record.Report != nil {
+		if record.Report.Text != "" {
+			isiLaporan = record.Report.Text
+		}
+		if !record.Report.SubmittedAt.IsZero() {
+			tanggalLaporan = formatDate(record.Report.SubmittedAt)
+		}
+	}
+
+	// Stakeholder & Purpose
+	stakeholder := record.Stakeholder
+	if stakeholder == "" {
+		stakeholder = "-"
+	}
+	tujuanPerjalanan := record.Purpose
+	if tujuanPerjalanan == "" {
+		tujuanPerjalanan = "-"
+	}
+
+	// Build variables map matching ACTUAL template placeholders
+	vars := map[string]interface{}{
+		// Page 1 - Title
+		"kota":               titleCaser.String(dest),
+		"provinsi":           titleCaser.String(prov),
+		"tanggal_mulai":      formatDate(record.StartDate),
+		"tanggal_selesai":    formatDate(record.EndDate),
+		"bulan":              romanMonths[int(record.StartDate.Month())],
+		"tahun":              record.StartDate.Year(),
+
+		// Page 1 - Dasar/Pendahuluan
+		"no_surat":           noSuratTugas,
+		"bulan_no_surat":     bulanNoSurat,
+		"tanggal_no_surat":   tanggalNoSurat,
+		"tujuan_perjalanan":  tujuanPerjalanan,
+		"stakeholder":        stakeholder,
+
+		// Page 1 - Isi Laporan
+		"isi_laporan":        isiLaporan,
+
+		// Page 2 - Penutup
+		"tanggal_dikeluarkan": tanggalLaporan,
+
+		// PPK (hardcoded)
+		"nama_ppk":           "Arief Hafidiyanto",
+		"nip_ppk":            "19720827 200312 1 002",
+	}
+
+	// Map Petugas from SPD group - using Indonesian ordinals (template supports up to 10)
+	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
+	for i, ordinal := range ordinals {
+		if i < len(spdGroupRecords) {
+			emp := spdGroupRecords[i].Employee
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = emp.Name
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = emp.NIP
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
+		} else {
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
+		}
+	}
+
+	// Extract documentation images from report files (template supports up to 6)
+	imageOrdinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam"}
+	images := make(map[string]document.ImageData)
+	if record.Report != nil && len(record.Report.Files) > 0 {
+		var reportFiles []struct {
+			Name      string `json:"name"`
+			Type      string `json:"type"`
+			Data      string `json:"data"`
+			Timestamp string `json:"timestamp"`
+		}
+
+		if err := json.Unmarshal(record.Report.Files, &reportFiles); err == nil {
+			for i, f := range reportFiles {
+				if i >= len(imageOrdinals) {
+					break
+				}
+				docKey := fmt.Sprintf("foto_dokumentasi_%s", imageOrdinals[i])
+				images[docKey] = document.ImageData{
+					Data:     f.Data,
+					MimeType: f.Type,
+				}
+			}
+		}
+	}
+
+	// Clean up unused foto placeholders as text if no image
+	for _, ordinal := range imageOrdinals {
+		key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
+		if _, ok := images[key]; !ok {
+			vars[key] = ""
+		}
+	}
+
+	payload := document.DocumentRequest{
+		TemplateName: "Berkas Luar Kota - Laporan.docx",
+		Variables:    vars,
+	}
+
+	var pdfBytes []byte
+	if len(images) > 0 {
+		pdfBytes, err = h.docGen.GenerateWithImages(c.Request().Context(), payload, images)
+	} else {
+		pdfBytes, err = h.docGen.Generate(c.Request().Context(), payload)
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen laporan: %v", err))
+	}
+
+	filename := fmt.Sprintf("Laporan_%s_%s.pdf", record.Employee.Name, record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Response().Header().Set(echo.HeaderContentType, "application/pdf")
+
+	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }
+
+
 
 func (h *Handler) ExportRincianPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - rincian pembayaran.docx", "Rincian")
