@@ -361,10 +361,11 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = emp.NIP
 			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
 		} else {
-			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
-			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
-			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
-			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
+			// Use __REMOVE_ROW__ marker so the generator removes the entire table row
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = "__REMOVE_ROW__"
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = "__REMOVE_ROW__"
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = "__REMOVE_ROW__"
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = "__REMOVE_ROW__"
 		}
 	}
 

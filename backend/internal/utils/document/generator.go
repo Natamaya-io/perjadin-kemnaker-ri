@@ -48,6 +48,52 @@ func NewGenerator(gotenbergURL string, templateDir string) *Generator {
 	}
 }
 
+// removeEmptyTableRows removes entire <w:tr>...</w:tr> table rows that contain
+// the __REMOVE_ROW__ marker text. This is used to hide unused petugas rows.
+func removeEmptyTableRows(xmlContent string) string {
+	marker := "__REMOVE_ROW__"
+	for {
+		idx := strings.Index(xmlContent, marker)
+		if idx == -1 {
+			break
+		}
+		// Find the enclosing <w:tr ...> before this marker
+		trStart := strings.LastIndex(xmlContent[:idx], "<w:tr ")
+		if trStart == -1 {
+			trStart = strings.LastIndex(xmlContent[:idx], "<w:tr>")
+		}
+		if trStart == -1 {
+			// Can't find table row, just remove the marker text
+			xmlContent = strings.Replace(xmlContent, marker, "", 1)
+			continue
+		}
+		// Find the closing </w:tr> after this marker
+		trEnd := strings.Index(xmlContent[idx:], "</w:tr>")
+		if trEnd == -1 {
+			xmlContent = strings.Replace(xmlContent, marker, "", 1)
+			continue
+		}
+		trEnd = idx + trEnd + len("</w:tr>")
+		// Remove the entire row
+		xmlContent = xmlContent[:trStart] + xmlContent[trEnd:]
+	}
+	return xmlContent
+}
+
+// adjustPetugasTableWidths narrows the number column (1906 -> 700 dxa) and
+// widens the name column (5391 -> 6597 dxa) so names sit closer to numbers.
+func adjustPetugasTableWidths(xmlContent string) string {
+	// Adjust the table grid definition
+	xmlContent = strings.Replace(xmlContent,
+		`<w:tblGrid><w:gridCol w:w="1906"/><w:gridCol w:w="5391"/><w:gridCol w:w="3260"/></w:tblGrid>`,
+		`<w:tblGrid><w:gridCol w:w="700"/><w:gridCol w:w="6597"/><w:gridCol w:w="3260"/></w:tblGrid>`,
+		-1)
+	// Adjust individual cell widths in each row
+	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="1906" w:type="dxa"/>`, `<w:tcW w:w="700" w:type="dxa"/>`)
+	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="5391" w:type="dxa"/>`, `<w:tcW w:w="6597" w:type="dxa"/>`)
+	return xmlContent
+}
+
 // fixSplitRuns mencoba menyatukan placeholder {{...}} atau <<...>> yang terpecah oleh tag XML
 func fixSplitRuns(xmlContent string) string {
 	// Fix {{ and }} split by XML tags
@@ -128,6 +174,12 @@ func (g *Generator) Generate(ctx context.Context, req DocumentRequest) ([]byte, 
 		d.SetContent(content)
 	}
 
+	// Remove table rows marked for deletion (empty petugas slots)
+	d.SetContent(removeEmptyTableRows(d.GetContent()))
+
+	// Adjust petugas table column widths (narrow number col, widen name col)
+	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
+
 	var docxBuf bytes.Buffer
 	if err := d.Write(&docxBuf); err != nil {
 		return nil, fmt.Errorf("failed to write docx: %w", err)
@@ -164,6 +216,12 @@ func (g *Generator) GenerateWithImages(ctx context.Context, req DocumentRequest,
 		content = replaceAngleBrackets(content, k, val)
 		d.SetContent(content)
 	}
+
+	// Remove table rows marked for deletion (empty petugas slots)
+	d.SetContent(removeEmptyTableRows(d.GetContent()))
+
+	// Adjust petugas table column widths (narrow number col, widen name col)
+	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
 
 	var docxBuf bytes.Buffer
 	if err := d.Write(&docxBuf); err != nil {

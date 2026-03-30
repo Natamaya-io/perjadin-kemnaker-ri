@@ -524,8 +524,8 @@
         if (!recordsList.length) return;
         
         const words = reportText.trim().split(/\s+/).length;
-        if (reportText && words > 2000) {
-            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 2000 kata.`);
+        if (reportText && words > 200) {
+            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 200 kata.`);
             return;
         }
 
@@ -561,8 +561,8 @@
         }
 
         const words = reportText.trim().split(/\s+/).length;
-        if (words > 2000) {
-            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 2000 kata.`);
+        if (words > 200) {
+            toast.error(`Laporan terlalu panjang (${words} kata). Maksimal 200 kata.`);
             return;
         }
 
@@ -911,7 +911,7 @@
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                     <Label class="text-lg font-bold text-slate-800">Isi Laporan Kegiatan</Label>
                                     <span class="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-full border border-slate-200">
-                                        {reportText.trim().split(/\s+/).filter(w => w.length > 0).length} / 2000 Kata
+                                        {reportText.trim().split(/\s+/).filter(w => w.length > 0).length} / 200 Kata
                                     </span>
                                 </div>
                                 <Textarea 
@@ -921,7 +921,7 @@
                                     bind:value={reportText} 
                                     disabled={$userStore.role === 'kasubag'}
                                 />
-                                <p class="text-xs text-slate-400 italic">Maksimal 2000 kata. Gunakan bahasa yang baku dan jelas.</p>
+                                <p class="text-xs text-slate-400 italic">Maksimal 200 kata. Gunakan bahasa yang baku dan jelas.</p>
                             </div>
 
                             <!-- File Upload Section -->
