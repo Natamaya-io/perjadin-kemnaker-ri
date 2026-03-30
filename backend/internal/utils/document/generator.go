@@ -58,10 +58,14 @@ func removeEmptyTableRows(xmlContent string) string {
 			break
 		}
 		// Find the enclosing <w:tr ...> before this marker
-		trStart := strings.LastIndex(xmlContent[:idx], "<w:tr ")
-		if trStart == -1 {
-			trStart = strings.LastIndex(xmlContent[:idx], "<w:tr>")
+		trStart1 := strings.LastIndex(xmlContent[:idx], "<w:tr ")
+		trStart2 := strings.LastIndex(xmlContent[:idx], "<w:tr>")
+		
+		trStart := trStart1
+		if trStart2 > trStart1 {
+			trStart = trStart2
 		}
+
 		if trStart == -1 {
 			// Can't find table row, just remove the marker text
 			xmlContent = strings.Replace(xmlContent, marker, "", 1)
@@ -80,17 +84,77 @@ func removeEmptyTableRows(xmlContent string) string {
 	return xmlContent
 }
 
-// adjustPetugasTableWidths narrows the number column (1906 -> 700 dxa) and
-// widens the name column (5391 -> 6597 dxa) so names sit closer to numbers.
+// Adjust petugas table width and documentation layout
 func adjustPetugasTableWidths(xmlContent string) string {
-	// Adjust the table grid definition
+	// Adjust the petugas table grid definition
 	xmlContent = strings.Replace(xmlContent,
 		`<w:tblGrid><w:gridCol w:w="1906"/><w:gridCol w:w="5391"/><w:gridCol w:w="3260"/></w:tblGrid>`,
 		`<w:tblGrid><w:gridCol w:w="700"/><w:gridCol w:w="6597"/><w:gridCol w:w="3260"/></w:tblGrid>`,
 		-1)
-	// Adjust individual cell widths in each row
+	// Adjust individual cell widths in petugas rows
 	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="1906" w:type="dxa"/>`, `<w:tcW w:w="700" w:type="dxa"/>`)
 	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="5391" w:type="dxa"/>`, `<w:tcW w:w="6597" w:type="dxa"/>`)
+
+	// We look for any of the placeholders.
+	fotoPlaceholders := []string{"satu", "dua", "tiga", "empat", "lima", "enam"}
+	var fotoIdx int = -1
+
+	for _, ordinal := range fotoPlaceholders {
+		key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
+		idx := strings.Index(xmlContent, key)
+		if idx != -1 {
+			fotoIdx = idx
+			break
+		}
+	}
+
+	if fotoIdx != -1 {
+		// Find the enclosing <w:tbl>
+		tblStart1 := strings.LastIndex(xmlContent[:fotoIdx], "<w:tbl>")
+		tblStart2 := strings.LastIndex(xmlContent[:fotoIdx], "<w:tbl ")
+		
+		tblStart := tblStart1
+		if tblStart2 > tblStart1 {
+			tblStart = tblStart2
+		}
+
+		if tblStart != -1 {
+			tblEnd := strings.Index(xmlContent[tblStart:], "</w:tbl>")
+			if tblEnd != -1 {
+				tblEnd = tblStart + tblEnd + len("</w:tbl>")
+				// CRITICAL: Only proceed if the placeholder is actually INSIDE this table
+				if fotoIdx < (tblStart + strings.Index(xmlContent[tblStart:], "</w:tbl>") + len("</w:tbl>")) {
+					tableContent := xmlContent[tblStart:tblEnd]
+
+					var replacement string
+					foundCount := 0
+					for _, ordinal := range fotoPlaceholders {
+						key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
+						if strings.Contains(tableContent, key) {
+							// Group 2 images per paragraph for 2x2 layout
+							if foundCount%2 == 0 {
+								if foundCount > 0 {
+									replacement += `</w:p>`
+								}
+								replacement += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>`
+							} else {
+								// Add space between images in the same row
+								replacement += `<w:r><w:t xml:space="preserve">   </w:t></w:r>`
+							}
+							replacement += fmt.Sprintf(`<w:r><w:t>{{%s}}</w:t></w:r>`, key)
+							foundCount++
+						}
+					}
+					if foundCount > 0 {
+						replacement += `</w:p>`
+					}
+					// Replace the entire table with our new grouped layout
+					xmlContent = xmlContent[:tblStart] + replacement + xmlContent[tblEnd:]
+				}
+			}
+		}
+	}
+
 	return xmlContent
 }
 
@@ -295,12 +359,9 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 				}
 			}
 
-			// We use a large bounding box (15cm x 18cm) to allow big images. 
-			// IMPORTANT: If the DOCX template places the {{foto...}} inside a narrow table cell,
-			// MS Word will force the frame width down to the table cell width but leave the height as-is,
-			// causing squishing. The user must ensure the table cell in the template is wide enough!
-			const maxWidth float64 = 5400000  // ~15cm
-			const maxHeight float64 = 6480000 // ~18cm
+			// Bounding box for 2x2 layout (each image is ~half page width)
+			const maxWidth float64 = 2800000  // ~7.7cm width
+			const maxHeight float64 = 4000000 // ~11.1cm height
 
 			ratioW := maxWidth / w
 			ratioH := maxHeight / h
@@ -343,6 +404,7 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 			// Fix split runs AGAIN on the written output (docx library may re-split)
 			contentStr = fixSplitRuns(contentStr)
 			// Replace image placeholders with inline drawing XML
+			// We iterate through all placeholders and replace them one by one
 			for key, info := range imageInfoMap {
 				contentStr = replaceImagePlaceholder(contentStr, key, info.rId, info.cx, info.cy)
 			}
@@ -412,13 +474,11 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 	return outBuf.Bytes(), nil
 }
 
-// replaceImagePlaceholder replaces a {{PLACEHOLDER}} text in the XML with a full image paragraph
+// replaceImagePlaceholder replaces the run containing {{PLACEHOLDER}} with an image run
 func replaceImagePlaceholder(xmlContent string, placeholderKey string, rId string, cx int64, cy int64) string {
-	// Build a complete paragraph with an inline drawing element
-	drawingXML := fmt.Sprintf(
-		`</w:t></w:r></w:p>`+
-			`<w:p><w:pPr><w:jc w:val="center"/></w:pPr>`+
-			`<w:r><w:drawing>`+
+	// The image run
+	imgRun := fmt.Sprintf(
+		`<w:r><w:drawing>`+
 			`<wp:inline distT="0" distB="0" distL="0" distR="0">`+
 			`<wp:extent cx="%d" cy="%d"/>`+
 			`<wp:effectExtent l="0" t="0" r="0" b="0"/>`+
@@ -440,23 +500,40 @@ func replaceImagePlaceholder(xmlContent string, placeholderKey string, rId strin
 			`<a:noFill/>`+
 			`</pic:spPr>`+
 			`</pic:pic></a:graphicData></a:graphic>`+
-			`</wp:inline></w:drawing></w:r>`+
-			`</w:p><w:p><w:r><w:t>`,
+			`</wp:inline></w:drawing></w:r>`,
 		cx, cy,
 		hash(placeholderKey), placeholderKey,
 		placeholderKey,
 		rId,
 		cx, cy)
 
-	// Try {{key}} format (standard for this template)
+	// Try {{key}} format
 	curlyPlaceholder := fmt.Sprintf("{{%s}}", placeholderKey)
-	xmlContent = strings.ReplaceAll(xmlContent, curlyPlaceholder, drawingXML)
+	idx := strings.Index(xmlContent, curlyPlaceholder)
+	if idx == -1 {
+		// Try <<key>> format (encoded as &lt;&lt;key&gt;&gt;)
+		curlyPlaceholder = fmt.Sprintf("&lt;&lt;%s&gt;&gt;", placeholderKey)
+		idx = strings.Index(xmlContent, curlyPlaceholder)
+	}
 
-	// Also try <<key>> formats just in case
-	xmlPlaceholder := fmt.Sprintf("&lt;&lt;%s&gt;&gt;", placeholderKey)
-	xmlContent = strings.ReplaceAll(xmlContent, xmlPlaceholder, drawingXML)
+	if idx == -1 {
+		return xmlContent
+	}
 
-	return xmlContent
+	// Find the enclosing <w:r ...> ... </w:r> that contains this placeholder
+	// We want to replace the whole run so we don't leave broken <w:t> tags
+	rStart := strings.LastIndex(xmlContent[:idx], "<w:r")
+	if rStart != -1 {
+		rEnd := strings.Index(xmlContent[idx:], "</w:r>")
+		if rEnd != -1 {
+			rEnd = idx + rEnd + len("</w:r>")
+			// Replace the entire run with the image run
+			return xmlContent[:rStart] + imgRun + xmlContent[rEnd:]
+		}
+	}
+
+	// Fallback: just replace the text (might lead to invalid XML if inside <w:t>)
+	return strings.Replace(xmlContent, curlyPlaceholder, imgRun, 1)
 }
 
 func hash(s string) int {
