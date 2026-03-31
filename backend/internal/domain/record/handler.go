@@ -139,7 +139,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"lama_perjalanan":     days,
 		"terbilang":           terbilang.FormatTerbilang(days),
 		"tgl_surat_tugas":     formatDate(record.SuratTugasDate),
-		"tanggal_dikeluarkan": formatDate(record.SuratTugasDate),
+		"tanggal_dikeluarkan": formatDate(time.Now()),
 		"tgl_cetak":           formatDate(time.Now()),
 		"nama_ppk":            "Arief Hafidiyanto",
 		"nip_ppk":             "19720827 200312 1 002",
@@ -191,6 +191,18 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 			sj := allRecords[j].SPDNumber
 			if si != sj {
 				return si < sj
+			}
+			// Use employee name for deterministic ordering (matches frontend localeCompare behavior)
+			ni := ""
+			nj := ""
+			if allRecords[i].Employee.Name != "" {
+				ni = allRecords[i].Employee.Name
+			}
+			if allRecords[j].Employee.Name != "" {
+				nj = allRecords[j].Employee.Name
+			}
+			if ni != nj {
+				return ni < nj
 			}
 			return allRecords[i].ID.String() < allRecords[j].ID.String()
 		})
@@ -296,9 +308,18 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	// Bulan for surat tugas number
 	bulanNoSurat := ""
 	tanggalNoSurat := ""
+	tahunNoSurat := ""
 	if !record.SuratTugasDate.IsZero() {
 		bulanNoSurat = romanMonths[int(record.SuratTugasDate.Month())]
-		tanggalNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Day())
+		monthNames := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+		tanggalNoSurat = fmt.Sprintf("%d %s", record.SuratTugasDate.Day(), monthNames[int(record.SuratTugasDate.Month())])
+		tahunNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Year())
+	} else {
+		// Fallback to travel start date if SuratTugasDate is not set
+		bulanNoSurat = romanMonths[int(record.StartDate.Month())]
+		monthNames := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+		tanggalNoSurat = fmt.Sprintf("%d %s", record.StartDate.Day(), monthNames[int(record.StartDate.Month())])
+		tahunNoSurat = fmt.Sprintf("%d", record.StartDate.Year())
 	}
 
 	// Isi Laporan
@@ -337,6 +358,7 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		"no_surat":           noSuratTugas,
 		"bulan_no_surat":     bulanNoSurat,
 		"tanggal_no_surat":   tanggalNoSurat,
+		"tahun_no_surat":     tahunNoSurat,
 		"tujuan_perjalanan":  tujuanPerjalanan,
 		"stakeholder":        stakeholder,
 

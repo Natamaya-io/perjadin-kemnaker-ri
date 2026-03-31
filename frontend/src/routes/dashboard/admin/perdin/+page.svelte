@@ -59,8 +59,11 @@
             return spdA.localeCompare(spdB);
         }
 
-        // 3. Tertiary Sort: Name or UUID
+        // 3. Tertiary Sort: Employee Name (matches backend Go sort)
         // Guarantees absolute stability inside the accordion
+        const nameA = a.employee?.name || '';
+        const nameB = b.employee?.name || '';
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
         return (a.id || '').localeCompare(b.id || '');
     });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));

@@ -104,6 +104,9 @@
         const spdA = a.spd || '';
         const spdB = b.spd || '';
         if (spdA !== spdB) return spdA.localeCompare(spdB);
+        const nameA = a.employee?.name || '';
+        const nameB = b.employee?.name || '';
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
         return (a.id || '').localeCompare(b.id || '');
     });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
