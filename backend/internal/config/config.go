@@ -5,11 +5,12 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	JWT      JWTConfig
-	Fonnte   FonnteConfig
+	App       AppConfig
+	Database  DatabaseConfig
+	Redis     RedisConfig
+	JWT       JWTConfig
+	Fonnte    FonnteConfig
+	Signatory SignatoryConfig
 }
 
 type AppConfig struct {
@@ -19,6 +20,13 @@ type AppConfig struct {
 
 type FonnteConfig struct {
 	Token string
+}
+
+type SignatoryConfig struct {
+	PPKName       string
+	PPKNIP        string
+	BendaharaName string
+	BendaharaNIP  string
 }
 
 type DatabaseConfig struct {
@@ -52,6 +60,12 @@ func LoadConfig() *Config {
 	viper.SetDefault("REDIS_PORT", "6379")
 	viper.SetDefault("REDIS_PASSWORD", "")
 	viper.SetDefault("JWT_EXPIRY", 24)
+	
+	// Production Signatories (Defaults)
+	viper.SetDefault("PPK_NAME", "Arief Hafidiyanto")
+	viper.SetDefault("PPK_NIP", "19720827 200312 1 002")
+	viper.SetDefault("BENDAHARA_NAME", "Liana Setyawati")
+	viper.SetDefault("BENDAHARA_NIP", "19800512 200901 2 001")
 
 	viper.AutomaticEnv()
 
@@ -60,7 +74,6 @@ func LoadConfig() *Config {
 	cfg.App.Env = viper.GetString("APP_ENV")
 
 	dbHost := viper.GetString("DB_HOST")
-	// Removed auto-detection logic to strictly respect the environment variable
 	cfg.Database.Host = dbHost
 	cfg.Database.Port = viper.GetString("DB_PORT")
 	cfg.Database.User = viper.GetString("DB_USER")
@@ -76,6 +89,11 @@ func LoadConfig() *Config {
 	cfg.JWT.Expiry = viper.GetInt("JWT_EXPIRY")
 
 	cfg.Fonnte.Token = viper.GetString("FONNTE_API")
+
+	cfg.Signatory.PPKName = viper.GetString("PPK_NAME")
+	cfg.Signatory.PPKNIP = viper.GetString("PPK_NIP")
+	cfg.Signatory.BendaharaName = viper.GetString("BENDAHARA_NAME")
+	cfg.Signatory.BendaharaNIP = viper.GetString("BENDAHARA_NIP")
 
 	return &cfg
 }

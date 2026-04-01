@@ -102,4 +102,6 @@ export interface ApiClient {
     // Master Data
     getProvinces(): Promise<any[]>;
     getSBMRates(): Promise<any[]>;
+    getSettings(): Promise<any>;
+    updateSettings(settings: any): Promise<void>;
 }

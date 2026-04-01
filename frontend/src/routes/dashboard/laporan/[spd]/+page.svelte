@@ -14,6 +14,7 @@
     import { page } from '$app/stores';
     import { recordsStore, updateRecord, loadRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
+    import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { provincesStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
     import { onMount } from 'svelte';
@@ -40,8 +41,14 @@
     // Check if the current user is part of this SPD group
     $: isUserInSpdGroup = allRecordsForSpd.some(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email));
     
-    // Allow access to all records if user is in the group (representative) or is admin/kasubag
-    $: recordsList = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag' || $userStore.role === 'protokol' || isUserInSpdGroup) ? allRecordsForSpd : [];
+    // Allow access to all records if user is admin/kasubag. 
+    // If user is protokol, they see all members in 'laporan' tab (for shared context) 
+    // but ONLY themselves in the 'rincian' tab (privacy requirement).
+    $: recordsList = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') 
+        ? allRecordsForSpd 
+        : (currentTab === 'laporan' 
+            ? allRecordsForSpd 
+            : allRecordsForSpd.filter(r => r.employee && r.employee.email === $userStore.email));
     
     // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
     $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
@@ -64,6 +71,13 @@
     let reportText = '';
     let manualSuratTugasNumber = '';
     let manualSuratTugasDate = '';
+    
+    // Signatories
+    let ppkName = '';
+    let ppkNip = '';
+    let bendaharaName = '';
+    let bendaharaNip = '';
+
     /** @type {Array<{name: string, type: string, data: string, timestamp: string}>} */
     let uploadedFiles = []; 
     let isDragging = false;
@@ -506,6 +520,7 @@
             return;
         }
 
+        startLoading();
         try {
             const updatePromises = recordsList.map(r => {
                 return updateRecord(r.id, {
@@ -516,10 +531,11 @@
             await Promise.all(updatePromises);
 
             toast.success('Informasi Surat Tugas berhasil diperbarui.');
-            // Refresh record logic if needed, but the store usually handles it
         } catch (error) {
             toast.error('Gagal memperbarui informasi Surat Tugas.');
             console.error('Save ST info error:', error);
+        } finally {
+            stopLoading();
         }
     }
 
@@ -532,6 +548,7 @@
             return;
         }
 
+        startLoading();
         try {
             const updatePromises = recordsList.map(r => {
                 return updateRecord(r.id, {
@@ -550,10 +567,11 @@
             await Promise.all(updatePromises);
 
             toast.success('Draf Laporan Kegiatan berhasil disimpan!');
-            // Stay on the same page when saving as draft
         } catch (error) {
             toast.error('Gagal menyimpan draf laporan. Silakan coba lagi.');
             console.error('Save draft report error:', error);
+        } finally {
+            stopLoading();
         }
     }
 
@@ -576,6 +594,7 @@
 
         if (!recordsList.length) return;
 
+        startLoading();
         try {
             const updatePromises = recordsList.map(r => {
                 return updateRecord(r.id, {
@@ -598,18 +617,19 @@
         } catch (error) {
             toast.error('Gagal mensubmit laporan. Silakan coba lagi.');
             console.error('Submit report error:', error);
+        } finally {
+            stopLoading();
         }
     }
 
     async function saveDraftRincian() {
         if (!recordsList.length) return;
 
+        startLoading();
         try {
             const updatePromises = recordsList.map(r => {
                 const local = localCosts[r.id];
                 const costsToSave = { ...local.costs };
-                
-                // Note: We are saving the full structure including 'details'
                 costsToSave.lastDraftSavedAt = new Date().toISOString();
 
                 return updateRecord(r.id, {
@@ -620,22 +640,23 @@
             await Promise.all(updatePromises);
 
             toast.success('Draf Rincian Biaya berhasil disimpan!');
-            // Stay on the same page when saving as draft
         } catch (error) {
             toast.error('Gagal menyimpan draf rincian biaya. Silakan coba lagi.');
             console.error('Save draft costs error:', error);
+        } finally {
+            stopLoading();
         }
     }
 
     async function submitRincian() {
         if (!recordsList.length) return;
 
+        startLoading();
         try {
             const updatePromises = recordsList.map(r => {
                 const local = localCosts[r.id];
                 const costsToSave = { ...local.costs };
                 
-                // Inject daily allowance details automatically (already done via getLocations iteration but redundant safe-check)
                 costsToSave.dailyAllowanceDays = getTotalDays(r);
                 costsToSave.dailyAllowanceRate = getSbmRate(r);
 
@@ -651,6 +672,8 @@
         } catch (error) {
             toast.error('Gagal menyimpan rincian biaya. Silakan coba lagi.');
             console.error('Submit costs error:', error);
+        } finally {
+            stopLoading();
         }
     }
 </script>

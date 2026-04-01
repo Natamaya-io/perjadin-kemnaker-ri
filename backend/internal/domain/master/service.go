@@ -12,6 +12,8 @@ import (
 type Service interface {
 	GetProvinces(ctx context.Context) ([]db.Province, error)
 	GetSBMRates(ctx context.Context) ([]db.SbmRate, error)
+	GetSettings(ctx context.Context) (map[string]string, error)
+	UpdateSettings(ctx context.Context, settings map[string]string) error
 }
 
 type service struct {
@@ -71,4 +73,48 @@ func (s *service) GetSBMRates(ctx context.Context) ([]db.SbmRate, error) {
 	}
 
 	return rates, nil
+}
+
+func (s *service) GetSettings(ctx context.Context) (map[string]string, error) {
+	cacheKey := "master:settings"
+	if s.rdb != nil {
+		if val, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
+			var settings map[string]string
+			if err := json.Unmarshal([]byte(val), &settings); err == nil {
+				return settings, nil
+			}
+		}
+	}
+
+	dbs, err := s.repo.GetSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	settings := make(map[string]string)
+	for _, setting := range dbs {
+		settings[setting.Key] = setting.Value
+	}
+
+	if s.rdb != nil {
+		if data, err := json.Marshal(settings); err == nil {
+			s.rdb.Set(ctx, cacheKey, data, 24*time.Hour)
+		}
+	}
+
+	return settings, nil
+}
+
+func (s *service) UpdateSettings(ctx context.Context, settings map[string]string) error {
+	for k, v := range settings {
+		if _, err := s.repo.UpdateSetting(ctx, k, v); err != nil {
+			return err
+		}
+	}
+
+	if s.rdb != nil {
+		s.rdb.Del(ctx, "master:settings")
+	}
+
+	return nil
 }

@@ -72,8 +72,9 @@ export const loadUsers = async () => {
     try {
         const users = await api.getUsers();
         usersStore.set(users);
-    } catch (e) {
-        console.error("Failed to load users", e);
+    } catch (e: any) {
+        if (e.message === 'Unauthorized') return;
+        console.warn("Failed to load users (backend might be starting):", e.message);
     }
 };
 

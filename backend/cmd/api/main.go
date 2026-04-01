@@ -99,16 +99,16 @@ func main() {
 	userSvc := user.NewService(userRepo, cfg, rdb)
 	userHandler := user.NewHandler(userSvc)
 
-	recordRepo := record.NewRepository(db)
-	recordSvc := record.NewService(recordRepo, cfg, rdb)
-	recordHandler := record.NewHandler(recordSvc, userRepo, cfg)
-
-	authSvc := auth.NewService(userRepo, cfg, rdb)
-	authHandler := auth.NewHandler(authSvc)
-
 	masterRepo := master.NewRepository(db)
 	masterSvc := master.NewService(masterRepo, rdb)
 	masterHandler := master.NewHandler(masterSvc)
+
+	recordRepo := record.NewRepository(db)
+	recordSvc := record.NewService(recordRepo, cfg, rdb)
+	recordHandler := record.NewHandler(recordSvc, userRepo, cfg, masterSvc)
+
+	authSvc := auth.NewService(userRepo, cfg, rdb)
+	authHandler := auth.NewHandler(authSvc)
 
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
@@ -120,6 +120,7 @@ func main() {
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
+	e.Use(echoMiddleware.BodyLimit("50M"))
 
 	// Static files
 	e.Static("/uploads", "uploads")
@@ -157,6 +158,8 @@ func main() {
 		// Master Data
 		protected.GET("/master/provinces", masterHandler.GetProvinces)
 		protected.GET("/master/sbm-rates", masterHandler.GetSBMRates)
+		protected.GET("/master/settings", masterHandler.GetSettings)
+		protected.PUT("/master/settings", masterHandler.UpdateSettings, middleware.RoleMiddleware("super_admin", "kasubag"))
 	}
 
 	// 8. Start Server with Graceful Shutdown

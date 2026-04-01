@@ -231,3 +231,62 @@ func (q *Queries) GetSBMRates(ctx context.Context) ([]SbmRate, error) {
 	}
 	return items, nil
 }
+
+const getSettingByKey = `-- name: GetSettingByKey :one
+SELECT key, value, updated_at FROM settings WHERE key = $1 LIMIT 1
+`
+
+func (q *Queries) GetSettingByKey(ctx context.Context, key string) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, getSettingByKey, key)
+	var i Setting
+	err := row.Scan(&i.Key, &i.Value, &i.UpdatedAt)
+	return i, err
+}
+
+const getSettings = `-- name: GetSettings :many
+SELECT key, value, updated_at FROM settings
+`
+
+func (q *Queries) GetSettings(ctx context.Context) ([]Setting, error) {
+	rows, err := q.db.QueryContext(ctx, getSettings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Setting{}
+	for rows.Next() {
+		var i Setting
+		if err := rows.Scan(&i.Key, &i.Value, &i.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateSetting = `-- name: UpdateSetting :one
+INSERT INTO settings (key, value, updated_at)
+VALUES ($1, $2, CURRENT_TIMESTAMP)
+ON CONFLICT (key) DO UPDATE SET
+  value = EXCLUDED.value,
+  updated_at = EXCLUDED.updated_at
+RETURNING key, value, updated_at
+`
+
+type UpdateSettingParams struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (q *Queries) UpdateSetting(ctx context.Context, arg UpdateSettingParams) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, updateSetting, arg.Key, arg.Value)
+	var i Setting
+	err := row.Scan(&i.Key, &i.Value, &i.UpdatedAt)
+	return i, err
+}

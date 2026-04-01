@@ -76,8 +76,12 @@ export async function loadMasterData() {
             provincesStore.set(mappedProvinces);
         }
         sbmRatesStore.set(rates);
-    } catch (e) {
-        console.error("Failed to load master data from API, using defaults", e);
+    } catch (e: any) {
+        if (e.message === 'Unauthorized') {
+             // Silence unauthorized errors during initial load, auth store will handle redirect
+             return;
+        }
+        console.warn("Could not fetch master data from API (backend might be starting), using defaults.", e.message);
     }
 }
 

@@ -272,4 +272,15 @@ export class RealApiClient implements ApiClient {
     getSBMRates(): Promise<any[]> {
         return this.request<any[]>('/master/sbm-rates');
     }
+
+    getSettings(): Promise<any> {
+        return this.request<any>('/master/settings');
+    }
+
+    updateSettings(settings: any): Promise<void> {
+        return this.request<void>('/master/settings', {
+            method: 'PUT',
+            body: JSON.stringify(settings)
+        });
+    }
 }

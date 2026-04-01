@@ -1,18 +1,21 @@
 package record
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/config"
+	"github.com/kemnaker/perjadin-backend/internal/domain/master"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/utils"
@@ -24,23 +27,25 @@ import (
 )
 
 type Handler struct {
-	svc      Service
-	userRepo user.Repository
-	cfg      *config.Config
-	docGen   *document.Generator
+	svc       Service
+	userRepo  user.Repository
+	masterSvc master.Service
+	cfg       *config.Config
+	docGen    *document.Generator
 }
 
-func NewHandler(s Service, userRepo user.Repository, cfg *config.Config) *Handler {
+func NewHandler(s Service, userRepo user.Repository, cfg *config.Config, masterSvc master.Service) *Handler {
 	gotenbergURL := os.Getenv("GOTENBERG_URL")
 	if gotenbergURL == "" {
 		gotenbergURL = "http://gotenberg:3000"
 	}
 
 	return &Handler{
-		svc:      s,
-		userRepo: userRepo,
-		cfg:      cfg,
-		docGen:   document.NewGenerator(gotenbergURL, "templates"),
+		svc:       s,
+		userRepo:  userRepo,
+		masterSvc: masterSvc,
+		cfg:       cfg,
+		docGen:    document.NewGenerator(gotenbergURL, "templates"),
 	}
 }
 
@@ -78,28 +83,29 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 
 func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex int) map[string]interface{} {
 	// mapTravelToDocument maps TravelRecord data to placeholders used in DOCX templates.
-	// Ensure keys match the {{placeholder}} names in 'templates/Berkas Luar Kota - SPD.docx'
 	titleCaser := cases.Title(language.Indonesian)
 	
-	formatDate := func(t time.Time) string {
-		if t.IsZero() {
-			return "-"
-		}
-		months := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-		return fmt.Sprintf("%d %s %d", t.Day(), months[int(t.Month())], t.Year())
+	days := 0
+	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
+		days = int(record.EndDate.Sub(record.StartDate).Hours()/24) + 1
 	}
-
-	days := int(record.EndDate.Sub(record.StartDate).Hours()/24) + 1
 	
 	dest := record.Location
 	prov := record.Province
 	if len(record.Locations) > 0 {
 		var locs []string
+		var provs []string
+		seenProvs := make(map[string]bool)
 		for _, l := range record.Locations {
 			locs = append(locs, titleCaser.String(l.Location))
+			pName := titleCaser.String(l.Province)
+			if pName != "" && !seenProvs[pName] {
+				provs = append(provs, pName)
+				seenProvs[pName] = true
+			}
 		}
 		dest = strings.Join(locs, " & ")
-		prov = titleCaser.String(record.Locations[0].Province)
+		prov = strings.Join(provs, " & ")
 	}
 
 	transportMode := "-"
@@ -107,15 +113,111 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		transportMode = record.Cost.TransportMode
 	}
 
-	// Roman numeral months
-	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+	// SPD sequence from ID-SPJ-001 -> 001
 	spdSubNumber := fmt.Sprintf("%03d", globalIndex)
+	
+	extractNumericID := func(id string) string {
+		if id == "" {
+			return spdSubNumber
+		}
+		parts := strings.Split(id, "-")
+		if len(parts) > 0 {
+			suffix := parts[len(parts)-1]
+			if len(suffix) < 3 {
+				return fmt.Sprintf("%03s", suffix)
+			}
+			return suffix
+		}
+		return id
+	}
+
+	noSurat := record.SuratTugasNumber
+	tglSurat := record.SuratTugasDate
+	
+	if noSurat == "" {
+		noSurat = extractNumericID(record.SPDNumber)
+	}
+
+	noSpd := record.SPDNumber
+	if noSpd == "" {
+		noSpd = spdSubNumber
+	}
+
+	maksud := strings.TrimSpace(record.Purpose)
+	stakeholder := strings.TrimSpace(record.Stakeholder)
+	
+	redundantPhrases := []string{"Kunjungan Kerja", "kunjungan kerja", "KUNJUNGAN KERJA"}
+	
+	cleanMaksud := maksud
+	cleanStakeholder := stakeholder
+
+	// Remove "kunjungan kerja" from both variables because the template 
+	// provides it as static text between {{tujuan_perjalanan}} and {{stakeholder}}.
+	for _, phrase := range redundantPhrases {
+		re := regexp.MustCompile("(?i)\\s*" + regexp.QuoteMeta(phrase) + "\\s*")
+		cleanMaksud = re.ReplaceAllString(cleanMaksud, " ")
+		cleanStakeholder = re.ReplaceAllString(cleanStakeholder, " ")
+	}
+
+	cleanMaksud = regexp.MustCompile(`\s+`).ReplaceAllString(cleanMaksud, " ")
+	cleanMaksud = strings.TrimSpace(cleanMaksud)
+	
+	cleanStakeholder = regexp.MustCompile(`\s+`).ReplaceAllString(cleanStakeholder, " ")
+	cleanStakeholder = strings.TrimSpace(cleanStakeholder)
+
+	// Signatory Logic
+	namaPpk := h.cfg.Signatory.PPKName
+	nipPpk := h.cfg.Signatory.PPKNIP
+	namaBendahara := h.cfg.Signatory.BendaharaName
+	nipBendahara := h.cfg.Signatory.BendaharaNIP
+	jabPpk := "Pejabat Pembuat Komitmen"
+	jabBendahara := "Bendahara Pengeluaran Pembantu"
+
+	if h.masterSvc != nil {
+		globalSettings, _ := h.masterSvc.GetSettings(context.Background())
+		if v, ok := globalSettings["ppk_name"]; ok && v != "" {
+			namaPpk = v
+		}
+		if v, ok := globalSettings["ppk_nip"]; ok && v != "" {
+			nipPpk = v
+		}
+		if v, ok := globalSettings["bendahara_name"]; ok && v != "" {
+			namaBendahara = v
+		}
+		if v, ok := globalSettings["bendahara_nip"]; ok && v != "" {
+			nipBendahara = v
+		}
+	}
+
+	if record.Report != nil {
+		if record.Report.PPKName != "" {
+			namaPpk = record.Report.PPKName
+		}
+		if record.Report.PPKNIP != "" {
+			nipPpk = record.Report.PPKNIP
+		}
+		if record.Report.BendaharaName != "" {
+			namaBendahara = record.Report.BendaharaName
+		}
+		if record.Report.BendaharaNIP != "" {
+			nipBendahara = record.Report.BendaharaNIP
+		}
+		// Future proof: User might input titles in report too
+		// if record.Report.PPKTitle != "" { jabPpk = record.Report.PPKTitle }
+	}
 
 	vars := map[string]interface{}{
-		"no_spd":               spdSubNumber,
-		"no_surat":            spdSubNumber,
-		"bulan":               romanMonths[int(record.StartDate.Month())],
-		"tahun":               record.StartDate.Year(),
+		"no_spd":               noSpd,
+		"no_surat":            noSurat,
+		"bulan_no_surat":      utils.GetRomanMonths()[int(tglSurat.Month())],
+		"tahun_no_surat":      tglSurat.Year(),
+		"tanggal_no_surat":    utils.FormatIndonesianDate(tglSurat),
+		"bulan_pembayaran":    utils.GetIndonesianMonths()[int(time.Now().Month())],
+		"tahun_pembayaran":    time.Now().Year(),
+		"bulan":               "",
+		"bulan_romawi":        utils.GetRomanMonths()[int(record.StartDate.Month())],
+		"tahun":               "",
+		"tahun_saat_ini":      fmt.Sprintf("%d", time.Now().Year()),
 		"nama":                record.Employee.Name,
 		"nama_petugas":        record.Employee.Name,
 		"nip":                 record.Employee.NIP,
@@ -125,41 +227,229 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"golongan":            record.Employee.Golongan,
 		"jabatan":             record.Employee.Jabatan,
 		"tingkat_biaya":       record.Employee.TingkatBiaya,
-		"maksud_perjalanan":   record.Purpose,
-		"nama_stakeholder":    record.Stakeholder,
+		"maksud_perjalanan":   cleanMaksud,
+		"tujuan_perjalanan":  cleanMaksud,
+		"nama_stakeholder":    cleanStakeholder,
+		"stakeholder":        cleanStakeholder,
 		"tujuan":              dest,
 		"kota_atau_kabupaten": dest,
+		"kota":                dest,
 		"provinsi":            prov,
 		"transportasi":        transportMode,
-		"tgl_berangkat":       formatDate(record.StartDate),
-		"tanggal_berangkat":   formatDate(record.StartDate),
-		"tgl_kembali":         formatDate(record.EndDate),
-		"tanggal_selesai":     formatDate(record.EndDate),
-		"lama_hari":           fmt.Sprintf("%d ( %s )", days, terbilang.FormatTerbilang(days)),
+		"tgl_berangkat":       utils.FormatIndonesianDate(record.StartDate),
+		"tanggal_berangkat":   utils.FormatIndonesianDate(record.StartDate),
+		"tanggal_mulai":      utils.FormatIndonesianDate(record.StartDate),
+		"tgl_kembali":         utils.FormatIndonesianDate(record.EndDate),
+		"tanggal_selesai":     utils.FormatIndonesianDate(record.EndDate),
+		"lama_hari":           days,
 		"lama_perjalanan":     days,
-		"terbilang":           terbilang.FormatTerbilang(days),
-		"tgl_surat_tugas":     formatDate(record.SuratTugasDate),
-		"tanggal_dikeluarkan": formatDate(time.Now()),
-		"tgl_cetak":           formatDate(time.Now()),
-		"nama_ppk":            "Arief Hafidiyanto",
-		"nip_ppk":             "19720827 200312 1 002",
-		"nama ppk":            "Arief Hafidiyanto",
-		"nip ppk":             "19720827 200312 1 002",
+		"terbilang":           titleCaser.String(terbilang.FormatTerbilang(days)),
+		"tgl_surat_tugas":     utils.FormatIndonesianDate(tglSurat),
+		"tanggal_dikeluarkan": utils.FormatIndonesianDate(time.Now()),
+		"tgl_cetak":           utils.FormatIndonesianDate(time.Now()),
+		"nama_ppk":            namaPpk,
+		"nip_ppk":             nipPpk,
+		"nama ppk":            namaPpk,
+		"nip ppk":             nipPpk,
+		"nama_bendahara":      namaBendahara,
+		"nip_bendahara":       nipBendahara,
+		"jabatan_ppk":         jabPpk,
+		"jabatan_bendahara":   jabBendahara,
 		"keterangan":          "-",
+		"tiket_pesawat":     "0",
+		"transport_lokal":   "0",
+		"transport_daerah":  "0",
+		"sbm":               "0",
+		"total_sbm":         "0",
+		"penginapan":        "0",
+		"total_penginapan":  "0",
+		"total_biaya":       "0",
+		"total_keseluruhan": "0",
+		"total_kesuluruhan": "0",
+		"total_akhir":       "0",
+		"jumlah_total":      "0",
+		"total_rupiah":      "0",
+		"total_terbilang":   "Nol Rupiah",
+		"durasi":            fmt.Sprintf("%d", days),
+		"jml_sbm":           "0",
+		"jml_penginapan":    "0",
+		"ditetapkan_sejumlah": "0",
+		"dibayar_semula":      "0",
+		"sisa_kurang_lebih":   "0",
+	}
+
+	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
+
+	type Detail struct {
+		TransportMode   string  `json:"transportMode"`
+		TicketGo        float64 `json:"ticketGo"`
+		TicketBack      float64 `json:"ticketBack"`
+		HotelDays       int     `json:"hotelDays"`
+		HotelRate       float64 `json:"hotelRate"`
+		TransportAmount float64 `json:"transportAmount"`
+		AdditionalCosts []struct {
+			Name   string  `json:"name"`
+			Amount float64 `json:"amount"`
+		} `json:"additionalCosts"`
+	}
+
+	var costDetails []Detail
+	if record.Cost != nil && len(record.Cost.Details) > 0 {
+		json.Unmarshal(record.Cost.Details, &costDetails)
+	}
+
+	for i, ordinal := range ordinals {
+		if i < len(record.Locations) {
+			loc := record.Locations[i]
+			locDays := int(loc.EndDate.Sub(loc.StartDate).Hours()/24) + 1
+
+			vars[fmt.Sprintf("no_%s", ordinal)] = i + 1
+			vars[fmt.Sprintf("tujuan_%s", ordinal)] = titleCaser.String(loc.Location)
+			vars[fmt.Sprintf("provinsi_%s", ordinal)] = titleCaser.String(loc.Province)
+			vars[fmt.Sprintf("tgl_pergi_%s", ordinal)] = utils.FormatIndonesianDate(loc.StartDate)
+			vars[fmt.Sprintf("tgl_pulang_%s", ordinal)] = utils.FormatIndonesianDate(loc.EndDate)
+			vars[fmt.Sprintf("hari_%s", ordinal)] = locDays
+			vars[fmt.Sprintf("lama_hari_%s", ordinal)] = locDays
+
+			var sbmVal float64
+			var sbmRate float64
+			if record.Cost != nil {
+				sbmRate = record.Cost.DailyAllowanceRate
+				sbmVal = sbmRate * float64(locDays)
+			}
+			vars[fmt.Sprintf("sbm_rate_%s", ordinal)] = utils.FormatRupiah(sbmRate)
+			vars[fmt.Sprintf("sbm_%s", ordinal)] = utils.FormatRupiah(sbmVal)
+			vars[fmt.Sprintf("tarif_harian_%s", ordinal)] = utils.FormatRupiah(sbmRate)
+			vars[fmt.Sprintf("total_harian_%s", ordinal)] = utils.FormatRupiah(sbmVal)
+			vars[fmt.Sprintf("uang_harian_%s", ordinal)] = utils.FormatRupiah(sbmVal)
+
+			if i < len(costDetails) {
+				cd := costDetails[i]
+				totalHotel := float64(cd.HotelDays) * cd.HotelRate
+				totalTransport := cd.TransportAmount + cd.TicketGo + cd.TicketBack
+				var totalAdd float64
+				for _, ac := range cd.AdditionalCosts {
+					totalAdd += ac.Amount
+				}
+
+				vars[fmt.Sprintf("hotel_days_%s", ordinal)] = cd.HotelDays
+				vars[fmt.Sprintf("hotel_hari_%s", ordinal)] = cd.HotelDays
+				vars[fmt.Sprintf("hotel_rate_%s", ordinal)] = utils.FormatRupiah(cd.HotelRate)
+				vars[fmt.Sprintf("tarif_penginapan_%s", ordinal)] = utils.FormatRupiah(cd.HotelRate)
+				vars[fmt.Sprintf("hotel_%s", ordinal)] = utils.FormatRupiah(totalHotel)
+				vars[fmt.Sprintf("total_penginapan_%s", ordinal)] = utils.FormatRupiah(totalHotel)
+				vars[fmt.Sprintf("penginapan_%s", ordinal)] = utils.FormatRupiah(totalHotel)
+				
+				vars[fmt.Sprintf("transport_%s", ordinal)] = utils.FormatRupiah(totalTransport)
+				vars[fmt.Sprintf("total_transport_%s", ordinal)] = utils.FormatRupiah(totalTransport)
+				vars[fmt.Sprintf("tiket_%s", ordinal)] = utils.FormatRupiah(cd.TicketGo + cd.TicketBack)
+				vars[fmt.Sprintf("tambahan_%s", ordinal)] = utils.FormatRupiah(totalAdd)
+				vars[fmt.Sprintf("total_tambahan_%s", ordinal)] = utils.FormatRupiah(totalAdd)
+			} else {
+				vars[fmt.Sprintf("hotel_days_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("hotel_hari_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("hotel_rate_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("tarif_penginapan_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("hotel_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("total_penginapan_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("penginapan_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("transport_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("total_transport_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("tiket_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("tambahan_%s", ordinal)] = "0"
+				vars[fmt.Sprintf("total_tambahan_%s", ordinal)] = "0"
+			}
+		} else {
+			vars[fmt.Sprintf("no_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tujuan_%s", ordinal)] = "__REMOVE_ROW__"
+			vars[fmt.Sprintf("provinsi_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tgl_pergi_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tgl_pulang_%s", ordinal)] = ""
+			vars[fmt.Sprintf("hari_%s", ordinal)] = ""
+			vars[fmt.Sprintf("lama_hari_%s", ordinal)] = ""
+			vars[fmt.Sprintf("sbm_rate_%s", ordinal)] = ""
+			vars[fmt.Sprintf("sbm_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tarif_harian_%s", ordinal)] = ""
+			vars[fmt.Sprintf("total_harian_%s", ordinal)] = ""
+			vars[fmt.Sprintf("uang_harian_%s", ordinal)] = ""
+			vars[fmt.Sprintf("hotel_days_%s", ordinal)] = ""
+			vars[fmt.Sprintf("hotel_hari_%s", ordinal)] = ""
+			vars[fmt.Sprintf("hotel_rate_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tarif_penginapan_%s", ordinal)] = ""
+			vars[fmt.Sprintf("hotel_%s", ordinal)] = ""
+			vars[fmt.Sprintf("total_penginapan_%s", ordinal)] = ""
+			vars[fmt.Sprintf("penginapan_%s", ordinal)] = ""
+			vars[fmt.Sprintf("transport_%s", ordinal)] = ""
+			vars[fmt.Sprintf("total_transport_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tiket_%s", ordinal)] = ""
+			vars[fmt.Sprintf("tambahan_%s", ordinal)] = ""
+			vars[fmt.Sprintf("total_tambahan_%s", ordinal)] = ""
+		}
 	}
 
 	if record.Report != nil {
 		vars["isi_laporan"] = record.Report.Text
-		vars["tgl_laporan"] = formatDate(record.Report.SubmittedAt)
+		vars["tgl_laporan"] = utils.FormatIndonesianDate(record.Report.SubmittedAt)
 	}
 
 	if record.Cost != nil {
 		total := record.TotalCost
 		vars["total_biaya"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(total))
+		vars["total_keseluruhan"] = utils.FormatRupiah(total)
+		vars["total_kesuluruhan"] = utils.FormatRupiah(total)
+		vars["total_akhir"] = utils.FormatRupiah(total)
+		vars["jumlah_total"] = utils.FormatRupiah(total)
+		vars["total_rupiah"] = utils.FormatRupiah(total)
 		vars["terbilang_biaya"] = fmt.Sprintf("%s Rupiah", titleCaser.String(terbilang.FormatTerbilang(int(total))))
-		vars["biaya_harian"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.DailyAllowanceRate * float64(record.Cost.DailyAllowanceDays)))
-		vars["biaya_hotel"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.HotelRate * float64(record.Cost.HotelDays)))
-		vars["biaya_pesawat"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(record.Cost.TicketGo + record.Cost.TicketBack))
+		vars["total_terbilang"] = fmt.Sprintf("%s Rupiah", titleCaser.String(terbilang.FormatTerbilang(int(total))))
+
+		// AGGREGATE COSTS FROM DETAILS (for multi-location support)
+		var aggTicket, aggLokal, aggDaerah, aggSbm, aggHotel float64
+		var totalDays, hotelDays int
+		
+		for _, cd := range costDetails {
+			aggTicket += cd.TicketGo + cd.TicketBack
+			aggLokal += cd.TransportAmount
+			aggHotel += float64(cd.HotelDays) * cd.HotelRate
+			hotelDays += cd.HotelDays
+		}
+		
+		for _, loc := range record.Locations {
+			d := int(loc.EndDate.Sub(loc.StartDate).Hours()/24) + 1
+			totalDays += d
+			aggSbm += record.Cost.DailyAllowanceRate * float64(d)
+		}
+
+		// Fallback to top-level if aggregation is 0
+		if aggTicket == 0 { aggTicket = record.Cost.TicketGo + record.Cost.TicketBack }
+		if aggLokal == 0 { aggLokal = record.Cost.LocalTransport }
+		if aggDaerah == 0 { aggDaerah = record.Cost.RegionalTransport }
+		if aggSbm == 0 { aggSbm = record.Cost.DailyAllowanceRate * float64(record.Cost.DailyAllowanceDays) }
+		if aggHotel == 0 { aggHotel = record.Cost.HotelRate * float64(record.Cost.HotelDays) }
+		if totalDays == 0 { totalDays = record.Cost.DailyAllowanceDays }
+		if hotelDays == 0 { hotelDays = record.Cost.HotelDays }
+
+		vars["tiket_pesawat"] = utils.FormatRupiah(aggTicket)
+		vars["transport_lokal"] = utils.FormatRupiah(aggLokal)
+		vars["transport_daerah"] = utils.FormatRupiah(aggDaerah)
+		vars["sbm"] = utils.FormatRupiah(record.Cost.DailyAllowanceRate)
+		vars["total_sbm"] = utils.FormatRupiah(aggSbm)
+		vars["jml_sbm"] = utils.FormatRupiah(aggSbm)
+		vars["penginapan"] = utils.FormatRupiah(record.Cost.HotelRate)
+		vars["total_penginapan"] = utils.FormatRupiah(aggHotel)
+		vars["jml_penginapan"] = utils.FormatRupiah(aggHotel)
+		
+		vars["durasi_sbm"] = fmt.Sprintf("%d", totalDays)
+		vars["tarif_sbm"] = utils.FormatRupiah(record.Cost.DailyAllowanceRate)
+		vars["durasi_hotel"] = fmt.Sprintf("%d", hotelDays)
+		vars["tarif_hotel"] = utils.FormatRupiah(record.Cost.HotelRate)
+
+		vars["biaya_harian"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(aggSbm))
+		vars["biaya_hotel"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(aggHotel))
+		vars["biaya_pesawat"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(aggTicket))
+
+		vars["ditetapkan_sejumlah"] = utils.FormatRupiah(total)
+		vars["sisa_kurang_lebih"] = utils.FormatRupiah(total)
 	}
 
 	return vars
@@ -177,7 +467,6 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
 
-	// Compute global index using the same deterministic sort as the frontend admin page
 	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
 	globalIndex := 0
 	if err == nil && len(allRecords) > 0 {
@@ -192,18 +481,6 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 			if si != sj {
 				return si < sj
 			}
-			// Use employee name for deterministic ordering (matches frontend localeCompare behavior)
-			ni := ""
-			nj := ""
-			if allRecords[i].Employee.Name != "" {
-				ni = allRecords[i].Employee.Name
-			}
-			if allRecords[j].Employee.Name != "" {
-				nj = allRecords[j].Employee.Name
-			}
-			if ni != nj {
-				return ni < nj
-			}
 			return allRecords[i].ID.String() < allRecords[j].ID.String()
 		})
 		for idx, r := range allRecords {
@@ -214,7 +491,7 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 		}
 	}
 	if globalIndex == 0 {
-		globalIndex = 1 // fallback
+		globalIndex = 1
 	}
 
 	payload := document.DocumentRequest{
@@ -234,8 +511,6 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }
 
-// ExportSpdPDF handles the request to export a TravelRecord as an SPD PDF.
-// It uses the docx template and converts it to PDF via Gotenberg.
 func (h *Handler) ExportSpdPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - SPD.docx", "SPD")
 }
@@ -252,13 +527,11 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
 
-	// Get all records with the same SPD number for multi-employee mapping
 	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal mengambil data records")
 	}
 
-	// Filter records by same SPD number
 	var spdGroupRecords []models.TravelRecord
 	for _, r := range allRecords {
 		if r.SPDNumber == record.SPDNumber {
@@ -266,7 +539,6 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		}
 	}
 
-	// Sort by creation time for consistent ordering
 	sort.Slice(spdGroupRecords, func(i, j int) bool {
 		ti := spdGroupRecords[i].CreatedAt.Unix()
 		tj := spdGroupRecords[j].CreatedAt.Unix()
@@ -276,104 +548,69 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		return spdGroupRecords[i].ID.String() < spdGroupRecords[j].ID.String()
 	})
 
-	titleCaser := cases.Title(language.Indonesian)
-	formatDate := func(t time.Time) string {
-		if t.IsZero() {
-			return "-"
+	namaPpk := h.cfg.Signatory.PPKName
+	nipPpk := h.cfg.Signatory.PPKNIP
+
+	if h.masterSvc != nil {
+		globalSettings, _ := h.masterSvc.GetSettings(context.Background())
+		if v, ok := globalSettings["ppk_name"]; ok && v != "" {
+			namaPpk = v
 		}
-		months := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-		return fmt.Sprintf("%d %s %d", t.Day(), months[int(t.Month())], t.Year())
+		if v, ok := globalSettings["ppk_nip"]; ok && v != "" {
+			nipPpk = v
+		}
 	}
 
-	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
-
-	// Build destination string
-	dest := record.Location
-	prov := record.Province
-	if len(record.Locations) > 0 {
-		var locs []string
-		for _, l := range record.Locations {
-			locs = append(locs, titleCaser.String(l.Location))
+	if record.Report != nil {
+		if record.Report.PPKName != "" {
+			namaPpk = record.Report.PPKName
 		}
-		dest = strings.Join(locs, " & ")
-		prov = titleCaser.String(record.Locations[0].Province)
+		if record.Report.PPKNIP != "" {
+			nipPpk = record.Report.PPKNIP
+		}
 	}
 
-	// Surat Tugas info
 	noSuratTugas := record.SuratTugasNumber
 	if noSuratTugas == "" {
 		noSuratTugas = "-"
 	}
 
-	// Bulan for surat tugas number
 	bulanNoSurat := ""
 	tanggalNoSurat := ""
-	tahunNoSurat := ""
 	if !record.SuratTugasDate.IsZero() {
-		bulanNoSurat = romanMonths[int(record.SuratTugasDate.Month())]
-		monthNames := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-		tanggalNoSurat = fmt.Sprintf("%d %s", record.SuratTugasDate.Day(), monthNames[int(record.SuratTugasDate.Month())])
-		tahunNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Year())
-	} else {
-		// Fallback to travel start date if SuratTugasDate is not set
-		bulanNoSurat = romanMonths[int(record.StartDate.Month())]
-		monthNames := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
-		tanggalNoSurat = fmt.Sprintf("%d %s", record.StartDate.Day(), monthNames[int(record.StartDate.Month())])
-		tahunNoSurat = fmt.Sprintf("%d", record.StartDate.Year())
+		bulanNoSurat = utils.GetRomanMonths()[int(record.SuratTugasDate.Month())]
+		tanggalNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Day())
 	}
 
-	// Isi Laporan
 	isiLaporan := "-"
-	tanggalLaporan := formatDate(time.Now())
+	tanggalLaporan := utils.FormatIndonesianDate(time.Now())
 	if record.Report != nil {
 		if record.Report.Text != "" {
 			isiLaporan = record.Report.Text
 		}
 		if !record.Report.SubmittedAt.IsZero() {
-			tanggalLaporan = formatDate(record.Report.SubmittedAt)
+			tanggalLaporan = utils.FormatIndonesianDate(record.Report.SubmittedAt)
 		}
 	}
 
-	// Stakeholder & Purpose
-	stakeholder := record.Stakeholder
-	if stakeholder == "" {
-		stakeholder = "-"
-	}
-	tujuanPerjalanan := record.Purpose
-	if tujuanPerjalanan == "" {
-		tujuanPerjalanan = "-"
-	}
-
-	// Build variables map matching ACTUAL template placeholders
 	vars := map[string]interface{}{
-		// Page 1 - Title
-		"kota":               titleCaser.String(dest),
-		"provinsi":           titleCaser.String(prov),
-		"tanggal_mulai":      formatDate(record.StartDate),
-		"tanggal_selesai":    formatDate(record.EndDate),
-		"bulan":              romanMonths[int(record.StartDate.Month())],
+		"kota":               record.Location,
+		"provinsi":           record.Province,
+		"tanggal_mulai":      utils.FormatIndonesianDate(record.StartDate),
+		"tanggal_selesai":    utils.FormatIndonesianDate(record.EndDate),
+		"bulan":              utils.GetRomanMonths()[int(record.StartDate.Month())],
 		"tahun":              record.StartDate.Year(),
-
-		// Page 1 - Dasar/Pendahuluan
 		"no_surat":           noSuratTugas,
 		"bulan_no_surat":     bulanNoSurat,
 		"tanggal_no_surat":   tanggalNoSurat,
-		"tahun_no_surat":     tahunNoSurat,
-		"tujuan_perjalanan":  tujuanPerjalanan,
-		"stakeholder":        stakeholder,
-
-		// Page 1 - Isi Laporan
+		"tujuan_perjalanan":  record.Purpose,
+		"stakeholder":        record.Stakeholder,
 		"isi_laporan":        isiLaporan,
-
-		// Page 2 - Penutup
 		"tanggal_dikeluarkan": tanggalLaporan,
-
-		// PPK (hardcoded)
-		"nama_ppk":           "Arief Hafidiyanto",
-		"nip_ppk":            "19720827 200312 1 002",
+		"nama_ppk":           namaPpk,
+		"nip_ppk":            nipPpk,
 	}
 
-	// Map Petugas from SPD group - using Indonesian ordinals (template supports up to 10)
 	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
 	for i, ordinal := range ordinals {
 		if i < len(spdGroupRecords) {
@@ -383,15 +620,13 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = emp.NIP
 			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
 		} else {
-			// Use __REMOVE_ROW__ marker so the generator removes the entire table row
-			vars[fmt.Sprintf("no_urut_%s", ordinal)] = "__REMOVE_ROW__"
-			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = "__REMOVE_ROW__"
-			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = "__REMOVE_ROW__"
-			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = "__REMOVE_ROW__"
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
 		}
 	}
 
-	// Extract documentation images from report files (template supports up to 6)
 	imageOrdinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam"}
 	images := make(map[string]document.ImageData)
 	if record.Report != nil && len(record.Report.Files) > 0 {
@@ -401,7 +636,6 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 			Data      string `json:"data"`
 			Timestamp string `json:"timestamp"`
 		}
-
 		if err := json.Unmarshal(record.Report.Files, &reportFiles); err == nil {
 			for i, f := range reportFiles {
 				if i >= len(imageOrdinals) {
@@ -416,7 +650,6 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		}
 	}
 
-	// Clean up unused foto placeholders as text if no image
 	for _, ordinal := range imageOrdinals {
 		key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
 		if _, ok := images[key]; !ok {
@@ -446,8 +679,6 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }
 
-
-
 func (h *Handler) ExportRincianPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - rincian pembayaran.docx", "Rincian")
 }
@@ -457,35 +688,27 @@ func (h *Handler) UploadFile(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "File not found in request")
 	}
-
 	src, err := file.Open()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	defer src.Close()
-
 	ext := filepath.Ext(file.Filename)
 	filename := uuid.New().String() + "_" + time.Now().Format("20060102150405") + ext
-
 	uploadDir := "uploads"
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create upload directory")
 	}
-
 	dstPath := filepath.Join(uploadDir, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	defer dst.Close()
-
 	if _, err = io.Copy(dst, src); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	return c.JSON(http.StatusOK, map[string]string{
-		"path": filename,
-	})
+	return c.JSON(http.StatusOK, map[string]string{"path": filename})
 }
 
 func (h *Handler) CreateRecord(c echo.Context) error {
@@ -493,7 +716,6 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	if err := c.Bind(&record); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
-
 	var creatorID uuid.UUID
 	creatorIDInterface := c.Get("user_id")
 	if creatorIDInterface != nil {
@@ -503,7 +725,6 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 			}
 		}
 	}
-
 	if record.SPDNumber == "" {
 		spjNumber, err := h.svc.GenerateSpdNumber()
 		if err != nil {
@@ -511,7 +732,6 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		}
 		record.SPDNumber = spjNumber
 	}
-
 	if len(record.EmployeeIDs) > 0 {
 		var createdRecords []models.TravelRecord
 		for _, empID := range record.EmployeeIDs {
@@ -520,12 +740,10 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 			newRecord.EmployeeID = empID
 			newRecord.CreatorID = creatorID
 			newRecord.EmployeeIDs = nil
-			
 			if len(record.Locations) > 0 {
 				newRecord.Locations = make([]models.TravelLocation, len(record.Locations))
 				copy(newRecord.Locations, record.Locations)
 			}
-
 			if err := h.svc.CreateRecord(&newRecord); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -534,13 +752,11 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		}
 		return c.JSON(http.StatusCreated, createdRecords)
 	}
-
 	record.CreatorID = creatorID
 	if err := h.svc.CreateRecord(&record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	go h.notifyEmployee(&record)
-
 	return c.JSON(http.StatusCreated, record)
 }
 
@@ -551,11 +767,52 @@ func (h *Handler) GetRecords(c echo.Context) error {
 		filters["status"] = status
 	}
 
+	// NEW: Role-based filtering for Protokol users
+	// Allow protokol users to see all records within any SPD group they are part of.
+	role := c.Get("role").(string)
+	if role == "protokol" {
+		userIDStr := c.Get("user_id").(string)
+		userID, _ := uuid.Parse(userIDStr)
+		
+		// 1. Get all records to find which SPDs the user belongs to
+		allRecs, err := h.svc.GetRecords(map[string]interface{}{})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		
+		userSpds := make(map[string]bool)
+		for _, r := range allRecs {
+			if r.EmployeeID == userID {
+				userSpds[r.SPDNumber] = true
+			}
+		}
+		
+		// 2. Filter all records to include only those in the user's SPDs
+		var filtered []models.TravelRecord
+		for _, r := range allRecs {
+			if userSpds[r.SPDNumber] {
+				filtered = append(filtered, r)
+			}
+		}
+		
+		// If status filter is present, apply it manually
+		if status != "" {
+			var statusFiltered []models.TravelRecord
+			for _, r := range filtered {
+				if r.Status == status {
+					statusFiltered = append(statusFiltered, r)
+				}
+			}
+			filtered = statusFiltered
+		}
+		
+		return c.JSON(http.StatusOK, filtered)
+	}
+
 	records, err := h.svc.GetRecords(filters)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
 	return c.JSON(http.StatusOK, records)
 }
 
@@ -565,12 +822,10 @@ func (h *Handler) GetRecordByID(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid UUID format")
 	}
-
 	record, err := h.svc.GetRecordByID(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
-
 	return c.JSON(http.StatusOK, record)
 }
 
@@ -580,20 +835,16 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid UUID format")
 	}
-
 	record, err := h.svc.GetRecordByID(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
-
-	if err := c.Bind(&record); err != nil {
+	if err := c.Bind(record); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
-
 	if err := h.svc.UpdateRecord(record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
 	return c.JSON(http.StatusOK, record)
 }
 
@@ -603,11 +854,9 @@ func (h *Handler) DeleteRecord(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid UUID format")
 	}
-
 	if err := h.svc.DeleteRecord(id); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -616,11 +865,9 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 	if spd == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "SPD number is required")
 	}
-
 	if err := h.svc.DeleteRecordsBySpd(c.Request().Context(), spd); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Successfully deleted records for SPD " + spd,
 	})

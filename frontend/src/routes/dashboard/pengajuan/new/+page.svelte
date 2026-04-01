@@ -4,6 +4,7 @@
     import { userStore, usersStore } from '$lib/features/auth/store';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { recordsStore, addRecord, loadRecords } from '$lib/features/pengajuan/store';
+    import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { toast } from '$lib/shared/stores/toast';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
@@ -21,7 +22,6 @@
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
-    import GlobalLoader from '$lib/shared/ui/loader/GlobalLoader.svelte';
 
     $: selectedType = $page.url.searchParams.get('type');
 
@@ -76,9 +76,9 @@
     }
 
     let isReadOnly = false;
+    let isSuccessfullySubmitted = false;
 
     let isConfirmOpen = false;
-    let isSubmitting = false;
 
     // Helper to get overall start/end dates
     $: minStartDate = formData.locations.reduce((min, loc) => {
@@ -154,7 +154,7 @@
         .map(r => r.employee?.id).filter(Boolean);
 
     $: {
-        if (!isSubmitting && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
+        if (!$loadingStore && !isSuccessfullySubmitted && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
             const conflicts = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
             if (conflicts.length > 0) {
                  formData.selectedEmployees = formData.selectedEmployees.filter(id => !disabledEmployeeIds.includes(id));
@@ -216,20 +216,19 @@
     }
 
     async function processSubmit() {
-        isSubmitting = true;
+        startLoading();
         // Map selected IDs back to full user objects
         const selectedUsers = protokolOfficers.filter(u => formData.selectedEmployees.includes(u.id));
 
         let uploadedSuratTugasPath = null;
         if (formData.suratTugas) {
             try {
-                toast.info('Mengunggah Surat Tugas...');
                 const res = await api.uploadFile(formData.suratTugas);
                 uploadedSuratTugasPath = res.path;
             } catch (e) {
                 toast.error('Gagal mengunggah Surat Tugas.');
                 isConfirmOpen = false;
-                isSubmitting = false;
+                stopLoading();
                 return;
             }
         }
@@ -255,6 +254,7 @@
         
         try {
             await addRecord(tripData);
+            isSuccessfullySubmitted = true; // Set flag to prevent reactive conflict check
             toast.success('Pengajuan Berhasil Disimpan!');
             
             // WA Notification is now handled automatically by the backend via Fonnte API.
@@ -265,8 +265,9 @@
                 goto('/dashboard');
             }
         } catch (e) {
-            isSubmitting = false;
             toast.error('Gagal menyimpan pengajuan.');
+        } finally {
+            stopLoading();
         }
     }
 
@@ -440,10 +441,6 @@
             confirmText="Ya, Simpan"
             onConfirm={processSubmit}
         />
-    {/if}
-
-    {#if isSubmitting}
-        <GlobalLoader />
     {/if}
 </div>
 

@@ -1,6 +1,7 @@
 <script>
     import { usersStore, addUser, updateUser, removeUser } from '$lib/features/auth/store';
     import { userStore } from '$lib/features/auth/store';
+    import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { cn } from '$lib/shared/utils/utils';
     
     // UI Components
@@ -96,6 +97,7 @@
     }
 
     async function processSubmit() {
+        startLoading();
         try {
             // @ts-ignore
             if (editingId) {
@@ -111,6 +113,8 @@
             isConfirmOpen = false;
         } catch (e) {
             toast.error('Gagal menyimpan data user.');
+        } finally {
+            stopLoading();
         }
     }
 
@@ -122,11 +126,14 @@
 
     async function processDelete() {
         if (deleteId) {
+            startLoading();
             try {
                 await removeUser(deleteId);
                 toast.success('User berhasil dihapus');
             } catch (e) {
                 toast.error('Gagal menghapus user');
+            } finally {
+                stopLoading();
             }
             deleteId = null;
         }

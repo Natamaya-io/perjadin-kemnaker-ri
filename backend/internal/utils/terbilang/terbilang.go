@@ -7,6 +7,9 @@ var (
 )
 
 func Terbilang(n int) string {
+	if n < 0 {
+		return "Minus " + Terbilang(-n)
+	}
 	if n < 12 {
 		return huruf[n]
 	} else if n < 20 {
@@ -21,6 +24,10 @@ func Terbilang(n int) string {
 		return "Seribu " + Terbilang(n-1000)
 	} else if n < 1000000 {
 		return Terbilang(n/1000) + " Ribu " + Terbilang(n%1000)
+	} else if n < 1000000000 {
+		return Terbilang(n/1000000) + " Juta " + Terbilang(n%1000000)
+	} else if n < 1000000000000 {
+		return Terbilang(n/1000000000) + " Miliar " + Terbilang(n%1000000000)
 	}
 	return ""
 }

@@ -1,6 +1,7 @@
 <script>
   import '../app.css';
   import { userStore } from '$lib/features/auth/store';
+  import { loadingStore } from '$lib/shared/stores/loading';
   import { page, navigating } from '$app/stores';
   import { browser } from '$app/environment';
   import { fly, fade } from 'svelte/transition';
@@ -56,7 +57,7 @@
       }, 500);
   });
 
-  $: showLoader = isLoading || navLoading;
+  $: showLoader = isLoading || navLoading || $loadingStore;
 </script>
 
 {#if showLoader}

@@ -1,6 +1,7 @@
 <script>
     import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
+    import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
@@ -163,6 +164,7 @@
     async function processSave() {
         if (!selectedRecord) return;
 
+        startLoading();
         try {
             await updateRecord(selectedRecord.id, {
                 costs: { ...editingCosts },
@@ -174,6 +176,7 @@
         } catch (e) {
             toast.error('Gagal menyimpan perubahan.');
         } finally {
+            stopLoading();
             isModalOpen = false;
             isConfirmOpen = false; // Close confirmation modal too
         }

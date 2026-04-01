@@ -107,6 +107,10 @@ type TravelReport struct {
 	Files          json.RawMessage `json:"files"` // Storing file metadata/links as JSON
 	SppdFile       json.RawMessage `json:"sppdFile"`
 	SuratTugasFile json.RawMessage `json:"suratTugasFile"`
+	PPKName        string         `json:"ppkName"`
+	PPKNIP         string         `json:"ppkNip"`
+	BendaharaName  string         `json:"bendaharaName"`
+	BendaharaNIP   string         `json:"bendaharaNip"`
 }
 
 // ==========================================

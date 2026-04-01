@@ -235,6 +235,23 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 	err := s.repo.UpdateTravelRecord(record)
 	if err == nil {
 		s.invalidateCache(context.Background(), "records:*")
+
+		// NEW: If a report was updated, sync it to all other records in the same SPD group
+		if record.Report != nil && record.SPDNumber != "" {
+			go func(spd string, rep models.TravelReport) {
+				allRecs, err := s.repo.GetTravelRecords(map[string]interface{}{})
+				if err != nil {
+					return
+				}
+				for _, r := range allRecs {
+					if r.SPDNumber == spd && r.ID != record.ID {
+						r.Report = &rep
+						r.Report.TravelRecordID = r.ID
+						s.repo.UpdateTravelRecord(&r)
+					}
+				}
+			}(record.SPDNumber, *record.Report)
+		}
 	}
 	return err
 }

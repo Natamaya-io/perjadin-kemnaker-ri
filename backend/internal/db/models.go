@@ -41,6 +41,12 @@ type SbmRate struct {
 	TaxiRate        sql.NullFloat64 `json:"taxi_rate"`
 }
 
+type Setting struct {
+	Key       string       `json:"key"`
+	Value     string       `json:"value"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
 type TravelCost struct {
 	TravelRecordID     uuid.UUID             `json:"travel_record_id"`
 	TicketGo           sql.NullFloat64       `json:"ticket_go"`

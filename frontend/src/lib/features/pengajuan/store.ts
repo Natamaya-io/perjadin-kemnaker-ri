@@ -12,8 +12,9 @@ export async function loadRecords() {
     try {
         const data = await api.getRecords();
         recordsStore.set(data);
-    } catch (e) {
-        console.error("Failed to load records", e);
+    } catch (e: any) {
+        if (e.message === 'Unauthorized') return;
+        console.warn("Failed to load records (backend might be starting):", e.message);
     }
 }
 
