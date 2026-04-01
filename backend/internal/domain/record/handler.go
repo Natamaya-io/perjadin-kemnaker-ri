@@ -208,6 +208,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 
 	vars := map[string]interface{}{
 		"no_spd":               noSpd,
+		"id_spj":               extractNumericID(record.SPDNumber),
 		"no_surat":            noSurat,
 		"bulan_no_surat":      utils.GetRomanMonths()[int(tglSurat.Month())],
 		"tahun_no_surat":      tglSurat.Year(),
