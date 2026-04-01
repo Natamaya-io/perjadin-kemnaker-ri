@@ -515,6 +515,10 @@ func (h *Handler) ExportSpdPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - SPD.docx", "SPD")
 }
 
+func (h *Handler) ExportSpdDocx(c echo.Context) error {
+	return h.exportDocumentDocx(c, "Berkas Luar Kota - SPD.docx", "SPD")
+}
+
 func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -663,13 +667,14 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	}
 
 	var pdfBytes []byte
+	var errPDF error
 	if len(images) > 0 {
-		pdfBytes, err = h.docGen.GenerateWithImages(c.Request().Context(), payload, images)
+		pdfBytes, errPDF = h.docGen.GenerateWithImages(c.Request().Context(), payload, images)
 	} else {
-		pdfBytes, err = h.docGen.Generate(c.Request().Context(), payload)
+		pdfBytes, errPDF = h.docGen.Generate(c.Request().Context(), payload)
 	}
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen laporan: %v", err))
+	if errPDF != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen laporan: %v", errPDF))
 	}
 
 	filename := fmt.Sprintf("Laporan_%s_%s.pdf", record.Employee.Name, record.SPDNumber)
@@ -679,8 +684,233 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }
 
+func (h *Handler) ExportLaporanDocx(c echo.Context) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
+	}
+
+	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal mengambil data records")
+	}
+
+	var spdGroupRecords []models.TravelRecord
+	for _, r := range allRecords {
+		if r.SPDNumber == record.SPDNumber {
+			spdGroupRecords = append(spdGroupRecords, r)
+		}
+	}
+
+	sort.Slice(spdGroupRecords, func(i, j int) bool {
+		ti := spdGroupRecords[i].CreatedAt.Unix()
+		tj := spdGroupRecords[j].CreatedAt.Unix()
+		if ti != tj {
+			return ti < tj
+		}
+		return spdGroupRecords[i].ID.String() < spdGroupRecords[j].ID.String()
+	})
+
+	namaPpk := h.cfg.Signatory.PPKName
+	nipPpk := h.cfg.Signatory.PPKNIP
+
+	if h.masterSvc != nil {
+		globalSettings, _ := h.masterSvc.GetSettings(context.Background())
+		if v, ok := globalSettings["ppk_name"]; ok && v != "" {
+			namaPpk = v
+		}
+		if v, ok := globalSettings["ppk_nip"]; ok && v != "" {
+			nipPpk = v
+		}
+	}
+
+	if record.Report != nil {
+		if record.Report.PPKName != "" {
+			namaPpk = record.Report.PPKName
+		}
+		if record.Report.PPKNIP != "" {
+			nipPpk = record.Report.PPKNIP
+		}
+	}
+
+	noSuratTugas := record.SuratTugasNumber
+	if noSuratTugas == "" {
+		noSuratTugas = "-"
+	}
+
+	bulanNoSurat := ""
+	tanggalNoSurat := ""
+	if !record.SuratTugasDate.IsZero() {
+		bulanNoSurat = utils.GetRomanMonths()[int(record.SuratTugasDate.Month())]
+		tanggalNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Day())
+	}
+
+	isiLaporan := "-"
+	tanggalLaporan := utils.FormatIndonesianDate(time.Now())
+	if record.Report != nil {
+		if record.Report.Text != "" {
+			isiLaporan = record.Report.Text
+		}
+		if !record.Report.SubmittedAt.IsZero() {
+			tanggalLaporan = utils.FormatIndonesianDate(record.Report.SubmittedAt)
+		}
+	}
+
+	vars := map[string]interface{}{
+		"kota":               record.Location,
+		"provinsi":           record.Province,
+		"tanggal_mulai":      utils.FormatIndonesianDate(record.StartDate),
+		"tanggal_selesai":    utils.FormatIndonesianDate(record.EndDate),
+		"bulan":              utils.GetRomanMonths()[int(record.StartDate.Month())],
+		"tahun":              record.StartDate.Year(),
+		"no_surat":           noSuratTugas,
+		"bulan_no_surat":     bulanNoSurat,
+		"tanggal_no_surat":   tanggalNoSurat,
+		"tujuan_perjalanan":  record.Purpose,
+		"stakeholder":        record.Stakeholder,
+		"isi_laporan":        isiLaporan,
+		"tanggal_dikeluarkan": tanggalLaporan,
+		"nama_ppk":           namaPpk,
+		"nip_ppk":            nipPpk,
+	}
+
+	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
+	for i, ordinal := range ordinals {
+		if i < len(spdGroupRecords) {
+			emp := spdGroupRecords[i].Employee
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = emp.Name
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = emp.NIP
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
+		} else {
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
+		}
+	}
+
+	imageOrdinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam"}
+	images := make(map[string]document.ImageData)
+	if record.Report != nil && len(record.Report.Files) > 0 {
+		var reportFiles []struct {
+			Name      string `json:"name"`
+			Type      string `json:"type"`
+			Data      string `json:"data"`
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(record.Report.Files, &reportFiles); err == nil {
+			for i, f := range reportFiles {
+				if i >= len(imageOrdinals) {
+					break
+				}
+				docKey := fmt.Sprintf("foto_dokumentasi_%s", imageOrdinals[i])
+				images[docKey] = document.ImageData{
+					Data:     f.Data,
+					MimeType: f.Type,
+				}
+			}
+		}
+	}
+
+	for _, ordinal := range imageOrdinals {
+		key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
+		if _, ok := images[key]; !ok {
+			vars[key] = ""
+		}
+	}
+
+	payload := document.DocumentRequest{
+		TemplateName: "Berkas Luar Kota - Laporan.docx",
+		Variables:    vars,
+	}
+
+	var docxBytes []byte
+	var errDocx error
+	if len(images) > 0 {
+		docxBytes, errDocx = h.docGen.GenerateDocxWithImages(c.Request().Context(), payload, images)
+	} else {
+		docxBytes, errDocx = h.docGen.GenerateDocx(c.Request().Context(), payload)
+	}
+	if errDocx != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen laporan: %v", errDocx))
+	}
+
+	filename := fmt.Sprintf("Laporan_%s_%s.docx", record.Employee.Name, record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Response().Header().Set(echo.HeaderContentType, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+	return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", docxBytes)
+}
+
 func (h *Handler) ExportRincianPDF(c echo.Context) error {
 	return h.exportDocument(c, "Berkas Luar Kota - rincian pembayaran.docx", "Rincian")
+}
+
+func (h *Handler) ExportRincianDocx(c echo.Context) error {
+	return h.exportDocumentDocx(c, "Berkas Luar Kota - rincian pembayaran.docx", "Rincian")
+}
+
+func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix string) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Format UUID tidak valid")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
+	}
+
+	allRecords, err := h.svc.GetRecords(map[string]interface{}{})
+	globalIndex := 0
+	if err == nil && len(allRecords) > 0 {
+		sort.Slice(allRecords, func(i, j int) bool {
+			ti := allRecords[i].CreatedAt.Unix()
+			tj := allRecords[j].CreatedAt.Unix()
+			if ti != tj {
+				return ti < tj
+			}
+			si := allRecords[i].SPDNumber
+			sj := allRecords[j].SPDNumber
+			if si != sj {
+				return si < sj
+			}
+			return allRecords[i].ID.String() < allRecords[j].ID.String()
+		})
+		for idx, r := range allRecords {
+			if r.ID == record.ID {
+				globalIndex = idx + 1
+				break
+			}
+		}
+	}
+	if globalIndex == 0 {
+		globalIndex = 1
+	}
+
+	payload := document.DocumentRequest{
+		TemplateName: templateName,
+		Variables:    h.mapTravelToDocument(record, globalIndex),
+	}
+
+	docxBytes, err := h.docGen.GenerateDocx(c.Request().Context(), payload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal membuat dokumen: %v", err))
+	}
+
+	filename := fmt.Sprintf("%s_%s_%s.docx", prefix, record.Employee.Name, record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Response().Header().Set(echo.HeaderContentType, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+	return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", docxBytes)
 }
 
 func (h *Handler) UploadFile(c echo.Context) error {

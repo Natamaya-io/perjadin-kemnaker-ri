@@ -252,6 +252,51 @@ func (g *Generator) Generate(ctx context.Context, req DocumentRequest) ([]byte, 
 	return g.convertToPDF(ctx, docxBuf.Bytes())
 }
 
+// GenerateDocx generates a filled DOCX document without converting to PDF
+func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]byte, error) {
+	templatePath := filepath.Join(g.templateDir, req.TemplateName)
+
+	doc, err := docx.ReadDocxFile(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open template: %w", err)
+	}
+	defer doc.Close()
+
+	d := doc.Editable()
+
+	// Fix split runs for both placeholder formats
+	d.SetContent(fixSplitRuns(d.GetContent()))
+
+	// Replace variables in both {{key}} and <<key>> formats
+	for k, v := range req.Variables {
+		val := fmt.Sprintf("%v", v)
+
+		// {{key}} format
+		placeholder := fmt.Sprintf("{{%s}}", k)
+		d.Replace(placeholder, val, -1)
+		d.ReplaceFooter(placeholder, val)
+		d.ReplaceHeader(placeholder, val)
+
+		// <<key>> format - need to handle in raw XML since docx library only does {{}}
+		content := d.GetContent()
+		content = replaceAngleBrackets(content, k, val)
+		d.SetContent(content)
+	}
+
+	// Remove table rows marked for deletion (empty petugas slots)
+	d.SetContent(removeEmptyTableRows(d.GetContent()))
+
+	// Adjust petugas table column widths (narrow number col, widen name col)
+	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
+
+	var docxBuf bytes.Buffer
+	if err := d.Write(&docxBuf); err != nil {
+		return nil, fmt.Errorf("failed to write docx: %w", err)
+	}
+
+	return docxBuf.Bytes(), nil
+}
+
 // GenerateWithImages generates a document with text replacement AND embedded images
 func (g *Generator) GenerateWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
 	templatePath := filepath.Join(g.templateDir, req.TemplateName)
@@ -302,6 +347,59 @@ func (g *Generator) GenerateWithImages(ctx context.Context, req DocumentRequest,
 	}
 
 	return g.convertToPDF(ctx, docxBytes)
+}
+
+// GenerateDocxWithImages generates a document with text replacement AND embedded images without converting to PDF
+func (g *Generator) GenerateDocxWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
+	templatePath := filepath.Join(g.templateDir, req.TemplateName)
+
+	doc, err := docx.ReadDocxFile(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open template: %w", err)
+	}
+	defer doc.Close()
+
+	d := doc.Editable()
+
+	// Fix split runs
+	d.SetContent(fixSplitRuns(d.GetContent()))
+
+	// Replace text variables
+	for k, v := range req.Variables {
+		val := fmt.Sprintf("%v", v)
+
+		placeholder := fmt.Sprintf("{{%s}}", k)
+		d.Replace(placeholder, val, -1)
+		d.ReplaceFooter(placeholder, val)
+		d.ReplaceHeader(placeholder, val)
+
+		content := d.GetContent()
+		content = replaceAngleBrackets(content, k, val)
+		d.SetContent(content)
+	}
+
+	// Remove table rows marked for deletion (empty petugas slots)
+	d.SetContent(removeEmptyTableRows(d.GetContent()))
+
+	// Adjust petugas table column widths (narrow number col, widen name col)
+	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
+
+	var docxBuf bytes.Buffer
+	if err := d.Write(&docxBuf); err != nil {
+		return nil, fmt.Errorf("failed to write docx: %w", err)
+	}
+
+	// Now inject images into the DOCX
+	docxBytes := docxBuf.Bytes()
+	if len(images) > 0 {
+		var err error
+		docxBytes, err = injectImages(docxBytes, images)
+		if err != nil {
+			return nil, fmt.Errorf("failed to inject images: %w", err)
+		}
+	}
+
+	return docxBytes, nil
 }
 
 // injectImages replaces image placeholders in the DOCX (zip) with actual embedded images

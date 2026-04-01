@@ -30,13 +30,36 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 			const response = await fetch(url, fetchOptions);
 
-			// Ambil body sebagai ArrayBuffer untuk memastikan integritas data (terutama file upload)
+			// Ambil body sebagai Buffer (Node.js native) agar lebih stabil saat dikirim balik
 			const responseData = await response.arrayBuffer();
+			const buffer = Buffer.from(responseData);
+			
+			console.log(`[Proxy Debug] ${url} -> ${buffer.length} bytes`);
 
-			return new Response(responseData, {
+			const proxyHeaders = new Headers();
+			let contentType = response.headers.get('content-type');
+			
+			// --- IDM CLOAKING LOGIC ---
+			// Jika tipe adalah PDF, kita samarkan jadi octet-stream 
+			// supaya tidak dicuri oleh Internet Download Manager (IDM)
+			if (contentType && contentType.includes('application/pdf')) {
+				proxyHeaders.set('content-type', 'application/octet-stream');
+			} else if (contentType) {
+				proxyHeaders.set('content-type', contentType);
+			}
+			
+			const contentDisposition = response.headers.get('content-disposition');
+			if (contentDisposition) proxyHeaders.set('content-disposition', contentDisposition);
+
+			// Paksa no-cache agar browser tidak menyimpan respons error 0-byte sebelumnya
+			proxyHeaders.set('cache-control', 'no-cache, no-store, must-revalidate');
+			proxyHeaders.set('pragma', 'no-cache');
+			proxyHeaders.set('expires', '0');
+
+			return new Response(buffer, {
 				status: response.status,
 				statusText: response.statusText,
-				headers: response.headers
+				headers: proxyHeaders
 			});
 		} catch (err: any) {
 			// Log ini akan muncul di 'podman logs <frontend_container>'

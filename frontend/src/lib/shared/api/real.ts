@@ -1,7 +1,8 @@
 import type { ApiClient, TravelRecord, User } from './types';
 import { browser } from '$app/environment';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+// Hardcode BASE_URL to always use the proxy to prevent any CORS or Direct-Backend 0 byte body issues
+const BASE_URL = '/api/v1';
 
 export class RealApiClient implements ApiClient {
     private token: string | null = null;
@@ -149,15 +150,18 @@ export class RealApiClient implements ApiClient {
         return this.request<TravelRecord>(`/records/${id}`);
     }
 
-    private async exportPdf(id: string, type: 'spd' | 'laporan' | 'rincian'): Promise<Blob> {
+    private async fetchDocument(id: string, type: string, format: 'pdf' | 'docx' = 'pdf'): Promise<Blob> {
         const headers: HeadersInit = {
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
         };
 
-        const response = await fetch(`${BASE_URL}/records/${id}/${type}-pdf`, {
+        const response = await fetch(`${BASE_URL}/records/${id}/${type}-${format}`, {
             method: 'GET',
             headers
         });
+
+        console.log(`[API Debug] ${type}-${format} Response:`, response.status, response.statusText);
+        console.log(`[API Debug] Headers:`, [...response.headers.entries()]);
 
         if (!response.ok) {
             if (response.status === 401 && this.unauthorizedHandler) {
@@ -171,22 +175,43 @@ export class RealApiClient implements ApiClient {
             } catch (e) {
                 if (errorText) errorMessage = errorText;
             }
-            throw new Error(`Export ${type.toUpperCase()} PDF failed: ${errorMessage}`);
+            throw new Error(`Export ${type.toUpperCase()} ${format.toUpperCase()} failed: ${errorMessage}`);
         }
 
-        return response.blob();
+        const buffer = await response.arrayBuffer();
+        if (buffer.byteLength === 0) {
+            throw new Error(`Data dokumen ${format.toUpperCase()} kosong (0 byte) diterima dari server untuk tipe ${type}.`);
+        }
+        
+        const mimeType = format === 'pdf' 
+            ? 'application/pdf' 
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            
+        return new Blob([buffer], { type: mimeType });
     }
 
     async exportSpdPdf(id: string): Promise<Blob> {
-        return this.exportPdf(id, 'spd');
+        return this.fetchDocument(id, 'spd', 'pdf');
+    }
+
+    async exportSpdDocx(id: string): Promise<Blob> {
+        return this.fetchDocument(id, 'spd', 'docx');
     }
 
     async exportLaporanPdf(id: string): Promise<Blob> {
-        return this.exportPdf(id, 'laporan');
+        return this.fetchDocument(id, 'laporan', 'pdf');
+    }
+
+    async exportLaporanDocx(id: string): Promise<Blob> {
+        return this.fetchDocument(id, 'laporan', 'docx');
     }
 
     async exportRincianPdf(id: string): Promise<Blob> {
-        return this.exportPdf(id, 'rincian');
+        return this.fetchDocument(id, 'rincian', 'pdf');
+    }
+
+    async exportRincianDocx(id: string): Promise<Blob> {
+        return this.fetchDocument(id, 'rincian', 'docx');
     }
 
     async createRecord(record: any): Promise<TravelRecord[]> {

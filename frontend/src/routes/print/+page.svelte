@@ -1,7 +1,7 @@
 <script>
     import { page } from '$app/stores';
     import { recordsStore, loadRecords } from '$lib/features/pengajuan/store';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { toast } from '$lib/shared/stores/toast';
     import { api } from '$lib/shared/api';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
@@ -21,9 +21,10 @@
 
     async function loadPdfPreview() {
         if (!record) return;
-        
+
         isGeneratingPdf = true;
         try {
+            // Kembali gunakan PDF karena Gotenberg sudah terintegrasi komprehensif
             let pdfBlob;
             if (type === 'spd') {
                 pdfBlob = await api.exportSpdPdf(record.id);
@@ -31,17 +32,15 @@
                 pdfBlob = await api.exportLaporanPdf(record.id);
             } else if (type === 'rincian') {
                 pdfBlob = await api.exportRincianPdf(record.id);
-            } else {
-                throw new Error('Jenis dokumen tidak dikenal');
             }
 
-            // Create a URL for the blob to be displayed in the viewer
-            if (pdfUrl) window.URL.revokeObjectURL(pdfUrl);
+            if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
             pdfUrl = window.URL.createObjectURL(pdfBlob);
+            
+            isGeneratingPdf = false;
         } catch (e) {
             console.error('Error loading PDF preview:', e);
-            toast.error(`Gagal memuat pratinjau dokumen: ${e.message}`);
-        } finally {
+            toast.error('Gagal membuat pratinjau PDF.');
             isGeneratingPdf = false;
         }
     }
@@ -57,6 +56,10 @@
             console.error(e);
             toast.error('Gagal memuat data perjalanan.');
         }
+    });
+
+    onDestroy(() => {
+        if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
     });
 
     async function downloadPdf() {
@@ -135,7 +138,7 @@
         {#if isGeneratingPdf && !pdfUrl}
             <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
                 <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <p class="text-slate-600 font-medium">Sedang menyiapkan pratinjau dari template DOCX...</p>
+                <p class="text-slate-600 font-medium">Sedang menyiapkan pratinjau PDF...</p>
                 <p class="text-slate-400 text-sm mt-2">Ini mungkin memakan waktu beberapa detik karena merender via LibreOffice.</p>
             </div>
         {/if}
@@ -144,7 +147,7 @@
             <DocumentViewer url={pdfUrl} type="pdf" title="Pratinjau {type.toUpperCase()}" />
         {:else if !isGeneratingPdf && isDataLoaded}
             <div class="flex flex-col items-center justify-center h-full text-slate-400 bg-white">
-                <svg xmlns="http://www.w3.org/2000/center" class="h-16 w-16 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <p class="text-lg font-medium">Pratinjau tidak tersedia.</p>

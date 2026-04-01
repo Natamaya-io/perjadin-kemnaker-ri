@@ -7,11 +7,11 @@ export default defineConfig({
 		host: true,
 		proxy: {
 			'/api': {
-				target: 'http://backend:8081',
+				target: process.env.BACKEND_URL || 'http://127.0.0.1:8081',
 				changeOrigin: true
 			},
 			'/uploads': {
-				target: 'http://backend:8081',
+				target: process.env.BACKEND_URL || 'http://127.0.0.1:8081',
 				changeOrigin: true
 			}
 		}
