@@ -163,7 +163,7 @@
                 <Table class="w-full text-sm text-left">
                     <TableHeader class="bg-slate-50 border-b border-slate-200">
                         <TableRow class="hover:bg-slate-50/50">
-                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">{$userStore.role !== 'protokol' ? 'ID SPD' : 'No. SPD'}</TableHead>
+                            <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">{$userStore.role !== 'protokol' ? 'ID SPJ' : 'No. SPJ'}</TableHead>
                             <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
                             <TableHead class="min-w-[160px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
                             <TableHead class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3">Status Laporan</TableHead>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -466,6 +467,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 
 	qtx := r.q.WithTx(tx)
 
+	fmt.Printf("Attempting to UpdateTravelRecord for ID: %v\n", record.ID)
 	_, err = qtx.UpdateTravelRecord(ctx, db.UpdateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
@@ -489,12 +491,13 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 		SuratTugasDate:   toNullTime(record.SuratTugasDate),
 	})
 	if err != nil {
-		return err
+		fmt.Printf("UpdateTravelRecord failed: %v\n", err)
+		return fmt.Errorf("UpdateTravelRecord: %w", err)
 	}
 
 	// Update locations (simpler to delete and recreate)
 	if err := qtx.DeleteTravelLocationsByRecordID(ctx, record.ID); err != nil {
-		return err
+		return fmt.Errorf("DeleteTravelLocationsByRecordID: %w", err)
 	}
 	for i, loc := range record.Locations {
 		// Always generate a new ID to prevent primary key conflict with the soft-deleted row
@@ -510,7 +513,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			EndDate:        loc.EndDate,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("CreateTravelLocation: %w", err)
 		}
 	}
 
@@ -564,7 +567,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				Details:            toJsonb(record.Cost.Details),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("CreateTravelCost fallback: %w", err)
 			}
 		}
 	}
@@ -588,7 +591,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("CreateTravelReport fallback: %w", err)
 			}
 		}
 	}

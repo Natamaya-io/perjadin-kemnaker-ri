@@ -131,16 +131,10 @@ func adjustPetugasTableWidths(xmlContent string) string {
 					for _, ordinal := range fotoPlaceholders {
 						key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
 						if strings.Contains(tableContent, key) {
-							// Group 2 images per paragraph for 2x2 layout
-							if foundCount%2 == 0 {
-								if foundCount > 0 {
-									replacement += `</w:p>`
-								}
-								replacement += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>`
-							} else {
-								// Add space between images in the same row
-								replacement += `<w:r><w:t xml:space="preserve">   </w:t></w:r>`
+							if foundCount > 0 {
+								replacement += `</w:p>`
 							}
+							replacement += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>`
 							replacement += fmt.Sprintf(`<w:r><w:t>{{%s}}</w:t></w:r>`, key)
 							foundCount++
 						}
@@ -598,7 +592,7 @@ func replaceImagePlaceholder(xmlContent string, placeholderKey string, rId strin
 			`<a:noFill/>`+
 			`</pic:spPr>`+
 			`</pic:pic></a:graphicData></a:graphic>`+
-			`</wp:inline></w:drawing></w:r>`,
+			`</wp:inline></w:drawing><w:br/></w:r>`,
 		cx, cy,
 		hash(placeholderKey), placeholderKey,
 		placeholderKey,

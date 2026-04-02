@@ -155,7 +155,8 @@ export class RealApiClient implements ApiClient {
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
         };
 
-        const response = await fetch(`${BASE_URL}/records/${id}/${type}-${format}`, {
+        const formatPath = format === 'pdf' ? 'stream' : 'docx';
+        const response = await fetch(`${BASE_URL}/records/${id}/${type}-${formatPath}`, {
             method: 'GET',
             headers
         });

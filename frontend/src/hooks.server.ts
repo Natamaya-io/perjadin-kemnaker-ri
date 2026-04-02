@@ -44,12 +44,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// supaya tidak dicuri oleh Internet Download Manager (IDM)
 			if (contentType && contentType.includes('application/pdf')) {
 				proxyHeaders.set('content-type', 'application/octet-stream');
-			} else if (contentType) {
-				proxyHeaders.set('content-type', contentType);
+				// JANGAN teruskan content-disposition (attachment; filename=...pdf) 
+				// karena IDM sangat agresif melacak file ber-ekstensi .pdf dari header ini!
+			} else {
+				if (contentType) proxyHeaders.set('content-type', contentType);
+				
+				const contentDisposition = response.headers.get('content-disposition');
+				if (contentDisposition) proxyHeaders.set('content-disposition', contentDisposition);
 			}
-			
-			const contentDisposition = response.headers.get('content-disposition');
-			if (contentDisposition) proxyHeaders.set('content-disposition', contentDisposition);
 
 			// Paksa no-cache agar browser tidak menyimpan respons error 0-byte sebelumnya
 			proxyHeaders.set('cache-control', 'no-cache, no-store, must-revalidate');

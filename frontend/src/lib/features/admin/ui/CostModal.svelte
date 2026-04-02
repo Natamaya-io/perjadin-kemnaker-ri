@@ -289,6 +289,9 @@
             };
         }
 
+        editingCosts.dailyAllowanceRate = sbmRateAvg;
+        editingCosts.dailyAllowanceDays = days;
+
         dispatch('save', { editingCosts, grandTotal });
     }
 </script>

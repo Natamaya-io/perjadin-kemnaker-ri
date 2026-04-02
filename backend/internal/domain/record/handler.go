@@ -206,6 +206,45 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		// if record.Report.PPKTitle != "" { jabPpk = record.Report.PPKTitle }
 	}
 
+	if record.Cost == nil {
+		record.Cost = &models.TravelCost{
+			DailyAllowanceRate: 0,
+			DailyAllowanceDays: days,
+		}
+		
+		if h.masterSvc != nil {
+			ctx := context.Background()
+			if provs, err := h.masterSvc.GetProvinces(ctx); err == nil {
+				if rates, err := h.masterSvc.GetSBMRates(ctx); err == nil {
+					provMap := make(map[uuid.UUID]string)
+					for _, p := range provs {
+						provMap[p.ID] = p.Name
+					}
+					sbmLookup := make(map[string]float64)
+					for _, r := range rates {
+						if r.OutsideCityRate.Valid {
+							sbmLookup[provMap[r.ProvinceID]] = r.OutsideCityRate.Float64
+						}
+					}
+					
+					var totalSbm float64
+					var totalDays int
+					for _, loc := range record.Locations {
+						d := int(loc.EndDate.Sub(loc.StartDate).Hours()/24) + 1
+						if d < 1 { d = 1 }
+						rate := sbmLookup[loc.Province]
+						totalSbm += rate * float64(d)
+						totalDays += d
+					}
+					if totalDays > 0 {
+						record.Cost.DailyAllowanceRate = totalSbm / float64(totalDays)
+						record.Cost.DailyAllowanceDays = totalDays
+					}
+				}
+			}
+		}
+	}
+
 	tglCetak := tglSurat
 	if tglCetak.IsZero() {
 		tglCetak = time.Now()
@@ -221,9 +260,9 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"bulan_pembayaran":    utils.GetIndonesianMonths()[int(tglCetak.Month())],
 		"tahun_pembayaran":    tglCetak.Year(),
 		"bulan":               "",
-		"bulan_romawi":        utils.GetRomanMonths()[int(record.StartDate.Month())],
+		"bulan_romawi":        utils.GetRomanMonths()[int(time.Now().Month())],
 		"tahun":               "",
-		"tahun_saat_ini":      fmt.Sprintf("%d", tglCetak.Year()),
+		"tahun_saat_ini":      fmt.Sprintf("%d", time.Now().Year()),
 		"nama":                record.Employee.Name,
 		"nama_petugas":        record.Employee.Name,
 		"nip":                 record.Employee.NIP,
@@ -268,8 +307,10 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"sbm":               "0",
 		"total_sbm":         "0",
 		"penginapan":        "0",
+		"p":                 "0",
 		"total_penginapan":  "0",
 		"total_biaya":       "0",
+		"total":             "0",
 		"total_keseluruhan": "0",
 		"total_kesuluruhan": "0",
 		"total_akhir":       "0",
@@ -428,6 +469,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		totalAgg := aggTicket + aggLokal + aggDaerah + aggSbm + aggHotel
 
 		vars["total_biaya"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(totalAgg))
+		vars["total"] = utils.FormatRupiah(totalAgg)
 		vars["total_keseluruhan"] = utils.FormatRupiah(totalAgg)
 		vars["total_kesuluruhan"] = utils.FormatRupiah(totalAgg)
 		vars["total_akhir"] = utils.FormatRupiah(totalAgg)
@@ -606,13 +648,26 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		}
 	}
 
+	idSpj := record.SPDNumber
+	if parts := strings.Split(idSpj, "-"); len(parts) > 0 {
+		suffix := parts[len(parts)-1]
+		if len(suffix) < 3 {
+			idSpj = fmt.Sprintf("%03s", suffix)
+		} else {
+			idSpj = suffix
+		}
+	}
+
 	vars := map[string]interface{}{
+		"id_spj":             idSpj,
 		"kota":               record.Location,
 		"provinsi":           record.Province,
 		"tanggal_mulai":      utils.FormatIndonesianDate(record.StartDate),
 		"tanggal_selesai":    utils.FormatIndonesianDate(record.EndDate),
 		"bulan":              utils.GetRomanMonths()[int(record.StartDate.Month())],
 		"tahun":              record.StartDate.Year(),
+		"bulan_romawi":       utils.GetRomanMonths()[int(time.Now().Month())],
+		"tahun_saat_ini":     fmt.Sprintf("%d", time.Now().Year()),
 		"no_surat":           noSuratTugas,
 		"bulan_no_surat":     bulanNoSurat,
 		"tanggal_no_surat":   tanggalNoSurat,
@@ -634,9 +689,9 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
 		} else {
 			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
-			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = "__REMOVE_ROW__"
 			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
-			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = "__REMOVE_ROW__"
 		}
 	}
 
@@ -771,13 +826,26 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) error {
 		}
 	}
 
+	idSpj := record.SPDNumber
+	if parts := strings.Split(idSpj, "-"); len(parts) > 0 {
+		suffix := parts[len(parts)-1]
+		if len(suffix) < 3 {
+			idSpj = fmt.Sprintf("%03s", suffix)
+		} else {
+			idSpj = suffix
+		}
+	}
+
 	vars := map[string]interface{}{
+		"id_spj":             idSpj,
 		"kota":               record.Location,
 		"provinsi":           record.Province,
 		"tanggal_mulai":      utils.FormatIndonesianDate(record.StartDate),
 		"tanggal_selesai":    utils.FormatIndonesianDate(record.EndDate),
 		"bulan":              utils.GetRomanMonths()[int(record.StartDate.Month())],
 		"tahun":              record.StartDate.Year(),
+		"bulan_romawi":       utils.GetRomanMonths()[int(time.Now().Month())],
+		"tahun_saat_ini":     fmt.Sprintf("%d", time.Now().Year()),
 		"no_surat":           noSuratTugas,
 		"bulan_no_surat":     bulanNoSurat,
 		"tanggal_no_surat":   tanggalNoSurat,
@@ -799,9 +867,9 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) error {
 			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
 		} else {
 			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
-			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = "__REMOVE_ROW__"
 			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
-			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_ttd_%s", ordinal)] = "__REMOVE_ROW__"
 		}
 	}
 
@@ -1081,6 +1149,7 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	if err := c.Bind(record); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
+	record.ID = id
 	if err := h.svc.UpdateRecord(record); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

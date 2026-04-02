@@ -189,8 +189,31 @@
 	}
 
     function getSbmRate(empRecord) {
-        const provData = $provincesStore.find(p => p.name === empRecord.province);
-        return provData ? provData.luarKota : 0;
+        const locs = empRecord?.locations && empRecord.locations.length > 0
+            ? empRecord.locations
+            : [{ startDate: empRecord?.startDate, endDate: empRecord?.endDate, province: empRecord?.province }];
+
+        let totalSbm = 0;
+        let totalDays = 0;
+
+        locs.forEach(loc => {
+            const provData = $provincesStore.find(p => p.name === loc.province);
+            const rate = provData ? provData.luarKota : 0;
+            const start = new Date(loc.startDate);
+            const end = new Date(loc.endDate);
+            let locDays = 0;
+
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                locDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+            } else {
+                locDays = 1; // Fallback
+            }
+
+            totalSbm += rate * locDays;
+            totalDays += locDays;
+        });
+
+        return totalDays > 0 ? totalSbm / totalDays : 0;
     }
 
 	function getTotalDailyAllowance(empRecord) {
@@ -742,7 +765,7 @@
                                      </svg>
                                  </div>
                                  <div>
-                                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ID SPD</h3>
+                                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ID SPJ</h3>
                                      <div class="text-xl font-bold text-slate-900 tracking-tight">{record.spd}</div>
                                  </div>
                              </div>
