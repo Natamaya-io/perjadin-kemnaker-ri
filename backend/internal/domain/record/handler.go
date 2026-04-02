@@ -135,13 +135,19 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 	tglSurat := record.SuratTugasDate
 	
 	if noSurat == "" {
-		noSurat = extractNumericID(record.SPDNumber)
+		// Use individual sequential number, NOT group number
+		noSurat = spdSubNumber
+	} else {
+		// Replace the group ID in the Surat Tugas Number with the individual's SPD sequence
+		groupID := extractNumericID(record.SPDNumber)
+		if groupID != "" && groupID != spdSubNumber {
+			noSurat = strings.Replace(noSurat, groupID, spdSubNumber, 1)
+		}
 	}
 
-	noSpd := record.SPDNumber
-	if noSpd == "" {
-		noSpd = spdSubNumber
-	}
+	// no_spd = individual sequential number (e.g. "002" for Doni)
+	// id_spj = group number extracted from SPDNumber (e.g. "001" from "ID-SPJ-001")
+	noSpd := spdSubNumber
 
 	maksud := strings.TrimSpace(record.Purpose)
 	stakeholder := strings.TrimSpace(record.Stakeholder)
@@ -252,7 +258,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 
 	vars := map[string]interface{}{
 		"no_spd":               noSpd,
-		"id_spj":               extractNumericID(record.SPDNumber),
+		"id_spj":               noSpd,
 		"no_surat":            noSurat,
 		"bulan_no_surat":      utils.GetRomanMonths()[int(tglSurat.Month())],
 		"tahun_no_surat":      tglSurat.Year(),
@@ -532,6 +538,12 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 			if si != sj {
 				return si < sj
 			}
+			// Employee name tiebreaker (matches frontend localeCompare)
+			ni := allRecords[i].Employee.Name
+			nj := allRecords[j].Employee.Name
+			if ni != nj {
+				return ni < nj
+			}
 			return allRecords[i].ID.String() < allRecords[j].ID.String()
 		})
 		for idx, r := range allRecords {
@@ -549,6 +561,10 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) er
 		TemplateName: templateName,
 		Variables:    h.mapTravelToDocument(record, globalIndex),
 	}
+
+	fmt.Printf("[DEBUG EXPORT] Record=%s Employee=%s SPDNumber=%s globalIndex=%d no_spd=%v no_surat=%v\n",
+		record.ID.String(), record.Employee.Name, record.SPDNumber, globalIndex,
+		payload.Variables["no_spd"], payload.Variables["no_surat"])
 
 	pdfBytes, err := h.docGen.Generate(c.Request().Context(), payload)
 	if err != nil {
@@ -600,6 +616,11 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		if ti != tj {
 			return ti < tj
 		}
+		ni := spdGroupRecords[i].Employee.Name
+		nj := spdGroupRecords[j].Employee.Name
+		if ni != nj {
+			return ni < nj
+		}
 		return spdGroupRecords[i].ID.String() < spdGroupRecords[j].ID.String()
 	})
 
@@ -634,7 +655,13 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 	tanggalNoSurat := ""
 	if !record.SuratTugasDate.IsZero() {
 		bulanNoSurat = utils.GetRomanMonths()[int(record.SuratTugasDate.Month())]
-		tanggalNoSurat = fmt.Sprintf("%d", record.SuratTugasDate.Day())
+		monthNames := utils.GetIndonesianMonths()
+		tanggalNoSurat = fmt.Sprintf("%d %s", record.SuratTugasDate.Day(), monthNames[int(record.SuratTugasDate.Month())])
+	} else if !record.StartDate.IsZero() {
+		// Fallback to travel start date
+		bulanNoSurat = utils.GetRomanMonths()[int(record.StartDate.Month())]
+		monthNames := utils.GetIndonesianMonths()
+		tanggalNoSurat = fmt.Sprintf("%d %s", record.StartDate.Day(), monthNames[int(record.StartDate.Month())])
 	}
 
 	isiLaporan := "-"
@@ -777,6 +804,11 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) error {
 		tj := spdGroupRecords[j].CreatedAt.Unix()
 		if ti != tj {
 			return ti < tj
+		}
+		ni := spdGroupRecords[i].Employee.Name
+		nj := spdGroupRecords[j].Employee.Name
+		if ni != nj {
+			return ni < nj
 		}
 		return spdGroupRecords[i].ID.String() < spdGroupRecords[j].ID.String()
 	})
@@ -959,6 +991,11 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 			sj := allRecords[j].SPDNumber
 			if si != sj {
 				return si < sj
+			}
+			ni := allRecords[i].Employee.Name
+			nj := allRecords[j].Employee.Name
+			if ni != nj {
+				return ni < nj
 			}
 			return allRecords[i].ID.String() < allRecords[j].ID.String()
 		})
