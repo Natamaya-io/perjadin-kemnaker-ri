@@ -206,6 +206,11 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		// if record.Report.PPKTitle != "" { jabPpk = record.Report.PPKTitle }
 	}
 
+	tglCetak := tglSurat
+	if tglCetak.IsZero() {
+		tglCetak = time.Now()
+	}
+
 	vars := map[string]interface{}{
 		"no_spd":               noSpd,
 		"id_spj":               extractNumericID(record.SPDNumber),
@@ -213,12 +218,12 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"bulan_no_surat":      utils.GetRomanMonths()[int(tglSurat.Month())],
 		"tahun_no_surat":      tglSurat.Year(),
 		"tanggal_no_surat":    utils.FormatIndonesianDate(tglSurat),
-		"bulan_pembayaran":    utils.GetIndonesianMonths()[int(time.Now().Month())],
-		"tahun_pembayaran":    time.Now().Year(),
+		"bulan_pembayaran":    utils.GetIndonesianMonths()[int(tglCetak.Month())],
+		"tahun_pembayaran":    tglCetak.Year(),
 		"bulan":               "",
 		"bulan_romawi":        utils.GetRomanMonths()[int(record.StartDate.Month())],
 		"tahun":               "",
-		"tahun_saat_ini":      fmt.Sprintf("%d", time.Now().Year()),
+		"tahun_saat_ini":      fmt.Sprintf("%d", tglCetak.Year()),
 		"nama":                record.Employee.Name,
 		"nama_petugas":        record.Employee.Name,
 		"nip":                 record.Employee.NIP,
@@ -247,7 +252,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"terbilang":           titleCaser.String(terbilang.FormatTerbilang(days)),
 		"tgl_surat_tugas":     utils.FormatIndonesianDate(tglSurat),
 		"tanggal_dikeluarkan": utils.FormatIndonesianDate(time.Now()),
-		"tgl_cetak":           utils.FormatIndonesianDate(time.Now()),
+		"tgl_cetak":           utils.FormatIndonesianDate(tglCetak),
 		"nama_ppk":            namaPpk,
 		"nip_ppk":             nipPpk,
 		"nama ppk":            namaPpk,
@@ -270,7 +275,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"total_akhir":       "0",
 		"jumlah_total":      "0",
 		"total_rupiah":      "0",
-		"total_terbilang":   "Nol Rupiah",
+		"total_terbilang":   "NOL RUPIAH",
 		"durasi":            fmt.Sprintf("%d", days),
 		"jml_sbm":           "0",
 		"jml_penginapan":    "0",
@@ -394,16 +399,6 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 	}
 
 	if record.Cost != nil {
-		total := record.TotalCost
-		vars["total_biaya"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(total))
-		vars["total_keseluruhan"] = utils.FormatRupiah(total)
-		vars["total_kesuluruhan"] = utils.FormatRupiah(total)
-		vars["total_akhir"] = utils.FormatRupiah(total)
-		vars["jumlah_total"] = utils.FormatRupiah(total)
-		vars["total_rupiah"] = utils.FormatRupiah(total)
-		vars["terbilang_biaya"] = fmt.Sprintf("%s Rupiah", titleCaser.String(terbilang.FormatTerbilang(int(total))))
-		vars["total_terbilang"] = fmt.Sprintf("%s Rupiah", titleCaser.String(terbilang.FormatTerbilang(int(total))))
-
 		// AGGREGATE COSTS FROM DETAILS (for multi-location support)
 		var aggTicket, aggLokal, aggDaerah, aggSbm, aggHotel float64
 		var totalDays, hotelDays int
@@ -430,6 +425,17 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		if totalDays == 0 { totalDays = record.Cost.DailyAllowanceDays }
 		if hotelDays == 0 { hotelDays = record.Cost.HotelDays }
 
+		totalAgg := aggTicket + aggLokal + aggDaerah + aggSbm + aggHotel
+
+		vars["total_biaya"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(totalAgg))
+		vars["total_keseluruhan"] = utils.FormatRupiah(totalAgg)
+		vars["total_kesuluruhan"] = utils.FormatRupiah(totalAgg)
+		vars["total_akhir"] = utils.FormatRupiah(totalAgg)
+		vars["jumlah_total"] = utils.FormatRupiah(totalAgg)
+		vars["total_rupiah"] = utils.FormatRupiah(totalAgg)
+		vars["terbilang_biaya"] = fmt.Sprintf("%s RUPIAH", strings.ToUpper(terbilang.FormatTerbilang(int(totalAgg))))
+		vars["total_terbilang"] = fmt.Sprintf("%s RUPIAH", strings.ToUpper(terbilang.FormatTerbilang(int(totalAgg))))
+
 		vars["tiket_pesawat"] = utils.FormatRupiah(aggTicket)
 		vars["transport_lokal"] = utils.FormatRupiah(aggLokal)
 		vars["transport_daerah"] = utils.FormatRupiah(aggDaerah)
@@ -437,6 +443,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		vars["total_sbm"] = utils.FormatRupiah(aggSbm)
 		vars["jml_sbm"] = utils.FormatRupiah(aggSbm)
 		vars["penginapan"] = utils.FormatRupiah(record.Cost.HotelRate)
+		vars["p"] = utils.FormatRupiah(record.Cost.HotelRate)
 		vars["total_penginapan"] = utils.FormatRupiah(aggHotel)
 		vars["jml_penginapan"] = utils.FormatRupiah(aggHotel)
 		
@@ -449,8 +456,9 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		vars["biaya_hotel"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(aggHotel))
 		vars["biaya_pesawat"] = fmt.Sprintf("Rp %s", utils.FormatRupiah(aggTicket))
 
-		vars["ditetapkan_sejumlah"] = utils.FormatRupiah(total)
-		vars["sisa_kurang_lebih"] = utils.FormatRupiah(total)
+		vars["ditetapkan_sejumlah"] = utils.FormatRupiah(totalAgg)
+		vars["dibayar_semula"] = utils.FormatRupiah(totalAgg)
+		vars["sisa_kurang_lebih"] = "0"
 	}
 
 	return vars
