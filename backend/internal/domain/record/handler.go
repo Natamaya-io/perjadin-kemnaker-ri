@@ -203,6 +203,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 	golongan := record.Employee.Golongan
 	if golongan == "" { golongan = "-" }
 
+	now := time.Now()
 	vars := map[string]interface{}{
 		"no_spd": record.SPDNumber, "id_spj": noSpd, "no_surat": noSurat,
 		"pejabat_berwenang": pejabatBerwenang,
@@ -215,10 +216,10 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"keterangan": "-",
 		"lama_perjalanan": formatNumber(days),
 		"nama_stakeholder": cleanStakeholder,
-		"bulan_no_surat": utils.GetRomanMonths()[int(tglSurat.Month())], "tahun_no_surat": tglSurat.Year(),
-		"bulan_romawi": utils.GetRomanMonths()[int(tglSurat.Month())],
-		"tanggal_no_surat": utils.FormatIndonesianDate(tglSurat), "bulan_pembayaran": utils.GetIndonesianMonths()[int(tglCetak.Month())],
-		"tahun_pembayaran": tglCetak.Year(), "tahun_saat_ini": fmt.Sprintf("%d", time.Now().Year()),
+		"bulan_no_surat": utils.GetRomanMonths()[int(now.Month())], "tahun_no_surat": now.Year(),
+		"bulan_romawi": utils.GetRomanMonths()[int(now.Month())],
+		"tanggal_no_surat": utils.FormatIndonesianDate(tglSurat), "bulan_pembayaran": utils.GetIndonesianMonths()[int(now.Month())],
+		"tahun_pembayaran": now.Year(), "tahun_saat_ini": fmt.Sprintf("%d", now.Year()),
 		"nama": record.Employee.Name, "nama_petugas": record.Employee.Name, "nip": record.Employee.NIP, "nip_petugas": record.Employee.NIP,
 		"pangkat": pangkat, "golongan": golongan,
 		"pangkat_gol": fmt.Sprintf("%s (%s)", pangkat, golongan), "jabatan": record.Employee.Jabatan,
@@ -228,9 +229,9 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"tanggal_selesai": utils.FormatIndonesianDate(record.EndDate), "lama_hari": formatNumber(days),
 		"terbilang": terbilangHari,
 		"bulan": utils.GetIndonesianMonths()[int(record.StartDate.Month())], "tahun": fmt.Sprintf("%d", record.StartDate.Year()),
-		"tgl_cetak": utils.FormatIndonesianDate(tglCetak), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
+		"tgl_cetak": utils.FormatIndonesianDate(now), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
 		"nama_bendahara": namaBendahara, "nip_bendahara": nipBendahara, "jabatan_ppk": jabPpk, "jabatan_bendahara": jabBendahara,
-		"isi_laporan": isiLaporan, "tanggal_dikeluarkan": utils.FormatIndonesianDate(tglCetak),
+		"isi_laporan": isiLaporan, "tanggal_dikeluarkan": utils.FormatIndonesianDate(now),
 	}
 	type Detail struct {
 		TransportMode string `json:"transportMode"`

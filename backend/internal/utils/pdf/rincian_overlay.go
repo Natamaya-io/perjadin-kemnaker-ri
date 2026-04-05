@@ -78,8 +78,9 @@ func GenerateRincianOverlay(record *models.TravelRecord, cfg *config.Config) ([]
 	
 	// 1. Header Info
 	// Format: 1/ID-SPJ-001/UM.06.00/Prot/IV/2026
-	romanMonth := romanMonths[int(record.StartDate.Month())]
-	fullSpdNumber := fmt.Sprintf("1/%s/UM.06.00/Prot/%s/%d", record.SPDNumber, romanMonth, record.StartDate.Year())
+	now := time.Now()
+	romanMonth := romanMonths[int(now.Month())]
+	fullSpdNumber := fmt.Sprintf("1/%s/UM.06.00/Prot/%s/%d", record.SPDNumber, romanMonth, now.Year())
 	drawText(75, 43, fullSpdNumber) // Lampiran SPPD Nomor
 	
 	months := []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
