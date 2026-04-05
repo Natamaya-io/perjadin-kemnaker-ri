@@ -101,29 +101,34 @@
     };
 
     function openSplitHotelModal(empId, locationIndex, isExtend = false, extendIdx = -1) {
-        const detail = localCosts[empId].costs.details[locationIndex];
-        let totalBill = 0;
-        let days = 0;
-        
-        if (isExtend && extendIdx > -1) {
-            const extendCost = detail.additionalCosts[extendIdx];
-            totalBill = (extendCost.hotelRate || 0) * (extendCost.hotelDays || 0);
-            days = extendCost.hotelDays || 0;
-        } else {
-            totalBill = (detail.hotelRate || 0) * (detail.hotelDays || 0);
-            days = detail.hotelDays || 0;
-        }
+        try {
+            const detail = localCosts[empId].costs.details[locationIndex];
+            let totalBill = 0;
+            let days = 0;
+            
+            if (isExtend && extendIdx > -1) {
+                const extendCost = detail.additionalCosts[extendIdx];
+                totalBill = (extendCost.hotelRate || 0) * (extendCost.hotelDays || 0);
+                days = extendCost.hotelDays || 0;
+            } else {
+                totalBill = (detail.hotelRate || 0) * (detail.hotelDays || 0);
+                days = detail.hotelDays || 0;
+            }
 
-        splitHotelData = {
-            sourceEmpId: empId,
-            locationIndex: locationIndex,
-            totalBill: totalBill,
-            days: days,
-            selectedEmpIds: [],
-            isExtend: isExtend,
-            extendIdx: extendIdx
-        };
-        showSplitHotelModal = true;
+            splitHotelData = {
+                sourceEmpId: empId,
+                locationIndex: locationIndex,
+                totalBill: totalBill,
+                days: days,
+                selectedEmpIds: [],
+                isExtend: isExtend,
+                extendIdx: extendIdx
+            };
+            showSplitHotelModal = true;
+        } catch (e) {
+            console.error("Error opening split modal:", e);
+            toast.error("Terjadi kesalahan sistem: " + e.message);
+        }
     }
 
     function toggleSplitEmp(empId) {
@@ -1707,26 +1712,40 @@
                                                     {#if detail.additionalCosts && detail.additionalCosts.length > 0}
                                                         {#each detail.additionalCosts as cost, costIdx}
                                                             {#if cost.name === 'Extend Penginapan'}
-                                                                <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200">
-                                                                    {#if $userStore.role !== 'kasubag'}
-                                                                        <button type="button" class="absolute top-2 right-0 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                                                            </svg>
-                                                                        </button>
-                                                                    {/if}
-                                                                    <div class="flex justify-between items-center mb-3">
-                                                                        <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider block">Extend Penginapan</Label>
+                                                                <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200 w-full">
+                                                                    <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
                                                                         {#if $userStore.role !== 'kasubag'}
-                                                                            <button 
-                                                                                type="button" 
-                                                                                class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 px-2 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
-                                                                                on:click={() => openSplitHotelModal(empId, idx, true, costIdx)}
-                                                                            >
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                                                                                Bagi Biaya
+                                                                            <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                                                </svg>
                                                                             </button>
                                                                         {/if}
+                                                                        <h4 class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider flex items-center gap-1.5 md:gap-2">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                                            </svg>
+                                                                            Extend Penginapan
+                                                                        </h4>
+                                                                        <div class="flex items-center gap-2">
+                                                                            {#if $userStore.role !== 'kasubag'}
+                                                                                <button 
+                                                                                    type="button" 
+                                                                                    class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 px-2 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
+                                                                                    on:click={() => openSplitHotelModal(empId, idx, true, costIdx)}
+                                                                                >
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                                                                    Bagi Biaya
+                                                                                </button>
+                                                                            {/if}
+                                                                            {#if !cost.file && $userStore.role !== 'kasubag'}
+                                                                                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                                                    Kwitansi
+                                                                                    <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(empId, e, costIdx, idx)} />
+                                                                                </label>
+                                                                            {/if}
+                                                                        </div>
                                                                     </div>
                                                                     
                                                                     <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
@@ -1744,28 +1763,22 @@
                                                                             </div>
                                                                         </div>
                                                                         
-                                                                        <div class="mt-3">
-                                                                            <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (PDF/Gambar)</span>
-                                                                            {#if !cost.file}
-                                                                                <label class="flex flex-col items-center justify-center w-full h-14 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group">
-                                                                                    <div class="flex flex-col items-center justify-center pt-1 pb-1 pointer-events-none">
-                                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                                                        </svg>
-                                                                                        <p class="text-[9px] text-slate-500 text-center px-2"><span class="font-semibold text-blue-600">Klik unggah</span> atau seret file</p>
+                                                                        {#if cost.file}
+                                                                            <div class="mt-3">
+                                                                                <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                                                                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                                                                        <span class="text-[10px] md:text-xs text-slate-700 truncate">{cost.file.name}</span>
                                                                                     </div>
-                                                                                    <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(empId, e, costIdx, idx)} />
-                                                                                </label>
-                                                                            {:else}
-                                                                                <div class="flex items-center gap-2 bg-white p-2 rounded border border-slate-200 w-full">
-                                                                                    <span class="text-[10px] text-slate-700 truncate flex-1">{cost.file.name}</span>
-                                                                                    <div class="flex gap-2 shrink-0 text-[10px]">
-                                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
-                                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalFile(empId, costIdx, idx)}>Hapus</button>
+                                                                                    <div class="flex gap-1.5 shrink-0 ml-2">
+                                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                                                        {#if $userStore.role !== 'kasubag'}
+                                                                                            <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeAdditionalFile(empId, costIdx, idx)}>Hapus</button>
+                                                                                        {/if}
                                                                                     </div>
                                                                                 </div>
-                                                                            {/if}
-                                                                        </div>
+                                                                            </div>
+                                                                        {/if}
                                                                     </div>
                                                                 </div>
                                                             {/if}
@@ -2009,11 +2022,10 @@
                     </div>
                     <div class="text-right">
                         <div class="text-xl font-bold text-indigo-700">
-                            {formatCurrency(totalPeople > 0 ? (splitHotelData.totalBill / totalPeople) : 0)}
+                            {formatCurrency(1 + splitHotelData.selectedEmpIds.length > 0 ? (splitHotelData.totalBill / (1 + splitHotelData.selectedEmpIds.length)) : 0)}
                         </div>
                     </div>
-                </div>
-            </div>
+                </div>            </div>
 
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                 <Button variant="outline" class="border-slate-200 text-slate-600 hover:bg-slate-100" on:click={() => showSplitHotelModal = false}>Batal</Button>
