@@ -273,12 +273,14 @@
                         const rate = getRateForLocation(loc); // SBM Rate
                         const sbmTotal = days * rate;
 
-                        const totalHotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+                        const totalHotel = ((detail.hotelDays || 0) * (detail.hotelRate || 0)) + (detail.additionalCosts || []).reduce((sum, c) => c.name === 'Extend Penginapan' ? sum + (Number(c.amount) || 0) : sum, 0);
                         const totalTicket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
                         const totalTransportAmount = Number(detail.transportAmount || 0);
                         const totalAdditional = (detail.additionalCosts || []).reduce((sum, cost) => {
                             if (cost.name === 'Extend Tiket') {
                                 return sum + (Number(cost.ticketGo) || 0) + (Number(cost.ticketBack) || 0) + (Number(cost.amount) || 0);
+                            } else if (cost.name === 'Extend Penginapan') {
+                                return sum;
                             }
                             return sum + (Number(cost.amount) || 0);
                         }, 0);
@@ -415,12 +417,14 @@
                     sbmTotal = rate * (diffDays > 0 ? diffDays : 0);
                 }
             }
-            const hotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+            const hotel = ((detail.hotelDays || 0) * (detail.hotelRate || 0)) + (detail.additionalCosts || []).reduce((sum, c) => c.name === 'Extend Penginapan' ? sum + (Number(c.amount) || 0) : sum, 0);
             const ticket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
             const transport = Number(detail.transportAmount || 0);
             const addCosts = (detail.additionalCosts || []).reduce((sum, c) => {
                 if (c.name === 'Extend Tiket') {
                     return sum + (Number(c.ticketGo) || 0) + (Number(c.ticketBack) || 0) + (Number(c.amount) || 0);
+                } else if (c.name === 'Extend Penginapan') {
+                    return sum;
                 }
                 return sum + (c.amount || 0);
             }, 0);
