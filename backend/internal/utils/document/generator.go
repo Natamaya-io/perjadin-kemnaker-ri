@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"html"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -79,7 +80,7 @@ func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]by
 
 	for _, k := range keys {
 		v := req.Variables[k]
-		val := fmt.Sprintf("%v", v)
+		val := html.EscapeString(fmt.Sprintf("%v", v))
 		placeholder := fmt.Sprintf("{{%s}}", k)
 		content = strings.ReplaceAll(content, placeholder, val)
 		// Also handle angle brackets if any

@@ -7,6 +7,9 @@ import (
 
 // FormatRupiah memformat float64 menjadi string mata uang Rupiah tanpa simbol Rp
 func FormatRupiah(amount float64) string {
+	if amount == 0 {
+		return "-"
+	}
 	s := fmt.Sprintf("%.0f", amount)
 	if len(s) <= 3 {
 		return s
