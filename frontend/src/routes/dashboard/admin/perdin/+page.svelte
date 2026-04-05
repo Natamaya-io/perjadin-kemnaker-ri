@@ -1,6 +1,7 @@
 <script>
     import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
+    import { provincesStore } from '$lib/shared/stores/master-data';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
