@@ -908,6 +908,7 @@
                                 </div>
                             </div>
                         </div>
+                        {/if}
                     {/each}
                     <div class="text-right text-xs md:text-sm font-mono font-medium text-slate-600 pt-2">
                         Subtotal Tambahan: <span class="text-slate-800">{formatCurrency(currentTotalAdditional)}</span>
