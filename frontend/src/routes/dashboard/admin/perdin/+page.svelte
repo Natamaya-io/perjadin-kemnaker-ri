@@ -196,7 +196,7 @@
                     const targetRecord = $recordsStore.find(r => r.id === updateInfo.empId);
                     if (!targetRecord) continue;
 
-                    const newTargetCosts = JSON.parse(JSON.stringify(targetRecord.costs || {}));
+                    let newTargetCosts = JSON.parse(JSON.stringify(targetRecord.costs || {}));
                     if (!newTargetCosts.details) newTargetCosts.details = [];
                     
                     if (newTargetCosts.details[updateInfo.locationIndex]) {
@@ -208,16 +208,36 @@
                     }
 
                     // Recalculate total for the other person
-                    // This is simplified, we might want to be more thorough
-                    const sbmTotal = (targetRecord.locations || []).reduce((acc, loc) => {
-                        const provData = []; // Would need provinceStore access here ideally
-                        return acc + 0; // Simplified for now, loadRecords will fix it
+                    const recalculatedGrandTotal = (newTargetCosts.details || []).reduce((acc, detail, idx) => {
+                        const loc = targetRecord.locations && targetRecord.locations[idx] ? targetRecord.locations[idx] : null;
+                        let sbmTotal = 0;
+                        if (loc) {
+                            const provData = $provincesStore.find(p => p.name === loc.province);
+                            const rate = provData ? provData.luarKota : (newTargetCosts.dailyAllowanceRate || 0);
+                            const start = new Date(loc.startDate);
+                            const end = new Date(loc.endDate);
+                            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                                sbmTotal = rate * (diffDays > 0 ? diffDays : 0);
+                            }
+                        }
+                        const hotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+                        const ticket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
+                        const transport = Number(detail.transportAmount || 0);
+                        const addCosts = (detail.additionalCosts || []).reduce((sum, c) => {
+                            if (c.name === 'Extend Tiket') {
+                                return sum + (Number(c.ticketGo) || 0) + (Number(c.ticketBack) || 0) + (Number(c.amount) || 0);
+                            }
+                            return sum + (c.amount || 0);
+                        }, 0);
+                        return acc + sbmTotal + hotel + ticket + transport + addCosts;
                     }, 0);
 
                     updates.push({
                         id: updateInfo.empId,
                         data: {
                             costs: newTargetCosts,
+                            totalCost: recalculatedGrandTotal,
                             status: 'Approved'
                         }
                     });

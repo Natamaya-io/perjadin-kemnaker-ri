@@ -131,6 +131,7 @@
         // Apply to source person
         localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerPerson;
         localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = 1; // Simplified to 1 day as the rate now covers the stay
+        recalculateTotal(splitHotelData.sourceEmpId);
 
         // Apply to selected others
         for (const empId of splitHotelData.selectedEmpIds) {
@@ -140,6 +141,7 @@
                 if (sourceFile) {
                     localCosts[empId].costs.details[splitHotelData.locationIndex].hotelFile = { ...sourceFile };
                 }
+                recalculateTotal(empId);
             }
         }
 
@@ -330,10 +332,42 @@
         return parseInt(numStr, 10).toLocaleString('id-ID');
     }
 
+    function recalculateTotal(empId) {
+        if (!localCosts[empId]) return;
+        const record = recordsList.find(r => r.id === empId);
+        if (!record) return;
+
+        localCosts[empId].totalCost = (localCosts[empId].costs.details || []).reduce((acc, detail, idx) => {
+            const loc = record.locations && record.locations[idx] ? record.locations[idx] : null;
+            let sbmTotal = 0;
+            if (loc) {
+                const provData = $provincesStore.find(p => p.name === loc.province);
+                const rate = provData ? provData.luarKota : (localCosts[empId].costs.dailyAllowanceRate || 0);
+                const start = new Date(loc.startDate);
+                const end = new Date(loc.endDate);
+                if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    sbmTotal = rate * (diffDays > 0 ? diffDays : 0);
+                }
+            }
+            const hotel = (detail.hotelDays || 0) * (detail.hotelRate || 0);
+            const ticket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
+            const transport = Number(detail.transportAmount || 0);
+            const addCosts = (detail.additionalCosts || []).reduce((sum, c) => {
+                if (c.name === 'Extend Tiket') {
+                    return sum + (Number(c.ticketGo) || 0) + (Number(c.ticketBack) || 0) + (Number(c.amount) || 0);
+                }
+                return sum + (c.amount || 0);
+            }, 0);
+            return acc + sbmTotal + hotel + ticket + transport + addCosts;
+        }, 0);
+    }
+
     function updateCost(empId, field, event, locationIndex) {
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex][field] = isNaN(num) ? undefined : num;
+        recalculateTotal(empId);
         localCosts = { ...localCosts };
     }
 
@@ -341,6 +375,7 @@
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex].additionalCosts[index].amount = isNaN(num) ? undefined : num;
+        recalculateTotal(empId);
         localCosts = { ...localCosts };
     }
 
