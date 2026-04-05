@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ type DocumentRequest struct {
 }
 
 type ImageData struct {
-	Data     string // base64-encoded image data (may include data:image/...;base64, prefix)
+	Data     string // base64-encoded image data
 	MimeType string // e.g. "image/jpeg", "image/png"
 }
 
@@ -43,310 +44,21 @@ func NewGenerator(gotenbergURL string, templateDir string) *Generator {
 		gotenbergURL: gotenbergURL,
 		templateDir:  templateDir,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 	}
 }
 
-// removeEmptyTableRows removes entire <w:tr>...</w:tr> table rows that contain
-// the __REMOVE_ROW__ marker text. This is used to hide unused petugas rows.
-func removeEmptyTableRows(xmlContent string) string {
-	marker := "__REMOVE_ROW__"
-	for {
-		idx := strings.Index(xmlContent, marker)
-		if idx == -1 {
-			break
-		}
-		// Find the enclosing <w:tr ...> before this marker
-		trStart1 := strings.LastIndex(xmlContent[:idx], "<w:tr ")
-		trStart2 := strings.LastIndex(xmlContent[:idx], "<w:tr>")
-		
-		trStart := trStart1
-		if trStart2 > trStart1 {
-			trStart = trStart2
-		}
-
-		if trStart == -1 {
-			// Can't find table row, just remove the marker text
-			xmlContent = strings.Replace(xmlContent, marker, "", 1)
-			continue
-		}
-		// Find the closing </w:tr> after this marker
-		trEnd := strings.Index(xmlContent[idx:], "</w:tr>")
-		if trEnd == -1 {
-			xmlContent = strings.Replace(xmlContent, marker, "", 1)
-			continue
-		}
-		trEnd = idx + trEnd + len("</w:tr>")
-		// Remove the entire row
-		xmlContent = xmlContent[:trStart] + xmlContent[trEnd:]
-	}
-	return xmlContent
-}
-
-// Adjust petugas table width and documentation layout
-func adjustPetugasTableWidths(xmlContent string) string {
-	// Adjust the petugas table grid definition
-	xmlContent = strings.Replace(xmlContent,
-		`<w:tblGrid><w:gridCol w:w="1906"/><w:gridCol w:w="5391"/><w:gridCol w:w="3260"/></w:tblGrid>`,
-		`<w:tblGrid><w:gridCol w:w="700"/><w:gridCol w:w="6597"/><w:gridCol w:w="3260"/></w:tblGrid>`,
-		-1)
-	// Adjust individual cell widths in petugas rows
-	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="1906" w:type="dxa"/>`, `<w:tcW w:w="700" w:type="dxa"/>`)
-	xmlContent = strings.ReplaceAll(xmlContent, `<w:tcW w:w="5391" w:type="dxa"/>`, `<w:tcW w:w="6597" w:type="dxa"/>`)
-
-	// We look for any of the placeholders.
-	fotoPlaceholders := []string{"satu", "dua", "tiga", "empat", "lima", "enam"}
-	var fotoIdx int = -1
-
-	for _, ordinal := range fotoPlaceholders {
-		key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
-		idx := strings.Index(xmlContent, key)
-		if idx != -1 {
-			fotoIdx = idx
-			break
-		}
-	}
-
-	if fotoIdx != -1 {
-		// Find the enclosing <w:tbl>
-		tblStart1 := strings.LastIndex(xmlContent[:fotoIdx], "<w:tbl>")
-		tblStart2 := strings.LastIndex(xmlContent[:fotoIdx], "<w:tbl ")
-		
-		tblStart := tblStart1
-		if tblStart2 > tblStart1 {
-			tblStart = tblStart2
-		}
-
-		if tblStart != -1 {
-			tblEnd := strings.Index(xmlContent[tblStart:], "</w:tbl>")
-			if tblEnd != -1 {
-				tblEnd = tblStart + tblEnd + len("</w:tbl>")
-				// CRITICAL: Only proceed if the placeholder is actually INSIDE this table
-				if fotoIdx < (tblStart + strings.Index(xmlContent[tblStart:], "</w:tbl>") + len("</w:tbl>")) {
-					tableContent := xmlContent[tblStart:tblEnd]
-
-					var replacement string
-					foundCount := 0
-					for _, ordinal := range fotoPlaceholders {
-						key := fmt.Sprintf("foto_dokumentasi_%s", ordinal)
-						if strings.Contains(tableContent, key) {
-							if foundCount > 0 {
-								replacement += `</w:p>`
-							}
-							replacement += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>`
-							replacement += fmt.Sprintf(`<w:r><w:t>{{%s}}</w:t></w:r>`, key)
-							foundCount++
-						}
-					}
-					if foundCount > 0 {
-						replacement += `</w:p>`
-					}
-					// Replace the entire table with our new grouped layout
-					xmlContent = xmlContent[:tblStart] + replacement + xmlContent[tblEnd:]
-				}
-			}
-		}
-	}
-
-	return xmlContent
-}
-
-// fixSplitRuns mencoba menyatukan placeholder {{...}} atau <<...>> yang terpecah oleh tag XML
-func fixSplitRuns(xmlContent string) string {
-	// Fix {{ and }} split by XML tags
-	re := regexp.MustCompile(`(\{)(<[^>]+>)+(\{)`)
-	xmlContent = re.ReplaceAllString(xmlContent, "$1$3")
-
-	re = regexp.MustCompile(`(\})(<[^>]+>)+(\})`)
-	xmlContent = re.ReplaceAllString(xmlContent, "$1$3")
-
-	reInside := regexp.MustCompile(`(\{\{[^{}]*?)(<[^>]+>)+([^{}]*?\}\})`)
-	for i := 0; i < 5; i++ {
-		xmlContent = reInside.ReplaceAllString(xmlContent, "$1$3")
-	}
-
-	// Fix << and >> split by XML tags
-	re2 := regexp.MustCompile(`(&lt;)(<[^>]+>)+(&lt;)`)
-	xmlContent = re2.ReplaceAllString(xmlContent, "$1$3")
-
-	re3 := regexp.MustCompile(`(&gt;)(<[^>]+>)+(&gt;)`)
-	xmlContent = re3.ReplaceAllString(xmlContent, "$1$3")
-
-	// Clean XML tags inside &lt;&lt; ... &gt;&gt;
-	reAngle := regexp.MustCompile(`(&lt;&lt;[^&]*?)(<[^>]+>)+([^&]*?&gt;&gt;)`)
-	for i := 0; i < 10; i++ {
-		xmlContent = reAngle.ReplaceAllString(xmlContent, "$1$3")
-	}
-
-	// Also handle literal << >> (less common in DOCX but possible)
-	reLit := regexp.MustCompile(`(<<[^<>]*?)(<[^>]+>)+([^<>]*?>>)`)
-	for i := 0; i < 10; i++ {
-		xmlContent = reLit.ReplaceAllString(xmlContent, "$1$3")
-	}
-
-	return xmlContent
-}
-
-// replaceAngleBrackets replaces <<key>> placeholders (stored as &lt;&lt;key&gt;&gt; in XML)
-func replaceAngleBrackets(content string, key string, value string) string {
-	// In DOCX XML, < and > are stored as &lt; and &gt;
-	xmlPlaceholder := fmt.Sprintf("&lt;&lt;%s&gt;&gt;", key)
-	content = strings.ReplaceAll(content, xmlPlaceholder, value)
-
-	// Also handle literal << >> just in case
-	literalPlaceholder := fmt.Sprintf("<<%s>>", key)
-	content = strings.ReplaceAll(content, literalPlaceholder, value)
-
-	return content
-}
-
-// Generate mengisi template DOCX dan mengonversinya ke PDF
 func (g *Generator) Generate(ctx context.Context, req DocumentRequest) ([]byte, error) {
-	templatePath := filepath.Join(g.templateDir, req.TemplateName)
-
-	doc, err := docx.ReadDocxFile(templatePath)
+	docxBytes, err := g.GenerateDocx(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open template: %w", err)
+		return nil, err
 	}
-	defer doc.Close()
-
-	d := doc.Editable()
-
-	// Fix split runs for both placeholder formats
-	d.SetContent(fixSplitRuns(d.GetContent()))
-
-	// Replace variables in both {{key}} and <<key>> formats
-	for k, v := range req.Variables {
-		val := fmt.Sprintf("%v", v)
-
-		// {{key}} format
-		placeholder := fmt.Sprintf("{{%s}}", k)
-		d.Replace(placeholder, val, -1)
-		d.ReplaceFooter(placeholder, val)
-		d.ReplaceHeader(placeholder, val)
-
-		// <<key>> format - need to handle in raw XML since docx library only does {{}}
-		content := d.GetContent()
-		content = replaceAngleBrackets(content, k, val)
-		d.SetContent(content)
-	}
-
-	// Remove table rows marked for deletion (empty petugas slots)
-	d.SetContent(removeEmptyTableRows(d.GetContent()))
-
-	// Adjust petugas table column widths (narrow number col, widen name col)
-	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
-
-	var docxBuf bytes.Buffer
-	if err := d.Write(&docxBuf); err != nil {
-		return nil, fmt.Errorf("failed to write docx: %w", err)
-	}
-
-	return g.convertToPDF(ctx, docxBuf.Bytes())
-}
-
-// GenerateDocx generates a filled DOCX document without converting to PDF
-func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]byte, error) {
-	templatePath := filepath.Join(g.templateDir, req.TemplateName)
-
-	doc, err := docx.ReadDocxFile(templatePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open template: %w", err)
-	}
-	defer doc.Close()
-
-	d := doc.Editable()
-
-	// Fix split runs for both placeholder formats
-	d.SetContent(fixSplitRuns(d.GetContent()))
-
-	// Replace variables in both {{key}} and <<key>> formats
-	for k, v := range req.Variables {
-		val := fmt.Sprintf("%v", v)
-
-		// {{key}} format
-		placeholder := fmt.Sprintf("{{%s}}", k)
-		d.Replace(placeholder, val, -1)
-		d.ReplaceFooter(placeholder, val)
-		d.ReplaceHeader(placeholder, val)
-
-		// <<key>> format - need to handle in raw XML since docx library only does {{}}
-		content := d.GetContent()
-		content = replaceAngleBrackets(content, k, val)
-		d.SetContent(content)
-	}
-
-	// Remove table rows marked for deletion (empty petugas slots)
-	d.SetContent(removeEmptyTableRows(d.GetContent()))
-
-	// Adjust petugas table column widths (narrow number col, widen name col)
-	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
-
-	var docxBuf bytes.Buffer
-	if err := d.Write(&docxBuf); err != nil {
-		return nil, fmt.Errorf("failed to write docx: %w", err)
-	}
-
-	return docxBuf.Bytes(), nil
-}
-
-// GenerateWithImages generates a document with text replacement AND embedded images
-func (g *Generator) GenerateWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
-	templatePath := filepath.Join(g.templateDir, req.TemplateName)
-
-	doc, err := docx.ReadDocxFile(templatePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open template: %w", err)
-	}
-	defer doc.Close()
-
-	d := doc.Editable()
-
-	// Fix split runs
-	d.SetContent(fixSplitRuns(d.GetContent()))
-
-	// Replace text variables
-	for k, v := range req.Variables {
-		val := fmt.Sprintf("%v", v)
-
-		placeholder := fmt.Sprintf("{{%s}}", k)
-		d.Replace(placeholder, val, -1)
-		d.ReplaceFooter(placeholder, val)
-		d.ReplaceHeader(placeholder, val)
-
-		content := d.GetContent()
-		content = replaceAngleBrackets(content, k, val)
-		d.SetContent(content)
-	}
-
-	// Remove table rows marked for deletion (empty petugas slots)
-	d.SetContent(removeEmptyTableRows(d.GetContent()))
-
-	// Adjust petugas table column widths (narrow number col, widen name col)
-	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
-
-	var docxBuf bytes.Buffer
-	if err := d.Write(&docxBuf); err != nil {
-		return nil, fmt.Errorf("failed to write docx: %w", err)
-	}
-
-	// Now inject images into the DOCX
-	docxBytes := docxBuf.Bytes()
-	if len(images) > 0 {
-		docxBytes, err = injectImages(docxBytes, images)
-		if err != nil {
-			return nil, fmt.Errorf("failed to inject images: %w", err)
-		}
-	}
-
 	return g.convertToPDF(ctx, docxBytes)
 }
 
-// GenerateDocxWithImages generates a document with text replacement AND embedded images without converting to PDF
-func (g *Generator) GenerateDocxWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
+func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]byte, error) {
 	templatePath := filepath.Join(g.templateDir, req.TemplateName)
-
 	doc, err := docx.ReadDocxFile(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open template: %w", err)
@@ -354,348 +66,397 @@ func (g *Generator) GenerateDocxWithImages(ctx context.Context, req DocumentRequ
 	defer doc.Close()
 
 	d := doc.Editable()
+	content := fixSplitRuns(d.GetContent())
 
-	// Fix split runs
-	d.SetContent(fixSplitRuns(d.GetContent()))
+	var keys []string
+	for k := range req.Variables {
+		keys = append(keys, k)
+	}
+	// Sort keys by length descending to prevent {{lampiran_1}} from partially replacing {{lampiran_10}}
+	sort.Slice(keys, func(i, j int) bool {
+		return len(keys[i]) > len(keys[j])
+	})
 
-	// Replace text variables
-	for k, v := range req.Variables {
+	for _, k := range keys {
+		v := req.Variables[k]
 		val := fmt.Sprintf("%v", v)
-
 		placeholder := fmt.Sprintf("{{%s}}", k)
-		d.Replace(placeholder, val, -1)
-		d.ReplaceFooter(placeholder, val)
-		d.ReplaceHeader(placeholder, val)
-
-		content := d.GetContent()
+		content = strings.ReplaceAll(content, placeholder, val)
+		// Also handle angle brackets if any
 		content = replaceAngleBrackets(content, k, val)
-		d.SetContent(content)
 	}
 
-	// Remove table rows marked for deletion (empty petugas slots)
-	d.SetContent(removeEmptyTableRows(d.GetContent()))
+	// Remove duplicate hardcoded 2026 after tanggal_no_surat if it exists
+	if tgl, ok := req.Variables["tanggal_no_surat"].(string); ok && tgl != "" {
+		yearStr := fmt.Sprintf(" %d", time.Now().Year())
+		if strings.HasSuffix(tgl, yearStr) {
+			content = regexp.MustCompile(`(Tanggal\s+`+regexp.QuoteMeta(tgl)+`(?:</w:t>.*?)?)(?:<w:t(?:.*?)>\s*`+regexp.QuoteMeta(fmt.Sprintf("%d", time.Now().Year()))+`\s*</w:t>)`).ReplaceAllString(content, "$1")
+		}
+	}
 
-	// Adjust petugas table column widths (narrow number col, widen name col)
-	d.SetContent(adjustPetugasTableWidths(d.GetContent()))
+	// Remove duplicate year 2026 if it occurs explicitly right after a filled tanggal_no_surat
+	// or we can just replace "Tanggal <tanggal_no_surat> 2026" with "Tanggal <tanggal_no_surat>"
+	if tgl, ok := req.Variables["tanggal_no_surat"].(string); ok && tgl != "" {
+		// Just remove " 2026 " or any year if it immediately follows the substituted text with some tags in between
+		reRemoveHardcodedYear := regexp.MustCompile(regexp.QuoteMeta(tgl) + `(</w:t></w:r><w:r [^>]+><w:rPr><w:spacing [^>]+/></w:rPr><w:t xml:space="preserve">\s*</w:t></w:r><w:r [^>]+><w:t>)20\d\d(</w:t>)`)
+		content = reRemoveHardcodedYear.ReplaceAllString(content, tgl+"$1$2")
+	}
+
+	content = removeEmptyTableRows(content)
+	content = removeEmptyParagraphs(content)
+	content = adjustPetugasTableWidths(content)
+	d.SetContent(content)
 
 	var docxBuf bytes.Buffer
 	if err := d.Write(&docxBuf); err != nil {
 		return nil, fmt.Errorf("failed to write docx: %w", err)
 	}
+	return docxBuf.Bytes(), nil
+}
 
-	// Now inject images into the DOCX
-	docxBytes := docxBuf.Bytes()
+func (g *Generator) GenerateWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
+	docxBytes, err := g.GenerateDocxWithImages(ctx, req, images)
+	if err != nil {
+		return nil, err
+	}
+	return g.convertToPDF(ctx, docxBytes)
+}
+
+func (g *Generator) GenerateDocxWithImages(ctx context.Context, req DocumentRequest, images map[string]ImageData) ([]byte, error) {
+	docxBytes, err := g.GenerateDocx(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(images) > 0 {
-		var err error
 		docxBytes, err = injectImages(docxBytes, images)
 		if err != nil {
 			return nil, fmt.Errorf("failed to inject images: %w", err)
 		}
 	}
-
 	return docxBytes, nil
 }
 
-// injectImages replaces image placeholders in the DOCX (zip) with actual embedded images
 func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error) {
 	reader, err := zip.NewReader(bytes.NewReader(docxBytes), int64(len(docxBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read docx as zip: %w", err)
+		return nil, err
 	}
 
 	var outBuf bytes.Buffer
 	writer := zip.NewWriter(&outBuf)
 
-	// Track what we need to add
-	imageFiles := make(map[string][]byte) // filename -> decoded image bytes
-	rIdCounter := 100                     // Start high to avoid conflicts
-
-	// Build image info
-	type imageInfo struct {
-		rId      string
-		filename string
-		ext      string
-		cx       int64
-		cy       int64
-	}
-	imageInfoMap := make(map[string]imageInfo) // placeholder key -> info
+	imageInfoMap := make(map[string]imageInfo)
+	imageFiles := make(map[string][]byte)
+	rIdCounter := 50000
 
 	for key, img := range images {
 		imgBytes, err := decodeBase64Image(img.Data)
 		if err != nil {
-			fmt.Printf("Warning: failed to decode image for %s: %v\n", key, err)
 			continue
 		}
 
 		ext := getImageExtension(img.MimeType)
-		rId := fmt.Sprintf("rId%d", rIdCounter)
-		filename := fmt.Sprintf("image_doc_%d%s", rIdCounter, ext)
-		rIdCounter++
-
-		// Detect image dimensions for proper aspect ratio
-		var cx, cy int64
-		cx = 5400000 // 15cm default width
-		cy = 4000000 // 11cm default height
-		if cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes)); err == nil && cfg.Width > 0 && cfg.Height > 0 {
-			w := float64(cfg.Width)
-			h := float64(cfg.Height)
-
-			// Handle EXIF orientation
-			if x, err := exif.Decode(bytes.NewReader(imgBytes)); err == nil {
-				if tag, err := x.Get(exif.Orientation); err == nil {
-					if orientation, err := tag.Int(0); err == nil {
-						if orientation >= 5 && orientation <= 8 {
-							w, h = h, w // Swap width and height for rotated images
-						}
-					}
-				}
-			}
-
-			// Bounding box for 2x2 layout (each image is ~half page width)
-			const maxWidth float64 = 2800000  // ~7.7cm width
-			const maxHeight float64 = 4000000 // ~11.1cm height
-
-			ratioW := maxWidth / w
-			ratioH := maxHeight / h
-
-			// Use the smaller ratio to ensure both fit the box without cropping
-			ratio := ratioW
-			if ratioH < ratioW {
-				ratio = ratioH
-			}
-
-			cx = int64(w * ratio)
-			cy = int64(h * ratio)
-		}
-
+		rId := fmt.Sprintf("rIdImg%d", rIdCounter)
+		filename := fmt.Sprintf("media/img_%d%s", rIdCounter, ext)
+		
+		// Aspect ratio
+		cx, cy := calculateDimensions(imgBytes)
+		
+		imageInfoMap[key] = imageInfo{rId: rId, filename: filename, cx: cx, cy: cy}
 		imageFiles[filename] = imgBytes
-		imageInfoMap[key] = imageInfo{
-			rId:      rId,
-			filename: filename,
-			ext:      ext,
-			cx:       cx,
-			cy:       cy,
-		}
+		rIdCounter++
 	}
 
-	// Process each file in the zip
 	for _, file := range reader.File {
 		rc, err := file.Open()
 		if err != nil {
 			return nil, err
 		}
-
-		content, err := io.ReadAll(rc)
+		content, _ := io.ReadAll(rc)
 		rc.Close()
-		if err != nil {
-			return nil, err
-		}
 
-		if file.Name == "word/document.xml" {
+		name := file.Name
+		if name == "word/document.xml" {
 			contentStr := string(content)
-			// Fix split runs AGAIN on the written output (docx library may re-split)
-			contentStr = fixSplitRuns(contentStr)
-			// Replace image placeholders with inline drawing XML
-			// We iterate through all placeholders and replace them one by one
-			for key, info := range imageInfoMap {
+			
+			var keys []string
+			for k := range imageInfoMap {
+				keys = append(keys, k)
+			}
+			sort.Slice(keys, func(i, j int) bool {
+				return len(keys[i]) > len(keys[j])
+			})
+
+			for _, key := range keys {
+				info := imageInfoMap[key]
 				contentStr = replaceImagePlaceholder(contentStr, key, info.rId, info.cx, info.cy)
 			}
 			content = []byte(contentStr)
-		}
-
-		if file.Name == "word/_rels/document.xml.rels" {
+		} else if name == "word/_rels/document.xml.rels" {
 			contentStr := string(content)
-			// Add relationship entries for images before closing </Relationships>
-			var relEntries []string
+			var rels []string
 			for _, info := range imageInfoMap {
-				relEntry := fmt.Sprintf(
-					`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/%s"/>`,
-					info.rId, info.filename)
-				relEntries = append(relEntries, relEntry)
+				rels = append(rels, fmt.Sprintf(`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, info.rId, info.filename))
 			}
-			if len(relEntries) > 0 {
-				contentStr = strings.Replace(contentStr, "</Relationships>",
-					strings.Join(relEntries, "\n")+"\n</Relationships>", 1)
-			}
+			contentStr = strings.Replace(contentStr, "</Relationships>", strings.Join(rels, "")+"</Relationships>", 1)
 			content = []byte(contentStr)
-		}
-
-		// Add content types for images
-		if file.Name == "[Content_Types].xml" {
+		} else if name == "[Content_Types].xml" {
 			contentStr := string(content)
-			// Ensure image content types are registered
-			if !strings.Contains(contentStr, `Extension="jpeg"`) && !strings.Contains(contentStr, `Extension="jpg"`) {
-				contentStr = strings.Replace(contentStr, "</Types>",
-					`<Default Extension="jpeg" ContentType="image/jpeg"/>`+"\n</Types>", 1)
+			if !strings.Contains(contentStr, `Extension="jpeg"`) {
+				contentStr = strings.Replace(contentStr, "</Types>", `<Default Extension="jpeg" ContentType="image/jpeg"/>`+"</Types>", 1)
 			}
 			if !strings.Contains(contentStr, `Extension="png"`) {
-				contentStr = strings.Replace(contentStr, "</Types>",
-					`<Default Extension="png" ContentType="image/png"/>`+"\n</Types>", 1)
+				contentStr = strings.Replace(contentStr, "</Types>", `<Default Extension="png" ContentType="image/png"/>`+"</Types>", 1)
 			}
 			content = []byte(contentStr)
 		}
 
-		// Write the (possibly modified) file to the output zip
-		w, err := writer.CreateHeader(&zip.FileHeader{
-			Name:   file.Name,
-			Method: file.Method,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if _, err := w.Write(content); err != nil {
-			return nil, err
-		}
+		w, _ := writer.Create(name)
+		w.Write(content)
 	}
 
-	// Add image files to word/media/
-	for filename, imgBytes := range imageFiles {
-		w, err := writer.Create("word/media/" + filename)
-		if err != nil {
-			return nil, err
-		}
-		if _, err := w.Write(imgBytes); err != nil {
-			return nil, err
-		}
+	for name, data := range imageFiles {
+		w, _ := writer.Create("word/" + name)
+		w.Write(data)
 	}
 
-	if err := writer.Close(); err != nil {
-		return nil, err
-	}
-
+	writer.Close()
 	return outBuf.Bytes(), nil
 }
 
-// replaceImagePlaceholder replaces the run containing {{PLACEHOLDER}} with an image run
-func replaceImagePlaceholder(xmlContent string, placeholderKey string, rId string, cx int64, cy int64) string {
-	// The image run
-	imgRun := fmt.Sprintf(
-		`<w:r><w:drawing>`+
-			`<wp:inline distT="0" distB="0" distL="0" distR="0">`+
-			`<wp:extent cx="%d" cy="%d"/>`+
-			`<wp:effectExtent l="0" t="0" r="0" b="0"/>`+
-			`<wp:docPr id="%d" name="img_%s"/>`+
-			`<wp:cNvGraphicFramePr>`+
-			`<a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>`+
-			`</wp:cNvGraphicFramePr>`+
-			`<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">`+
-			`<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">`+
-			`<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">`+
-			`<pic:nvPicPr><pic:cNvPr id="0" name="img_%s"/><pic:cNvPicPr/></pic:nvPicPr>`+
-			`<pic:blipFill>`+
-			`<a:blip r:embed="%s" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>`+
-			`<a:stretch><a:fillRect/></a:stretch>`+
-			`</pic:blipFill>`+
-			`<pic:spPr bwMode="auto">`+
-			`<a:xfrm><a:off x="0" y="0"/><a:ext cx="%d" cy="%d"/></a:xfrm>`+
-			`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`+
-			`<a:noFill/>`+
-			`</pic:spPr>`+
-			`</pic:pic></a:graphicData></a:graphic>`+
-			`</wp:inline></w:drawing><w:br/></w:r>`,
-		cx, cy,
-		hash(placeholderKey), placeholderKey,
-		placeholderKey,
-		rId,
-		cx, cy)
+type imageInfo struct {
+	rId      string
+	filename string
+	cx, cy   int64
+}
 
-	// Try {{key}} format
-	curlyPlaceholder := fmt.Sprintf("{{%s}}", placeholderKey)
-	idx := strings.Index(xmlContent, curlyPlaceholder)
-	if idx == -1 {
-		// Try <<key>> format (encoded as &lt;&lt;key&gt;&gt;)
-		curlyPlaceholder = fmt.Sprintf("&lt;&lt;%s&gt;&gt;", placeholderKey)
-		idx = strings.Index(xmlContent, curlyPlaceholder)
-	}
-
-	if idx == -1 {
-		return xmlContent
-	}
-
-	// Find the enclosing <w:r ...> ... </w:r> that contains this placeholder
-	// We want to replace the whole run so we don't leave broken <w:t> tags
-	rStart := strings.LastIndex(xmlContent[:idx], "<w:r")
-	if rStart != -1 {
-		rEnd := strings.Index(xmlContent[idx:], "</w:r>")
-		if rEnd != -1 {
-			rEnd = idx + rEnd + len("</w:r>")
-			// Replace the entire run with the image run
-			return xmlContent[:rStart] + imgRun + xmlContent[rEnd:]
+func calculateDimensions(imgBytes []byte) (int64, int64) {
+	// Default 15cm x 10cm in EMUs
+	cx, cy := int64(5400000), int64(3600000)
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes)); err == nil {
+		w, h := float64(cfg.Width), float64(cfg.Height)
+		
+		// Handle EXIF orientation
+		if x, err := exif.Decode(bytes.NewReader(imgBytes)); err == nil {
+			if tag, err := x.Get(exif.Orientation); err == nil {
+				if orientation, _ := tag.Int(0); orientation >= 5 && orientation <= 8 {
+					w, h = h, w
+				}
+			}
 		}
-	}
 
-	// Fallback: just replace the text (might lead to invalid XML if inside <w:t>)
-	return strings.Replace(xmlContent, curlyPlaceholder, imgRun, 1)
+		const maxW, maxH = 5400000.0, 8000000.0
+		ratio := maxW / w
+		if h*ratio > maxH {
+			ratio = maxH / h
+		}
+		cx, cy = int64(w*ratio), int64(h*ratio)
+	}
+	return cx, cy
 }
 
-func hash(s string) int {
-	h := 0
-	for _, c := range s {
-		h = 31*h + int(c)
-	}
-	if h < 0 {
-		h = -h
-	}
-	return h % 100000
-}
-
-func decodeBase64Image(data string) ([]byte, error) {
-	// Strip data URI prefix if present (e.g., "data:image/jpeg;base64,")
-	if idx := strings.Index(data, ";base64,"); idx != -1 {
-		data = data[idx+8:]
-	} else if idx := strings.Index(data, ","); idx != -1 && strings.HasPrefix(data, "data:") {
-		data = data[idx+1:]
+func replaceImagePlaceholder(xml, key, rId string, cx, cy int64) string {
+	docPrId := hash(key)
+	drawing := fmt.Sprintf(`</w:t></w:r><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="%d" cy="%d"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="%d" name="img_%s"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="%d" name="img_%s"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="%s" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr bwMode="auto"><a:xfrm><a:off x="0" y="0"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r><w:r><w:t>`, cx, cy, docPrId, key, docPrId, key, rId, cx, cy)
+	
+	if key == "lampiran_1" {
+		drawing = `</w:t></w:r><w:r><w:br w:type="page"/></w:r><w:r><w:t>` + drawing
 	}
 
-	return base64.StdEncoding.DecodeString(data)
-}
+	placeholder1 := "{{" + key + "}}"
+	placeholder2 := "&lt;&lt;" + key + "&gt;&gt;"
+	placeholder3 := "<<" + key + ">>"
 
-func getImageExtension(mimeType string) string {
-	switch mimeType {
-	case "image/png":
-		return ".png"
-	case "image/gif":
-		return ".gif"
-	case "image/webp":
-		return ".webp"
-	default:
-		return ".jpeg"
-	}
+	xml = strings.Replace(xml, placeholder1, drawing, -1)
+	xml = strings.Replace(xml, placeholder2, drawing, -1)
+	xml = strings.Replace(xml, placeholder3, drawing, -1)
+
+	return xml
 }
 
 func (g *Generator) convertToPDF(ctx context.Context, docxBytes []byte) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-
-	if err := writer.WriteField("nativePageSize", "true"); err != nil {
-		return nil, err
-	}
-
-	part, err := writer.CreateFormFile("files", "document.docx")
-	if err != nil {
-		return nil, err
-	}
-	if _, err := io.Copy(part, bytes.NewReader(docxBytes)); err != nil {
-		return nil, err
-	}
+	part, _ := writer.CreateFormFile("files", "document.docx")
+	io.Copy(part, bytes.NewReader(docxBytes))
 	writer.Close()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/forms/libreoffice/convert", g.gotenbergURL), body)
-	if err != nil {
-		return nil, err
-	}
+	req, _ := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/libreoffice/convert", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-
+	
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("gotenberg request failed: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("gotenberg error (%d): %s", resp.StatusCode, string(respBody))
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gotenberg error (%d): %s", resp.StatusCode, string(b))
+	}
+	return io.ReadAll(resp.Body)
+}
+
+func (g *Generator) MergePDFs(ctx context.Context, pdfs [][]byte) ([]byte, error) {
+	if len(pdfs) < 2 {
+		if len(pdfs) == 1 { return pdfs[0], nil }
+		return nil, fmt.Errorf("no pdfs")
+	}
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	for i, p := range pdfs {
+		part, _ := writer.CreateFormFile("files", fmt.Sprintf("%d.pdf", i))
+		io.Copy(part, bytes.NewReader(p))
+	}
+	writer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/pdfengines/merge", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge pdfs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gotenberg merge error (%d): %s", resp.StatusCode, string(b))
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+func fixSplitRuns(xml string) string {
+	re := regexp.MustCompile(`(\{)(<[^>]+>)+(\{)`)
+	xml = re.ReplaceAllString(xml, "$1$3")
+	re = regexp.MustCompile(`(\})(<[^>]+>)+(\})`)
+	xml = re.ReplaceAllString(xml, "$1$3")
+
+	reVar := regexp.MustCompile(`\{\{([^{}]+)\}\}`)
+	reTag := regexp.MustCompile(`<[^>]+>`)
+	xml = reVar.ReplaceAllStringFunc(xml, func(match string) string {
+		return reTag.ReplaceAllString(match, "")
+	})
+
+	return xml
+}
+
+func replaceAngleBrackets(content, key, val string) string {
+	content = strings.ReplaceAll(content, "&lt;&lt;"+key+"&gt;&gt;", val)
+	content = strings.ReplaceAll(content, "<<"+key+">>", val)
+	return content
+}
+
+func removeEmptyTableRows(xml string) string {
+	marker := "__REMOVE_ROW__"
+	for strings.Contains(xml, marker) {
+		idx := strings.Index(xml, marker)
+		
+		trStart1 := strings.LastIndex(xml[:idx], "<w:tr>")
+		trStart2 := strings.LastIndex(xml[:idx], "<w:tr ")
+		
+		trStart := trStart1
+		if trStart2 > trStart {
+			trStart = trStart2
+		}
+
+		trEnd := strings.Index(xml[idx:], "</w:tr>")
+		if trStart != -1 && trEnd != -1 {
+			xml = xml[:trStart] + xml[idx+trEnd+7:]
+		} else {
+			xml = strings.Replace(xml, marker, "", 1)
+		}
+	}
+	return xml
+}
+
+func removeEmptyParagraphs(xml string) string {
+	marker := "__REMOVE_P__"
+	for strings.Contains(xml, marker) {
+		idx := strings.Index(xml, marker)
+		
+		pStart1 := strings.LastIndex(xml[:idx], "<w:p>")
+		pStart2 := strings.LastIndex(xml[:idx], "<w:p ")
+		
+		pStart := pStart1
+		if pStart2 > pStart {
+			pStart = pStart2
+		}
+
+		pEnd := strings.Index(xml[idx:], "</w:p>")
+		if pStart != -1 && pEnd != -1 {
+			endIdx := idx + pEnd + 6
+			foundPageBreak := false
+
+			// Check forward
+			nextPStart1 := strings.Index(xml[endIdx:], "<w:p>")
+			nextPStart2 := strings.Index(xml[endIdx:], "<w:p ")
+			nextPStart := nextPStart1
+			if nextPStart2 != -1 && (nextPStart == -1 || nextPStart2 < nextPStart) {
+				nextPStart = nextPStart2
+			}
+			if nextPStart != -1 && nextPStart < 20 {
+				nextPEnd := strings.Index(xml[endIdx+nextPStart:], "</w:p>")
+				if nextPEnd != -1 {
+					nextPContent := xml[endIdx+nextPStart : endIdx+nextPStart+nextPEnd+6]
+					if strings.Contains(nextPContent, `<w:br w:type="page"/>`) {
+						endIdx = endIdx + nextPStart + nextPEnd + 6
+						foundPageBreak = true
+					}
+				}
+			}
+
+			// If not found forward, check backward
+			if !foundPageBreak {
+				prevPEnd1 := strings.LastIndex(xml[:pStart], "</w:p>")
+				if prevPEnd1 != -1 && (pStart - prevPEnd1) < 20 {
+					prevPStart1 := strings.LastIndex(xml[:prevPEnd1], "<w:p>")
+					prevPStart2 := strings.LastIndex(xml[:prevPEnd1], "<w:p ")
+					prevPStart := prevPStart1
+					if prevPStart2 > prevPStart {
+						prevPStart = prevPStart2
+					}
+					if prevPStart != -1 {
+						prevPContent := xml[prevPStart : prevPEnd1+6]
+						if strings.Contains(prevPContent, `<w:br w:type="page"/>`) {
+							pStart = prevPStart
+						}
+					}
+				}
+			}
+
+			xml = xml[:pStart] + xml[endIdx:]
+		} else {
+			xml = strings.Replace(xml, marker, "", 1)
+		}
+	}
+	return xml
+}
+
+func adjustPetugasTableWidths(xml string) string {
+	xml = strings.ReplaceAll(xml, `<w:tcW w:w="1906" w:type="dxa"/>`, `<w:tcW w:w="700" w:type="dxa"/>`)
+	xml = strings.ReplaceAll(xml, `<w:tcW w:w="5391" w:type="dxa"/>`, `<w:tcW w:w="6597" w:type="dxa"/>`)
+	return xml
+}
+
+func hash(s string) int {
+	h := 0
+	for _, c := range s { h = 31*h + int(c) }
+	if h < 0 { h = -h }
+	return h % 100000
+}
+
+func decodeBase64Image(data string) ([]byte, error) {
+	if i := strings.Index(data, ","); i != -1 { data = data[i+1:] }
+	return base64.StdEncoding.DecodeString(data)
+}
+
+func getImageExtension(mime string) string {
+	if strings.Contains(mime, "png") { return ".png" }
+	return ".jpeg"
 }

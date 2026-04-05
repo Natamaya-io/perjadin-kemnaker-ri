@@ -77,12 +77,16 @@ func (s *service) invalidateCache(ctx context.Context, pattern string) {
 	if s.redisClient == nil {
 		return
 	}
-	iter := s.redisClient.Scan(ctx, 0, pattern, 0).Iterator()
-	for iter.Next(ctx) {
-		s.redisClient.Del(ctx, iter.Val())
+	keys, err := s.redisClient.Keys(ctx, pattern).Result()
+	if err != nil {
+		fmt.Printf("Error finding cache keys for pattern %s: %v\n", pattern, err)
+		return
 	}
-	if err := iter.Err(); err != nil {
-		fmt.Printf("Error invalidating cache for pattern %s: %v\n", pattern, err)
+	if len(keys) > 0 {
+		err = s.redisClient.Del(ctx, keys...).Err()
+		if err != nil {
+			fmt.Printf("Error deleting cache keys for pattern %s: %v\n", pattern, err)
+		}
 	}
 }
 
@@ -238,7 +242,7 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 
 		// NEW: If a report was updated, sync it to all other records in the same SPD group
 		if record.Report != nil && record.SPDNumber != "" {
-			go func(spd string, rep models.TravelReport) {
+			go func(spd string, rep models.TravelReport, stNumber string, stDate time.Time, repStatus string) {
 				allRecs, err := s.repo.GetTravelRecords(map[string]interface{}{})
 				if err != nil {
 					return
@@ -247,10 +251,19 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 					if r.SPDNumber == spd && r.ID != record.ID {
 						r.Report = &rep
 						r.Report.TravelRecordID = r.ID
+						if stNumber != "" {
+							r.SuratTugasNumber = stNumber
+						}
+						if !stDate.IsZero() {
+							r.SuratTugasDate = stDate
+						}
+						if repStatus != "" {
+							r.ReportStatus = repStatus
+						}
 						s.repo.UpdateTravelRecord(&r)
 					}
 				}
-			}(record.SPDNumber, *record.Report)
+			}(record.SPDNumber, *record.Report, record.SuratTugasNumber, record.SuratTugasDate, record.ReportStatus)
 		}
 	}
 	return err

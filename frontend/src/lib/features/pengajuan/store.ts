@@ -47,6 +47,24 @@ export async function updateRecord(id: string, data: Partial<TravelRecord>) {
     }
 }
 
+export async function updateMultipleRecords(updates: Array<{id: string, data: Partial<TravelRecord>}>) {
+    try {
+        // Run updates sequentially to avoid potential race conditions in simple backends
+        const results = [];
+        for (const update of updates) {
+            const res = await api.updateRecord(update.id, update.data);
+            results.push(res);
+        }
+        
+        // Refresh full store to ensure consistency
+        await loadRecords();
+        return results;
+    } catch (e) {
+        console.error("Failed to update multiple records", e);
+        throw e;
+    }
+}
+
 export async function deleteRecord(id: string) {
     try {
         await api.deleteRecord(id);

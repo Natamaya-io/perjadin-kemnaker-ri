@@ -58,7 +58,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 			proxyHeaders.set('pragma', 'no-cache');
 			proxyHeaders.set('expires', '0');
 
-			return new Response(buffer, {
+			// Response dengan status tertentu tidak boleh memiliki body (harus null) di Node.js
+			const nullBodyStatuses = [101, 204, 205, 304];
+			const responseBody = nullBodyStatuses.includes(response.status) ? null : buffer;
+
+			return new Response(responseBody, {
 				status: response.status,
 				statusText: response.statusText,
 				headers: proxyHeaders

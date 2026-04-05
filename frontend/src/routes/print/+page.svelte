@@ -18,11 +18,19 @@
     let pdfUrl = '';
     let isGeneratingPdf = false;
     let isDataLoaded = false;
+    let pdfError = '';
+    let hasAttemptedLoad = false;
+
+    $: if (isDataLoaded && record && !hasAttemptedLoad) {
+        hasAttemptedLoad = true;
+        loadPdfPreview();
+    }
 
     async function loadPdfPreview() {
         if (!record) return;
 
         isGeneratingPdf = true;
+        pdfError = '';
         try {
             // Kembali gunakan PDF karena Gotenberg sudah terintegrasi komprehensif
             let pdfBlob;
@@ -40,6 +48,7 @@
             isGeneratingPdf = false;
         } catch (e) {
             console.error('Error loading PDF preview:', e);
+            pdfError = e.message || 'Terjadi kesalahan saat memuat dokumen.';
             toast.error('Gagal membuat pratinjau PDF.');
             isGeneratingPdf = false;
         }
@@ -51,7 +60,6 @@
                 await loadRecords();
             }
             isDataLoaded = true;
-            await loadPdfPreview();
         } catch (e) {
             console.error(e);
             toast.error('Gagal memuat data perjalanan.');
@@ -151,6 +159,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <p class="text-lg font-medium">Pratinjau tidak tersedia.</p>
+                {#if pdfError}
+                    <p class="text-sm text-red-500 mt-2 max-w-md text-center">{pdfError}</p>
+                {/if}
             </div>
         {/if}
     </div>
