@@ -95,17 +95,33 @@
         locationIndex: 0,
         totalBill: 0,
         days: 0,
-        selectedEmpIds: []
+        selectedEmpIds: [],
+        isExtend: false,
+        extendIdx: -1
     };
 
-    function openSplitHotelModal(empId, locationIndex) {
+    function openSplitHotelModal(empId, locationIndex, isExtend = false, extendIdx = -1) {
         const detail = localCosts[empId].costs.details[locationIndex];
+        let totalBill = 0;
+        let days = 0;
+        
+        if (isExtend && extendIdx > -1) {
+            const extendCost = detail.additionalCosts[extendIdx];
+            totalBill = (extendCost.hotelRate || 0) * (extendCost.hotelDays || 0);
+            days = extendCost.hotelDays || 0;
+        } else {
+            totalBill = (detail.hotelRate || 0) * (detail.hotelDays || 0);
+            days = detail.hotelDays || 0;
+        }
+
         splitHotelData = {
             sourceEmpId: empId,
             locationIndex: locationIndex,
-            totalBill: (detail.hotelRate || 0) * (detail.hotelDays || 0),
-            days: detail.hotelDays || 0,
-            selectedEmpIds: []
+            totalBill: totalBill,
+            days: days,
+            selectedEmpIds: [],
+            isExtend: isExtend,
+            extendIdx: extendIdx
         };
         showSplitHotelModal = true;
     }
@@ -130,28 +146,73 @@
         }
 
         const ratePerNightPerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
-        const sourceFile = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelFile;
+        
+        let sourceFile = null;
+        if (splitHotelData.isExtend && splitHotelData.extendIdx > -1) {
+            sourceFile = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx].file;
+            
+            // Apply to source person
+            const sourceCost = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx];
+            sourceCost.hotelRate = ratePerNightPerPerson;
+            sourceCost.hotelDays = splitHotelData.days;
+            sourceCost.amount = ratePerNightPerPerson * splitHotelData.days;
+            recalculateTotal(splitHotelData.sourceEmpId);
 
-        // Apply to source person
-        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
-        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
-        recalculateTotal(splitHotelData.sourceEmpId);
-
-        // Apply to selected others
-        for (const empId of splitHotelData.selectedEmpIds) {
-            if (localCosts[empId]) {
-                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
-                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
-                if (sourceFile) {
-                    localCosts[empId].costs.details[splitHotelData.locationIndex].hotelFile = { ...sourceFile };
+            // Apply to selected others
+            for (const empId of splitHotelData.selectedEmpIds) {
+                if (localCosts[empId]) {
+                    // Ensure additionalCosts array exists
+                    if (!localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts) {
+                        localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts = [];
+                    }
+                    
+                    // We need to either update existing Extend Penginapan or add a new one
+                    let targetExtendIdx = localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts.findIndex(c => c.name === 'Extend Penginapan');
+                    
+                    if (targetExtendIdx === -1) {
+                        localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts.push({
+                            name: 'Extend Penginapan',
+                            hotelRate: ratePerNightPerPerson,
+                            hotelDays: splitHotelData.days,
+                            amount: ratePerNightPerPerson * splitHotelData.days,
+                            file: sourceFile ? { ...sourceFile } : null
+                        });
+                    } else {
+                        const targetCost = localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts[targetExtendIdx];
+                        targetCost.hotelRate = ratePerNightPerPerson;
+                        targetCost.hotelDays = splitHotelData.days;
+                        targetCost.amount = ratePerNightPerPerson * splitHotelData.days;
+                        if (sourceFile) {
+                            targetCost.file = { ...sourceFile };
+                        }
+                    }
+                    recalculateTotal(empId);
                 }
-                recalculateTotal(empId);
+            }
+        } else {
+            sourceFile = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelFile;
+
+            // Apply to source person
+            localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+            localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+            recalculateTotal(splitHotelData.sourceEmpId);
+
+            // Apply to selected others
+            for (const empId of splitHotelData.selectedEmpIds) {
+                if (localCosts[empId]) {
+                    localCosts[empId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+                    localCosts[empId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+                    if (sourceFile) {
+                        localCosts[empId].costs.details[splitHotelData.locationIndex].hotelFile = { ...sourceFile };
+                    }
+                    recalculateTotal(empId);
+                }
             }
         }
 
         localCosts = { ...localCosts };
         showSplitHotelModal = false;
-        toast.success(`Biaya hotel dibagi ke ${totalPeople} orang.`);
+        toast.success(`Biaya penginapan dibagi ke ${totalPeople} orang.`);
     }
 
     let localCosts = {};
@@ -1650,7 +1711,19 @@
                                                                             </svg>
                                                                         </button>
                                                                     {/if}
-                                                                    <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider mb-3 block">Extend Penginapan</Label>
+                                                                    <div class="flex justify-between items-center mb-3">
+                                                                        <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider block">Extend Penginapan</Label>
+                                                                        {#if $userStore.role !== 'kasubag'}
+                                                                            <button 
+                                                                                type="button" 
+                                                                                class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 px-2 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
+                                                                                on:click={() => openSplitHotelModal(empId, idx, true, costIdx)}
+                                                                            >
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                                                                Bagi Biaya
+                                                                            </button>
+                                                                        {/if}
+                                                                    </div>
                                                                     
                                                                     <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
                                                                         <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">

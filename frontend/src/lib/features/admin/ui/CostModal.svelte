@@ -132,17 +132,33 @@
         locationIndex: 0,
         totalBill: 0,
         days: 0,
-        selectedEmpIds: []
+        selectedEmpIds: [],
+        isExtend: false,
+        extendIdx: -1
     };
     let pendingOtherUpdatesToSave = [];
 
-    function openSplitHotelModal() {
+    function openSplitHotelModal(isExtend = false, extendIdx = -1) {
         const detail = editingCosts.details[selectedLocationIndex];
+        let totalBill = 0;
+        let days = 0;
+        
+        if (isExtend && extendIdx > -1) {
+            const extendCost = detail.additionalCosts[extendIdx];
+            totalBill = (extendCost.hotelRate || 0) * (extendCost.hotelDays || 0);
+            days = extendCost.hotelDays || 0;
+        } else {
+            totalBill = (detail.hotelRate || 0) * (detail.hotelDays || 0);
+            days = detail.hotelDays || 0;
+        }
+
         splitHotelData = {
             locationIndex: selectedLocationIndex,
-            totalBill: (detail.hotelRate || 0) * (detail.hotelDays || 0),
-            days: detail.hotelDays || 0,
-            selectedEmpIds: []
+            totalBill: totalBill,
+            days: days,
+            selectedEmpIds: [],
+            isExtend: isExtend,
+            extendIdx: extendIdx
         };
         showSplitHotelModal = true;
     }
@@ -167,24 +183,51 @@
         }
 
         const ratePerNightPerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
-        const sourceFile = editingCosts.details[splitHotelData.locationIndex].hotelFile;
+        
+        let sourceFile = null;
+        if (splitHotelData.isExtend && splitHotelData.extendIdx > -1) {
+            sourceFile = editingCosts.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx].file;
+            
+            // Apply to current person
+            const sourceCost = editingCosts.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx];
+            sourceCost.hotelRate = ratePerNightPerPerson;
+            sourceCost.hotelDays = splitHotelData.days;
+            sourceCost.amount = ratePerNightPerPerson * splitHotelData.days;
+            editingCosts = editingCosts;
 
-        // Apply to current person
-        editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
-        editingCosts.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
-        editingCosts = editingCosts;
+            // Prepare updates for others
+            const newUpdates = splitHotelData.selectedEmpIds.map(empId => ({
+                empId,
+                locationIndex: splitHotelData.locationIndex,
+                hotelRate: ratePerNightPerPerson,
+                hotelDays: splitHotelData.days,
+                hotelFile: sourceFile ? { ...sourceFile } : null,
+                isExtend: true
+            }));
+            pendingOtherUpdatesToSave = [...pendingOtherUpdatesToSave, ...newUpdates];
 
-        // Prepare updates for others
-        pendingOtherUpdatesToSave = splitHotelData.selectedEmpIds.map(empId => ({
-            empId,
-            locationIndex: splitHotelData.locationIndex,
-            hotelRate: ratePerNightPerPerson,
-            hotelDays: splitHotelData.days,
-            hotelFile: sourceFile ? { ...sourceFile } : null
-        }));
+        } else {
+            sourceFile = editingCosts.details[splitHotelData.locationIndex].hotelFile;
+
+            // Apply to current person
+            editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+            editingCosts.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+            editingCosts = editingCosts;
+
+            // Prepare updates for others
+            const newUpdates = splitHotelData.selectedEmpIds.map(empId => ({
+                empId,
+                locationIndex: splitHotelData.locationIndex,
+                hotelRate: ratePerNightPerPerson,
+                hotelDays: splitHotelData.days,
+                hotelFile: sourceFile ? { ...sourceFile } : null,
+                isExtend: false
+            }));
+            pendingOtherUpdatesToSave = [...pendingOtherUpdatesToSave, ...newUpdates];
+        }
 
         showSplitHotelModal = false;
-        toast.success(`Biaya hotel dibagi ke ${totalPeople} orang (akan tersimpan saat klik Simpan).`);
+        toast.success(`Biaya dibagi ke ${totalPeople} orang (akan tersimpan saat klik Simpan).`);
     }
 
     function formatFileSize(bytes) {
@@ -810,14 +853,40 @@
                 {#each detail.additionalCosts as cost, costIdx}
                     {#if cost.name === 'Extend Penginapan'}
                         <div class="col-span-1 md:col-span-3 mt-4 relative pt-4 border-t border-slate-200 w-full">
-                            {#if !isReadOnly}
-                                <button type="button" class="absolute top-2 right-0 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
+                                {#if !isReadOnly}
+                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                {/if}
+                                <h4 class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider flex items-center gap-1.5 md:gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                     </svg>
-                                </button>
-                            {/if}
-                            <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider mb-3 block">Extend Penginapan</Label>
+                                    Extend Penginapan
+                                </h4>
+                                <div class="flex items-center gap-2">
+                                    {#if !isReadOnly}
+                                        <button
+                                            type="button"
+                                            class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 px-2 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
+                                            on:click={() => openSplitHotelModal(true, costIdx)}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                            Bagi Biaya
+                                        </button>
+                                    {/if}
+                                    {#if !cost.file && !isReadOnly}
+                                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                            Kwitansi
+                                            <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(e, costIdx)} />
+                                        </label>
+                                    {/if}
+                                </div>
+                            </div>
                             
                             <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
                                 <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">
@@ -834,19 +903,8 @@
                                     </div>
                                 </div>
                                 
-                                <div class="mt-3">
-                                    <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (PDF/Gambar)</span>
-                                    {#if !cost.file && !isReadOnly}
-                                        <label class="flex flex-col items-center justify-center w-full h-14 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group">
-                                            <div class="flex flex-col items-center justify-center pt-1 pb-1 pointer-events-none">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                </svg>
-                                                <p class="text-[9px] text-slate-500 text-center px-2"><span class="font-semibold text-blue-600">Klik unggah</span> atau seret file</p>
-                                            </div>
-                                            <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(e, costIdx)} />
-                                        </label>
-                                    {:else if cost.file}
+                                {#if cost.file}
+                                    <div class="mt-3">
                                         <div class="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-md shadow-sm">
                                             <div class="flex items-center gap-2 min-w-0 flex-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -857,8 +915,8 @@
                                                 {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => { editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].file = null; editingCosts = editingCosts; }}>Hapus</button>{/if}
                                             </div>
                                         </div>
-                                    {/if}
-                                </div>
+                                    </div>
+                                {/if}
                             </div>
                         </div>
                     {/if}
