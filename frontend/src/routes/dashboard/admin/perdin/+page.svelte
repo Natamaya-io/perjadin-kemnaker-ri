@@ -6,7 +6,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase, formatLocations } from '$lib/shared/utils/utils';
     
     // Components
     import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
@@ -323,7 +323,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-3">
-                                    <div class="text-sm text-slate-800 font-medium line-clamp-1" title="{toTitleCase(record.location)}, {toTitleCase(record.province)}">{toTitleCase(record.location)}, {toTitleCase(record.province)}</div>
+                                    <div class="text-sm text-slate-800 font-medium line-clamp-1" title={formatLocations(record)}>{formatLocations(record)}</div>
                                 </td>
                                 <td class="px-6 py-3 whitespace-nowrap">
                                     <div class="text-xs text-slate-500 flex items-center gap-1.5">
@@ -449,7 +449,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    <span class="truncate">{toTitleCase(record.location)}, {toTitleCase(record.province)}</span>
+                                    <span class="truncate">{formatLocations(record)}</span>
                                 </div>
                                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-0 mt-1">
                                     <div class="flex items-center gap-1.5 text-slate-500 min-w-0">

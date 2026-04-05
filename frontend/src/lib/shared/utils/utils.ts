@@ -26,11 +26,19 @@ export function toTitleCase(str: string) {
     if (!str) return '';
     return str.split(' ').map(word => {
         if (!word) return '';
-        // Special case for DKI, DI
+        // Special case for DKI, DI, NTB, NTT, RI
         const upper = word.toUpperCase();
         if (upper === 'DKI' || upper === 'DI' || upper === 'NTB' || upper === 'NTT' || upper === 'RI') return upper;
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     }).join(' ');
+}
+
+export function formatLocations(record: any) {
+    if (!record) return '-';
+    if (record.locations && record.locations.length > 0) {
+        return record.locations.map((loc: any) => `${toTitleCase(loc.location)}, ${toTitleCase(loc.province)}`).join(' & ');
+    }
+    return `${toTitleCase(record.location)}, ${toTitleCase(record.province)}`;
 }
 
 export function getStatusBadge(record: any) {

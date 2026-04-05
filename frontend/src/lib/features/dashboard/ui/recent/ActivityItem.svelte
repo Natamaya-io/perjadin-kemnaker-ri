@@ -1,5 +1,5 @@
 <script>
-    import { getInitials, getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
+    import { getInitials, getStatusBadge, toTitleCase, formatLocations } from '$lib/shared/utils/utils';
     import { userStore } from '$lib/features/auth/store';
 
     export let record;
@@ -21,13 +21,12 @@
         <!-- Destination Column -->
         <td class="px-6 py-4 align-top">
             <div class="flex flex-col space-y-1">
-                <div class="flex items-center gap-1.5 font-medium text-slate-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <div class="flex items-start gap-1.5 font-medium text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                     </svg>
-                    {record.location}
+                    <span class="leading-tight">{formatLocations(record)}</span>
                 </div>
-                <span class="text-xs text-slate-500 pl-5">{toTitleCase(record.province)}</span>
             </div>
         </td>
 
@@ -68,13 +67,12 @@
         <!-- Destination Column -->
         <td class="px-6 py-4 align-top">
             <div class="flex flex-col space-y-1">
-                <div class="flex items-center gap-1.5 font-medium text-slate-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <div class="flex items-start gap-1.5 font-medium text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                     </svg>
-                    {record.location}
+                    <span class="leading-tight">{formatLocations(record)}</span>
                 </div>
-                <span class="text-xs text-slate-500 pl-5">{toTitleCase(record.province)}</span>
             </div>
         </td>
 

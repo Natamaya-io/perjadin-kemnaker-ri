@@ -2,7 +2,7 @@
     import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
     import { onMount } from 'svelte';
     import { userStore } from '$lib/features/auth/store';
-    import { getInitials, getStatusBadge, toTitleCase, cn } from '$lib/shared/utils/utils';
+    import { getInitials, getStatusBadge, toTitleCase, cn, formatLocations } from '$lib/shared/utils/utils';
 
     // Components
     import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
@@ -191,7 +191,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        {toTitleCase(record.location)}, {toTitleCase(record.province)}
+                                        <span class="line-clamp-2 leading-relaxed">{formatLocations(record)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell class="py-4 align-top text-xs text-slate-600">
@@ -267,7 +267,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span class="line-clamp-2 leading-relaxed">{toTitleCase(record.location)}, {toTitleCase(record.province)}</span>
+                            <span class="line-clamp-2 leading-relaxed">{formatLocations(record)}</span>
                         </div>
                     </div>
 
@@ -363,14 +363,10 @@
                     </div>
                     <div class="space-y-4.5 flex-1 relative z-10">
                         <div>
-                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Destinasi Utama</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Destinasi & Tujuan</span>
                             <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                                 <span class="font-bold text-slate-800 block text-sm leading-snug">
-                                    {toTitleCase(selectedDetailRecord.province)}
-                                </span>
-                                <span class="text-emerald-600 font-semibold text-xs mt-0.5 block flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                                    {toTitleCase(selectedDetailRecord.location)}
+                                    {formatLocations(selectedDetailRecord)}
                                 </span>
                             </div>
                         </div>

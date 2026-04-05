@@ -5,7 +5,7 @@
     import { goto } from '$app/navigation';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase, formatLocations } from '$lib/shared/utils/utils';
     
     import Table from '$lib/shared/ui/table/Table.svelte';
     import TableHeader from '$lib/shared/ui/table/TableHeader.svelte';
@@ -200,7 +200,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        {toTitleCase(record.location)}, {toTitleCase(record.province)}
+                                        {formatLocations(record)}
                                     </div>
                                 </TableCell>
                                 <TableCell class="py-4 align-middle text-xs text-slate-600">
