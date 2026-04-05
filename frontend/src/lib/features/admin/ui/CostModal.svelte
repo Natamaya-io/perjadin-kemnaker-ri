@@ -157,17 +157,17 @@
 
     function applySplitHotel() {
         const totalPeople = 1 + splitHotelData.selectedEmpIds.length;
-        if (totalPeople === 0 || splitHotelData.days === 0) {
-            toast.error("Malam menginap tidak boleh 0.");
+        if (totalPeople === 0) {
+            toast.error("Minimal 1 orang dipilih.");
             return;
         }
 
-        const ratePerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
+        const ratePerPerson = Math.round(splitHotelData.totalBill / totalPeople);
         const sourceFile = editingCosts.details[splitHotelData.locationIndex].hotelFile;
 
         // Apply to current person
         editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerPerson;
-        editingCosts.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+        editingCosts.details[splitHotelData.locationIndex].hotelDays = 1;
         editingCosts = editingCosts;
 
         // Prepare updates for others
@@ -175,7 +175,7 @@
             empId,
             locationIndex: splitHotelData.locationIndex,
             hotelRate: ratePerPerson,
-            hotelDays: splitHotelData.days,
+            hotelDays: 1,
             hotelFile: sourceFile ? { ...sourceFile } : null
         }));
 
@@ -1045,14 +1045,13 @@
 
                     <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex justify-between items-center">
                         <div>
-                            <div class="text-xs font-bold uppercase text-indigo-500 tracking-wider mb-0.5">Biaya Per Orang</div>
-                            <div class="text-sm text-slate-600 font-medium">{1 + splitHotelData.selectedEmpIds.length} Orang x {splitHotelData.days} Malam</div>
+                            <div class="text-xs font-bold uppercase text-indigo-500 tracking-wider mb-0.5">Total per Orang</div>
+                            <div class="text-sm text-slate-600 font-medium">{1 + splitHotelData.selectedEmpIds.length} Orang</div>
                         </div>
                         <div class="text-right">
                             <div class="text-xl font-bold text-indigo-700">
-                                {formatCurrency(splitHotelData.days > 0 ? (splitHotelData.totalBill / (1 + splitHotelData.selectedEmpIds.length)) : 0)}
+                                {formatCurrency(1 + splitHotelData.selectedEmpIds.length > 0 ? (splitHotelData.totalBill / (1 + splitHotelData.selectedEmpIds.length)) : 0)}
                             </div>
-                            <div class="text-[10px] text-indigo-400">/ orang / malam</div>
                         </div>
                     </div>
                 </div>
