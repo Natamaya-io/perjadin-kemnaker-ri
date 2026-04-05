@@ -120,7 +120,7 @@
                 locationIndex: locationIndex,
                 totalBill: totalBill,
                 days: days,
-                selectedEmpIds: [],
+                selectedEmpIds: [empId], // Automatically select the initiator
                 isExtend: isExtend,
                 extendIdx: extendIdx
             };
@@ -140,7 +140,7 @@
     }
 
     function applySplitHotel() {
-        const totalPeople = 1 + splitHotelData.selectedEmpIds.length;
+        const totalPeople = splitHotelData.selectedEmpIds.length;
         if (totalPeople === 0) {
             toast.error("Minimal 1 orang dipilih.");
             return;
@@ -158,13 +158,19 @@
             
             // Apply to source person
             const sourceCost = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx];
-            sourceCost.hotelRate = ratePerNightPerPerson;
-            sourceCost.hotelDays = splitHotelData.days;
-            sourceCost.amount = ratePerNightPerPerson * splitHotelData.days;
+            if (splitHotelData.selectedEmpIds.includes(splitHotelData.sourceEmpId)) {
+                sourceCost.hotelRate = ratePerNightPerPerson;
+                sourceCost.hotelDays = splitHotelData.days;
+                sourceCost.amount = ratePerNightPerPerson * splitHotelData.days;
+            } else {
+                sourceCost.hotelRate = 0;
+                sourceCost.hotelDays = 0;
+                sourceCost.amount = 0;
+            }
             recalculateTotal(splitHotelData.sourceEmpId);
 
             // Apply to selected others
-            for (const empId of splitHotelData.selectedEmpIds) {
+            for (const empId of splitHotelData.selectedEmpIds.filter(id => id !== splitHotelData.sourceEmpId)) {
                 if (localCosts[empId]) {
                     // Ensure additionalCosts array exists
                     if (!localCosts[empId].costs.details[splitHotelData.locationIndex].additionalCosts) {
@@ -198,12 +204,17 @@
             sourceFile = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelFile;
 
             // Apply to source person
-            localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
-            localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+            if (splitHotelData.selectedEmpIds.includes(splitHotelData.sourceEmpId)) {
+                localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+                localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+            } else {
+                localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = 0;
+                localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = 0;
+            }
             recalculateTotal(splitHotelData.sourceEmpId);
 
             // Apply to selected others
-            for (const empId of splitHotelData.selectedEmpIds) {
+            for (const empId of splitHotelData.selectedEmpIds.filter(id => id !== splitHotelData.sourceEmpId)) {
                 if (localCosts[empId]) {
                     localCosts[empId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
                     localCosts[empId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
@@ -1988,7 +1999,7 @@
                 <div class="space-y-3">
                     <Label class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Bagikan Dengan ({splitHotelData.selectedEmpIds.length} orang dipilih)</Label>
                     <div class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
-                        {#each recordsList.filter(r => r.id !== splitHotelData.sourceEmpId) as emp (emp.id)}
+                        {#each recordsList as emp (emp.id)}
                             <label class="flex items-center gap-3 p-3 border-b border-slate-100 last:border-0 hover:bg-slate-100/50 cursor-pointer transition-colors">
                                 <div class="relative flex items-start">
                                     <div class="flex items-center h-5">
@@ -2006,11 +2017,6 @@
                                 </div>
                             </label>
                         {/each}
-                        {#if recordsList.length <= 1}
-                            <div class="p-4 text-center text-xs text-slate-500">
-                                Tidak ada petugas lain dalam perjalanan ini.
-                            </div>
-                        {/if}
                     </div>
                 </div>
 
@@ -2018,11 +2024,11 @@
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex justify-between items-center">
                     <div>
                         <div class="text-xs font-bold uppercase text-indigo-500 tracking-wider mb-0.5">Total per Orang</div>
-                        <div class="text-sm text-slate-600 font-medium">{1 + splitHotelData.selectedEmpIds.length} Orang</div>
+                        <div class="text-sm text-slate-600 font-medium">{splitHotelData.selectedEmpIds.length} Orang</div>
                     </div>
                     <div class="text-right">
                         <div class="text-xl font-bold text-indigo-700">
-                            {formatCurrency(1 + splitHotelData.selectedEmpIds.length > 0 ? (splitHotelData.totalBill / (1 + splitHotelData.selectedEmpIds.length)) : 0)}
+                            {formatCurrency(splitHotelData.selectedEmpIds.length > 0 ? (splitHotelData.totalBill / splitHotelData.selectedEmpIds.length) : 0)}
                         </div>
                     </div>
                 </div>            </div>
