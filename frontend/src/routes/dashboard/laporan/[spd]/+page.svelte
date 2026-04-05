@@ -476,8 +476,20 @@
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex].additionalCosts[index][field] = isNaN(num) ? undefined : num;
+        recalculateTotal(empId);
         localCosts = { ...localCosts };
     }
+
+    function updateExtendPenginapanCost(empId, index, field, event, locationIndex) {
+        const raw = event.target.value.replace(/[^0-9]/g, '');
+        const num = parseInt(raw, 10);
+        const cost = localCosts[empId].costs.details[locationIndex].additionalCosts[index];
+        cost[field] = isNaN(num) ? undefined : num;
+        cost.amount = (cost.hotelDays || 0) * (cost.hotelRate || 0);
+        recalculateTotal(empId);
+        localCosts = { ...localCosts };
+    }
+
 
     function handleAdditionalExtendSpecificFileSelect(empId, e, field, index, locationIndex) {
         const file = e.target.files[0];
@@ -1641,10 +1653,18 @@
                                                                     <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider mb-3 block">Extend Penginapan</Label>
                                                                     
                                                                     <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
-                                                                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Total Biaya Extend</Label>
-                                                                        <div class="relative">
-                                                                            <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
-                                                                            <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.amount)} on:input={(e) => updateAdditionalCostAmount(empId, costIdx, e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
+                                                                        <div class="grid grid-cols-3 gap-3 md:gap-4 w-full">
+                                                                            <div class="space-y-1.5 col-span-1">
+                                                                                <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Malam</Label>
+                                                                                <Input type="number" disabled={$userStore.role === 'kasubag'} bind:value={detail.additionalCosts[costIdx].hotelDays} on:input={(e) => updateExtendPenginapanCost(empId, costIdx, 'hotelDays', e, idx)} class="h-9 md:h-10 text-sm bg-white border-slate-200 px-2" />
+                                                                            </div>
+                                                                            <div class="space-y-1.5 col-span-2">
+                                                                                <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Rate per Malam</Label>
+                                                                                <div class="relative">
+                                                                                    <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                                                                                    <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.hotelRate)} on:input={(e) => updateExtendPenginapanCost(empId, costIdx, 'hotelRate', e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                         
                                                                         <div class="mt-3">
