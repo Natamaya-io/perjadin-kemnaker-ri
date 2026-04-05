@@ -862,8 +862,9 @@
             </div>
 
             <div class="space-y-3">
-                {#if detail.additionalCosts && detail.additionalCosts.length > 0}
+                {#if detail.additionalCosts && detail.additionalCosts.filter(c => c.name !== 'Extend Tiket').length > 0}
                     {#each detail.additionalCosts as cost, index}
+                        {#if cost.name !== 'Extend Tiket'}
                         <div class="bg-white p-3 border border-slate-200 rounded-lg relative group shadow-sm">
                             {#if !isReadOnly}
                                 <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-md z-10" on:click={() => removeAdditionalCost(index)}>
