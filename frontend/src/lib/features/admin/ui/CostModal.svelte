@@ -289,6 +289,12 @@
         editingCosts = editingCosts;
     }
 
+    function addExtendPenginapan() {
+        if (!editingCosts.details[selectedLocationIndex].additionalCosts) editingCosts.details[selectedLocationIndex].additionalCosts = [];
+        editingCosts.details[selectedLocationIndex].additionalCosts = [...editingCosts.details[selectedLocationIndex].additionalCosts, { name: 'Extend Penginapan', amount: undefined, file: null }];
+        editingCosts = editingCosts;
+    }
+
     function removeAdditionalCost(index) {
         editingCosts.details[selectedLocationIndex].additionalCosts = editingCosts.details[selectedLocationIndex].additionalCosts.filter((_, i) => i !== index);
         editingCosts = editingCosts;

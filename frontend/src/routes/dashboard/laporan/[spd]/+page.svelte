@@ -395,6 +395,12 @@
         localCosts = { ...localCosts };
     }
 
+    function addExtendPenginapan(empId, locationIndex) {
+        if (!localCosts[empId].costs.details[locationIndex].additionalCosts) localCosts[empId].costs.details[locationIndex].additionalCosts = [];
+        localCosts[empId].costs.details[locationIndex].additionalCosts = [...localCosts[empId].costs.details[locationIndex].additionalCosts, { name: 'Extend Penginapan', amount: undefined, file: null }];
+        localCosts = { ...localCosts };
+    }
+
     function removeAdditionalCost(empId, index, locationIndex) {
         localCosts[empId].costs.details[locationIndex].additionalCosts = localCosts[empId].costs.details[locationIndex].additionalCosts.filter((_, i) => i !== index);
         localCosts = { ...localCosts };
@@ -1619,6 +1625,62 @@
                                                             </div>
                                                         </div>
                                                     {/if}
+
+                                                    <!-- Extend Penginapan Items -->
+                                                    {#if detail.additionalCosts && detail.additionalCosts.length > 0}
+                                                        {#each detail.additionalCosts as cost, costIdx}
+                                                            {#if cost.name === 'Extend Penginapan'}
+                                                                <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200">
+                                                                    {#if $userStore.role !== 'kasubag'}
+                                                                        <button type="button" class="absolute top-2 right-0 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    {/if}
+                                                                    <Label class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider mb-3 block">Extend Penginapan</Label>
+                                                                    
+                                                                    <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                                                                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider block">Total Biaya Extend</Label>
+                                                                        <div class="relative">
+                                                                            <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                                                                            <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.amount)} on:input={(e) => updateAdditionalCostAmount(empId, costIdx, e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
+                                                                        </div>
+                                                                        
+                                                                        <div class="mt-3">
+                                                                            <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (PDF/Gambar)</span>
+                                                                            {#if !cost.file}
+                                                                                <label class="flex flex-col items-center justify-center w-full h-14 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group">
+                                                                                    <div class="flex flex-col items-center justify-center pt-1 pb-1 pointer-events-none">
+                                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                                                        </svg>
+                                                                                        <p class="text-[9px] text-slate-500 text-center px-2"><span class="font-semibold text-blue-600">Klik unggah</span> atau seret file</p>
+                                                                                    </div>
+                                                                                    <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(empId, e, costIdx, idx)} />
+                                                                                </label>
+                                                                            {:else}
+                                                                                <div class="flex items-center gap-2 bg-white p-2 rounded border border-slate-200 w-full">
+                                                                                    <span class="text-[10px] text-slate-700 truncate flex-1">{cost.file.name}</span>
+                                                                                    <div class="flex gap-2 shrink-0 text-[10px]">
+                                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                                                        <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalFile(empId, costIdx, idx)}>Hapus</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            {/if}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            {/if}
+                                                        {/each}
+                                                    {/if}
+
+                                                    {#if $userStore.role !== 'kasubag'}
+                                                        <button type="button" class="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm" on:click={() => addExtendPenginapan(empId, idx)}>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                                                            Extend Penginapan
+                                                        </button>
+                                                    {/if}
                                                 </div>
 
                                                 <!-- Bukti Transportasi atau Rental -->
@@ -1678,9 +1740,9 @@
                                                     </div>
 
                                                     <div class="space-y-3">
-                                                        {#if detail.additionalCosts && detail.additionalCosts.filter(c => c.name !== 'Extend Tiket').length > 0}
+                                                        {#if detail.additionalCosts && detail.additionalCosts.filter(c => c.name !== 'Extend Tiket' && c.name !== 'Extend Penginapan').length > 0}
                                                             {#each detail.additionalCosts as cost, costIdx}
-                                                                {#if cost.name !== 'Extend Tiket'}
+                                                                {#if cost.name !== 'Extend Tiket' && cost.name !== 'Extend Penginapan'}
                                                                     <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
                                                                         <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
                                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
