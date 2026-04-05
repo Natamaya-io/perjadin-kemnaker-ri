@@ -201,10 +201,34 @@
                     if (!newTargetCosts.details) newTargetCosts.details = [];
                     
                     if (newTargetCosts.details[updateInfo.locationIndex]) {
-                        newTargetCosts.details[updateInfo.locationIndex].hotelRate = updateInfo.hotelRate;
-                        newTargetCosts.details[updateInfo.locationIndex].hotelDays = updateInfo.hotelDays;
-                        if (updateInfo.hotelFile) {
-                            newTargetCosts.details[updateInfo.locationIndex].hotelFile = updateInfo.hotelFile;
+                        if (updateInfo.isExtend) {
+                            if (!newTargetCosts.details[updateInfo.locationIndex].additionalCosts) {
+                                newTargetCosts.details[updateInfo.locationIndex].additionalCosts = [];
+                            }
+                            let targetExtendIdx = newTargetCosts.details[updateInfo.locationIndex].additionalCosts.findIndex(c => c.name === 'Extend Penginapan');
+                            if (targetExtendIdx === -1) {
+                                newTargetCosts.details[updateInfo.locationIndex].additionalCosts.push({
+                                    name: 'Extend Penginapan',
+                                    hotelRate: updateInfo.hotelRate,
+                                    hotelDays: updateInfo.hotelDays,
+                                    amount: updateInfo.hotelRate * updateInfo.hotelDays,
+                                    file: updateInfo.hotelFile ? { ...updateInfo.hotelFile } : null
+                                });
+                            } else {
+                                const targetCost = newTargetCosts.details[updateInfo.locationIndex].additionalCosts[targetExtendIdx];
+                                targetCost.hotelRate = updateInfo.hotelRate;
+                                targetCost.hotelDays = updateInfo.hotelDays;
+                                targetCost.amount = updateInfo.hotelRate * updateInfo.hotelDays;
+                                if (updateInfo.hotelFile) {
+                                    targetCost.file = { ...updateInfo.hotelFile };
+                                }
+                            }
+                        } else {
+                            newTargetCosts.details[updateInfo.locationIndex].hotelRate = updateInfo.hotelRate;
+                            newTargetCosts.details[updateInfo.locationIndex].hotelDays = updateInfo.hotelDays;
+                            if (updateInfo.hotelFile) {
+                                newTargetCosts.details[updateInfo.locationIndex].hotelFile = updateInfo.hotelFile;
+                            }
                         }
                     }
 

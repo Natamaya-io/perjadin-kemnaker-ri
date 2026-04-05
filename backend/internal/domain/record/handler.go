@@ -244,6 +244,8 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 			Amount float64 `json:"amount"`
 			TicketGo float64 `json:"ticketGo"`
 			TicketBack float64 `json:"ticketBack"`
+			HotelDays int `json:"hotelDays"`
+			HotelRate float64 `json:"hotelRate"`
 		} `json:"additionalCosts"`
 	}
 	var costDetails []Detail
@@ -277,6 +279,9 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 				if ac.Name == "Extend Tiket" {
 					aggTicket += ac.TicketGo + ac.TicketBack
 					aggTambahan += ac.Amount
+				} else if ac.Name == "Extend Penginapan" {
+					aggHotel += float64(ac.HotelDays) * ac.HotelRate
+					hotelDays += ac.HotelDays
 				} else { aggTambahan += ac.Amount }
 			}
 		}
