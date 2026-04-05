@@ -124,20 +124,24 @@
             toast.error("Minimal 1 orang dipilih.");
             return;
         }
+        if (splitHotelData.days <= 0) {
+            toast.error("Durasi malam tidak boleh 0.");
+            return;
+        }
 
-        const ratePerPerson = Math.round(splitHotelData.totalBill / totalPeople);
+        const ratePerNightPerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
         const sourceFile = localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelFile;
 
         // Apply to source person
-        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerPerson;
-        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = 1; // Simplified to 1 day as the rate now covers the stay
+        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+        localCosts[splitHotelData.sourceEmpId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
         recalculateTotal(splitHotelData.sourceEmpId);
 
         // Apply to selected others
         for (const empId of splitHotelData.selectedEmpIds) {
             if (localCosts[empId]) {
-                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerPerson;
-                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelDays = 1;
+                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+                localCosts[empId].costs.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
                 if (sourceFile) {
                     localCosts[empId].costs.details[splitHotelData.locationIndex].hotelFile = { ...sourceFile };
                 }

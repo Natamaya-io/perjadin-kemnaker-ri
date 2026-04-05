@@ -161,21 +161,25 @@
             toast.error("Minimal 1 orang dipilih.");
             return;
         }
+        if (splitHotelData.days <= 0) {
+            toast.error("Durasi malam tidak boleh 0.");
+            return;
+        }
 
-        const ratePerPerson = Math.round(splitHotelData.totalBill / totalPeople);
+        const ratePerNightPerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
         const sourceFile = editingCosts.details[splitHotelData.locationIndex].hotelFile;
 
         // Apply to current person
-        editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerPerson;
-        editingCosts.details[splitHotelData.locationIndex].hotelDays = 1;
+        editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
+        editingCosts.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
         editingCosts = editingCosts;
 
         // Prepare updates for others
         pendingOtherUpdatesToSave = splitHotelData.selectedEmpIds.map(empId => ({
             empId,
             locationIndex: splitHotelData.locationIndex,
-            hotelRate: ratePerPerson,
-            hotelDays: 1,
+            hotelRate: ratePerNightPerPerson,
+            hotelDays: splitHotelData.days,
             hotelFile: sourceFile ? { ...sourceFile } : null
         }));
 
