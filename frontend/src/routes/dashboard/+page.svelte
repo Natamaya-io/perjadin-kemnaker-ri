@@ -43,7 +43,7 @@
     $: totalTrips = uniqueTrips.length;
     $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
     
-    $: activeTrips = statsSource.filter(r => {
+    $: activeTrips = uniqueTrips.filter(r => {
         if (!r.startDate || !r.endDate) return false;
         const now = new Date();
         const start = new Date(r.startDate);
@@ -52,11 +52,11 @@
         now.setHours(0,0,0,0);
         start.setHours(0,0,0,0);
         end.setHours(0,0,0,0);
-        return now >= start && now <= end && (r.status === 'Approved' || r.status === 'Submitted');
+        return now >= start && now <= end && (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Assigned' || r.status === 'Draft');
     }).length;
     
-    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft') && r.reportStatus !== 'Completed').length;
-    $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft').length;        
+    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft' || r.status === 'Assigned') && r.reportStatus !== 'Completed').length;
+    $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft' || r.status === 'Assigned').length;        
     
     // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
     $: allRecordsSorted = [...records].sort((a, b) => {
@@ -83,7 +83,7 @@
     $: statusData = [
         { label: 'Completed', value: records.filter(r => r.paymentStatus === 'Paid').length, color: '#10b981' }, // emerald-500
         { label: 'In Progress', value: records.filter(r => (r.status === 'Submitted' || r.status === 'Approved') && r.paymentStatus !== 'Paid').length, color: '#f97316' }, // orange-500
-        { label: 'Assigned', value: records.filter(r => r.status === 'Draft').length, color: '#eab308' }, // yellow-500
+        { label: 'Assigned', value: records.filter(r => r.status === 'Draft' || r.status === 'Assigned').length, color: '#eab308' }, // yellow-500
         { label: 'Ditolak', value: records.filter(r => r.status === 'Rejected').length, color: '#ef4444' }   // red-500
     ].filter(d => d.value > 0);
 

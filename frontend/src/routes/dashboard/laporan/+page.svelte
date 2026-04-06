@@ -63,7 +63,7 @@
     }
 
     $: filteredRecords = myRecords
-        .filter(r => r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft') // Allow report creation from Draft status
+        .filter(r => r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft' || r.status === 'Assigned') // Allow report creation from Draft status
         .filter(r => {
             const query = searchQuery.toLowerCase();
             const matchSearch =
