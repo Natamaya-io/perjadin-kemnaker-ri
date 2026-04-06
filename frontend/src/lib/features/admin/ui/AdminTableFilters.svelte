@@ -33,8 +33,10 @@
 
             <div class="flex-1 sm:flex-none sm:w-40">
                 <Select bind:value={sortOption} class="h-9 text-xs w-full bg-white border-slate-200">
-                    <option value="date-desc">Terbaru</option>
-                    <option value="date-asc">Terlama</option>
+                    <option value="spj-desc">ID SPJ Terbaru</option>
+                    <option value="spj-asc">ID SPJ Terlama</option>
+                    <option value="date-desc">Tanggal Terbaru</option>
+                    <option value="date-asc">Tanggal Terlama</option>
                     <option value="cost-desc">Biaya Tertinggi</option>
                     <option value="cost-asc">Biaya Terendah</option>
                 </Select>

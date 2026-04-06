@@ -20,7 +20,7 @@
     // Filter & Sort State
     let searchQuery = '';
     let statusFilter = 'all'; // 'all', 'In Progress', 'Completed'
-    let sortOption = 'date-desc'; // 'date-desc', 'date-asc', 'cost-desc', 'cost-asc'
+    let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
     
@@ -66,6 +66,11 @@
             if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             if (sortOption === 'cost-desc') return (b.totalCost || 0) - (a.totalCost || 0);
             if (sortOption === 'cost-asc') return (a.totalCost || 0) - (b.totalCost || 0);
+            if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
+                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+                return sortOption === 'spj-desc' ? numB - numA : numA - numB;
+            }
             return 0;
         });
         
@@ -86,8 +91,16 @@
         else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
         else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
         else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+        else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
+            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+            diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
+        }
         
         if (diff === 0) {
+            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+            if (numA && numB && numB !== numA) return numB - numA;
             return (b.spd || '').localeCompare(a.spd || '');
         }
         return diff;
@@ -138,12 +151,20 @@
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Daftar Pengajuan Saya</h1>
             <p class="text-sm text-slate-500 mt-1">Pantau status dan riwayat perjalanan dinas yang telah Anda ajukan.</p>
         </div>
-        <a href="/dashboard/pengajuan/new" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm shadow-blue-500/30 transition-all duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Buat Pengajuan Baru
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="/dashboard/pengajuan/import" class="inline-flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Import Excel
+            </a>
+            <a href="/dashboard/pengajuan/new" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm shadow-blue-500/30 transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Buat Pengajuan Baru
+            </a>
+        </div>
     </div>
 
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">

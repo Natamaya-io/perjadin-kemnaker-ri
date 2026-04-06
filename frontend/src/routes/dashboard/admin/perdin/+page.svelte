@@ -22,7 +22,7 @@
     // Filter & Sort State
     let searchQuery = '';
     let statusFilter = 'all'; // 'all', 'Submitted', 'Approved'
-    let sortOption = 'date-desc'; // 'date-desc', 'date-asc', 'cost-desc', 'cost-asc'
+    let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
 
@@ -113,8 +113,16 @@
             else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
             else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+            else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
+                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+                diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
+            }
             
             if (diff === 0) {
+                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+                if (numA && numB && numB !== numA) return numB - numA;
                 return (b.spd || '').localeCompare(a.spd || '');
             }
             return diff;
@@ -141,10 +149,21 @@
         let diff = 0;
         if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
         else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
-        else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
+        else if (sortOption === 'cost-desc' || sortOption === 'cost-asc') {
+            const costA = a.employeesList ? a.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0) : (a.totalCost || 0);
+            const costB = b.employeesList ? b.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0) : (b.totalCost || 0);
+            diff = sortOption === 'cost-desc' ? costB - costA : costA - costB;
+        }
+        else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
+            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+            diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
+        }
         
         if (diff === 0) {
+            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
+            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
+            if (numA && numB && numB !== numA) return numB - numA;
             return (b.spd || '').localeCompare(a.spd || '');
         }
         return diff;

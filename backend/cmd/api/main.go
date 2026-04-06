@@ -151,6 +151,7 @@ func main() {
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 		protected.DELETE("/records/spd/:spd", recordHandler.DeleteRecordsBySpd)
+		protected.POST("/records/import", recordHandler.ImportExcel, middleware.RoleMiddleware("super_admin", "kasubag"))
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

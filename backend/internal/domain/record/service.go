@@ -20,6 +20,8 @@ import (
 type Service interface {
 	GenerateSpdNumber() (string, error)
 	CreateRecord(record *models.TravelRecord) error
+	CreateRecordDirect(record *models.TravelRecord) error // For import: skips overlap check & WA notification
+	InvalidateAllCache()                                  // Clear all record caches
 	GetRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
 	GetRecordByID(id uuid.UUID) (*models.TravelRecord, error)
 	UpdateRecord(record *models.TravelRecord) error
@@ -90,6 +92,10 @@ func (s *service) invalidateCache(ctx context.Context, pattern string) {
 	}
 }
 
+func (s *service) InvalidateAllCache() {
+	s.invalidateCache(context.Background(), "records:*")
+}
+
 func (s *service) CreateRecord(record *models.TravelRecord) error {
 	if len(record.Locations) == 0 {
 		return errors.New("at least one location is required")
@@ -148,6 +154,37 @@ func (s *service) CreateRecord(record *models.TravelRecord) error {
 			}
 		}()
 	}
+	return err
+}
+
+// CreateRecordDirect creates a record without overlap checking or WhatsApp notification.
+// Used for bulk import operations.
+func (s *service) CreateRecordDirect(record *models.TravelRecord) error {
+	if len(record.Locations) == 0 {
+		return errors.New("at least one location is required")
+	}
+
+	// Calculate overall start and end dates
+	var minStart, maxEnd time.Time
+	for i, loc := range record.Locations {
+		if i == 0 || loc.StartDate.Before(minStart) {
+			minStart = loc.StartDate
+		}
+		if i == 0 || loc.EndDate.After(maxEnd) {
+			maxEnd = loc.EndDate
+		}
+	}
+	record.StartDate = minStart
+	record.EndDate = maxEnd
+
+	if record.Status == "" {
+		record.Status = "Draft"
+	}
+	if record.ReportStatus == "" {
+		record.ReportStatus = "Pending"
+	}
+
+	err := s.repo.CreateTravelRecord(record)
 	return err
 }
 

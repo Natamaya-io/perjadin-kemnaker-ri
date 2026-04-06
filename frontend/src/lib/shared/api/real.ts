@@ -290,6 +290,36 @@ export class RealApiClient implements ApiClient {
         });
     }
 
+    async importExcel(file: File): Promise<import('./types').ImportResult> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const headers: HeadersInit = {
+            ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
+        };
+
+        const response = await fetch(`${BASE_URL}/records/import`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 && this.unauthorizedHandler) {
+                this.unauthorizedHandler();
+            }
+            const errorText = await response.text();
+            let errorMessage = `Import gagal: ${response.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (errorJson.message) errorMessage = errorJson.message;
+            } catch (e) { /* ignore */ }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    }
+
     // Master Data
     getProvinces(): Promise<any[]> {
         return this.request<any[]>('/master/provinces');

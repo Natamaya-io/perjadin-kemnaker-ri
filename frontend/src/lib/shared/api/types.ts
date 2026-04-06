@@ -72,6 +72,22 @@ export interface TravelRecord {
     reportData?: TravelReport | null;
 }
 
+export interface ImportDetail {
+    row: number;
+    spjId: string;
+    name: string;
+    status: 'imported' | 'skipped_duplicate' | 'skipped_thr' | 'skipped_no_user' | 'failed';
+    message?: string;
+}
+
+export interface ImportResult {
+    totalRows: number;
+    imported: number;
+    skipped: number;
+    failed: number;
+    details: ImportDetail[];
+}
+
 export interface ApiClient {
     // Auth
     login(email: string, password?: string): Promise<{ user: User; token?: string }>;
@@ -101,6 +117,9 @@ export interface ApiClient {
     updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord>;
     deleteRecord(id: string): Promise<void>;
     deleteRecordsBySpd(spd: string): Promise<void>;
+
+    // Import
+    importExcel(file: File): Promise<ImportResult>;
 
     // Master Data
     getProvinces(): Promise<any[]>;
