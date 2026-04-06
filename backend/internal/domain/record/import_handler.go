@@ -201,6 +201,28 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		regionalTransport := safeParseFloat(getCell(14)) // O: Transport Daerah
 		totalCost := safeParseFloat(getCell(15))       // P: Jumlah
 
+		// Check if cell has a background fill color (e.g. red highlight = incomplete)
+		cellA := fmt.Sprintf("A%d", rowNum)
+		styleID, err := f.GetCellStyle(sheetName, cellA)
+		
+		recordStatus := "Approved"
+		reportStatus := "Completed"
+		paymentStatus := "Paid"
+		
+		if err == nil {
+			style, _ := f.GetStyle(styleID)
+			// Pattern 1 is solid fill
+			if style != nil && style.Fill.Pattern == 1 && len(style.Fill.Color) > 0 {
+				color := strings.ToUpper(style.Fill.Color[0])
+				// Ignore white/black
+				if !strings.HasSuffix(color, "FFFFFF") && !strings.HasSuffix(color, "000000") {
+					recordStatus = "Assigned"
+					reportStatus = "Pending"
+					paymentStatus = "Pending"
+				}
+			}
+		}
+
 		// Create the travel record (bypass service.CreateRecord to skip overlap check & WA notification)
 		record := &models.TravelRecord{
 			SPDNumber:     idSPJ,
@@ -214,9 +236,9 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 			Purpose:       purpose,
 			Stakeholder:   "",
 			Agenda:        "",
-			Status:        "Approved",
-			ReportStatus:  "Completed",
-			PaymentStatus: "Paid",
+			Status:        recordStatus,
+			ReportStatus:  reportStatus,
+			PaymentStatus: paymentStatus,
 			TotalCost:     totalCost,
 			Locations: []models.TravelLocation{
 				{
