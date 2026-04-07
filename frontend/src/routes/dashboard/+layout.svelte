@@ -9,12 +9,15 @@
     let unsubscribeUser;
     let unsubscribePage;
     let isPasswordModalVisible = false;
-    let hasShownModal = false;
 
-    // Trigger modal visibility only once when requirement is detected
-    $: if ($userStore.requirePasswordChange && !hasShownModal && browser) {
+    // Trigger modal visibility only once per session when requirement is detected
+    $: if ($userStore.requirePasswordChange && !$userStore.passwordModalDismissed && !isPasswordModalVisible && browser) {
         isPasswordModalVisible = true;
-        hasShownModal = true;
+    }
+
+    // Persist the dismissed state to the store so it survives navigation
+    $: if (!isPasswordModalVisible && $userStore.requirePasswordChange && browser) {
+        userStore.update(u => ({ ...u, passwordModalDismissed: true }));
     }
 
     const accessRules = [

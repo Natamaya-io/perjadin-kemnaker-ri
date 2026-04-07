@@ -15,7 +15,8 @@ const initialUser = storedUser ? JSON.parse(storedUser) : {
     email: null,
     role: null,
     loggedIn: false,
-    requirePasswordChange: false
+    requirePasswordChange: false,
+    passwordModalDismissed: false
 };
 
 export const userStore = writable(initialUser);
@@ -36,7 +37,12 @@ if (initialUser.loggedIn && isBrowser && !initialUser.requirePasswordChange) {
 export const login = async (email: string, password?: string) => {
     try {
         const { user, require_password_change } = await api.login(email, password);
-        userStore.set({ ...user, loggedIn: true, requirePasswordChange: require_password_change });
+        userStore.set({ 
+            ...user, 
+            loggedIn: true, 
+            requirePasswordChange: require_password_change,
+            passwordModalDismissed: false // Reset on new login
+        });
         
         // Load data on login
         if (!require_password_change) {
