@@ -37,6 +37,9 @@
     /** @type {number | string | null} */
     let deleteId = null;
 
+    // Password Change UI state
+    let isPasswordModalVisible = $userStore.requirePasswordChange;
+
     import { toast } from '$lib/shared/stores/toast';
 
     // Form State
@@ -332,7 +335,10 @@
     />
 
     <ChangePasswordModal 
-        bind:isOpen={$userStore.requirePasswordChange} 
-        on:success={() => userStore.update(u => ({...u, requirePasswordChange: false}))} 
+        bind:isOpen={isPasswordModalVisible} 
+        on:success={() => {
+            userStore.update(u => ({...u, requirePasswordChange: false}));
+            isPasswordModalVisible = false;
+        }} 
     />
 </div>

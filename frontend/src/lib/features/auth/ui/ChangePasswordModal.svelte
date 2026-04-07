@@ -86,7 +86,8 @@
             <div class="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-5 text-white relative overflow-hidden">
                 <button 
                     type="button"
-                    class="absolute right-4 top-4 z-20 text-white/70 hover:text-white transition-colors"
+                    aria-label="Tutup"
+                    class="absolute right-4 top-4 z-20 text-white/70 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 rounded-lg p-1"
                     on:click={() => isOpen = false}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
