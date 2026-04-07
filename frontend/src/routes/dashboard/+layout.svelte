@@ -86,8 +86,12 @@
 
 <ChangePasswordModal 
     bind:isOpen={isPasswordModalVisible} 
+    on:close={() => {
+        userStore.update(u => ({ ...u, passwordModalDismissed: true }));
+        isPasswordModalVisible = false;
+    }}
     on:success={() => {
-        userStore.update(u => ({...u, requirePasswordChange: false}));
+        userStore.update(u => ({ ...u, requirePasswordChange: false }));
         isPasswordModalVisible = false;
     }} 
 />
