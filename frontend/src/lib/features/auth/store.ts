@@ -34,14 +34,16 @@ if (initialUser.loggedIn && isBrowser) {
 
 export const login = async (email: string, password?: string) => {
     try {
-        const { user } = await api.login(email, password);
+        const { user, require_password_change } = await api.login(email, password);
         userStore.set({ ...user, loggedIn: true });
         
         // Load data on login
-        loadMasterData();
-        loadRecords();
+        if (!require_password_change) {
+            loadMasterData();
+            loadRecords();
+        }
         
-        return { success: true, user };
+        return { success: true, user, require_password_change };
     } catch (e: any) {
         console.error("Login failed", e);
         return { success: false, error: e.message };

@@ -90,10 +90,11 @@ export interface ImportResult {
 
 export interface ApiClient {
     // Auth
-    login(email: string, password?: string): Promise<{ user: User; token?: string }>;
+    login(email: string, password?: string): Promise<{ user: User; token?: string; require_password_change?: boolean }>;
     register(email: string, password: string, name: string, role?: string): Promise<User>;
     logout(): Promise<void>;
     getCurrentUser(): Promise<User | null>;
+    changePassword(newPassword: string): Promise<void>;
     
     // User Management (Admin)
     getUsers(): Promise<User[]>;

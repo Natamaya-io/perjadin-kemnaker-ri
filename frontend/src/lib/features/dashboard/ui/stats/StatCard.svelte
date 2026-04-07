@@ -11,6 +11,7 @@
     export let blobClass = 'bg-slate-50 group-hover:bg-slate-100/50';
     export let iconContainerClass = '';
     export let isSecret = false;
+    export let autoShrink = false;
 
     let isRevealed = false;
 
@@ -23,9 +24,11 @@
     };
 </script>
 
-<div class={cn("group relative rounded-2xl p-6 border shadow-sm hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 overflow-hidden", bgClass)}>
-    <!-- Decorative background blob -->
-    <div class={cn("absolute -right-6 -top-6 h-24 w-24 rounded-full transition-all group-hover:scale-150", blobClass)}></div>
+<div class={cn("group relative rounded-2xl p-6 border shadow-sm hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1", bgClass)}>
+    <!-- Decorative background blob (clipped) -->
+    <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+        <div class={cn("absolute -right-6 -top-6 h-24 w-24 rounded-full transition-all group-hover:scale-150", blobClass)}></div>
+    </div>
 
     <div class="relative z-10 flex flex-col h-full justify-between gap-4">
         <div class="flex justify-between items-start">
@@ -57,12 +60,22 @@
             </div>
         </div>
 
-        <div class="space-y-1 overflow-hidden">
-            <div class={cn("text-2xl lg:text-3xl font-bold tracking-tight font-feature-settings-tnum truncate", textColorClass)} title={isSecret && !isRevealed ? "Tersembunyi" : value}>
+        <!-- Filter Slot (for inline filters like month/year selectors) -->
+        <slot name="filter" />
+
+        <div class="space-y-1 overflow-hidden min-w-0">
+            <div 
+                class={cn(
+                    "font-bold tracking-tight font-feature-settings-tnum",
+                    autoShrink ? "text-xl sm:text-2xl lg:text-[1.6rem]" : "text-2xl lg:text-3xl",
+                    textColorClass
+                )} 
+                title={isSecret && !isRevealed ? "Tersembunyi" : value}
+            >
                 {#if isSecret && !isRevealed}
                     <span class="tracking-widest">••••••••</span>
                 {:else}
-                    {value}
+                    <span class="stat-value-text">{value}</span>
                 {/if}
             </div>
             <div class="flex flex-col">
@@ -76,5 +89,17 @@
     .font-feature-settings-tnum {
         font-feature-settings: "tnum";
         font-variant-numeric: tabular-nums;
+    }
+    .stat-value-text {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Auto-shrink for very long currency values on small containers */
+    @container (max-width: 220px) {
+        .stat-value-text {
+            font-size: 1.1rem;
+        }
     }
 </style>

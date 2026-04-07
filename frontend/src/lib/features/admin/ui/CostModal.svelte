@@ -453,7 +453,7 @@
             if ((d.hotelRate || 0) < 0) return `Rate Penginapan di ${provName} tidak boleh negatif`;
             if ((d.transportAmount || 0) < 0) return `Biaya Transportasi di ${provName} tidak boleh negatif`;
             for (const cost of (d.additionalCosts || [])) {
-                if ((cost.amount || 0) < 0) return `Biaya Tambahan di ${provName} tidak boleh negatif`;
+                if ((cost.amount || 0) < 0) return `Transport Lokal di ${provName} tidak boleh negatif`;
             }
         }
         return null;
@@ -944,7 +944,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
-                    Transport Darat / Rental - {currentLocSbm.province}
+                    Transport Daerah - {currentLocSbm.province}
                 </h4>
                 {#if !detail.transportFile && !isReadOnly}
                     <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
@@ -984,7 +984,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Biaya Tambahan - {currentLocSbm.province}
+                    Transport Lokal - {currentLocSbm.province}
                 </h4>
                 {#if !isReadOnly}
                     <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 text-white border border-indigo-700 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-sm" on:click={addAdditionalCost}>

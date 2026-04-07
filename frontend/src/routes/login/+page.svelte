@@ -2,6 +2,8 @@
     import { login } from '$lib/features/auth/store';
     import { goto } from '$app/navigation';
     import { fly } from 'svelte/transition';
+    import { loadRecords } from '$lib/features/pengajuan/store';
+    import { loadMasterData } from '$lib/shared/stores/master-data';
     
     // Login Components
     import LoginBackground from '$lib/features/auth/ui/LoginBackground.svelte';
@@ -11,31 +13,46 @@
     import DemoBanner from '$lib/features/auth/ui/DemoBanner.svelte';
     import LoginForm from '$lib/features/auth/ui/LoginForm.svelte';
     import LoginFooter from '$lib/features/auth/ui/LoginFooter.svelte';
+    import ChangePasswordModal from '$lib/features/auth/ui/ChangePasswordModal.svelte';
 
     let email = '';
     let password = '';
     let isLoading = false;
     let errorMessage = '';
+    
+    let isChangePasswordMode = false;
 
     async function handleLogin() {
         errorMessage = '';
         if (!email || !password) {
-            errorMessage = 'Email dan Password tidak boleh kosong';
+            errorMessage = 'Username dan Password tidak boleh kosong';
             return;
         }
 
         isLoading = true;
-        // Simulate network delay if needed, or rely on api delay
-        // await new Promise(r => setTimeout(r, 800));
         
-        const result = await login(email, password);
+        // Auto-append domain if user only types their name/username
+        const finalEmail = email.includes('@') ? email : `${email}@kemnaker.go.id`;
+        const result = await login(finalEmail, password);
+        
+        isLoading = false;
         
         if (result.success) {
-            goto('/dashboard');
+            if (result.require_password_change) {
+                isChangePasswordMode = true;
+            } else {
+                goto('/dashboard');
+            }
         } else {
-            errorMessage = 'Email atau password salah.';
-            isLoading = false;
+            errorMessage = 'Username atau password salah.';
         }
+    }
+
+    function onPasswordChanged() {
+        // Password changed successfully — now load deferred data and redirect
+        loadMasterData();
+        loadRecords();
+        goto('/dashboard');
     }
 </script>
 
@@ -57,6 +74,8 @@
             <LoginFooter />
         </LoginCard>
     </div>
+
+    <ChangePasswordModal bind:isOpen={isChangePasswordMode} on:success={onPasswordChanged} />
 </div>
 
 <style>

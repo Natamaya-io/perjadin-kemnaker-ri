@@ -32,7 +32,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	token, user, err := h.svc.Login(req.Email, req.Password)
+	token, user, requirePasswordChange, err := h.svc.Login(req.Email, req.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -40,6 +40,7 @@ func (h *Handler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token": token,
 		"user":  user,
+		"require_password_change": requirePasswordChange,
 	})
 }
 
@@ -63,4 +64,24 @@ func (h *Handler) GetDemoUsers(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, demoUsers)
+}
+
+type ChangePasswordRequest struct {
+	NewPassword string `json:"new_password" validate:"required"`
+}
+
+func (h *Handler) ChangePassword(c echo.Context) error {
+	var req ChangePasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+
+	userId := c.Get("user_id").(string) // assuming middleware sets this
+
+	err := h.svc.ChangePassword(userId, req.NewPassword)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password: "+err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }

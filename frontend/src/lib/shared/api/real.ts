@@ -58,8 +58,8 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- Auth ---
-    async login(email: string, password?: string): Promise<{ user: User; token?: string }> {
-        const res = await this.request<{ user: User; token: string }>('/auth/login', {
+    async login(email: string, password?: string): Promise<{ user: User; token?: string; require_password_change?: boolean }> {
+        const res = await this.request<{ user: User; token: string; require_password_change: boolean }>('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password })
         });
@@ -88,6 +88,13 @@ export class RealApiClient implements ApiClient {
         // For now, let's assume the frontend state manages the user object after login
         // Or implement a /me endpoint in backend
         return null; 
+    }
+
+    async changePassword(newPassword: string): Promise<void> {
+        return this.request<void>('/auth/change-password', {
+            method: 'PUT',
+            body: JSON.stringify({ new_password: newPassword })
+        });
     }
 
     // --- User Management ---

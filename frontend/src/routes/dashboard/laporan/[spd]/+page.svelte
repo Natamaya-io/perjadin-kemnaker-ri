@@ -1811,7 +1811,7 @@
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                                             </svg>
-                                                            Transport Darat / Rental
+                                                            Transport Daerah
                                                         </h4>
                                                     </div>
 
@@ -1846,14 +1846,14 @@
                                                     {/if}
                                                 </div>
 
-                                                <!-- Biaya Tambahan Lainnya -->
+                                                <!-- Transport Lokal -->
                                                 <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full" transition:fade={{ duration: 150 }}>
                                                     <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                                         <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                                             </svg>
-                                                            Biaya Tambahan Lainnya
+                                                            Transport Lokal
                                                         </h4>
                                                         <Button size="sm" class="h-8 px-4 text-xs font-bold tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all rounded-lg flex items-center gap-1.5 hover:scale-[1.02]" on:click={() => addAdditionalCost(empId, idx)}>
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -1910,7 +1910,7 @@
                                                             {/each}
                                                         {:else}
                                                             <div class="text-center p-4 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500">
-                                                                Belum ada biaya tambahan diinputkan untuk lokasi ini.
+                                                                Belum ada transport lokal diinputkan untuk lokasi ini.
                                                             </div>
                                                         {/if}
                                                     </div>

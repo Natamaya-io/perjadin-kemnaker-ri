@@ -18,8 +18,9 @@ import (
 
 type Service interface {
 	Register(email, password, name, role string) (*models.User, error)
-	Login(email, password string) (string, *models.User, error)
+	Login(email, password string) (string, *models.User, bool, error)
 	GetDemoUsers() ([]map[string]string, error)
+	ChangePassword(userIDStr, newPassword string) error
 }
 
 type service struct {
@@ -69,27 +70,29 @@ func (s *service) Register(email, password, name, role string) (*models.User, er
 	return u, nil
 }
 
-func (s *service) Login(email, password string) (string, *models.User, error) {
+func (s *service) Login(email, password string) (string, *models.User, bool, error) {
 	u, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
-		return "", nil, errors.New("invalid credentials")
+		return "", nil, false, errors.New("invalid credentials")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		return "", nil, errors.New("invalid credentials")
+		return "", nil, false, errors.New("invalid credentials")
 	}
 
 	u.SessionID = uuid.New().String()
 	if err := s.userRepo.UpdateUser(u); err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 
 	token, err := utils.GenerateJWT(u, s.cfg)
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 
-	return token, u, nil
+	requirePasswordChange := password == "12345678"
+
+	return token, u, requirePasswordChange, nil
 }
 
 func (s *service) GetDemoUsers() ([]map[string]string, error) {
@@ -129,4 +132,31 @@ func (s *service) GetDemoUsers() ([]map[string]string, error) {
 	}
 
 	return demoUsers, nil
+}
+
+func (s *service) ChangePassword(userIDStr, newPassword string) error {
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return errors.New("invalid user id format")
+	}
+
+	u, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	u.Password = string(hashedPassword)
+	// Clear DemoPassword since it has been explicitly changed
+	u.DemoPassword = ""
+
+	if err := s.userRepo.UpdateUser(u); err != nil {
+		return err
+	}
+
+	return nil
 }

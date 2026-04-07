@@ -18,8 +18,21 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
-    // Helper for currency if not in utils
+    // Helper for currency
     function formatIDR(amount) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+    }
+
+    // Compact currency for card display (shorter format for large numbers)
+    function formatIDRCompact(amount) {
+        if (amount >= 1_000_000_000) {
+            const val = (amount / 1_000_000_000).toFixed(2);
+            return `Rp ${val.replace('.', ',')} M`;
+        }
+        if (amount >= 100_000_000) {
+            const val = (amount / 1_000_000).toFixed(1);
+            return `Rp ${val.replace('.', ',')} Jt`;
+        }
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
     }
 
@@ -41,7 +54,46 @@
     }, {}));
 
     $: totalTrips = uniqueTrips.length;
+    
+    // --- Budget Filter Logic ---
+    const currentDate = new Date();
+    let filterMonth = 0; // 0 = Semua Bulan
+    let filterYear = currentDate.getFullYear();
+
+    const monthNames = [
+        'Semua Bulan', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    // Generate available years from records
+    $: availableYears = (() => {
+        const years = new Set();
+        years.add(currentDate.getFullYear());
+        statsSource.forEach(r => {
+            if (r.startDate) years.add(new Date(r.startDate).getFullYear());
+            if (r.createdAt) years.add(new Date(r.createdAt).getFullYear());
+        });
+        return [...years].sort((a, b) => b - a);
+    })();
+
+    // Filtered total cost based on month/year selection
+    $: filteredTotalCost = statsSource
+        .filter(r => {
+            const date = r.startDate ? new Date(r.startDate) : (r.createdAt ? new Date(r.createdAt) : null);
+            if (!date) return false;
+            const yearMatch = date.getFullYear() === filterYear;
+            const monthMatch = filterMonth === 0 || (date.getMonth() + 1) === filterMonth;
+            return yearMatch && monthMatch;
+        })
+        .reduce((acc, r) => acc + (r.totalCost || 0), 0);
+    
+    // Unfiltered total for "all time" reference
     $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
+
+    // Description text based on filter
+    $: budgetDescription = filterMonth === 0 
+        ? `Realisasi tahun ${filterYear}` 
+        : `${monthNames[filterMonth]} ${filterYear}`;
     
     $: activeTrips = uniqueTrips.filter(r => {
         if (!r.startDate || !r.endDate) return false;
@@ -91,6 +143,45 @@
          { label: 'Laporan Selesai', value: records.filter(r => r.reportStatus === 'Completed').length, color: '#3b82f6' }, // blue-500
          { label: 'Belum Lapor', value: records.filter(r => r.reportStatus !== 'Completed').length, color: '#a855f7' } // purple-500
     ].filter(d => d.value > 0);
+
+    let showMonthDropdown = false;
+    let showYearDropdown = false;
+
+    function selectMonth(m) {
+        filterMonth = m;
+        showMonthDropdown = false;
+    }
+
+    function selectYear(y) {
+        filterYear = y;
+        showYearDropdown = false;
+    }
+
+    function resetFilter() {
+        filterMonth = 0;
+        filterYear = currentDate.getFullYear();
+        showMonthDropdown = false;
+        showYearDropdown = false;
+    }
+
+    function toggleMonthDropdown() {
+        showMonthDropdown = !showMonthDropdown;
+        showYearDropdown = false;
+    }
+
+    function toggleYearDropdown() {
+        showYearDropdown = !showYearDropdown;
+        showMonthDropdown = false;
+    }
+
+    // Close dropdowns on click outside
+    function handleClickOutside(e) {
+        const target = e.target;
+        if (!target.closest('.budget-dropdown-wrapper')) {
+            showMonthDropdown = false;
+            showYearDropdown = false;
+        }
+    }
 </script>
 
 <div class="space-y-8 pb-20">
@@ -189,8 +280,8 @@
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <StatCard 
                 title="Total Anggaran" 
-                value={formatIDR(totalCost)} 
-                description="Realisasi biaya perjalanan" 
+                value={formatIDRCompact(filteredTotalCost)} 
+                description={budgetDescription} 
                 iconColor="emerald"
                 bgClass="bg-gradient-to-br from-emerald-500 to-teal-600 border-transparent shadow-lg shadow-emerald-500/20"
                 textColorClass="text-white"
@@ -199,11 +290,74 @@
                 blobClass="bg-white/10 group-hover:bg-white/20"
                 iconContainerClass="bg-white/20 text-white"
                 isSecret={true}
+                autoShrink={true}
             >
                 <div slot="icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                </div>
+
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div slot="filter" class="flex items-center gap-1.5 flex-wrap -mt-1" on:click|stopPropagation>
+                    <!-- Month Dropdown -->
+                    <div class="budget-dropdown-wrapper">
+                        <button class="budget-pill" on:click={toggleMonthDropdown}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span>{filterMonth === 0 ? 'Semua' : monthNames[filterMonth].substring(0, 3)}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 opacity-60 transition-transform" class:rotate-180={showMonthDropdown} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {#if showMonthDropdown}
+                            <div class="budget-dropdown-panel">
+                                <div class="budget-dropdown-grid">
+                                    {#each monthNames as name, i}
+                                        <button 
+                                            class="budget-dropdown-item" 
+                                            class:active={filterMonth === i}
+                                            on:click={() => selectMonth(i)}
+                                        >
+                                            {i === 0 ? 'Semua' : name.substring(0, 3)}
+                                        </button>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+
+                    <!-- Year Dropdown -->
+                    <div class="budget-dropdown-wrapper">
+                        <button class="budget-pill" on:click={toggleYearDropdown}>
+                            <span>{filterYear}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 opacity-60 transition-transform" class:rotate-180={showYearDropdown} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {#if showYearDropdown}
+                            <div class="budget-dropdown-panel budget-dropdown-panel-sm">
+                                {#each availableYears as year}
+                                    <button 
+                                        class="budget-dropdown-item-row" 
+                                        class:active={filterYear === year}
+                                        on:click={() => selectYear(year)}
+                                    >
+                                        {year}
+                                    </button>
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+
+                    <!-- Reset Button -->
+                    {#if filterMonth !== 0 || filterYear !== currentDate.getFullYear()}
+                        <button 
+                            class="budget-filter-reset"
+                            on:click={resetFilter}
+                            title="Reset filter"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    {/if}
                 </div>
             </StatCard>
             {/if}
@@ -284,3 +438,160 @@
             </div>
         {/if}
 </div>
+
+<svelte:window on:click={handleClickOutside} />
+
+<style>
+    :global(.budget-dropdown-wrapper) {
+        position: relative;
+    }
+
+    :global(.budget-pill) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 2rem;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        letter-spacing: 0.01em;
+    }
+
+    :global(.budget-pill:hover) {
+        background: rgba(255, 255, 255, 0.28);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    :global(.budget-pill:active) {
+        transform: scale(0.96);
+    }
+
+    :global(.budget-dropdown-panel) {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 50;
+        min-width: 190px;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0.75rem;
+        padding: 0.4rem;
+        box-shadow: 
+            0 10px 40px rgba(0, 0, 0, 0.35),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        animation: dropdownSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    :global(.budget-dropdown-panel-sm) {
+        min-width: 80px;
+    }
+
+    :global(.budget-dropdown-grid) {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2px;
+    }
+
+    :global(.budget-dropdown-item) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.35rem 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        border-radius: 0.4rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+        background: transparent;
+        white-space: nowrap;
+    }
+
+    :global(.budget-dropdown-item:hover) {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    :global(.budget-dropdown-item.active) {
+        background: rgba(16, 185, 129, 0.5);
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    :global(.budget-dropdown-item-row) {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        border-radius: 0.4rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+        background: transparent;
+    }
+
+    :global(.budget-dropdown-item-row:hover) {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    :global(.budget-dropdown-item-row.active) {
+        background: rgba(16, 185, 129, 0.5);
+        color: white;
+        font-weight: 700;
+    }
+
+    :global(.budget-filter-reset) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    :global(.budget-filter-reset:hover) {
+        background: rgba(255, 80, 80, 0.45);
+        border-color: rgba(255, 80, 80, 0.6);
+        transform: scale(1.15) rotate(90deg);
+    }
+
+    :global(.rotate-180) {
+        transform: rotate(180deg);
+    }
+
+    @keyframes -global-dropdownSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>

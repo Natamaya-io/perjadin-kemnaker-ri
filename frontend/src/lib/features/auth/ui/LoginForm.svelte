@@ -18,7 +18,7 @@
 
 <form class="space-y-5" on:submit|preventDefault={handleSubmit}>
     <div class="space-y-1.5 group">
-        <Label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 group-focus-within:text-blue-600 transition-colors">Email Kedinasan</Label>
+        <Label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 group-focus-within:text-blue-600 transition-colors">Username</Label>
         <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -26,9 +26,9 @@
                 </svg>
             </div>
             <Input 
-                type="email" 
+                type="text" 
                 bind:value={email} 
-                placeholder="nama@kemnaker.go.id" 
+                placeholder="nama.depan" 
                 class="pl-11 h-12 text-sm bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all rounded-xl shadow-sm placeholder:text-slate-300" 
             />
         </div>
