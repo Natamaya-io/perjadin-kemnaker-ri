@@ -84,6 +84,15 @@
         >
             <!-- Header with gradient -->
             <div class="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-5 text-white relative overflow-hidden">
+                <button 
+                    type="button"
+                    class="absolute right-4 top-4 z-20 text-white/70 hover:text-white transition-colors"
+                    on:click={() => isOpen = false}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
                 <div class="absolute -left-4 -bottom-4 h-20 w-20 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
                 <div class="relative z-10 flex items-start gap-4">
