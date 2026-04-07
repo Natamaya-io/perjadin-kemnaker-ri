@@ -5,6 +5,7 @@
     import { cn } from '$lib/shared/utils/utils';
     
     // UI Components
+    import ChangePasswordModal from '$lib/features/auth/ui/ChangePasswordModal.svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Label from '$lib/shared/ui/label/Label.svelte';
@@ -282,8 +283,8 @@
                 </div>
             </div>
             <div class="space-y-2">
-                <Label>Email Kedinasan <span class="text-red-500">*</span></Label>
-                <Input type="email" placeholder="nama@kemnaker.go.id" bind:value={formData.email} />
+                <Label>Username <span class="text-red-500">*</span></Label>
+                <Input type="text" placeholder="Contoh: budi" bind:value={formData.email} />
             </div>
             <div class="space-y-2">
                 <Label>Password {editingId ? '(Kosongkan jika tidak diubah)' : '<span class="text-red-500">*</span>'}</Label>
@@ -328,5 +329,10 @@
         bind:open={isAlertOpen}
         title={alertTitle}
         description={alertDescription}
+    />
+
+    <ChangePasswordModal 
+        bind:isOpen={$userStore.requirePasswordChange} 
+        on:success={() => userStore.update(u => ({...u, requirePasswordChange: false}))} 
     />
 </div>

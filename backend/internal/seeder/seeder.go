@@ -26,14 +26,14 @@ type rawUser struct {
 }
 
 func getOriginalUsers() ([]models.User, []rawUser) {
-	password := "123"
+	password := "12345678"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	hashedPwdStr := string(hashedPassword)
 
 	adminUsers := []models.User{
 		{
 			Name:         "Super Admin",
-			Email:        "superadmin@kemnaker.go.id",
+			Email:        "superadmin",
 			Password:     hashedPwdStr,
 			Role:         "super_admin",
 			DemoPassword: password,
@@ -41,7 +41,7 @@ func getOriginalUsers() ([]models.User, []rawUser) {
 		},
 		{
 			Name:         "Kasubag",
-			Email:        "kasubag@kemnaker.go.id",
+			Email:        "kasubag",
 			Password:     hashedPwdStr,
 			Role:         "kasubag",
 			DemoPassword: password,
@@ -119,17 +119,6 @@ func Seed(db *sql.DB, rdb *redis.Client) {
 	adminUsers, protokolData := getOriginalUsers()
 	
 	userRepo := user.NewRepository(db)
-
-	// 2. Delete users that don't have @kemnaker.go.id domain (cleanup stale/faker data)
-	existingUsers, err := userRepo.GetUsers()
-	if err == nil {
-		for _, u := range existingUsers {
-			if !strings.HasSuffix(strings.ToLower(u.Email), "@kemnaker.go.id") {
-				log.Printf("Deleting non-kemnaker user: %s", u.Email)
-				userRepo.DeleteUser(u.ID)
-			}
-		}
-	}
 
 	var wg sync.WaitGroup
 
@@ -276,7 +265,7 @@ func seedProvincesAndRates(db *sql.DB) {
 
 func seedUsers(userRepo user.Repository, adminUsers []models.User, protokolData []rawUser) {
 	log.Println("Seeding Users...")
-	password := "123"
+	password := "12345678"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	hashedPwdStr := string(hashedPassword)
 
@@ -287,7 +276,7 @@ func seedUsers(userRepo user.Repository, adminUsers []models.User, protokolData 
 	for i, raw := range protokolData {
 		namePart := strings.ToLower(strings.ReplaceAll(raw.Name, " ", ""))
 		namePart = strings.ReplaceAll(namePart, ".", "")
-		email := namePart + "@kemnaker.go.id"
+		email := namePart
 
 		user := models.User{
 			Name:         raw.Name,

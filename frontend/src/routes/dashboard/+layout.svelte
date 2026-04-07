@@ -9,7 +9,7 @@
     let unsubscribePage;
 
     const accessRules = [
-        { path: '/dashboard/admin/users', roles: ['super_admin'] },
+        { path: '/dashboard/admin/users', roles: ['super_admin', 'kasubag', 'protokol'] },
         { path: '/dashboard/pengajuan', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/pengajuan/new', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/admin/perdin', roles: ['super_admin', 'kasubag'] },

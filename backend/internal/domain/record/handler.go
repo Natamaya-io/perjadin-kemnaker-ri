@@ -365,6 +365,29 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 		if r.SPDNumber == record.SPDNumber { spdGroupRecords = append(spdGroupRecords, r) }
 	}
 	sort.Slice(spdGroupRecords, func(i, j int) bool {
+		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
+		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
+
+		getPriority := func(name string) int {
+			if strings.Contains(name, "auditya hermawan") {
+				return 1
+			}
+			if strings.Contains(name, "mochamad gufron") {
+				return 2
+			}
+			if strings.Contains(name, "muhammad isa") {
+				return 3
+			}
+			return 4
+		}
+
+		pI := getPriority(nameI)
+		pJ := getPriority(nameJ)
+
+		if pI != pJ {
+			return pI < pJ
+		}
+
 		nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
 		nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
 		

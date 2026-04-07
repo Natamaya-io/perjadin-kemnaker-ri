@@ -31,15 +31,14 @@
 
         isLoading = true;
         
-        // Auto-append domain if user only types their name/username
-        const finalEmail = email.includes('@') ? email : `${email}@kemnaker.go.id`;
-        const result = await login(finalEmail, password);
+        // Use email as username
+        const result = await login(email, password);
         
         isLoading = false;
         
         if (result.success) {
             if (result.require_password_change) {
-                isChangePasswordMode = true;
+                goto('/dashboard/admin/users');
             } else {
                 goto('/dashboard');
             }

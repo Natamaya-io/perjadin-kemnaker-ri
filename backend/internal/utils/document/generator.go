@@ -162,8 +162,8 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 		filename := fmt.Sprintf("media/img_%d%s", rIdCounter, ext)
 		
 		// Aspect ratio
-		cx, cy := calculateDimensions(imgBytes)
-		
+		cx, cy := calculateDimensions(imgBytes, key)
+
 		imageInfoMap[key] = imageInfo{rId: rId, filename: filename, cx: cx, cy: cy}
 		imageFiles[filename] = imgBytes
 		rIdCounter++
@@ -232,7 +232,7 @@ type imageInfo struct {
 	cx, cy   int64
 }
 
-func calculateDimensions(imgBytes []byte) (int64, int64) {
+func calculateDimensions(imgBytes []byte, key string) (int64, int64) {
 	// Default 15cm x 10cm in EMUs
 	cx, cy := int64(5400000), int64(3600000)
 	if cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes)); err == nil {
@@ -247,7 +247,11 @@ func calculateDimensions(imgBytes []byte) (int64, int64) {
 			}
 		}
 
-		const maxW, maxH = 5400000.0, 8000000.0
+		maxW, maxH := 5400000.0, 8000000.0 // Default ~15cm x 22cm
+		if strings.Contains(key, "foto_dokumentasi") {
+			maxW, maxH = 4050000.0, 6000000.0 // 75% size: ~11cm x 16.5cm
+		}
+
 		ratio := maxW / w
 		if h*ratio > maxH {
 			ratio = maxH / h

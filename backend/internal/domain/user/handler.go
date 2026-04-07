@@ -17,10 +17,25 @@ func NewHandler(s Service) *Handler {
 }
 
 func (h *Handler) GetUsers(c echo.Context) error {
+	role := c.Get("role").(string)
+	uidStr := c.Get("user_id").(string)
+
 	users, err := h.svc.GetUsers()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	if role != "super_admin" {
+		var filtered []models.User
+		for _, u := range users {
+			if u.ID.String() == uidStr {
+				filtered = append(filtered, u)
+				break
+			}
+		}
+		return c.JSON(http.StatusOK, filtered)
+	}
+
 	return c.JSON(http.StatusOK, users)
 }
 

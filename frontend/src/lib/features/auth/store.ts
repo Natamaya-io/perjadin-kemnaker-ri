@@ -14,7 +14,8 @@ const storedUser = isBrowser ? localStorage.getItem('user_session_v2') : null;
 const initialUser = storedUser ? JSON.parse(storedUser) : {
     email: null,
     role: null,
-    loggedIn: false
+    loggedIn: false,
+    requirePasswordChange: false
 };
 
 export const userStore = writable(initialUser);
@@ -27,7 +28,7 @@ userStore.subscribe(val => {
 });
 
 // Auto-load data if session exists on init
-if (initialUser.loggedIn && isBrowser) {
+if (initialUser.loggedIn && isBrowser && !initialUser.requirePasswordChange) {
     loadMasterData();
     loadRecords();
 }
@@ -35,7 +36,7 @@ if (initialUser.loggedIn && isBrowser) {
 export const login = async (email: string, password?: string) => {
     try {
         const { user, require_password_change } = await api.login(email, password);
-        userStore.set({ ...user, loggedIn: true });
+        userStore.set({ ...user, loggedIn: true, requirePasswordChange: require_password_change });
         
         // Load data on login
         if (!require_password_change) {

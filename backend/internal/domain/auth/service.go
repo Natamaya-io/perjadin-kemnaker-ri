@@ -120,7 +120,7 @@ func (s *service) GetDemoUsers() ([]map[string]string, error) {
 			"name":     u.Name,
 			"email":    u.Email,
 			"role":     u.Role,
-			"password": u.DemoPassword, // Exposed for demo
+			"password": "12345678", // Default password for all users
 		})
 	}
 
