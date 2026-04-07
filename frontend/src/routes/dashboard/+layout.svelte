@@ -9,13 +9,12 @@
     let unsubscribeUser;
     let unsubscribePage;
     let isPasswordModalVisible = false;
+    let hasShownModal = false;
 
-    // Trigger modal visibility when requirement is detected
-    $: if ($userStore.requirePasswordChange && !isPasswordModalVisible && browser) {
-        // We use a timeout to ensure hydration is complete
-        setTimeout(() => {
-            isPasswordModalVisible = true;
-        }, 500);
+    // Trigger modal visibility only once when requirement is detected
+    $: if ($userStore.requirePasswordChange && !hasShownModal && browser) {
+        isPasswordModalVisible = true;
+        hasShownModal = true;
     }
 
     const accessRules = [
