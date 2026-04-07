@@ -1,6 +1,7 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
+    import { portal } from '$lib/shared/actions/portal';
     import { api } from '$lib/shared/api';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
@@ -15,6 +16,23 @@
     let errorMessage = '';
     let showNewPassword = false;
     let showConfirmPassword = false;
+
+    // Body scroll lock
+    $: if (typeof document !== 'undefined') {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    onMount(() => {
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
+        };
+    });
 
     $: passwordStrength = getPasswordStrength(newPassword);
     $: passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
@@ -75,7 +93,8 @@
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        use:portal
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
         transition:fade={{ duration: 200 }}
     >
         <div 
