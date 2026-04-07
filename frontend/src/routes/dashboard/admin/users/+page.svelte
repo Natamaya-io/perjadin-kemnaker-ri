@@ -333,12 +333,4 @@
         title={alertTitle}
         description={alertDescription}
     />
-
-    <ChangePasswordModal 
-        bind:isOpen={isPasswordModalVisible} 
-        on:success={() => {
-            userStore.update(u => ({...u, requirePasswordChange: false}));
-            isPasswordModalVisible = false;
-        }} 
-    />
 </div>

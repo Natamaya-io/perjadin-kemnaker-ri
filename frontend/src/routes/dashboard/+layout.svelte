@@ -4,9 +4,19 @@
     import { onMount, onDestroy } from 'svelte';
     import { browser } from '$app/environment';
     import { page } from '$app/stores';
+    import ChangePasswordModal from '$lib/features/auth/ui/ChangePasswordModal.svelte';
 
     let unsubscribeUser;
     let unsubscribePage;
+    let isPasswordModalVisible = false;
+
+    // Trigger modal visibility when requirement is detected
+    $: if ($userStore.requirePasswordChange && !isPasswordModalVisible && browser) {
+        // We use a timeout to ensure hydration is complete
+        setTimeout(() => {
+            isPasswordModalVisible = true;
+        }, 500);
+    }
 
     const accessRules = [
         { path: '/dashboard/admin/users', roles: ['super_admin', 'kasubag', 'protokol'] },
@@ -71,3 +81,11 @@
 </script>
 
 <slot />
+
+<ChangePasswordModal 
+    bind:isOpen={isPasswordModalVisible} 
+    on:success={() => {
+        userStore.update(u => ({...u, requirePasswordChange: false}));
+        isPasswordModalVisible = false;
+    }} 
+/>

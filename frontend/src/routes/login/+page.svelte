@@ -37,11 +37,7 @@
         isLoading = false;
         
         if (result.success) {
-            if (result.require_password_change) {
-                goto('/dashboard/admin/users');
-            } else {
-                goto('/dashboard');
-            }
+            goto('/dashboard');
         } else {
             errorMessage = 'Username atau password salah.';
         }
