@@ -11,6 +11,7 @@ frontend/build
 # OS
 .DS_Store
 Thumbs.db
+~$*
 
 # Env (Safety net for Doppler users)
 .env
