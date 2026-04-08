@@ -21,6 +21,11 @@ type Service interface {
 	Login(email, password string) (string, *models.User, bool, error)
 	GetDemoUsers() ([]map[string]string, error)
 	ChangePassword(userIDStr, newPassword string) error
+	GetUserByID(id uuid.UUID) (*models.User, error)
+}
+
+func (s *service) GetUserByID(id uuid.UUID) (*models.User, error) {
+	return s.userRepo.GetUserByID(id)
 }
 
 type service struct {

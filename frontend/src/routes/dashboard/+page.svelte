@@ -37,7 +37,32 @@
     }
 
     $: records = $recordsStore;
-    $: myRecords = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : records.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email));
+    $: myRecords = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : records.filter(r => {
+        if (!r) return false;
+        const myEmail = $userStore.email || '';
+        const myName = $userStore.name || '';
+        const recEmail = r.email || '';
+        const empEmail = r.employee?.email || '';
+        const empName = r.employee?.name || '';
+        
+        // Match by email OR by name OR by user ID
+        return recEmail === myEmail || 
+               empEmail === myEmail || 
+               empName === myName ||
+               r.creatorId === $userStore.id ||
+               r.employeeId === $userStore.id;
+    });
+    $: {
+        if (typeof window !== 'undefined') {
+            console.log("DASHBOARD DEBUG:", {
+                userEmail: $userStore.email,
+                userRole: $userStore.role,
+                totalRecords: records.length,
+                filteredRecords: myRecords.length,
+                recordsSample: records.slice(0, 3).map(r => r.employee?.email)
+            });
+        }
+    }
 
     // Stats Logic (Scoped to Role)
     $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : myRecords;

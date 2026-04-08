@@ -637,15 +637,44 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 
 func (h *Handler) GetRecords(c echo.Context) error {
 	role := c.Get("role").(string)
-	recs, _ := h.svc.GetRecords(nil)
+	userIDStr := c.Get("user_id").(string)
+	
+	fmt.Printf("[DEBUG] GetRecords called by user=%s, role=%s\n", userIDStr, role)
+	
+	recs, err := h.svc.GetRecords(nil)
+	if err != nil {
+		fmt.Printf("[ERROR] GetRecords service failed: %v\n", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	
+	fmt.Printf("[DEBUG] Total records found in DB: %d\n", len(recs))
+
 	if role == "protokol" {
-		uid, _ := uuid.Parse(c.Get("user_id").(string))
+		uid, err := uuid.Parse(userIDStr)
+		if err != nil {
+			fmt.Printf("[ERROR] Failed to parse userID from context: %v\n", err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid User ID")
+		}
+		
 		spds := make(map[string]bool)
-		for _, r := range recs { if r.EmployeeID == uid { spds[r.SPDNumber] = true } }
-		var res []models.TravelRecord
-		for _, r := range recs { if spds[r.SPDNumber] { res = append(res, r) } }
+		for _, r := range recs { 
+			// Protokol can see records where they are the employee OR the creator
+			if r.EmployeeID == uid || r.CreatorID == uid { 
+				spds[r.SPDNumber] = true 
+			} 
+		}
+		
+		res := make([]models.TravelRecord, 0)
+		for _, r := range recs { 
+			if spds[r.SPDNumber] { 
+				res = append(res, r) 
+			} 
+		}
+		
+		fmt.Printf("[DEBUG] Filtered records for protokol %s: %d\n", userIDStr, len(res))
 		return c.JSON(http.StatusOK, res)
 	}
+	
 	return c.JSON(http.StatusOK, recs)
 }
 

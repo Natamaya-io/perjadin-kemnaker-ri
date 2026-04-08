@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -84,4 +85,16 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
+}
+
+func (h *Handler) GetMe(c echo.Context) error {
+	userIDStr := c.Get("user_id").(string)
+	userID, _ := uuid.Parse(userIDStr)
+	
+	user, err := h.svc.GetUserByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "User not found")
+	}
+	
+	return c.JSON(http.StatusOK, user)
 }

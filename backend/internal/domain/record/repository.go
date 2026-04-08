@@ -310,62 +310,63 @@ func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.
 		go func(index int, d db.TravelRecord) {
 			defer wg.Done()
 			rec := mapDBRecord(d)
+			recPtr := &rec
 
 			var relWg sync.WaitGroup
 
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
+				emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
 				if emp != nil {
-					rec.Employee = *emp
+					recPtr.Employee = *emp
 				}
 			}()
 
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				creator, _ := r.GetUserByID(ctx, rec.CreatorID)
+				creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
 				if creator != nil {
-					rec.Creator = *creator
+					recPtr.Creator = *creator
 				}
 			}()
 
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				dbc, err := r.q.GetTravelCostByRecordID(ctx, rec.ID)
+				dbc, err := r.q.GetTravelCostByRecordID(ctx, recPtr.ID)
 				if err == nil {
 					cost := mapDBCost(dbc)
-					rec.Cost = &cost
+					recPtr.Cost = &cost
 				}
 			}()
 
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				dbrep, err := r.q.GetTravelReportByRecordID(ctx, rec.ID)
+				dbrep, err := r.q.GetTravelReportByRecordID(ctx, recPtr.ID)
 				if err == nil {
 					rep := mapDBReport(dbrep)
-					rec.Report = &rep
+					recPtr.Report = &rep
 				}
 			}()
 
 			relWg.Add(1)
 			go func() {
 				defer relWg.Done()
-				dbls, err := r.q.GetTravelLocationsByRecordID(ctx, rec.ID)
+				dbls, err := r.q.GetTravelLocationsByRecordID(ctx, recPtr.ID)
 				if err == nil {
 					locs := make([]models.TravelLocation, len(dbls))
 					for j, dbl := range dbls {
 						locs[j] = mapDBLocation(dbl)
 					}
-					rec.Locations = locs
+					recPtr.Locations = locs
 				}
 			}()
 
 			relWg.Wait()
-			records[index] = rec
+			records[index] = *recPtr
 		}(i, dbr)
 	}
 	wg.Wait()
@@ -381,63 +382,64 @@ func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 	}
 
 	rec := mapDBRecord(dbr)
+	recPtr := &rec
 
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
+		emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
 		if emp != nil {
-			rec.Employee = *emp
+			recPtr.Employee = *emp
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		creator, _ := r.GetUserByID(ctx, rec.CreatorID)
+		creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
 		if creator != nil {
-			rec.Creator = *creator
+			recPtr.Creator = *creator
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbc, err := r.q.GetTravelCostByRecordID(ctx, rec.ID)
+		dbc, err := r.q.GetTravelCostByRecordID(ctx, recPtr.ID)
 		if err == nil {
 			cost := mapDBCost(dbc)
-			rec.Cost = &cost
+			recPtr.Cost = &cost
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbrep, err := r.q.GetTravelReportByRecordID(ctx, rec.ID)
+		dbrep, err := r.q.GetTravelReportByRecordID(ctx, recPtr.ID)
 		if err == nil {
 			rep := mapDBReport(dbrep)
-			rec.Report = &rep
+			recPtr.Report = &rep
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbls, err := r.q.GetTravelLocationsByRecordID(ctx, rec.ID)
+		dbls, err := r.q.GetTravelLocationsByRecordID(ctx, recPtr.ID)
 		if err == nil {
 			locs := make([]models.TravelLocation, len(dbls))
 			for j, dbl := range dbls {
 				locs[j] = mapDBLocation(dbl)
 			}
-			rec.Locations = locs
+			recPtr.Locations = locs
 		}
 	}()
 
 	wg.Wait()
 
-	return &rec, nil
+	return recPtr, nil
 }
 
 func (r *repository) GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error) {

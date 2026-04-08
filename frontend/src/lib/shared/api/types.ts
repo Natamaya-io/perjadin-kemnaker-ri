@@ -95,7 +95,8 @@ export interface ApiClient {
     logout(): Promise<void>;
     getCurrentUser(): Promise<User | null>;
     changePassword(newPassword: string): Promise<void>;
-    
+    getCurrentUser(): Promise<User | null>;
+
     // User Management (Admin)
     getUsers(): Promise<User[]>;
     createUser(user: Omit<User, 'id'>): Promise<User>;

@@ -84,10 +84,12 @@ export class RealApiClient implements ApiClient {
     }
 
     async getCurrentUser(): Promise<User | null> {
-        // If we have a token, we might want to validate it or fetch user profile
-        // For now, let's assume the frontend state manages the user object after login
-        // Or implement a /me endpoint in backend
-        return null; 
+        if (!this.token) return null;
+        try {
+            return await this.request<User>('/auth/me');
+        } catch (e) {
+            return null;
+        }
     }
 
     async changePassword(newPassword: string): Promise<void> {

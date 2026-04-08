@@ -1,5 +1,5 @@
 <script>
-    import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
+    import { recordsStore, updateRecord, loadRecords } from '$lib/features/pengajuan/store';
     import { onMount } from 'svelte';
     import { userStore } from '$lib/features/auth/store';
     import { getInitials, getStatusBadge, toTitleCase, cn, formatLocations } from '$lib/shared/utils/utils';
@@ -20,7 +20,17 @@
     import TripStepper from '$lib/features/dashboard/ui/roadmap/TripStepper.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
 
-    $: myRecords = $recordsStore.filter(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email) || $userStore.role === 'super_admin' || $userStore.role === 'kasubag');
+    $: myRecords = $recordsStore.filter(r => {
+        if (!r) return false;
+        if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') return true;
+        const myEmail = $userStore.email || '';
+        const myName = $userStore.name || '';
+        return (r.email || '') === myEmail ||
+               (r.employee?.email || '') === myEmail ||
+               (r.employee?.name || '') === myName ||
+               r.creatorId === $userStore.id ||
+               r.employeeId === $userStore.id;
+    });
 
     // Filter & Sort State
     let searchQuery = '';
@@ -126,6 +136,7 @@
 
     $: uniqueRecords = Object.values(groupedRecords);
     onMount(() => {
+        loadRecords();
         // Automatically mark all unviewed draft records as viewed when entering this page
         const unviewed = myRecords.filter(r => r.status === 'Draft' && !r.isViewed);
         if (unviewed.length > 0) {

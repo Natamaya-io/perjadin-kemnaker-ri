@@ -1,5 +1,5 @@
 <script>
-    import { recordsStore, deleteRecordBySpd } from '$lib/features/pengajuan/store';
+    import { recordsStore, deleteRecordBySpd, loadRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
@@ -139,6 +139,7 @@
         }
     }
     onMount(() => {
+        loadRecords();
         if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
             goto('/dashboard');
         }

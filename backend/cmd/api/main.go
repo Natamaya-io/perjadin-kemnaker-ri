@@ -137,6 +137,7 @@ func main() {
 	protected := api.Group("")
 	protected.Use(middleware.JWTMiddleware(cfg, userRepo))
 	{
+		protected.GET("/auth/me", authHandler.GetMe)
 		protected.PUT("/auth/change-password", authHandler.ChangePassword)
 		
 		protected.POST("/upload", recordHandler.UploadFile)

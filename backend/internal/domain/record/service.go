@@ -185,14 +185,19 @@ func (s *service) CreateRecordDirect(record *models.TravelRecord) error {
 	}
 
 	err := s.repo.CreateTravelRecord(record)
+	if err == nil {
+		s.InvalidateAllCache()
+	}
 	return err
 }
 
 func (s *service) GetRecords(filters map[string]interface{}) ([]models.TravelRecord, error) {
 	ctx := context.Background()
 	var statusFilter string
-	if status, ok := filters["status"]; ok && status != "" {
-		statusFilter = status.(string)
+	if filters != nil {
+		if status, ok := filters["status"]; ok && status != "" {
+			statusFilter = status.(string)
+		}
 	}
 
 	cacheKey := "records:all"
@@ -210,6 +215,7 @@ func (s *service) GetRecords(filters map[string]interface{}) ([]models.TravelRec
 		}
 	}
 
+	fmt.Printf("[DEBUG] Records Cache Miss for %s. Fetching from Repo...\n", cacheKey)
 	records, err := s.repo.GetTravelRecords(filters)
 	if err != nil {
 		return nil, err

@@ -12,6 +12,7 @@ const isBrowser = typeof window !== 'undefined';
 // But ideally, we should check `api.getCurrentUser()` on mount.
 const storedUser = isBrowser ? localStorage.getItem('user_session_v2') : null;
 const initialUser = storedUser ? JSON.parse(storedUser) : {
+    id: null,
     email: null,
     role: null,
     loggedIn: false,
@@ -30,8 +31,25 @@ userStore.subscribe(val => {
 
 // Auto-load data if session exists on init
 if (initialUser.loggedIn && isBrowser && !initialUser.requirePasswordChange) {
-    loadMasterData();
-    loadRecords();
+    (async () => {
+        await refreshUserProfile(); // Mutlak: Tunggu profil refresh agar ID sinkron
+        await Promise.all([
+            loadMasterData(),
+            loadRecords()
+        ]);
+    })();
+}
+
+export async function refreshUserProfile() {
+    if (!isBrowser || !localStorage.getItem('auth_token')) return;
+    try {
+        const user = await api.getCurrentUser();
+        if (user) {
+            userStore.update(u => ({ ...u, ...user, loggedIn: true }));
+        }
+    } catch (e) {
+        console.error("Failed to refresh user profile", e);
+    }
 }
 
 export const login = async (email: string, password?: string) => {
