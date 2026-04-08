@@ -1,6 +1,7 @@
 <script>
-    import { recordsStore } from '$lib/features/pengajuan/store';
+    import { recordsStore, loadRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
+    import { onMount } from 'svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
 
     // Granular Components
@@ -207,6 +208,10 @@
             showYearDropdown = false;
         }
     }
+
+    onMount(() => {
+        loadRecords();
+    });
 </script>
 
 <div class="space-y-8 pb-20">
