@@ -96,8 +96,8 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	localIndex := 1
 	if allRecords, err := h.svc.GetRecords(map[string]interface{}{}); err == nil {
 		sort.Slice(allRecords, func(i, j int) bool {
-			timeI := allRecords[i].CreatedAt.Unix()
-			timeJ := allRecords[j].CreatedAt.Unix()
+			timeI := allRecords[i].CreatedAt.UnixNano()
+			timeJ := allRecords[j].CreatedAt.UnixNano()
 			if timeI != timeJ {
 				return timeI < timeJ
 			}
@@ -173,11 +173,13 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		parts := strings.Split(id, "-")
 		if len(parts) > 0 {
 			suffix := parts[len(parts)-1]
+			// Ensure it's a numeric suffix, if not return the whole suffix or spdSubNumber
 			if len(suffix) < 3 { return fmt.Sprintf("%03s", suffix) }
 			return suffix
 		}
 		return id
 	}
+
 	noSurat := strings.TrimSpace(record.SuratTugasNumber)
 	tglSurat := record.SuratTugasDate
 	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
@@ -382,8 +384,8 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 
 		// Rincian specific variables
 		vars["tiket_pesawat"] = formatRupiahNoRp(aggTicket)
-		vars["transport_lokal"] = formatRupiahNoRp(aggLokal)
-		vars["transport_daerah"] = formatRupiahNoRp(aggTambahan)
+		vars["transport_lokal"] = formatRupiahNoRp(aggTambahan)
+		vars["transport_daerah"] = formatRupiahNoRp(aggLokal)
 		vars["sbm"] = formatRupiahNoRp(record.Cost.DailyAllowanceRate)
 		vars["total_sbm"] = formatRupiahNoRp(aggSbm)
 		
