@@ -192,7 +192,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	noSurat := strings.TrimSpace(record.SuratTugasNumber)
 	tglSurat := record.SuratTugasDate
 	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
-	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
 	if noSurat == "" {
 		noSurat = numberGap // Ruang kosong untuk diisi manual
 	} else {
