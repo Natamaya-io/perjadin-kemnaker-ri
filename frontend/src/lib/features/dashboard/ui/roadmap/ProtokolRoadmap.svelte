@@ -95,7 +95,7 @@
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex-1 pr-8 md:pr-0">
                                 <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                                    <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">{record.spd}</span>
+                                    <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">{record.nomorSpdPetugas || record.spd}</span>
                                     <span class="text-xs text-slate-400 font-medium">
                                         {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short'})} - {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
                                     </span>

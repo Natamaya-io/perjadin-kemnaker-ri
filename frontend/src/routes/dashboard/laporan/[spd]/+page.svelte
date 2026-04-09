@@ -1064,7 +1064,7 @@
                                              </button>
                                          {/if}
                                      </div>
-                                     {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol')}
+                                     {#if $userStore.role !== 'kasubag'}
                                          <input 
                                              type="text" 
                                              bind:value={manualSuratTugasNumber}
@@ -1089,7 +1089,7 @@
                                              </button>
                                          {/if}
                                      </div>
-                                     {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol')}
+                                     {#if $userStore.role !== 'kasubag'}
                                          <input 
                                              type="date" 
                                              bind:value={manualSuratTugasDate}

@@ -82,7 +82,62 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 	}
 }
 
-func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex int) map[string]interface{} {
+func addWorkingDays(t time.Time, days int) time.Time {
+	for i := 0; i < days; i++ {
+		t = t.AddDate(0, 0, 1)
+		for t.Weekday() == time.Saturday || t.Weekday() == time.Sunday {
+			t = t.AddDate(0, 0, 1)
+		}
+	}
+	return t
+}
+
+func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[string]interface{} {
+	localIndex := 1
+	if allRecords, err := h.svc.GetRecords(map[string]interface{}{}); err == nil {
+		var spdGroupRecords []models.TravelRecord
+		for _, r := range allRecords {
+			if r.SPDNumber == record.SPDNumber {
+				spdGroupRecords = append(spdGroupRecords, r)
+			}
+		}
+		sort.Slice(spdGroupRecords, func(i, j int) bool {
+			nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
+			nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
+
+			getPriority := func(name string) int {
+				if strings.Contains(name, "auditya hermawan") { return 1 }
+				if strings.Contains(name, "mochamad gufron") { return 2 }
+				if strings.Contains(name, "muhammad isa") { return 3 }
+				return 4
+			}
+
+			pI := getPriority(nameI)
+			pJ := getPriority(nameJ)
+
+			if pI != pJ { return pI < pJ }
+
+			nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
+			nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
+
+			hasNIPI := nipI != "" && nipI != "-"
+			hasNIPJ := nipJ != "" && nipJ != "-"
+
+			if hasNIPI && !hasNIPJ {
+				return true
+			} else if !hasNIPI && hasNIPJ {
+				return false
+			}
+			return spdGroupRecords[i].CreatedAt.Unix() < spdGroupRecords[j].CreatedAt.Unix()
+		})
+		for i, r := range spdGroupRecords {
+			if r.ID == record.ID {
+				localIndex = i + 1
+				break
+			}
+		}
+	}
+
 	titleCaser := cases.Title(language.Indonesian)
 	days := 0
 	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
@@ -123,7 +178,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 	if record.Cost != nil && record.Cost.TransportMode != "" {
 		transportMode = record.Cost.TransportMode
 	}
-	spdSubNumber := fmt.Sprintf("%03d", globalIndex)
+	spdSubNumber := fmt.Sprintf("%03d", localIndex)
 	extractNumericID := func(id string) string {
 		if id == "" { return spdSubNumber }
 		parts := strings.Split(id, "-")
@@ -134,18 +189,21 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		}
 		return id
 	}
-	noSurat := record.SuratTugasNumber
+	noSurat := strings.TrimSpace(record.SuratTugasNumber)
 	tglSurat := record.SuratTugasDate
+	gap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
 	if noSurat == "" {
-		noSurat = spdSubNumber
+		noSurat = gap // Ruang kosong untuk diisi manual
 	} else {
 		groupID := extractNumericID(record.SPDNumber)
 		if groupID != "" && groupID != spdSubNumber {
 			noSurat = strings.Replace(noSurat, groupID, spdSubNumber, 1)
 		}
 	}
-	noSpd := spdSubNumber
+	noSpd := record.SPDNumber
 	cleanMaksud := regexp.MustCompile(`\s+`).ReplaceAllString(record.Purpose, " ")
+	reKunjungan := regexp.MustCompile(`(?i)\s*kunjungan kerja\s*`)
+	cleanMaksud = strings.TrimSpace(reKunjungan.ReplaceAllString(cleanMaksud, " "))
 	cleanStakeholder := regexp.MustCompile(`\s+`).ReplaceAllString(record.Stakeholder, " ")
 	namaPpk := h.cfg.Signatory.PPKName
 	nipPpk := h.cfg.Signatory.PPKNIP
@@ -204,8 +262,30 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 	if golongan == "" { golongan = "-" }
 
 	now := time.Now()
+	refDate := now
+	tanggalLaporan := now
+	tanggalRincian := now
+	if !record.StartDate.IsZero() {
+		refDate = record.StartDate
+	}
+	if !record.EndDate.IsZero() {
+		tanggalLaporan = addWorkingDays(record.EndDate, 1)
+		tanggalRincian = addWorkingDays(record.EndDate, 3)
+	}
+
+	tanggalNoSuratStr := gap
+	bulanRomawiST := utils.GetRomanMonths()[int(refDate.Month())]
+	tahunST := refDate.Year()
+	if !tglSurat.IsZero() {
+		tanggalNoSuratStr = utils.FormatIndonesianDate(tglSurat)
+		bulanRomawiST = utils.GetRomanMonths()[int(tglSurat.Month())]
+		tahunST = tglSurat.Year()
+	}
+
 	vars := map[string]interface{}{
-		"no_spd": record.SPDNumber, "id_spj": noSpd, "no_surat": noSurat,
+		"bulan_romawi_st": bulanRomawiST,
+		"tahun_st":        tahunST,
+		"no_spd": spdSubNumber, "id_spj": noSpd, "no_surat": noSurat,
 		"pejabat_berwenang": pejabatBerwenang,
 		"tingkat_biaya": tingkatBiaya,
 		"instansi": instansi,
@@ -216,10 +296,10 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"keterangan": "-",
 		"lama_perjalanan": formatNumber(days),
 		"nama_stakeholder": cleanStakeholder,
-		"bulan_no_surat": utils.GetRomanMonths()[int(now.Month())], "tahun_no_surat": now.Year(),
-		"bulan_romawi": utils.GetRomanMonths()[int(now.Month())],
-		"tanggal_no_surat": utils.FormatIndonesianDate(tglSurat), "bulan_pembayaran": utils.GetIndonesianMonths()[int(now.Month())],
-		"tahun_pembayaran": now.Year(), "tahun_saat_ini": fmt.Sprintf("%d", now.Year()),
+		"bulan_no_surat": utils.GetRomanMonths()[int(refDate.Month())], "tahun_no_surat": refDate.Year(),
+		"bulan_romawi": utils.GetRomanMonths()[int(refDate.Month())],
+		"tanggal_no_surat": tanggalNoSuratStr, "bulan_pembayaran": utils.GetIndonesianMonths()[int(refDate.Month())],
+		"tahun_pembayaran": refDate.Year(), "tahun_saat_ini": fmt.Sprintf("%d", refDate.Year()),
 		"nama": record.Employee.Name, "nama_petugas": record.Employee.Name, "nip": record.Employee.NIP, "nip_petugas": record.Employee.NIP,
 		"pangkat": pangkat, "golongan": golongan,
 		"pangkat_gol": fmt.Sprintf("%s (%s)", pangkat, golongan), "jabatan": record.Employee.Jabatan,
@@ -232,6 +312,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, globalIndex i
 		"tgl_cetak": utils.FormatIndonesianDate(now), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
 		"nama_bendahara": namaBendahara, "nip_bendahara": nipBendahara, "jabatan_ppk": jabPpk, "jabatan_bendahara": jabBendahara,
 		"isi_laporan": isiLaporan, "tanggal_dikeluarkan": utils.FormatIndonesianDate(now),
+		"tanggal_laporan": utils.FormatIndonesianDate(tanggalLaporan), "tanggal_rincian": utils.FormatIndonesianDate(tanggalRincian),
 	}
 	type Detail struct {
 		TransportMode string `json:"transportMode"`
@@ -403,6 +484,8 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 	})
 
 	vars := h.mapTravelToDocument(record, 1)
+	vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
+	vars["tgl_cetak"] = vars["tanggal_laporan"]
 	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
 	for i, ordinal := range ordinals {
 		if i < len(spdGroupRecords) {
@@ -526,6 +609,8 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) (err error) {
 	}
 
 	vars := h.mapTravelToDocument(record, 1)
+	vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
+	vars["tgl_cetak"] = vars["tanggal_laporan"]
 	payload := document.DocumentRequest{TemplateName: "Berkas Luar Kota - Laporan.docx", Variables: vars}
 	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
 	filename := fmt.Sprintf("Laporan_%s_%s.docx", record.Employee.Name, record.SPDNumber)
@@ -557,7 +642,17 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) (e
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	payload := document.DocumentRequest{TemplateName: templateName, Variables: h.mapTravelToDocument(record, 1)}
+	vars := h.mapTravelToDocument(record, 1)
+	if prefix == "Laporan" {
+		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
+		vars["tgl_cetak"] = vars["tanggal_laporan"]
+	} else if prefix == "Rincian" {
+		vars["tanggal_dikeluarkan"] = vars["tanggal_rincian"]
+		vars["tgl_cetak"] = vars["tanggal_rincian"]
+		vars["bulan"] = ""
+		vars["tahun"] = ""
+	}
+	payload := document.DocumentRequest{TemplateName: templateName, Variables: vars}
 	pdfBytes, err := h.docGen.Generate(c.Request().Context(), payload)
 	if err != nil { return echo.NewHTTPError(http.StatusInternalServerError, err.Error()) }
 	filename := fmt.Sprintf("%s_%s_%s.pdf", prefix, record.Employee.Name, record.SPDNumber)
@@ -581,7 +676,17 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	payload := document.DocumentRequest{TemplateName: templateName, Variables: h.mapTravelToDocument(record, 1)}
+	vars := h.mapTravelToDocument(record, 1)
+	if prefix == "Laporan" {
+		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
+		vars["tgl_cetak"] = vars["tanggal_laporan"]
+	} else if prefix == "Rincian" {
+		vars["tanggal_dikeluarkan"] = vars["tanggal_rincian"]
+		vars["tgl_cetak"] = vars["tanggal_rincian"]
+		vars["bulan"] = ""
+		vars["tahun"] = ""
+	}
+	payload := document.DocumentRequest{TemplateName: templateName, Variables: vars}
 	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
 	filename := fmt.Sprintf("%s_%s_%s.docx", prefix, record.Employee.Name, record.SPDNumber)
 	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))

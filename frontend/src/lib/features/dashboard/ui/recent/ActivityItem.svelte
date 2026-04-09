@@ -58,7 +58,7 @@
                 <div class="flex flex-col min-w-0">
                     <span class="font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors">{record.employee?.name || '-'}</span>
                     <span class="text-[10px] text-slate-500 font-mono tracking-tight bg-slate-100 px-1.5 py-0.5 rounded-md w-fit mt-0.5 border border-slate-200/50">
-                        {record.spd}
+                        {record.nomorSpdPetugas || record.spd}
                     </span>
                 </div>
             </div>
