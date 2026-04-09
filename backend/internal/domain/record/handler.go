@@ -183,7 +183,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	noSurat := strings.TrimSpace(record.SuratTugasNumber)
 	tglSurat := record.SuratTugasDate
 	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
-	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0"
 	if noSurat == "" {
 		noSurat = numberGap // Ruang kosong untuk diisi manual
 	} else {
@@ -265,7 +265,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		tanggalRincian = addWorkingDays(record.EndDate, 3)
 	}
 
-	tanggalNoSuratStr := dateGap
+	tanggalNoSuratStr := fmt.Sprintf("%s %s %d", dateGap, utils.GetIndonesianMonths()[int(refDate.Month())], refDate.Year())
 	bulanRomawiST := utils.GetRomanMonths()[int(refDate.Month())]
 	tahunST := refDate.Year()
 	if !tglSurat.IsZero() {
