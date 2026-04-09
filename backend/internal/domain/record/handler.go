@@ -191,9 +191,10 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	}
 	noSurat := strings.TrimSpace(record.SuratTugasNumber)
 	tglSurat := record.SuratTugasDate
-	gap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
 	if noSurat == "" {
-		noSurat = gap // Ruang kosong untuk diisi manual
+		noSurat = numberGap // Ruang kosong untuk diisi manual
 	} else {
 		groupID := extractNumericID(record.SPDNumber)
 		if groupID != "" && groupID != spdSubNumber {
@@ -273,7 +274,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		tanggalRincian = addWorkingDays(record.EndDate, 3)
 	}
 
-	tanggalNoSuratStr := gap
+	tanggalNoSuratStr := dateGap
 	bulanRomawiST := utils.GetRomanMonths()[int(refDate.Month())]
 	tahunST := refDate.Year()
 	if !tglSurat.IsZero() {
