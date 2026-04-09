@@ -310,7 +310,7 @@
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <StatCard 
                 title="Total Anggaran" 
-                value={formatIDRCompact(filteredTotalCost)} 
+                value={formatIDR(filteredTotalCost)} 
                 description={budgetDescription} 
                 iconColor="emerald"
                 bgClass="bg-gradient-to-br from-emerald-500 to-teal-600 border-transparent shadow-lg shadow-emerald-500/20"
