@@ -185,7 +185,7 @@
                         {#each uniqueRecords as record (record.id || record.spd)}
                             <TableRow class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
                                 <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-top">
-                                    {record.nomorSpdPetugas}
+                                    <span class="font-bold text-slate-700">{record.spd}</span>
                                     <div class="mt-1">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                             {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
@@ -255,7 +255,7 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex justify-between items-start gap-2">
                         <div class="flex-1 min-w-0">
-                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{record.nomorSpdPetugas}</span>
+                            <span class="font-mono text-xs font-bold text-slate-800 break-all">{record.spd}</span>
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                     {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
