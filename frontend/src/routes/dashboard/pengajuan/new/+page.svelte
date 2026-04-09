@@ -193,8 +193,8 @@
     }
     
     function handleSubmit() {
-        if (formData.selectedEmployees.length > 6) {
-            toast.warning('Maksimal 6 Petugas Protokol yang diperbolehkan dalam satu pengajuan.');
+        if (formData.selectedEmployees.length > 20) {
+            toast.warning('Maksimal 20 Petugas Protokol yang diperbolehkan dalam satu pengajuan.');
             return;
         }
 
