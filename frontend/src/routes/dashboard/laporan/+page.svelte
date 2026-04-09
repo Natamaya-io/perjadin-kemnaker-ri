@@ -102,8 +102,20 @@
             return matchSearch && matchStatus && matchDate;
         })
         .sort((a, b) => {
-            if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-            if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+            if (sortOption === 'spj-desc') return (b.spd || '').localeCompare(a.spd || '');
+            if (sortOption === 'spj-asc') return (a.spd || '').localeCompare(b.spd || '');
+            if (sortOption === 'date-desc') {
+                const diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+                if (diff !== 0) return diff;
+                return (b.spd || '').localeCompare(a.spd || '');
+            }
+            if (sortOption === 'date-asc') {
+                const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                if (diff !== 0) return diff;
+                return (a.spd || '').localeCompare(b.spd || '');
+            }
+            if (sortOption === 'cost-desc') return (b.totalCost || 0) - (a.totalCost || 0);
+            if (sortOption === 'cost-asc') return (a.totalCost || 0) - (b.totalCost || 0);
             return 0;
         });
     // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
@@ -121,20 +133,25 @@
     });
     $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
 
-    $: groupedRecords = filteredRecords.reduce((acc, record) => {
-        const isMyRecord = record.email === $userStore.email || (record.employee && record.employee.email === $userStore.email);
-
-        if (!acc[record.spd] || isMyRecord) {
+    $: uniqueRecords = filteredRecords.reduce((acc, record) => {
+        const existing = acc.find(r => r.spd === record.spd);
+        if (!existing) {
             const allEmployeesForSpd = $recordsStore.filter(r => r.spd === record.spd);
             const globalIndex = recordToIndexMap.get(record.id) || 0;
             const nomorSpdPetugas = String(globalIndex).padStart(3, '0');
-            
-            acc[record.spd] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
+            acc.push({ ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas });
+        } else {
+            const isMyRecord = record.email === $userStore.email || (record.employee && record.employee.email === $userStore.email);
+            if (isMyRecord) {
+                const allEmployeesForSpd = $recordsStore.filter(r => r.spd === record.spd);
+                const globalIndex = recordToIndexMap.get(record.id) || 0;
+                const nomorSpdPetugas = String(globalIndex).padStart(3, '0');
+                const idx = acc.findIndex(r => r.spd === record.spd);
+                acc[idx] = { ...record, employeesList: allEmployeesForSpd, nomorSpdPetugas };
+            }
         }
         return acc;
-    }, {});
-
-    $: uniqueRecords = Object.values(groupedRecords);
+    }, []);
     onMount(() => {
         loadRecords();
         // Automatically mark all unviewed draft records as viewed when entering this page
