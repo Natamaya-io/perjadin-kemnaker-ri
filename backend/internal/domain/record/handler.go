@@ -93,7 +93,7 @@ func addWorkingDays(t time.Time, days int) time.Time {
 }
 
 func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[string]interface{} {
-	globalIndex := 1
+	localIndex := 1
 	if allRecords, err := h.svc.GetRecords(map[string]interface{}{}); err == nil {
 		sort.Slice(allRecords, func(i, j int) bool {
 			timeI := allRecords[i].CreatedAt.Unix()
@@ -121,7 +121,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		})
 		for i, r := range allRecords {
 			if r.ID == record.ID {
-				globalIndex = i + 1
+				localIndex = i + 1
 				break
 			}
 		}
