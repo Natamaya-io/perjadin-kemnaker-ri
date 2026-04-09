@@ -93,46 +93,35 @@ func addWorkingDays(t time.Time, days int) time.Time {
 }
 
 func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[string]interface{} {
-	localIndex := 1
+	globalIndex := 1
 	if allRecords, err := h.svc.GetRecords(map[string]interface{}{}); err == nil {
-		var spdGroupRecords []models.TravelRecord
-		for _, r := range allRecords {
-			if r.SPDNumber == record.SPDNumber {
-				spdGroupRecords = append(spdGroupRecords, r)
+		sort.Slice(allRecords, func(i, j int) bool {
+			timeI := allRecords[i].CreatedAt.Unix()
+			timeJ := allRecords[j].CreatedAt.Unix()
+			if timeI != timeJ {
+				return timeI < timeJ
 			}
-		}
-		sort.Slice(spdGroupRecords, func(i, j int) bool {
-			nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
-			nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
-
-			getPriority := func(name string) int {
-				if strings.Contains(name, "auditya hermawan") { return 1 }
-				if strings.Contains(name, "mochamad gufron") { return 2 }
-				if strings.Contains(name, "muhammad isa") { return 3 }
-				return 4
+			spdI := allRecords[i].SPDNumber
+			spdJ := allRecords[j].SPDNumber
+			if spdI != spdJ {
+				return spdI < spdJ
 			}
-
-			pI := getPriority(nameI)
-			pJ := getPriority(nameJ)
-
-			if pI != pJ { return pI < pJ }
-
-			nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
-			nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
-
-			hasNIPI := nipI != "" && nipI != "-"
-			hasNIPJ := nipJ != "" && nipJ != "-"
-
-			if hasNIPI && !hasNIPJ {
-				return true
-			} else if !hasNIPI && hasNIPJ {
-				return false
+			nameI := ""
+			if allRecords[i].Employee.Name != "" {
+				nameI = allRecords[i].Employee.Name
 			}
-			return spdGroupRecords[i].CreatedAt.Unix() < spdGroupRecords[j].CreatedAt.Unix()
+			nameJ := ""
+			if allRecords[j].Employee.Name != "" {
+				nameJ = allRecords[j].Employee.Name
+			}
+			if nameI != nameJ {
+				return nameI < nameJ
+			}
+			return allRecords[i].ID.String() < allRecords[j].ID.String()
 		})
-		for i, r := range spdGroupRecords {
+		for i, r := range allRecords {
 			if r.ID == record.ID {
-				localIndex = i + 1
+				globalIndex = i + 1
 				break
 			}
 		}
