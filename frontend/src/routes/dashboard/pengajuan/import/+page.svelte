@@ -149,9 +149,8 @@
                 <div class="text-sm text-amber-800">
                     <p class="font-medium mb-1">Catatan Penting:</p>
                     <ul class="list-disc pl-4 space-y-1">
-                        <li>Data dengan status "THR" akan dilewati otomatis.</li>
                         <li>Sistem mendeteksi dan melewati data ganda (berdasarkan ID SPJ + Nama).</li>
-                        <li>Pegawai yang belum terdaftar di aplikasi akan ikut dilewati.</li>
+                        <li>Data Pegawai baru dan THR akan otomatis disimpan ke sistem untuk konsistensi.</li>
                     </ul>
                 </div>
             </div>

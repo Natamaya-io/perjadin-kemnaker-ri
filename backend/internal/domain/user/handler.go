@@ -28,7 +28,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 	if role != "super_admin" {
 		var filtered []models.User
 		for _, u := range users {
-			if u.ID.String() == uidStr {
+			if u.ID.String() == uidStr && u.Role != "alumni_staff" {
 				filtered = append(filtered, u)
 				break
 			}
@@ -36,7 +36,13 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		return c.JSON(http.StatusOK, filtered)
 	}
 
-	return c.JSON(http.StatusOK, users)
+	var filteredAdmin []models.User
+	for _, u := range users {
+		if u.Role != "alumni_staff" {
+			filteredAdmin = append(filteredAdmin, u)
+		}
+	}
+	return c.JSON(http.StatusOK, filteredAdmin)
 }
 
 type CreateUserRequest struct {

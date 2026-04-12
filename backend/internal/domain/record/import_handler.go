@@ -1,6 +1,7 @@
 package record
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -143,26 +144,32 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 
 		rowNum := rowIdx + 1 // 1-indexed for user display
 
-		// Skip THR records
-		if strings.ToUpper(strings.TrimSpace(statusCol)) == "THR" {
-			result.Skipped++
-			result.Details = append(result.Details, ImportDetail{
-				Row: rowNum, SPJID: idSPJ, Name: name,
-				Status: "skipped_thr", Message: "Record THR, dilewati",
-			})
-			continue
-		}
+		isTHR := strings.ToUpper(strings.TrimSpace(statusCol)) == "THR"
 
 		// Check if user exists
 		normalizedName := strings.TrimSpace(strings.ToLower(name))
 		employeeID, userFound := userMap[normalizedName]
 		if !userFound {
-			result.Skipped++
-			result.Details = append(result.Details, ImportDetail{
-				Row: rowNum, SPJID: idSPJ, Name: name,
-				Status: "skipped_no_user", Message: fmt.Sprintf("Pegawai '%s' tidak ditemukan di database", name),
-			})
-			continue
+			// Auto create alumni user
+			username := strings.ReplaceAll(normalizedName, " ", "") + "_alumni"
+			// Just ensure it's a valid string for the Email/Username field
+			newUser := models.User{
+				Base:  models.Base{ID: uuid.New()},
+				Name:  name,
+				Email: username, // The system uses Email field as Username
+				Role:  "alumni_staff",
+			}
+			if err := h.userRepo.CreateUser(&newUser); err == nil {
+				employeeID = newUser.ID
+				userMap[normalizedName] = employeeID
+			} else {
+				result.Failed++
+				result.Details = append(result.Details, ImportDetail{
+					Row: rowNum, SPJID: idSPJ, Name: name,
+					Status: "failed", Message: "Gagal membuat user alumni otomatis: " + err.Error(),
+				})
+				continue
+			}
 		}
 
 		// Check duplicates
@@ -208,17 +215,26 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		recordStatus := "Approved"
 		reportStatus := "Completed"
 		paymentStatus := "Paid"
-		
-		if err == nil {
-			style, _ := f.GetStyle(styleID)
-			// Pattern 1 is solid fill
-			if style != nil && style.Fill.Pattern == 1 && len(style.Fill.Color) > 0 {
-				color := strings.ToUpper(style.Fill.Color[0])
-				// Ignore white/black
-				if !strings.HasSuffix(color, "FFFFFF") && !strings.HasSuffix(color, "000000") {
-					recordStatus = "Assigned"
-					reportStatus = "Pending"
-					paymentStatus = "Pending"
+		recordPurpose := purpose
+
+		if isTHR {
+			if recordPurpose == "" {
+				recordPurpose = "Pembayaran THR"
+			} else {
+				recordPurpose = recordPurpose + " (THR)"
+			}
+		} else {
+			if err == nil {
+				style, _ := f.GetStyle(styleID)
+				// Pattern 1 is solid fill
+				if style != nil && style.Fill.Pattern == 1 && len(style.Fill.Color) > 0 {
+					color := strings.ToUpper(style.Fill.Color[0])
+					// Ignore white/black
+					if !strings.HasSuffix(color, "FFFFFF") && !strings.HasSuffix(color, "000000") {
+						recordStatus = "Assigned"
+						reportStatus = "Pending"
+						paymentStatus = "Pending"
+					}
 				}
 			}
 		}
@@ -233,7 +249,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 			Location:      daerah,
 			Province:      province,
 			Type:          "luar_kota",
-			Purpose:       purpose,
+			Purpose:       recordPurpose,
 			Stakeholder:   "",
 			Agenda:        "",
 			Status:        recordStatus,
@@ -248,16 +264,46 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 					EndDate:   endDate,
 				},
 			},
-			Cost: &models.TravelCost{
-				TicketGo:           ticketCost,
-				DailyAllowanceDays: dailyDays,
-				DailyAllowanceRate: dailyRate,
-				HotelDays:          hotelNights,
-				HotelRate:          hotelRate,
-				LocalTransport:     localTransport,
-				RegionalTransport:  regionalTransport,
-				TransportMode:      transportMode,
+		}
+
+		// Sync with SvelteKit array structures (1:1 UI data match)
+		var additionalCosts []map[string]interface{}
+		if localTransport > 0 {
+			additionalCosts = append(additionalCosts, map[string]interface{}{
+				"name":   "Transport Lokal",
+				"amount": localTransport,
+				"file":   nil,
+			})
+		} else {
+			// SvelteKit expects an empty array rather than null
+			additionalCosts = make([]map[string]interface{}, 0)
+		}
+
+		detailsArr := []map[string]interface{}{
+			{
+				"transportMode":   transportMode,
+				"ticketGo":        ticketCost,
+				"ticketBack":      0,
+				"hotelDays":       hotelNights,
+				"hotelRate":       hotelRate,
+				"transportAmount": regionalTransport,
+				"additionalCosts": additionalCosts,
 			},
+		}
+
+		detailsBytes, _ := json.Marshal(detailsArr)
+
+		record.Cost = &models.TravelCost{
+			TicketGo:           ticketCost,
+			DailyAllowanceDays: dailyDays,
+			DailyAllowanceRate: dailyRate,
+			HotelDays:          hotelNights,
+			HotelRate:          hotelRate,
+			LocalTransport:     localTransport,
+			RegionalTransport:  regionalTransport,
+			TransportAmount:    regionalTransport, // Make backend standard variables match too
+			TransportMode:      transportMode,
+			Details:            detailsBytes,
 		}
 
 		// Use CreateRecordDirect to bypass overlap check and WA notification

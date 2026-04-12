@@ -57,6 +57,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - APP_PORT=${APP_PORT}
       - SEED_DB=${SEED_DB:-true}
+      - ALLOW_CLEANUP=${ALLOW_CLEANUP:-false}
       - GIN_MODE=${GIN_MODE}
       - FONNTE_API=${FONNTE_API}
       - GOTENBERG_URL=http://gotenberg:3000

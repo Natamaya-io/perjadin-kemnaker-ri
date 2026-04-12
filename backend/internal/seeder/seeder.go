@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -106,14 +107,29 @@ func getOriginalUsers() ([]models.User, []rawUser) {
 func Seed(db *sql.DB, rdb *redis.Client) {
 	log.Println("Starting Database Seeding...")
 
-	// 0. Clean up all transaction data (everything except users, provinces, and sbm_rates)
-	log.Println("Cleaning up transaction data...")
-	tables := []string{"travel_reports", "travel_costs", "travel_locations", "travel_records"}
-	for _, table := range tables {
-		_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
-		if err != nil {
-			log.Printf("Warning: failed to truncate %s: %v", table, err)
+	// Get cleanup permission from environment
+	// In production, this should be empty or "false"
+	allowCleanup := os.Getenv("ALLOW_CLEANUP") == "true"
+
+	if allowCleanup {
+		// 0. Clean up all transaction data (everything except users, provinces, and sbm_rates)
+		log.Println("DEVELOPMENT MODE: Cleaning up transaction data...")
+		tables := []string{"travel_reports", "travel_costs", "travel_locations", "travel_records"}
+		for _, table := range tables {
+			_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
+			if err != nil {
+				log.Printf("Warning: failed to truncate %s: %v", table, err)
+			}
 		}
+
+		// 0.1 Clean up old users with @kemnaker.go.id
+		log.Println("DEVELOPMENT MODE: Cleaning up old users with @kemnaker.go.id...")
+		_, err := db.Exec("DELETE FROM users WHERE email LIKE '%@kemnaker.go.id'")
+		if err != nil {
+			log.Printf("Warning: failed to delete old users: %v", err)
+		}
+	} else {
+		log.Println("PRODUCTION/SAFE MODE: Skipping data cleanup. Only upserting records.")
 	}
 
 	adminUsers, protokolData := getOriginalUsers()

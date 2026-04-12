@@ -287,6 +287,49 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 		}
 	}
 
+	if record.Cost != nil {
+		_, err := qtx.CreateTravelCost(ctx, db.CreateTravelCostParams{
+			TravelRecordID:     record.ID,
+			TicketGo:           toNullFloat(record.Cost.TicketGo),
+			TicketBack:         toNullFloat(record.Cost.TicketBack),
+			DailyAllowanceDays: toNullInt32(record.Cost.DailyAllowanceDays),
+			DailyAllowanceRate: toNullFloat(record.Cost.DailyAllowanceRate),
+			HotelDays:          toNullInt32(record.Cost.HotelDays),
+			HotelRate:          toNullFloat(record.Cost.HotelRate),
+			LocalTransport:     toNullFloat(record.Cost.LocalTransport),
+			RegionalTransport:  toNullFloat(record.Cost.RegionalTransport),
+			TransportMode:      toNullString(record.Cost.TransportMode),
+			TransportAmount:    toNullFloat(record.Cost.TransportAmount),
+			OtherCost:          toNullFloat(record.Cost.OtherCost),
+			OtherCostDesc:      toNullString(record.Cost.OtherCostDesc),
+			ReceiptFiles:       toJsonb(record.Cost.ReceiptFiles),
+			TicketGoFile:       toJsonb(record.Cost.TicketGoFile),
+			TicketBackFile:     toJsonb(record.Cost.TicketBackFile),
+			BoardingPassFile:   toJsonb(record.Cost.BoardingPassFile),
+			HotelFile:          toJsonb(record.Cost.HotelFile),
+			TransportFile:      toJsonb(record.Cost.TransportFile),
+			AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
+			Details:            toJsonb(record.Cost.Details),
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	if record.Report != nil {
+		_, err := qtx.CreateTravelReport(ctx, db.CreateTravelReportParams{
+			TravelRecordID: record.ID,
+			Text:           toNullString(record.Report.Text),
+			SubmittedAt:    toNullTime(record.Report.SubmittedAt),
+			Files:          toJsonb(record.Report.Files),
+			SppdFile:       toJsonb(record.Report.SppdFile),
+			SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	return tx.Commit()
 }
 
