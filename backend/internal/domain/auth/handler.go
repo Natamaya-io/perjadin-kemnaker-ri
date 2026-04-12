@@ -51,6 +51,14 @@ func (h *Handler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
+	// SECURITY: Prevent arbitrary privilege escalation during registration
+	// Force all public registrations to default 'staf' role unless configured otherwise
+	if req.Role == "super_admin" || req.Role == "admin" {
+		req.Role = "staf"
+	} else if req.Role == "" {
+		req.Role = "staf"
+	}
+
 	user, err := h.svc.Register(req.Email, req.Password, req.Name, req.Role)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to register user")

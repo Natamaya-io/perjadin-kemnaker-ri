@@ -686,7 +686,21 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 }
 
 func (h *Handler) UploadFile(c echo.Context) error {
-	file, _ := c.FormFile("file")
+	file, err := c.FormFile("file")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "No file provided")
+	}
+
+	// SECURITY: Validasi ekstensi yang diizinkan untuk mencegah Upload Vulnerability
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowed := map[string]bool{
+		".jpg": true, ".jpeg": true, ".png": true, 
+		".pdf": true, ".docx": true, ".xlsx": true, ".xls": true, ".doc": true,
+	}
+	if !allowed[ext] {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid file extension")
+	}
+
 	src, _ := file.Open()
 	defer src.Close()
 	filename := uuid.New().String() + "_" + filepath.Base(file.Filename)
@@ -703,6 +717,11 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
+	// SECURITY: Sanitasi XSS dasar untuk input string
+	r.Purpose = strings.ReplaceAll(strings.ReplaceAll(r.Purpose, "<", ""), ">", "")
+	r.Stakeholder = strings.ReplaceAll(strings.ReplaceAll(r.Stakeholder, "<", ""), ">", "")
+	r.Location = strings.ReplaceAll(strings.ReplaceAll(r.Location, "<", ""), ">", "")
+
 	if creatorIDStr, ok := c.Get("user_id").(string); ok && creatorIDStr != "" {
 		r.CreatorID, _ = uuid.Parse(creatorIDStr)
 	}
@@ -794,10 +813,22 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
 
+	// SECURITY: IDOR Protection, verifikasi pemilik
+	userIDStr := c.Get("user_id").(string)
+	userRole := c.Get("role").(string)
+	if userRole != "super_admin" && userRole != "kasubag" && r.CreatorID.String() != userIDStr {
+		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki akses untuk mengubah data ini")
+	}
+
 	if err := c.Bind(r); err != nil {
 		fmt.Printf("UpdateRecord Bind Error: %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Gagal memproses data: %v", err))
 	}
+
+	// SECURITY: Sanitasi XSS
+	r.Purpose = strings.ReplaceAll(strings.ReplaceAll(r.Purpose, "<", ""), ">", "")
+	r.Stakeholder = strings.ReplaceAll(strings.ReplaceAll(r.Stakeholder, "<", ""), ">", "")
+	r.Location = strings.ReplaceAll(strings.ReplaceAll(r.Location, "<", ""), ">", "")
 
 	r.ID = id // Ensure ID stays correct
 	
@@ -813,11 +844,27 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 
 func (h *Handler) DeleteRecord(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
+
+	// SECURITY: IDOR Protection
+	r, err := h.svc.GetRecordByID(id)
+	if err != nil || r == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
+	}
+	userIDStr := c.Get("user_id").(string)
+	userRole := c.Get("role").(string)
+	if userRole != "super_admin" && userRole != "kasubag" && r.CreatorID.String() != userIDStr {
+		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki izin menghapus data ini")
+	}
+
 	h.svc.DeleteRecord(id)
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
+	userRole := c.Get("role").(string)
+	if userRole != "super_admin" && userRole != "kasubag" {
+		return echo.NewHTTPError(http.StatusForbidden, "Hanya admin yang dapat menghapus SPD batch")
+	}
 	h.svc.DeleteRecordsBySpd(c.Request().Context(), c.Param("spd"))
 	return c.JSON(http.StatusOK, map[string]string{"message": "deleted"})
 }
