@@ -142,21 +142,35 @@
         const detail = editingCosts.details[selectedLocationIndex];
         let totalBill = 0;
         let days = 0;
+        let previousSplitWith = [];
         
         if (isExtend && extendIdx > -1) {
             const extendCost = detail.additionalCosts[extendIdx];
-            totalBill = (extendCost.hotelRate || 0) * (extendCost.hotelDays || 0);
             days = extendCost.hotelDays || 0;
+            // Gunakan hotelOriginalRate jika sudah pernah di-split sebelumnya
+            // agar tidak terjadi double-divide
+            if (extendCost.hotelOriginalRate) {
+                totalBill = extendCost.hotelOriginalRate * days;
+                previousSplitWith = extendCost.hotelSplitWith || [];
+            } else {
+                totalBill = (extendCost.hotelRate || 0) * days;
+            }
         } else {
-            totalBill = (detail.hotelRate || 0) * (detail.hotelDays || 0);
             days = detail.hotelDays || 0;
+            // Gunakan hotelOriginalRate jika sudah pernah di-split sebelumnya
+            if (detail.hotelOriginalRate) {
+                totalBill = detail.hotelOriginalRate * days;
+                previousSplitWith = detail.hotelSplitWith || [];
+            } else {
+                totalBill = (detail.hotelRate || 0) * days;
+            }
         }
 
         splitHotelData = {
             locationIndex: selectedLocationIndex,
             totalBill: totalBill,
             days: days,
-            selectedEmpIds: [],
+            selectedEmpIds: previousSplitWith,  // restore siapa yang sudah di-split
             isExtend: isExtend,
             extendIdx: extendIdx
         };
@@ -182,17 +196,23 @@
             return;
         }
 
+        // Harga per malam SEBELUM dibagi (total kamar penuh per malam)
+        const originalRatePerNight = Math.round(splitHotelData.totalBill / splitHotelData.days);
+        // Harga per malam PER ORANG setelah dibagi
         const ratePerNightPerPerson = Math.round(splitHotelData.totalBill / totalPeople / splitHotelData.days);
         
         let sourceFile = null;
         if (splitHotelData.isExtend && splitHotelData.extendIdx > -1) {
             sourceFile = editingCosts.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx].file;
             
-            // Apply to current person
+            // Apply to current person + simpan state split
             const sourceCost = editingCosts.details[splitHotelData.locationIndex].additionalCosts[splitHotelData.extendIdx];
             sourceCost.hotelRate = ratePerNightPerPerson;
             sourceCost.hotelDays = splitHotelData.days;
             sourceCost.amount = ratePerNightPerPerson * splitHotelData.days;
+            // Simpan original rate & siapa saja yang di-split
+            sourceCost.hotelOriginalRate = originalRatePerNight;
+            sourceCost.hotelSplitWith = [...splitHotelData.selectedEmpIds];
             editingCosts = editingCosts;
 
             // Prepare updates for others
@@ -202,6 +222,8 @@
                 hotelRate: ratePerNightPerPerson,
                 hotelDays: splitHotelData.days,
                 hotelFile: sourceFile ? { ...sourceFile } : null,
+                hotelOriginalRate: originalRatePerNight,
+                hotelSplitWith: [...splitHotelData.selectedEmpIds, record.id],
                 isExtend: true
             }));
             pendingOtherUpdatesToSave = [...pendingOtherUpdatesToSave, ...newUpdates];
@@ -209,18 +231,23 @@
         } else {
             sourceFile = editingCosts.details[splitHotelData.locationIndex].hotelFile;
 
-            // Apply to current person
+            // Apply to current person + simpan state split
             editingCosts.details[splitHotelData.locationIndex].hotelRate = ratePerNightPerPerson;
             editingCosts.details[splitHotelData.locationIndex].hotelDays = splitHotelData.days;
+            // Simpan original rate & siapa saja yang di-split
+            editingCosts.details[splitHotelData.locationIndex].hotelOriginalRate = originalRatePerNight;
+            editingCosts.details[splitHotelData.locationIndex].hotelSplitWith = [...splitHotelData.selectedEmpIds];
             editingCosts = editingCosts;
 
-            // Prepare updates for others
+            // Prepare updates for others (termasuk originalRate agar modal mereka pun bisa restore)
             const newUpdates = splitHotelData.selectedEmpIds.map(empId => ({
                 empId,
                 locationIndex: splitHotelData.locationIndex,
                 hotelRate: ratePerNightPerPerson,
                 hotelDays: splitHotelData.days,
                 hotelFile: sourceFile ? { ...sourceFile } : null,
+                hotelOriginalRate: originalRatePerNight,
+                hotelSplitWith: [...splitHotelData.selectedEmpIds, record.id],
                 isExtend: false
             }));
             pendingOtherUpdatesToSave = [...pendingOtherUpdatesToSave, ...newUpdates];

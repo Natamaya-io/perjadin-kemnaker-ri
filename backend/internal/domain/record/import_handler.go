@@ -18,6 +18,7 @@ import (
 type ImportResult struct {
 	TotalRows int            `json:"totalRows"`
 	Imported  int            `json:"imported"`
+	Updated   int            `json:"updated"`
 	Skipped   int            `json:"skipped"`
 	Failed    int            `json:"failed"`
 	Details   []ImportDetail `json:"details"`
@@ -98,10 +99,11 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal memuat data record existing")
 	}
-	existingSet := make(map[string]bool)
+	// Map key: "spd|name" → existing TravelRecord (for update if costs are 0)
+	existingMap := make(map[string]models.TravelRecord)
 	for _, r := range existingRecords {
 		key := fmt.Sprintf("%s|%s", strings.ToLower(r.SPDNumber), strings.ToLower(r.Employee.Name))
-		existingSet[key] = true
+		existingMap[key] = r
 	}
 
 	result := ImportResult{
@@ -172,14 +174,73 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 			}
 		}
 
-		// Check duplicates
+		// Check duplicates — if already exists, UPDATE costs instead of skipping
 		dupKey := fmt.Sprintf("%s|%s", strings.ToLower(idSPJ), normalizedName)
-		if existingSet[dupKey] {
-			result.Skipped++
-			result.Details = append(result.Details, ImportDetail{
-				Row: rowNum, SPJID: idSPJ, Name: name,
-				Status: "skipped_duplicate", Message: "Data sudah ada di database",
-			})
+		if existingRec, isDuplicate := existingMap[dupKey]; isDuplicate {
+			// Parse cost fields for the update
+			ticketCostUpd := safeParseFloat(getCell(5))
+			dailyRateUpd := safeParseFloat(getCell(8))
+			dailyDaysUpd := safeParseInt(getCell(6))
+			hotelNightsUpd := safeParseInt(getCell(10))
+			hotelRateUpd := safeParseFloat(getCell(11))
+			localTransportUpd := safeParseFloat(getCell(13))
+			regionalTransportUpd := safeParseFloat(getCell(14))
+			totalCostUpd := safeParseFloat(getCell(15))
+			transportModeUpd := getCell(21)
+
+			var additionalCostsUpd []map[string]interface{}
+			if localTransportUpd > 0 {
+				additionalCostsUpd = append(additionalCostsUpd, map[string]interface{}{
+					"name":   "Transport Lokal",
+					"amount": localTransportUpd,
+					"file":   nil,
+				})
+			} else {
+				additionalCostsUpd = make([]map[string]interface{}, 0)
+			}
+
+			detailsArrUpd := []map[string]interface{}{
+				{
+					"transportMode":   transportModeUpd,
+					"ticketGo":        ticketCostUpd,
+					"ticketBack":      0,
+					"hotelDays":       hotelNightsUpd,
+					"hotelRate":       hotelRateUpd,
+					"transportAmount": regionalTransportUpd,
+					"additionalCosts": additionalCostsUpd,
+				},
+			}
+			detailsBytesUpd, _ := json.Marshal(detailsArrUpd)
+
+			existingRec.TotalCost = totalCostUpd
+			existingRec.Cost = &models.TravelCost{
+				TicketGo:           ticketCostUpd,
+				DailyAllowanceDays: dailyDaysUpd,
+				DailyAllowanceRate: dailyRateUpd,
+				HotelDays:          hotelNightsUpd,
+				HotelRate:          hotelRateUpd,
+				LocalTransport:     localTransportUpd,
+				RegionalTransport:  regionalTransportUpd,
+				TransportAmount:    regionalTransportUpd,
+				TransportMode:      transportModeUpd,
+				Details:            detailsBytesUpd,
+			}
+
+			if err := h.svc.UpdateRecord(&existingRec); err != nil {
+				result.Failed++
+				result.Details = append(result.Details, ImportDetail{
+					Row: rowNum, SPJID: idSPJ, Name: name,
+					Status: "failed", Message: "Gagal update biaya: " + err.Error(),
+				})
+			} else {
+				result.Updated++
+				result.Details = append(result.Details, ImportDetail{
+					Row: rowNum, SPJID: idSPJ, Name: name,
+					Status: "updated", Message: "Biaya berhasil diperbarui dari Excel",
+				})
+				// Update the map to prevent double-update in same batch
+				existingMap[dupKey] = existingRec
+			}
 			continue
 		}
 
@@ -317,7 +378,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		}
 
 		// Mark as existing to prevent duplicate within same import batch
-		existingSet[dupKey] = true
+		existingMap[dupKey] = *record
 
 		result.Imported++
 		result.Details = append(result.Details, ImportDetail{
@@ -369,13 +430,60 @@ func readExcelDate(f *excelize.File, sheet, cellRef string) time.Time {
 	return time.Time{}
 }
 
-// safeParseFloat safely parses a string to float64
+// safeParseFloat safely parses a string to float64.
+// Handles both standard format ("386000") and Indonesian/Excel format:
+// - Dots as thousands separators: "386.000" → 386000
+// - Comma as decimal separator: "1.234,56" → 1234.56
+// - Currency prefix: "Rp430.000" → 430000
 func safeParseFloat(s string) float64 {
 	s = strings.TrimSpace(s)
 	if s == "" || s == "-" {
 		return 0
 	}
-	
+
+	// Remove currency prefix/suffix (Rp, IDR, etc.)
+	s = strings.TrimPrefix(s, "Rp")
+	s = strings.TrimPrefix(s, "IDR")
+	s = strings.TrimSpace(s)
+
+	// If no comma: dots are thousands separators (Indonesian format: "386.000", "1.421.370")
+	// If has comma: dot=thousands, comma=decimal ("1.234,56")
+	if strings.Contains(s, ",") {
+		// Remove dots (thousands) then replace comma with dot (decimal)
+		s = strings.ReplaceAll(s, ".", "")
+		s = strings.ReplaceAll(s, ",", ".")
+	} else {
+		// Count dots: if more than one, or if dot is followed by exactly 3 digits at the end → thousands sep
+		dotCount := strings.Count(s, ".")
+		if dotCount > 1 {
+			// Multiple dots → all are thousands separators
+			s = strings.ReplaceAll(s, ".", "")
+		} else if dotCount == 1 {
+			// Single dot: check if it's a thousands separator (followed by exactly 3 digits)
+			parts := strings.Split(s, ".")
+			if len(parts[1]) == 3 {
+				// e.g. "386.000" → thousands separator
+				s = strings.ReplaceAll(s, ".", "")
+			}
+			// else: "386.5" → keep as decimal point
+		}
+	}
+
+	// Remove any remaining non-numeric characters except dot and minus
+	var cleaned strings.Builder
+	for i, ch := range s {
+		if ch >= '0' && ch <= '9' {
+			cleaned.WriteRune(ch)
+		} else if ch == '.' || (ch == '-' && i == 0) {
+			cleaned.WriteRune(ch)
+		}
+	}
+	s = cleaned.String()
+
+	if s == "" {
+		return 0
+	}
+
 	val, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0
@@ -383,21 +491,11 @@ func safeParseFloat(s string) float64 {
 	return val
 }
 
-// safeParseInt safely parses a string to int
+
+// safeParseInt safely parses a string to int.
+// Handles Indonesian number format (dots as thousands separators).
 func safeParseInt(s string) int {
-	s = strings.TrimSpace(s)
-	if s == "" || s == "-" {
-		return 0
-	}
-	
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		// Try parsing as float first (Excel might return "2.0" for integer cells)
-		f, ferr := strconv.ParseFloat(s, 64)
-		if ferr == nil {
-			return int(f)
-		}
-		return 0
-	}
-	return val
+	// Use safeParseFloat to handle all formats, then truncate
+	f := safeParseFloat(s)
+	return int(f)
 }

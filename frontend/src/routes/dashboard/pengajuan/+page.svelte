@@ -39,7 +39,9 @@
             const query = searchQuery.toLowerCase();
             const matchSearch = 
                 (r.spd?.toLowerCase() || '').includes(query) ||
-                (r.location?.toLowerCase() || '').includes(query);
+                (r.location?.toLowerCase() || '').includes(query) ||
+                (r.purpose?.toLowerCase() || '').includes(query) ||
+                (r.employee?.name?.toLowerCase() || '').includes(query);
             
             const badge = getStatusBadge(r);
             const matchStatus = statusFilter === 'all' || badge.label === statusFilter;

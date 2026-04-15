@@ -219,6 +219,22 @@
                     let newTargetCosts = JSON.parse(JSON.stringify(targetRecord.costs || {}));
                     if (!newTargetCosts.details) newTargetCosts.details = [];
                     
+                    // === FIX: inisialisasi detail locations sesuai jumlah lokasi targetRecord
+                    // Jika Doni belum pernah buka CostModal, details-nya masih [] (kosong).
+                    // Akibatnya index check di bawah selalu false dan hotelRate tidak pernah di-set.
+                    const targetLocCount = targetRecord.locations?.length || 1;
+                    while (newTargetCosts.details.length < targetLocCount) {
+                        newTargetCosts.details.push({
+                            transportMode: 'Pesawat',
+                            ticketGo: 0, ticketBack: 0,
+                            hotelDays: 0, hotelRate: 0,
+                            transportAmount: 0,
+                            additionalCosts: [],
+                            boardingPassFiles: []
+                        });
+                    }
+                    // === END FIX
+                    
                     if (newTargetCosts.details[updateInfo.locationIndex]) {
                         if (updateInfo.isExtend) {
                             if (!newTargetCosts.details[updateInfo.locationIndex].additionalCosts) {
@@ -231,13 +247,18 @@
                                     hotelRate: updateInfo.hotelRate,
                                     hotelDays: updateInfo.hotelDays,
                                     amount: updateInfo.hotelRate * updateInfo.hotelDays,
-                                    file: updateInfo.hotelFile ? { ...updateInfo.hotelFile } : null
+                                    file: updateInfo.hotelFile ? { ...updateInfo.hotelFile } : null,
+                                    hotelOriginalRate: updateInfo.hotelOriginalRate || null,
+                                    hotelSplitWith: updateInfo.hotelSplitWith || []
                                 });
                             } else {
                                 const targetCost = newTargetCosts.details[updateInfo.locationIndex].additionalCosts[targetExtendIdx];
                                 targetCost.hotelRate = updateInfo.hotelRate;
                                 targetCost.hotelDays = updateInfo.hotelDays;
                                 targetCost.amount = updateInfo.hotelRate * updateInfo.hotelDays;
+                                // Simpan state split agar bisa restore saat modal dibuka lagi
+                                if (updateInfo.hotelOriginalRate) targetCost.hotelOriginalRate = updateInfo.hotelOriginalRate;
+                                if (updateInfo.hotelSplitWith) targetCost.hotelSplitWith = updateInfo.hotelSplitWith;
                                 if (updateInfo.hotelFile) {
                                     targetCost.file = { ...updateInfo.hotelFile };
                                 }
@@ -245,6 +266,13 @@
                         } else {
                             newTargetCosts.details[updateInfo.locationIndex].hotelRate = updateInfo.hotelRate;
                             newTargetCosts.details[updateInfo.locationIndex].hotelDays = updateInfo.hotelDays;
+                            // Simpan state split agar bisa restore saat modal dibuka lagi
+                            if (updateInfo.hotelOriginalRate) {
+                                newTargetCosts.details[updateInfo.locationIndex].hotelOriginalRate = updateInfo.hotelOriginalRate;
+                            }
+                            if (updateInfo.hotelSplitWith) {
+                                newTargetCosts.details[updateInfo.locationIndex].hotelSplitWith = updateInfo.hotelSplitWith;
+                            }
                             if (updateInfo.hotelFile) {
                                 newTargetCosts.details[updateInfo.locationIndex].hotelFile = updateInfo.hotelFile;
                             }
