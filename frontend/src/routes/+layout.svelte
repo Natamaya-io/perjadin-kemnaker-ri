@@ -102,7 +102,7 @@
           </div>
       </div>
   </div>
-{#else}
+{:else}
 <div class="h-[100dvh] w-screen flex font-sans antialiased text-slate-900 overflow-hidden {activeRoute.startsWith('/login') ? 'bg-slate-900' : 'bg-slate-50'}">
   {#if $userStore.loggedIn && !isBlankPage}
     {#if mobileSidebarOpen}
