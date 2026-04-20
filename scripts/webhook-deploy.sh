@@ -156,8 +156,9 @@ if [ "$DB_READY" = true ]; then
    echo "[+] Database OK."
    
    # FIX: Hapus sisa akun demo lama jika SEED_DB diaktifkan agar tidak menumpuk
-   echo "[+] Membersihkan tabel user untuk sinkronisasi data demo..."
-   docker exec perjadin_db_container psql -U "${DB_USR}" -d "${DB_NAM}" -c "TRUNCATE TABLE users CASCADE;" || echo "⚠️ Gagal membersihkan tabel users (mungkin tabel belum ada)."
+   # (Dihapus/dikomentari untuk mencegah kehilangan data)
+   # echo "[+] Membersihkan tabel user untuk sinkronisasi data demo..."
+   # docker exec perjadin_db_container psql -U "${DB_USR}" -d "${DB_NAM}" -c "TRUNCATE TABLE users CASCADE;" || echo "⚠️ Gagal membersihkan tabel users (mungkin tabel belum ada)."
    
    # Reset dirty flag migration jika terjadi kegagalan sebelumnya
    echo "[+] Membersihkan dirty flag pada schema_migrations..."
