@@ -19,7 +19,7 @@
 	$: isBlankPage = activeRoute.startsWith('/login') || activeRoute.startsWith('/print');
 
 	// Set ke true untuk mengaktifkan mode maintenance
-	export let MAINTENANCE_MODE = true;
+	export let MAINTENANCE_MODE = false;
 
 	// Auth Redirect
 	$: if (!MAINTENANCE_MODE && !$userStore.loggedIn && !isBlankPage) {
