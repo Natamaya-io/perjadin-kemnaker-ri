@@ -290,7 +290,7 @@
                 <Input type="text" placeholder="Contoh: budi" bind:value={formData.email} />
             </div>
             <div class="space-y-2">
-                <Label>Password {editingId ? '(Kosongkan jika tidak diubah)' : '<span class="text-red-500">*</span>'}</Label>
+                <Label>Password {#if editingId}(Kosongkan jika tidak diubah){:else}<span class="text-red-500">*</span>{/if}</Label>
                 <Input type="text" placeholder="Minimal 6 karakter" bind:value={formData.password} />
             </div>
             <div class="space-y-2">
