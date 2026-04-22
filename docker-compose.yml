@@ -106,6 +106,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME}_frontend
+    labels:
+      - "io.containers.autoupdate=registry"
     environment:
       - PUBLIC_API_URL=${PUBLIC_API_URL}
       - INTERNAL_API_URL=http://backend:8081
