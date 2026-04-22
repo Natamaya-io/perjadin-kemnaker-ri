@@ -119,7 +119,7 @@ jobs:
             
             # Gunakan 'podman compose' (standar baru) yang lebih robust
             doppler run -- podman compose pull
-            doppler run -- podman compose up -d --build
+            doppler run -- podman compose up -d
             
             podman image prune -f
             podman compose ps

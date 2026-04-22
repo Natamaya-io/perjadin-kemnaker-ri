@@ -3,6 +3,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Add ARG before build so Vite can use them
+ARG VITE_API_URL=/api/v1
+ARG VITE_USE_REAL_API=true
+ARG VITE_SHOW_DEMO_BANNER=false
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_USE_REAL_API=$VITE_USE_REAL_API
+ENV VITE_SHOW_DEMO_BANNER=$VITE_SHOW_DEMO_BANNER
+
 # Copy package files and install all dependencies (needed for build)
 COPY package.json package-lock.json .npmrc ./
 RUN npm install
