@@ -40,6 +40,7 @@ services:
   # Backend Service (Go API)
   # ==============================================
   backend:
+    image: ghcr.io/raxbyte-org/perjadin-kemnaker-ri-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -96,6 +97,7 @@ services:
   # Frontend Service (SvelteKit)
   # ==============================================
   frontend:
+    image: ghcr.io/raxbyte-org/perjadin-kemnaker-ri-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
