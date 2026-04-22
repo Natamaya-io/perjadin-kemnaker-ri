@@ -25,7 +25,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if role != "super_admin" {
+	if role != "super_admin" && role != "kasubag" {
 		var filtered []models.User
 		for _, u := range users {
 			if u.ID.String() == uidStr && u.Role != "alumni_staff" {

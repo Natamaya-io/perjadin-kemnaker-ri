@@ -14,8 +14,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      # Persistent path provided by Doppler, fallback to /tmp for ephemeral dev/staging
-      - ${DB_DATA_PATH:-/tmp/perjadin_db_data}:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -32,7 +31,7 @@ services:
     ports:
       - "${REDIS_PORT}:6379"
     volumes:
-      - ${REDIS_DATA_PATH:-/tmp/perjadin_redis_data}:/data
+      - redis_data:/data
     restart: unless-stopped
     command: redis-server --requirepass "${REDIS_PASSWORD}"
 
@@ -62,7 +61,7 @@ services:
       - ALLOW_CLEANUP=${ALLOW_CLEANUP:-false}
       - GIN_MODE=${GIN_MODE}
       - FONNTE_API=${FONNTE_API}
-      - GOTENBERG_URL=http://gotenberg:3000
+      - GOTENBERG_URL=http://${COMPOSE_PROJECT_NAME}_gotenberg:3000
     ports:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:
@@ -71,7 +70,7 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ${UPLOADS_DATA_PATH:-/tmp/perjadin_uploads}:/app/uploads
+      - backend_uploads:/app/uploads
     restart: unless-stopped
 
   # ==============================================
@@ -80,6 +79,7 @@ services:
   gotenberg:
     image: docker.io/gotenberg/gotenberg:8
     container_name: ${COMPOSE_PROJECT_NAME}_gotenberg
+    hostname: gotenberg
     shm_size: "2g"
     ports:
       - "3001:3000"
@@ -112,3 +112,11 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
