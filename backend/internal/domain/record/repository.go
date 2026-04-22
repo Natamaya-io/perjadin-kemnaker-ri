@@ -196,6 +196,8 @@ func mapDBCost(dbc db.TravelCost) models.TravelCost {
 }
 
 func mapDBReport(dbrep db.TravelReport) models.TravelReport {
+	fmt.Printf("DEBUG: mapping report for record %v, tanggal_merah valid: %v, length: %d, raw: %s\n", 
+		dbrep.TravelRecordID, dbrep.TanggalMerah.Valid, len(dbrep.TanggalMerah.RawMessage), string(dbrep.TanggalMerah.RawMessage))
 	return models.TravelReport{
 		TravelRecordID: dbrep.TravelRecordID,
 		Text:           fromNullString(dbrep.Text),
@@ -203,6 +205,11 @@ func mapDBReport(dbrep db.TravelReport) models.TravelReport {
 		Files:          fromJsonb(dbrep.Files),
 		SppdFile:       fromJsonb(dbrep.SppdFile),
 		SuratTugasFile: fromJsonb(dbrep.SuratTugasFile),
+		PPKName:        fromNullString(dbrep.PpkName),
+		PPKNIP:         fromNullString(dbrep.PpkNip),
+		BendaharaName:  fromNullString(dbrep.BendaharaName),
+		BendaharaNIP:   fromNullString(dbrep.BendaharaNip),
+		TanggalMerah:   fromJsonb(dbrep.TanggalMerah),
 	}
 }
 
@@ -324,6 +331,11 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 			Files:          toJsonb(record.Report.Files),
 			SppdFile:       toJsonb(record.Report.SppdFile),
 			SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
+			PpkName:        toNullString(record.Report.PPKName),
+			PpkNip:         toNullString(record.Report.PPKNIP),
+			BendaharaName:  toNullString(record.Report.BendaharaName),
+			BendaharaNip:   toNullString(record.Report.BendaharaNIP),
+			TanggalMerah:   toJsonb(record.Report.TanggalMerah),
 		})
 		if err != nil {
 			return err
@@ -625,6 +637,11 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 			Files:          toJsonb(record.Report.Files),
 			SppdFile:       toJsonb(record.Report.SppdFile),
 			SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
+			PpkName:        toNullString(record.Report.PPKName),
+			PpkNip:         toNullString(record.Report.PPKNIP),
+			BendaharaName:  toNullString(record.Report.BendaharaName),
+			BendaharaNip:   toNullString(record.Report.BendaharaNIP),
+			TanggalMerah:   toJsonb(record.Report.TanggalMerah),
 		})
 		if err != nil {
 			_, err = qtx.CreateTravelReport(ctx, db.CreateTravelReportParams{
@@ -634,6 +651,11 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 				Files:          toJsonb(record.Report.Files),
 				SppdFile:       toJsonb(record.Report.SppdFile),
 				SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
+				PpkName:        toNullString(record.Report.PPKName),
+				PpkNip:         toNullString(record.Report.PPKNIP),
+				BendaharaName:  toNullString(record.Report.BendaharaName),
+				BendaharaNip:   toNullString(record.Report.BendaharaNIP),
+				TanggalMerah:   toJsonb(record.Report.TanggalMerah),
 			})
 			if err != nil {
 				return fmt.Errorf("CreateTravelReport fallback: %w", err)

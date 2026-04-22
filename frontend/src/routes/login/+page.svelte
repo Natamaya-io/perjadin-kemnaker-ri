@@ -4,6 +4,7 @@
     import { fly } from 'svelte/transition';
     import { loadRecords } from '$lib/features/pengajuan/store';
     import { loadMasterData } from '$lib/shared/stores/master-data';
+    import { public_env } from '$lib/shared/api/index'; // Standard way in this project to access env
     
     // Login Components
     import LoginBackground from '$lib/features/auth/ui/LoginBackground.svelte';
@@ -21,6 +22,9 @@
     let errorMessage = '';
     
     let isChangePasswordMode = false;
+
+    // Check toggle from environment variable
+    const showDemoBanner = import.meta.env.VITE_SHOW_DEMO_BANNER === 'true';
 
     async function handleLogin() {
         errorMessage = '';
@@ -58,7 +62,9 @@
         <LoginCard>
             <LoginHeader />
             <LoginBody>
-                <DemoBanner on:fill={(e) => { email = e.detail.email; password = e.detail.password; }} />
+                {#if showDemoBanner}
+                    <DemoBanner on:fill={(e) => { email = e.detail.email; password = e.detail.password; }} />
+                {/if}
                 {#if errorMessage}
                     <div class="text-xs font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 text-center animate-shake">
                         {errorMessage}

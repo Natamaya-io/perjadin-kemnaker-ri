@@ -95,6 +95,19 @@ func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]by
 		}
 	}
 
+	// Handle 1-day travel format removing the dash
+	if tglMulai, ok := req.Variables["tanggal_mulai"].(string); ok && tglMulai == "" {
+		// Replace ` - {{tanggal_selesai}}` or just ` - ` that might be left in the template
+		content = strings.ReplaceAll(content, "Tanggal  -", "Tanggal")
+		content = strings.ReplaceAll(content, "Tanggal -", "Tanggal")
+		content = regexp.MustCompile(`(Tanggal(?:</w:t>[^>]*>)*<w:t(?:[^>]*)>[\s]*)(?:\-[\s]*)(<)`).ReplaceAllString(content, "$1$2")
+		content = regexp.MustCompile(`(Tanggal[\s]*)\-[\s]*`).ReplaceAllString(content, "$1")
+		content = regexp.MustCompile(`(</w:t></w:r><w:r(?:[^>]*)><w:t(?:[^>]*)>[\s]*)\-([\s]*</w:t></w:r><w:r(?:[^>]*)><w:t(?:[^>]*)>(?:[0-9]{1,2}))`).ReplaceAllString(content, "$1$2")
+		// Sometimes there is an en-dash
+		content = regexp.MustCompile(`(Tanggal(?:</w:t>[^>]*>)*<w:t(?:[^>]*)>[\s]*)(?:\x{2013}[\s]*)(<)`).ReplaceAllString(content, "$1$2")
+		content = regexp.MustCompile(`(Tanggal[\s]*)\x{2013}[\s]*`).ReplaceAllString(content, "$1")
+	}
+
 	// Remove duplicate year 2026 if it occurs explicitly right after a filled tanggal_no_surat
 	// or we can just replace "Tanggal <tanggal_no_surat> 2026" with "Tanggal <tanggal_no_surat>"
 	if tgl, ok := req.Variables["tanggal_no_surat"].(string); ok && tgl != "" {

@@ -111,6 +111,7 @@ type TravelReport struct {
 	PPKNIP         string         `json:"ppkNip"`
 	BendaharaName  string         `json:"bendaharaName"`
 	BendaharaNIP   string         `json:"bendaharaNip"`
+	TanggalMerah   json.RawMessage `json:"tanggalMerah"` // Array of dates string
 }
 
 // ==========================================

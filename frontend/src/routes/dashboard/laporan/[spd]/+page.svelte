@@ -67,6 +67,10 @@
     let reportText = '';
     let manualSuratTugasNumber = '';
     let manualSuratTugasDate = '';
+    let tanggalMerahList = [];
+    let newTanggalMerah = '';
+    // Track record ID untuk deteksi navigasi antar SPD
+    let loadedForRecordId = '';
     
     // Signatories
     let ppkName = '';
@@ -677,17 +681,51 @@
     }
 
     let isDataLoaded = false;
+    function addTanggalMerah() {
+        if (newTanggalMerah && !tanggalMerahList.includes(newTanggalMerah)) {
+            tanggalMerahList = [...tanggalMerahList, newTanggalMerah].sort();
+            newTanggalMerah = '';
+        }
+    }
+    
+    function removeTanggalMerah(date) {
+        tanggalMerahList = tanggalMerahList.filter(d => d !== date);
+    }
+
     $: if (record && !manualSuratTugasNumber && record.suratTugasNumber) { manualSuratTugasNumber = record.suratTugasNumber; }
     $: if (record && !manualSuratTugasDate && record.suratTugasDate && record.suratTugasDate !== '0001-01-01T00:00:00Z') { 
         manualSuratTugasDate = new Date(record.suratTugasDate).toISOString().split('T')[0]; 
     }
-    $: if (record && record.reportData && !isDataLoaded) {
+    // Guard: load semua field form saat pertama kali atau saat navigasi ke record baru
+    $: if (record && record.reportData && (!isDataLoaded || record.id !== loadedForRecordId)) {
         reportText = record.reportData.text || '';
         uploadedFiles = record.reportData.files || [];
-        sppdFile = record.reportData.sppdFile || null;
-        suratTugasFile = record.reportData.suratTugasFile || null;
+        // Normalisasi: {} dari toJsonb(nil) dianggap null agar tidak render 'file kosong'
+        const _rawSppd = record.reportData.sppdFile;
+        sppdFile = (_rawSppd && typeof _rawSppd === 'object' && Object.keys(_rawSppd).length > 0) ? _rawSppd : null;
+        const _rawST = record.reportData.suratTugasFile;
+        suratTugasFile = (_rawST && typeof _rawST === 'object' && Object.keys(_rawST).length > 0) ? _rawST : null;
         manualSuratTugasNumber = record.suratTugasNumber || '';
+        // Sync tanggalMerahList dari store (hanya saat load awal atau ganti record)
+        const _raw = record.reportData.tanggalMerah;
+        try {
+            if (Array.isArray(_raw)) {
+                tanggalMerahList = [..._raw];
+            } else if (typeof _raw === 'string' && _raw.length > 0) {
+                tanggalMerahList = JSON.parse(_raw);
+            } else {
+                tanggalMerahList = [];
+            }
+        } catch {
+            tanggalMerahList = [];
+        }
+        loadedForRecordId = record.id;
         isDataLoaded = true;
+    }
+
+    // Reset guard saat navigasi ke SPD berbeda
+    $: if (record && record.id && record.id !== loadedForRecordId && isDataLoaded) {
+        isDataLoaded = false;
     }
 
     onMount(async () => {
@@ -811,32 +849,6 @@
         uploadedFiles = uploadedFiles.filter((_, i) => i !== index);
     }
 
-    async function saveSuratTugasInfoOnly() {
-        if (!manualSuratTugasNumber) {
-            toast.error('Nomor Surat Tugas tidak boleh kosong.');
-            return;
-        }
-
-        startLoading();
-        try {
-            const updates = recordsList.map(r => ({
-                id: r.id,
-                data: {
-                    suratTugasNumber: manualSuratTugasNumber,
-                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined
-                }
-            }));
-            await updateMultipleRecords(updates);
-
-            toast.success('Informasi Surat Tugas berhasil diperbarui.');
-        } catch (error) {
-            toast.error('Gagal memperbarui informasi Surat Tugas.');
-            console.error('Save ST info error:', error);
-        } finally {
-            stopLoading();
-        }
-    }
-
     async function saveDraftLaporan() {
         if (!recordsList.length) return;
         
@@ -846,6 +858,17 @@
             return;
         }
 
+        // Pastikan snapshot selalu memuat input yang mungkin belum diklik "Tambahkan"
+        let finalTanggalMerahList = [...tanggalMerahList];
+        if (newTanggalMerah && !finalTanggalMerahList.includes(newTanggalMerah)) {
+            finalTanggalMerahList = [...finalTanggalMerahList, newTanggalMerah].sort();
+            // Update state UI juga agar sinkron
+            tanggalMerahList = finalTanggalMerahList;
+            newTanggalMerah = '';
+        }
+        
+        // Snapshot sebelum await — guard bisa reset list saat loadRecords()
+        const tmSnapshot = [...finalTanggalMerahList];
         startLoading();
         try {
             const updates = recordsList.map(r => ({
@@ -855,16 +878,18 @@
                     suratTugasNumber: manualSuratTugasNumber,
                     suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                     reportData: {
+                        ...(r.reportData || {}),
                         text: reportText,
                         files: uploadedFiles,
                         sppdFile: sppdFile,
                         suratTugasFile: suratTugasFile,
+                        tanggalMerah: tmSnapshot,
                         lastDraftSavedAt: new Date().toISOString()
                     }
                 }
             }));
             await updateMultipleRecords(updates);
-
+            tanggalMerahList = tmSnapshot;
             toast.success('Draf Laporan Kegiatan berhasil disimpan!');
         } catch (error) {
             toast.error('Gagal menyimpan draf laporan. Silakan coba lagi.');
@@ -893,6 +918,16 @@
 
         if (!recordsList.length) return;
 
+        // Pastikan snapshot selalu memuat input yang mungkin belum diklik "Tambahkan"
+        let finalTanggalMerahList = [...tanggalMerahList];
+        if (newTanggalMerah && !finalTanggalMerahList.includes(newTanggalMerah)) {
+            finalTanggalMerahList = [...finalTanggalMerahList, newTanggalMerah].sort();
+            // Update state UI juga agar sinkron
+            tanggalMerahList = finalTanggalMerahList;
+            newTanggalMerah = '';
+        }
+
+        const tmSnapshot = [...finalTanggalMerahList];
         startLoading();
         try {
             const updates = recordsList.map(r => ({
@@ -902,16 +937,18 @@
                     suratTugasNumber: manualSuratTugasNumber,
                     suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                     reportData: {
+                        ...(r.reportData || {}),
                         text: reportText,
                         files: uploadedFiles,
                         sppdFile: sppdFile,
                         suratTugasFile: suratTugasFile,
+                        tanggalMerah: tmSnapshot,
                         submittedAt: new Date().toISOString()
                     }
                 }
             }));
             await updateMultipleRecords(updates);
-
+            tanggalMerahList = tmSnapshot;
             toast.success('Laporan Kegiatan berhasil disubmit!');
             goto('/dashboard/laporan');
         } catch (error) {
@@ -1055,14 +1092,6 @@
                                  <div>
                                      <div class="flex justify-between items-center mb-1.5">
                                          <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Nomor Surat Tugas</span>
-                                         {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (manualSuratTugasNumber !== (record.suratTugasNumber || ''))}
-                                             <button 
-                                                 on:click={saveSuratTugasInfoOnly}
-                                                 class="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
-                                             >
-                                                 Simpan
-                                             </button>
-                                         {/if}
                                      </div>
                                      {#if $userStore.role !== 'kasubag'}
                                          <input 
@@ -1080,14 +1109,6 @@
                                  <div>
                                      <div class="flex justify-between items-center mb-1.5">
                                          <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Tanggal Surat Tugas</span>
-                                         {#if ($userStore.role === 'super_admin' || $userStore.role === 'protokol') && (manualSuratTugasDate !== (record.suratTugasDate && record.suratTugasDate !== '0001-01-01T00:00:00Z' ? new Date(record.suratTugasDate).toISOString().split('T')[0] : ''))}
-                                             <button 
-                                                 on:click={saveSuratTugasInfoOnly}
-                                                 class="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
-                                             >
-                                                 Simpan
-                                             </button>
-                                         {/if}
                                      </div>
                                      {#if $userStore.role !== 'kasubag'}
                                          <input 
@@ -1235,6 +1256,46 @@
                     </div>
                 </div>
                         <div class="p-4 sm:p-6 md:p-8 space-y-8">
+                            <!-- Tanggal Merah Section -->
+                            <div class="space-y-4" transition:fade={{ duration: 200 }}>
+                                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                                    <Label class="text-lg font-bold text-slate-800">Hari Libur / Tanggal Merah</Label>
+                                    <span class="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-full border border-slate-200">
+                                        {tanggalMerahList.length} Tanggal
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <input 
+                                        type="date" 
+                                        bind:value={newTanggalMerah}
+                                        disabled={$userStore.role === 'kasubag'}
+                                        class="font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none flex-1 text-sm shadow-sm"
+                                    />
+                                    <Button type="button" disabled={$userStore.role === 'kasubag'} on:click={addTanggalMerah} class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm px-6 h-[38px]">
+                                        Tambahkan
+                                    </Button>
+                                </div>
+                                {#if tanggalMerahList.length > 0}
+                                    <div class="flex flex-wrap gap-2 mt-3">
+                                        {#each tanggalMerahList as tm}
+                                            <div class="flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:bg-rose-100">
+                                                <span>{new Date(tm).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                {#if $userStore.role !== 'kasubag'}
+                                                    <button type="button" on:click={() => removeTanggalMerah(tm)} class="text-rose-400 hover:text-rose-700 transition-colors ml-1 p-0.5 rounded-full hover:bg-rose-200" title="Hapus">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                {/if}
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {/if}
+                                <div class="mt-3">
+                                    <p class="text-xs text-slate-400 italic">Tanggal merah akan dikecualikan dalam perhitungan tanggal laporan dan rincian pada Cetak Dokumen.</p>
+                                </div>
+                            </div>
+
                             <!-- Report Text Section -->
                             <div class="space-y-4" transition:fade={{ duration: 200 }}>
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -1413,7 +1474,7 @@
 
                                                 <!-- Mode Transportasi -->
                                                 <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
-                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi ({toTitleCase(loc.province || empRecord.province)})</Label>
+                                                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
                                                     <Select bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
                                                         <option value="Pesawat">Pesawat Udara</option>
                                                         <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
@@ -1428,7 +1489,7 @@
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
-                                                            Uang Harian (SBM) - {toTitleCase(loc.province || empRecord.province)}
+                                                            Uang Harian (SBM)
                                                         </h4>
                                                         <span class="text-base md:text-lg font-bold text-blue-700">{formatCurrency(sbmTotal)}</span>
                                                     </div>

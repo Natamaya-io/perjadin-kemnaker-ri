@@ -116,6 +116,11 @@ type TravelReport struct {
 	Files          pqtype.NullRawMessage `json:"files"`
 	SppdFile       pqtype.NullRawMessage `json:"sppd_file"`
 	SuratTugasFile pqtype.NullRawMessage `json:"surat_tugas_file"`
+	PpkName        sql.NullString        `json:"ppk_name"`
+	PpkNip         sql.NullString        `json:"ppk_nip"`
+	BendaharaName  sql.NullString        `json:"bendahara_name"`
+	BendaharaNip   sql.NullString        `json:"bendahara_nip"`
+	TanggalMerah   pqtype.NullRawMessage `json:"tanggal_merah"`
 }
 
 type User struct {

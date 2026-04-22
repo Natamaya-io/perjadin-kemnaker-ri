@@ -85,9 +85,9 @@ DELETE FROM travel_costs WHERE travel_record_id = $1;
 
 -- name: CreateTravelReport :one
 INSERT INTO travel_reports (
-  travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file
+  travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah
 ) VALUES (
-  $1, $2, $3, $4, $5, $6
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 ) RETURNING *;
 
 -- name: GetTravelReportByRecordID :one
@@ -95,7 +95,7 @@ SELECT * FROM travel_reports WHERE travel_record_id = $1 LIMIT 1;
 
 -- name: UpdateTravelReport :one
 UPDATE travel_reports SET
-  text = $2, submitted_at = $3, files = $4, sppd_file = $5, surat_tugas_file = $6
+  text = $2, submitted_at = $3, files = $4, sppd_file = $5, surat_tugas_file = $6, ppk_name = $7, ppk_nip = $8, bendahara_name = $9, bendahara_nip = $10, tanggal_merah = $11
 WHERE travel_record_id = $1
 RETURNING *;
 

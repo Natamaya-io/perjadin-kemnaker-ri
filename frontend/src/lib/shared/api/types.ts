@@ -36,6 +36,9 @@ export interface TravelReport {
     text: string;
     submittedAt: string;
     files: any[];
+    sppdFile?: any;
+    suratTugasFile?: any;
+    tanggalMerah?: string | string[];
 }
 
 export interface TravelLocation {

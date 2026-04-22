@@ -1,8 +1,8 @@
-name: CD (Enterprise Build, Push & Deploy)
+name: CI/CD Multi-Environment (Staging & Production)
 
 on:
   push:
-    branches: [ "staging" ]
+    branches: [ "staging", "main" ]
 
 env:
   REGISTRY: ghcr.io
@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-push-backend:
-    name: Build & Push Backend (Go)
+    name: Build & Push Backend
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,13 +36,13 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:staging
+            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
             ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-push-frontend:
-    name: Build & Push Frontend (SvelteKit)
+    name: Build & Push Frontend
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -61,7 +61,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push Frontend (With Vite Build-Args)
+      - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
@@ -70,25 +70,45 @@ jobs:
           build-args: |
             VITE_API_URL=/api/v1
             VITE_USE_REAL_API=true
+            VITE_SHOW_DEMO_BANNER=${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:staging
+            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
             ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  trigger-webhook:
-    name: Trigger aaPanel Deployment
+  deploy-staging:
+    name: Deploy to Staging (Webhook)
     needs: [build-push-backend, build-push-frontend]
+    if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Execute Webhook via Cloudflare Access
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" \
+          curl -s -o /dev/null -w "%{http_code}" -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" \
           -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-          -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}")
-          
-          echo "Webhook HTTP Status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Failed to trigger aaPanel webhook! Cloudflare memblokir atau aaPanel down."
-            exit 1
-          fi
+          -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+
+  deploy-production:
+    name: Deploy to Production (Direct SSH)
+    needs: [build-push-backend, build-push-frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/gatsu51/perjadin-app
+            export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN_PROD }}
+            echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
+            doppler run -- podman-compose pull
+            doppler run -- podman-compose up -d --build
+            podman image prune -f
+            podman compose ps

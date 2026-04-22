@@ -19,3 +19,17 @@ INSERT INTO sbm_rates (
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 ) RETURNING *;
+
+-- name: GetSettingByKey :one
+SELECT key, value, updated_at FROM settings WHERE key = $1 LIMIT 1;
+
+-- name: GetSettings :many
+SELECT key, value, updated_at FROM settings;
+
+-- name: UpdateSetting :one
+INSERT INTO settings (key, value, updated_at)
+VALUES ($1, $2, CURRENT_TIMESTAMP)
+ON CONFLICT (key) DO UPDATE SET
+  value = EXCLUDED.value,
+  updated_at = EXCLUDED.updated_at
+RETURNING key, value, updated_at;

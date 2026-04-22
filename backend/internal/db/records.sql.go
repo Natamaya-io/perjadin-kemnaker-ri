@@ -223,10 +223,10 @@ func (q *Queries) CreateTravelRecord(ctx context.Context, arg CreateTravelRecord
 
 const createTravelReport = `-- name: CreateTravelReport :one
 INSERT INTO travel_reports (
-  travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file
+  travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah
 ) VALUES (
-  $1, $2, $3, $4, $5, $6
-) RETURNING travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+) RETURNING travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah
 `
 
 type CreateTravelReportParams struct {
@@ -236,6 +236,11 @@ type CreateTravelReportParams struct {
 	Files          pqtype.NullRawMessage `json:"files"`
 	SppdFile       pqtype.NullRawMessage `json:"sppd_file"`
 	SuratTugasFile pqtype.NullRawMessage `json:"surat_tugas_file"`
+	PpkName        sql.NullString        `json:"ppk_name"`
+	PpkNip         sql.NullString        `json:"ppk_nip"`
+	BendaharaName  sql.NullString        `json:"bendahara_name"`
+	BendaharaNip   sql.NullString        `json:"bendahara_nip"`
+	TanggalMerah   pqtype.NullRawMessage `json:"tanggal_merah"`
 }
 
 func (q *Queries) CreateTravelReport(ctx context.Context, arg CreateTravelReportParams) (TravelReport, error) {
@@ -246,6 +251,11 @@ func (q *Queries) CreateTravelReport(ctx context.Context, arg CreateTravelReport
 		arg.Files,
 		arg.SppdFile,
 		arg.SuratTugasFile,
+		arg.PpkName,
+		arg.PpkNip,
+		arg.BendaharaName,
+		arg.BendaharaNip,
+		arg.TanggalMerah,
 	)
 	var i TravelReport
 	err := row.Scan(
@@ -255,6 +265,11 @@ func (q *Queries) CreateTravelReport(ctx context.Context, arg CreateTravelReport
 		&i.Files,
 		&i.SppdFile,
 		&i.SuratTugasFile,
+		&i.PpkName,
+		&i.PpkNip,
+		&i.BendaharaName,
+		&i.BendaharaNip,
+		&i.TanggalMerah,
 	)
 	return i, err
 }
@@ -551,7 +566,7 @@ func (q *Queries) GetTravelRecords(ctx context.Context, dollar_1 string) ([]Trav
 }
 
 const getTravelReportByRecordID = `-- name: GetTravelReportByRecordID :one
-SELECT travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file FROM travel_reports WHERE travel_record_id = $1 LIMIT 1
+SELECT travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah FROM travel_reports WHERE travel_record_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetTravelReportByRecordID(ctx context.Context, travelRecordID uuid.UUID) (TravelReport, error) {
@@ -564,6 +579,11 @@ func (q *Queries) GetTravelReportByRecordID(ctx context.Context, travelRecordID 
 		&i.Files,
 		&i.SppdFile,
 		&i.SuratTugasFile,
+		&i.PpkName,
+		&i.PpkNip,
+		&i.BendaharaName,
+		&i.BendaharaNip,
+		&i.TanggalMerah,
 	)
 	return i, err
 }
@@ -753,9 +773,9 @@ func (q *Queries) UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecord
 
 const updateTravelReport = `-- name: UpdateTravelReport :one
 UPDATE travel_reports SET
-  text = $2, submitted_at = $3, files = $4, sppd_file = $5, surat_tugas_file = $6
+  text = $2, submitted_at = $3, files = $4, sppd_file = $5, surat_tugas_file = $6, ppk_name = $7, ppk_nip = $8, bendahara_name = $9, bendahara_nip = $10, tanggal_merah = $11
 WHERE travel_record_id = $1
-RETURNING travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file
+RETURNING travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah
 `
 
 type UpdateTravelReportParams struct {
@@ -765,6 +785,11 @@ type UpdateTravelReportParams struct {
 	Files          pqtype.NullRawMessage `json:"files"`
 	SppdFile       pqtype.NullRawMessage `json:"sppd_file"`
 	SuratTugasFile pqtype.NullRawMessage `json:"surat_tugas_file"`
+	PpkName        sql.NullString        `json:"ppk_name"`
+	PpkNip         sql.NullString        `json:"ppk_nip"`
+	BendaharaName  sql.NullString        `json:"bendahara_name"`
+	BendaharaNip   sql.NullString        `json:"bendahara_nip"`
+	TanggalMerah   pqtype.NullRawMessage `json:"tanggal_merah"`
 }
 
 func (q *Queries) UpdateTravelReport(ctx context.Context, arg UpdateTravelReportParams) (TravelReport, error) {
@@ -775,6 +800,11 @@ func (q *Queries) UpdateTravelReport(ctx context.Context, arg UpdateTravelReport
 		arg.Files,
 		arg.SppdFile,
 		arg.SuratTugasFile,
+		arg.PpkName,
+		arg.PpkNip,
+		arg.BendaharaName,
+		arg.BendaharaNip,
+		arg.TanggalMerah,
 	)
 	var i TravelReport
 	err := row.Scan(
@@ -784,6 +814,11 @@ func (q *Queries) UpdateTravelReport(ctx context.Context, arg UpdateTravelReport
 		&i.Files,
 		&i.SppdFile,
 		&i.SuratTugasFile,
+		&i.PpkName,
+		&i.PpkNip,
+		&i.BendaharaName,
+		&i.BendaharaNip,
+		&i.TanggalMerah,
 	)
 	return i, err
 }

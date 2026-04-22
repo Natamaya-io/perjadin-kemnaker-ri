@@ -25,9 +25,7 @@ func main() {
 	}
 
 	for _, u := range users {
-		if u.Role == "protokol" {
-			fmt.Printf("User: %s | Email: %s | ID: %s | Role: %s\n", u.Name, u.Email, u.ID, u.Role)
-		}
+		fmt.Printf("User: %s | Email: %s | ID: %s | Role: %s\n", u.Name, u.Email, u.ID, u.Role)
 	}
 
 	records, err := q.GetTravelRecords(context.Background(), "")

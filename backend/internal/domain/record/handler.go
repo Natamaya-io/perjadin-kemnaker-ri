@@ -3,6 +3,7 @@ package record
 import (
 	"context"
 	"encoding/base64"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -82,10 +83,19 @@ func (h *Handler) notifyEmployee(record *models.TravelRecord) {
 	}
 }
 
-func addWorkingDays(t time.Time, days int) time.Time {
+func addWorkingDays(t time.Time, days int, holidays []time.Time) time.Time {
+	isHoliday := func(d time.Time) bool {
+		for _, h := range holidays {
+			if d.Year() == h.Year() && d.Month() == h.Month() && d.Day() == h.Day() {
+				return true
+			}
+		}
+		return false
+	}
+
 	for i := 0; i < days; i++ {
 		t = t.AddDate(0, 0, 1)
-		for t.Weekday() == time.Saturday || t.Weekday() == time.Sunday {
+		for t.Weekday() == time.Saturday || t.Weekday() == time.Sunday || isHoliday(t) {
 			t = t.AddDate(0, 0, 1)
 		}
 	}
@@ -184,6 +194,18 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	tglSurat := record.SuratTugasDate
 	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
 	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0"
+	
+	tanggalPerjalananDoc := ""
+	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
+		if record.StartDate.Year() == record.EndDate.Year() && record.StartDate.Month() == record.EndDate.Month() && record.StartDate.Day() == record.EndDate.Day() {
+			tanggalPerjalananDoc = fmt.Sprintf("Tanggal %d %s %d", record.StartDate.Day(), utils.GetIndonesianMonths()[int(record.StartDate.Month())], record.StartDate.Year())
+		} else {
+			tanggalPerjalananDoc = fmt.Sprintf("Tanggal %d \u2013 %d %s %d", record.StartDate.Day(), record.EndDate.Day(), utils.GetIndonesianMonths()[int(record.StartDate.Month())], record.StartDate.Year())
+			if record.StartDate.Month() != record.EndDate.Month() || record.StartDate.Year() != record.EndDate.Year() {
+				tanggalPerjalananDoc = fmt.Sprintf("Tanggal %s \u2013 %s", utils.FormatIndonesianDate(record.StartDate), utils.FormatIndonesianDate(record.EndDate))
+			}
+		}
+	}
 	if noSurat == "" {
 		noSurat = numberGap // Ruang kosong untuk diisi manual
 	} else {
@@ -224,7 +246,11 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	tanggalMulaiStr := "-"
 	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
 		if record.StartDate.Month() == record.EndDate.Month() && record.StartDate.Year() == record.EndDate.Year() {
-			tanggalMulaiStr = fmt.Sprintf("%d", record.StartDate.Day())
+			if record.StartDate.Day() == record.EndDate.Day() {
+				tanggalMulaiStr = ""
+			} else {
+				tanggalMulaiStr = fmt.Sprintf("%d", record.StartDate.Day())
+			}
 		} else {
 			tanggalMulaiStr = utils.FormatIndonesianDate(record.StartDate)
 		}
@@ -257,12 +283,25 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	refDate := now
 	tanggalLaporan := now
 	tanggalRincian := now
+	
+	var holidays []time.Time
+	if record.Report != nil && len(record.Report.TanggalMerah) > 0 {
+		var dateStrings []string
+		if err := json.Unmarshal(record.Report.TanggalMerah, &dateStrings); err == nil {
+			for _, ds := range dateStrings {
+				if t, err := time.Parse("2006-01-02", ds); err == nil {
+					holidays = append(holidays, t)
+				}
+			}
+		}
+	}
+
 	if !record.StartDate.IsZero() {
 		refDate = record.StartDate
 	}
 	if !record.EndDate.IsZero() {
-		tanggalLaporan = addWorkingDays(record.EndDate, 1)
-		tanggalRincian = addWorkingDays(record.EndDate, 3)
+		tanggalLaporan = addWorkingDays(record.EndDate, 1, holidays)
+		tanggalRincian = addWorkingDays(record.EndDate, 3, holidays)
 	}
 
 	tanggalNoSuratStr := fmt.Sprintf("%s %s %d", dateGap, utils.GetIndonesianMonths()[int(refDate.Month())], refDate.Year())
@@ -299,6 +338,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		"tujuan": dest, "kota": dest, "provinsi": prov, "transportasi": transportMode,
 		"tanggal_berangkat": utils.FormatIndonesianDate(record.StartDate), "tanggal_mulai": tanggalMulaiStr,
 		"tanggal_selesai": utils.FormatIndonesianDate(record.EndDate), "lama_hari": formatNumber(days),
+		"tanggal_perjalanan_doc": tanggalPerjalananDoc,
 		"terbilang": terbilangHari,
 		"bulan": utils.GetIndonesianMonths()[int(record.StartDate.Month())], "tahun": fmt.Sprintf("%d", record.StartDate.Year()),
 		"tgl_cetak": utils.FormatIndonesianDate(now), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
@@ -820,9 +860,41 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki akses untuk mengubah data ini")
 	}
 
+	// 1. Baca raw JSON ke map untuk memastikan kita tidak kehilangan nested fields seperti json.RawMessage
+	bodyBytes, _ := io.ReadAll(c.Request().Body)
+	c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	var rawMap map[string]interface{}
+	json.Unmarshal(bodyBytes, &rawMap)
+
+	var explicitTanggalMerah []byte
+	var hasExplicitTanggalMerah bool
+	if rd, ok := rawMap["reportData"].(map[string]interface{}); ok {
+		if tm, exists := rd["tanggalMerah"]; exists {
+			hasExplicitTanggalMerah = true
+			if tm != nil {
+				b, _ := json.Marshal(tm)
+				explicitTanggalMerah = b
+			} else {
+				explicitTanggalMerah = []byte("[]")
+			}
+		}
+	}
+
+	// 2. Lakukan Bind bawaan
 	if err := c.Bind(r); err != nil {
 		fmt.Printf("UpdateRecord Bind Error: %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Gagal memproses data: %v", err))
+	}
+
+	// 3. Kembalikan secara paksa nilai TanggalMerah jika Frontend mengirimnya
+	if hasExplicitTanggalMerah && r.Report != nil {
+		r.Report.TanggalMerah = explicitTanggalMerah
+	}
+
+	fmt.Printf("DEBUG: Before UpdateRecord - ID: %v, Report != nil: %v\n", r.ID, r.Report != nil)
+	if r.Report != nil {
+		fmt.Printf("DEBUG: TanggalMerah: %s\n", string(r.Report.TanggalMerah))
 	}
 
 	// SECURITY: Sanitasi XSS
