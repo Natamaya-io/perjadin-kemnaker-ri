@@ -104,5 +104,10 @@ jobs:
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
+            cd ~/perjadin-app
+            git pull origin main
+            cp -r deploy/quadlets/* ~/.config/containers/systemd/ || true
+            cp deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
+            systemctl --user daemon-reload
             podman auto-update
 
