@@ -104,8 +104,5 @@ jobs:
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            cd ~/perjadin-app
-            make down
-            git pull origin main
-            make dev
+            podman auto-update
 
