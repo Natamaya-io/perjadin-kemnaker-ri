@@ -10,7 +10,7 @@ Image=ghcr.io/raxbyte-org/perjadin-kemnaker-ri-backend:latest
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 Volume=perjadin-uploads.volume:/app/uploads
-PublishPort=8080:8080
+PublishPort=8081:8081
 
 # Hardcoded non-secret envs specific to infrastructure routing
 Environment=DB_HOST=perjadin-db

@@ -11,7 +11,7 @@ Network=perjadin.network
 PublishPort=3000:3000
 
 # Hardcoded non-secret internal routing via container name DNS
-Environment=INTERNAL_API_URL=http://perjadin-backend:8080
+Environment=INTERNAL_API_URL=http://perjadin-backend:8081
 Environment=HOST=0.0.0.0
 Environment=PORT=3000
 Environment=BODY_SIZE_LIMIT=52428800
