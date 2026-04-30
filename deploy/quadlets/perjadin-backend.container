@@ -14,8 +14,13 @@ PublishPort=8081:8081
 
 # Hardcoded non-secret envs specific to infrastructure routing
 Environment=DB_HOST=perjadin-db
+Environment=DB_PORT=5432
+Environment=DB_SSLMODE=disable
 Environment=REDIS_HOST=perjadin-redis
+Environment=REDIS_PORT=6379
 Environment=GOTENBERG_URL=http://perjadin-gotenberg:3000
+Environment=SEED_DB=true
+Environment=ALLOW_CLEANUP=false
 
 # Enable automatic pulling of latest image when systemd service starts/restarts
 AutoUpdate=registry
