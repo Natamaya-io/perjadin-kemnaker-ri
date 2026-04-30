@@ -1,2 +1,2 @@
 [Volume]
-VolumeName=perjadin_redis_data
+VolumeName=perjadin_prod_redis_data
