@@ -1391,6 +1391,7 @@
                                                             </svg>
                                                         </button>
                                                         
+                                                        {#if $userStore.role !== 'kasubag'}
                                                         <button 
                                                             class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
                                                             on:click|stopPropagation={() => removeFile(i)}
@@ -1399,6 +1400,7 @@
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                         </button>
+                                                        {/if}
                                                     </div>
                                                 </div>
 
@@ -1476,7 +1478,7 @@
                                                 <!-- Mode Transportasi -->
                                                 <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
-                                                    <Select bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
+                                                    <Select disabled={$userStore.role === 'kasubag'} bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
                                                         <option value="Pesawat">Pesawat Udara</option>
                                                         <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
                                                         <option value="Kendaraan Dinas">Kendaraan Dinas</option>
@@ -1528,7 +1530,7 @@
                                                                 <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
                                                                 <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(detail.ticketGo)} on:input={(e) => updateCost(empId, 'ticketGo', e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                             </div>
-                                                            {#if !detail.ticketGoFile}
+                                                            {#if !detail.ticketGoFile && $userStore.role !== 'kasubag'}
                                                                 <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
                                                                     <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1544,7 +1546,9 @@
                                                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketGoFile.name}</span>
                                                                     <div class="flex gap-2 shrink-0 text-[10px]">
                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketGoFile)}>Lihat</button>
+                                                                        {#if $userStore.role !== 'kasubag'}
                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'ticketGoFile', idx)}>Hapus</button>
+                                                                        {/if}
                                                                     </div>
                                                                 </div>
                                                             {/if}
@@ -1557,7 +1561,7 @@
                                                                 <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
                                                                 <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(detail.ticketBack)} on:input={(e) => updateCost(empId, 'ticketBack', e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                             </div>
-                                                            {#if !detail.ticketBackFile}
+                                                            {#if !detail.ticketBackFile && $userStore.role !== 'kasubag'}
                                                                 <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
                                                                     <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1573,7 +1577,9 @@
                                                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.ticketBackFile.name}</span>
                                                                     <div class="flex gap-2 shrink-0 text-[10px]">
                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.ticketBackFile)}>Lihat</button>
+                                                                        {#if $userStore.role !== 'kasubag'}
                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'ticketBackFile', idx)}>Hapus</button>
+                                                                        {/if}
                                                                     </div>
                                                                 </div>
                                                             {/if}
@@ -1633,7 +1639,7 @@
                                                                                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
                                                                                         <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.ticketGo)} on:input={(e) => updateAdditionalExtendCost(empId, costIdx, 'ticketGo', e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                                                     </div>
-                                                                                    {#if !cost.ticketGoFile}
+                                                                                    {#if !cost.ticketGoFile && $userStore.role !== 'kasubag'}
                                                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
                                                                                             <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1649,7 +1655,9 @@
                                                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{cost.ticketGoFile.name}</span>
                                                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.ticketGoFile)}>Lihat</button>
+                                                                                                {#if $userStore.role !== 'kasubag'}
                                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalExtendSpecificFile(empId, 'ticketGoFile', costIdx, idx)}>Hapus</button>
+                                                                                                {/if}
                                                                                             </div>
                                                                                         </div>
                                                                                     {/if}
@@ -1662,7 +1670,7 @@
                                                                                         <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
                                                                                         <Input type="text" disabled={$userStore.role === 'kasubag'} value={formatInputNumber(cost.ticketBack)} on:input={(e) => updateAdditionalExtendCost(empId, costIdx, 'ticketBack', e, idx)} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white" />
                                                                                     </div>
-                                                                                    {#if !cost.ticketBackFile}
+                                                                                    {#if !cost.ticketBackFile && $userStore.role !== 'kasubag'}
                                                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-1">
                                                                                             <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1678,7 +1686,9 @@
                                                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{cost.ticketBackFile.name}</span>
                                                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.ticketBackFile)}>Lihat</button>
+                                                                                                {#if $userStore.role !== 'kasubag'}
                                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalExtendSpecificFile(empId, 'ticketBackFile', costIdx, idx)}>Hapus</button>
+                                                                                                {/if}
                                                                                             </div>
                                                                                         </div>
                                                                                     {/if}
@@ -1767,7 +1777,7 @@
                                                         </div>
                                                     </div>
 
-                                                    {#if !detail.hotelFile}
+                                                    {#if !detail.hotelFile && $userStore.role !== 'kasubag'}
                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all group">
                                                             <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1784,7 +1794,9 @@
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.hotelFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.hotelFile)}>Lihat</button>
+                                                                {#if $userStore.role !== 'kasubag'}
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'hotelFile', idx)}>Hapus</button>
+                                                                {/if}
                                                             </div>
                                                         </div>
                                                     {/if}
@@ -1893,7 +1905,7 @@
                                                         </div>
                                                     </div>
 
-                                                    {#if !detail.transportFile}
+                                                    {#if !detail.transportFile && $userStore.role !== 'kasubag'}
                                                         <label class="flex flex-col items-center justify-center w-full h-16 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all group">
                                                             <div class="flex flex-col items-center justify-center pt-2 pb-2 pointer-events-none">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1910,7 +1922,9 @@
                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{detail.transportFile.name}</span>
                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(detail.transportFile)}>Lihat</button>
+                                                                {#if $userStore.role !== 'kasubag'}
                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeSpecificFile(empId, 'transportFile', idx)}>Hapus</button>
+                                                                {/if}
                                                             </div>
                                                         </div>
                                                     {/if}
@@ -1925,9 +1939,11 @@
                                                             </svg>
                                                             Transport Lokal
                                                         </h4>
+                                                        {#if $userStore.role !== 'kasubag'}
                                                         <Button size="sm" class="h-8 px-4 text-xs font-bold tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all rounded-lg flex items-center gap-1.5 hover:scale-[1.02]" on:click={() => addAdditionalCost(empId, idx)}>
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                                                             ADD COST</Button>
+                                                        {/if}
                                                     </div>
 
                                                     <div class="space-y-3">
@@ -1935,11 +1951,13 @@
                                                             {#each detail.additionalCosts as cost, costIdx}
                                                                 {#if cost.name !== 'Extend Tiket' && cost.name !== 'Extend Penginapan'}
                                                                     <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
+                                                                        {#if $userStore.role !== 'kasubag'}
                                                                         <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
                                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                                                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                                             </svg>
                                                                         </button>
+                                                                        {/if}
                                                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                             <div class="space-y-1.5">
                                                                                 <Label class="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Nama Biaya</Label>
@@ -1955,6 +1973,7 @@
                                                                             <div class="md:col-span-2 mt-1 pt-3 border-t border-slate-100">
                                                                                 <span class="block text-[10px] font-semibold uppercase text-slate-500 tracking-wider mb-2">Kwitansi / Bukti (PDF/Gambar)</span>
                                                                                 {#if !cost.file}
+                                                                                    {#if $userStore.role !== 'kasubag'}
                                                                                     <label class="flex flex-col items-center justify-center w-full h-14 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all group">
                                                                                         <div class="flex flex-col items-center justify-center pt-1 pb-1 pointer-events-none">
                                                                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 mb-1 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1964,12 +1983,15 @@
                                                                                         </div>
                                                                                         <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(empId, e, costIdx, idx)} />
                                                                                     </label>
+                                                                                    {/if}
                                                                                 {:else}
                                                                                     <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-200 w-full">
                                                                                         <span class="text-[10px] text-slate-700 truncate max-w-[150px] flex-1">{cost.file.name}</span>
                                                                                         <div class="flex gap-2 shrink-0 text-[10px]">
                                                                                             <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                                                            {#if $userStore.role !== 'kasubag'}
                                                                                             <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalFile(empId, costIdx, idx)}>Hapus</button>
+                                                                                            {/if}
                                                                                         </div>
                                                                                     </div>
                                                                                 {/if}
