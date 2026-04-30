@@ -329,18 +329,18 @@ func (q *Queries) DeleteTravelReport(ctx context.Context, travelRecordID uuid.UU
 	return err
 }
 
-const getLatestSpdNumber = `-- name: GetLatestSpdNumber :one
-SELECT spd_number FROM travel_records
-WHERE spd_number LIKE 'ID-SPJ-%'
-ORDER BY CAST(SUBSTRING(spd_number FROM 8) AS INTEGER) DESC
-LIMIT 1
-`
+const nextSpdNumber = `-- name: NextSpdNumber :one
+-- Returns the next unique sequence value for SPD number generation.
+-- nextval() is atomic and safe under concurrent load.
+SELECT nextval('spd_number_seq')::BIGINT AS next_val`
 
-func (q *Queries) GetLatestSpdNumber(ctx context.Context) (sql.NullString, error) {
-	row := q.db.QueryRowContext(ctx, getLatestSpdNumber)
-	var spd_number sql.NullString
-	err := row.Scan(&spd_number)
-	return spd_number, err
+// NextSpdNumber atomically increments and returns the next value from
+// spd_number_seq. Each concurrent caller is guaranteed a unique value.
+func (q *Queries) NextSpdNumber(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, nextSpdNumber)
+	var nextVal int64
+	err := row.Scan(&nextVal)
+	return nextVal, err
 }
 
 const getOverlappingRecords = `-- name: GetOverlappingRecords :many

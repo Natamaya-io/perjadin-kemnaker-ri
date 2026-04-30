@@ -871,24 +871,21 @@
         const tmSnapshot = [...finalTanggalMerahList];
         startLoading();
         try {
-            const updates = recordsList.map(r => ({
-                id: r.id,
-                data: {
-                    reportStatus: 'Draft',
-                    suratTugasNumber: manualSuratTugasNumber,
-                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
-                    reportData: {
-                        ...(r.reportData || {}),
-                        text: reportText,
-                        files: uploadedFiles,
-                        sppdFile: sppdFile,
-                        suratTugasFile: suratTugasFile,
-                        tanggalMerah: tmSnapshot,
-                        lastDraftSavedAt: new Date().toISOString()
-                    }
+            await updateRecord(record.id, {
+                reportStatus: 'Draft',
+                suratTugasNumber: manualSuratTugasNumber,
+                suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
+                reportData: {
+                    ...(record.reportData || {}),
+                    text: reportText,
+                    files: uploadedFiles,
+                    sppdFile: sppdFile,
+                    suratTugasFile: suratTugasFile,
+                    tanggalMerah: tmSnapshot,
+                    lastDraftSavedAt: new Date().toISOString()
                 }
-            }));
-            await updateMultipleRecords(updates);
+            });
+            await loadRecords();
             tanggalMerahList = tmSnapshot;
             toast.success('Draf Laporan Kegiatan berhasil disimpan!');
         } catch (error) {
@@ -930,24 +927,21 @@
         const tmSnapshot = [...finalTanggalMerahList];
         startLoading();
         try {
-            const updates = recordsList.map(r => ({
-                id: r.id,
-                data: {
-                    reportStatus: 'Completed',
-                    suratTugasNumber: manualSuratTugasNumber,
-                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
-                    reportData: {
-                        ...(r.reportData || {}),
-                        text: reportText,
-                        files: uploadedFiles,
-                        sppdFile: sppdFile,
-                        suratTugasFile: suratTugasFile,
-                        tanggalMerah: tmSnapshot,
-                        submittedAt: new Date().toISOString()
-                    }
+            await updateRecord(record.id, {
+                reportStatus: 'Completed',
+                suratTugasNumber: manualSuratTugasNumber,
+                suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
+                reportData: {
+                    ...(record.reportData || {}),
+                    text: reportText,
+                    files: uploadedFiles,
+                    sppdFile: sppdFile,
+                    suratTugasFile: suratTugasFile,
+                    tanggalMerah: tmSnapshot,
+                    submittedAt: new Date().toISOString()
                 }
-            }));
-            await updateMultipleRecords(updates);
+            });
+            await loadRecords();
             tanggalMerahList = tmSnapshot;
             toast.success('Laporan Kegiatan berhasil disubmit!');
             goto('/dashboard/laporan');

@@ -89,3 +89,23 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" \
           -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
           -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [build-push-backend, build-push-frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Execute Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd ~/perjadin-app
+            make down
+            git pull origin main
+            make dev
+

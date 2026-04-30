@@ -34,7 +34,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 			const responseData = await response.arrayBuffer();
 			const buffer = Buffer.from(responseData);
 			
-			console.log(`[Proxy Debug] ${url} -> ${buffer.length} bytes`);
 
 			const proxyHeaders = new Headers();
 			let contentType = response.headers.get('content-type');

@@ -26,7 +26,7 @@ type Querier interface {
 	DeleteTravelRecordBySpd(ctx context.Context, spdNumber sql.NullString) error
 	DeleteTravelReport(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
-	GetLatestSpdNumber(ctx context.Context) (sql.NullString, error)
+	NextSpdNumber(ctx context.Context) (int64, error)
 	GetOverlappingRecords(ctx context.Context, arg GetOverlappingRecordsParams) ([]TravelRecord, error)
 	GetProvinceByCode(ctx context.Context, code sql.NullString) (Province, error)
 	GetProvinces(ctx context.Context) ([]Province, error)

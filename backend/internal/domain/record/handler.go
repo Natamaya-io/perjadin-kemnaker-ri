@@ -756,7 +756,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		fmt.Printf("Error binding record: %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	
+
 	// SECURITY: Sanitasi XSS dasar untuk input string
 	r.Purpose = strings.ReplaceAll(strings.ReplaceAll(r.Purpose, "<", ""), ">", "")
 	r.Stakeholder = strings.ReplaceAll(strings.ReplaceAll(r.Stakeholder, "<", ""), ">", "")
@@ -766,23 +766,32 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		r.CreatorID, _ = uuid.Parse(creatorIDStr)
 	}
 
-	if r.SPDNumber == "" { r.SPDNumber, _ = h.svc.GenerateSpdNumber() }
+	if r.SPDNumber == "" {
+		r.SPDNumber, _ = h.svc.GenerateSpdNumber()
+	}
+
+	// Bulk path: all employees share the same SPD and are inserted atomically.
+	// A failure for any one employee rolls back the entire batch.
 	if len(r.EmployeeIDs) > 0 {
+		batch := make([]*models.TravelRecord, 0, len(r.EmployeeIDs))
 		for _, eid := range r.EmployeeIDs {
-			nr := r; nr.ID = uuid.Nil; nr.EmployeeID = eid
-			if err := h.svc.CreateRecord(&nr); err != nil {
-				fmt.Printf("Error creating record for employee %s: %v\n", eid, err)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			go h.notifyEmployee(&nr)
+			nr := r
+			nr.ID = uuid.Nil
+			nr.EmployeeID = eid
+			batch = append(batch, &nr)
+		}
+		if err := h.svc.CreateRecordsBulk(c.Request().Context(), batch); err != nil {
+			fmt.Printf("Error creating bulk records: %v\n", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		return c.NoContent(http.StatusCreated)
 	}
-	
+
+	// Single employee path — unchanged behaviour.
 	if r.EmployeeID == uuid.Nil {
 		r.EmployeeID = r.CreatorID
 	}
-	
+
 	if err := h.svc.CreateRecord(&r); err != nil {
 		fmt.Printf("Error creating record: %v\n", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -795,7 +804,6 @@ func (h *Handler) GetRecords(c echo.Context) error {
 	role := c.Get("role").(string)
 	userIDStr := c.Get("user_id").(string)
 	
-	fmt.Printf("[DEBUG] GetRecords called by user=%s, role=%s\n", userIDStr, role)
 	
 	recs, err := h.svc.GetRecords(nil)
 	if err != nil {
@@ -803,7 +811,6 @@ func (h *Handler) GetRecords(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	
-	fmt.Printf("[DEBUG] Total records found in DB: %d\n", len(recs))
 
 	if role == "protokol" {
 		uid, err := uuid.Parse(userIDStr)
@@ -827,7 +834,6 @@ func (h *Handler) GetRecords(c echo.Context) error {
 			} 
 		}
 		
-		fmt.Printf("[DEBUG] Filtered records for protokol %s: %d\n", userIDStr, len(res))
 		return c.JSON(http.StatusOK, res)
 	}
 	
@@ -892,10 +898,6 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		r.Report.TanggalMerah = explicitTanggalMerah
 	}
 
-	fmt.Printf("DEBUG: Before UpdateRecord - ID: %v, Report != nil: %v\n", r.ID, r.Report != nil)
-	if r.Report != nil {
-		fmt.Printf("DEBUG: TanggalMerah: %s\n", string(r.Report.TanggalMerah))
-	}
 
 	// SECURITY: Sanitasi XSS
 	r.Purpose = strings.ReplaceAll(strings.ReplaceAll(r.Purpose, "<", ""), ">", "")
@@ -904,7 +906,6 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 
 	r.ID = id // Ensure ID stays correct
 	
-	fmt.Printf("Updating record %s, payload size approx: %d bytes\n", id, c.Request().ContentLength)
 
 	if err := h.svc.UpdateRecord(r); err != nil {
 		fmt.Printf("UpdateRecord Service Error: %v\n", err)
@@ -928,7 +929,9 @@ func (h *Handler) DeleteRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki izin menghapus data ini")
 	}
 
-	h.svc.DeleteRecord(id)
+	if err := h.svc.DeleteRecord(id); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menghapus data: %v", err))
+	}
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -937,6 +940,8 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 	if userRole != "super_admin" && userRole != "kasubag" {
 		return echo.NewHTTPError(http.StatusForbidden, "Hanya admin yang dapat menghapus SPD batch")
 	}
-	h.svc.DeleteRecordsBySpd(c.Request().Context(), c.Param("spd"))
+	if err := h.svc.DeleteRecordsBySpd(c.Request().Context(), c.Param("spd")); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menghapus SPD: %v", err))
+	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "deleted"})
 }

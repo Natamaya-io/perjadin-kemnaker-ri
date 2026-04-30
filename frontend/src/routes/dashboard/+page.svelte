@@ -53,17 +53,7 @@
                r.creatorId === $userStore.id ||
                r.employeeId === $userStore.id;
     });
-    $: {
-        if (typeof window !== 'undefined') {
-            console.log("DASHBOARD DEBUG:", {
-                userEmail: $userStore.email,
-                userRole: $userStore.role,
-                totalRecords: records.length,
-                filteredRecords: myRecords.length,
-                recordsSample: records.slice(0, 3).map(r => r.employee?.email)
-            });
-        }
-    }
+
 
     // Stats Logic (Scoped to Role)
     $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : myRecords;

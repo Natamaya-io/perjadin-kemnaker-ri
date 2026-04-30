@@ -170,8 +170,6 @@ export class RealApiClient implements ApiClient {
             headers
         });
 
-        console.log(`[API Debug] ${type}-${format} Response:`, response.status, response.statusText);
-        console.log(`[API Debug] Headers:`, [...response.headers.entries()]);
 
         if (!response.ok) {
             if (response.status === 401 && this.unauthorizedHandler) {

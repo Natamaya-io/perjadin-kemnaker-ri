@@ -15,13 +15,19 @@ import (
 )
 
 type Repository interface {
-	GetLatestSpdNumber(ctx context.Context) (string, error)
+	NextSpdNumber(ctx context.Context) (int64, error)
 	CreateTravelRecord(record *models.TravelRecord) error
+	// CreateTravelRecordsBulk inserts all records in a single database transaction.
+	// If any insert fails the entire batch is rolled back — no partial state.
+	CreateTravelRecordsBulk(ctx context.Context, records []*models.TravelRecord) error
 	GetTravelRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
 	GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, error)
 	GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateTravelRecord(record *models.TravelRecord) error
+	// SyncReportBySpd atomically pushes report updates to all other records sharing the same SPD.
+	// This avoids pulling the entire database into application memory.
+	SyncReportBySpd(ctx context.Context, spd string, sourceRecord *models.TravelRecord) error
 	DeleteTravelRecord(id uuid.UUID) error
 	DeleteTravelRecordsBySpd(ctx context.Context, spd string) error
 }
@@ -196,8 +202,7 @@ func mapDBCost(dbc db.TravelCost) models.TravelCost {
 }
 
 func mapDBReport(dbrep db.TravelReport) models.TravelReport {
-	fmt.Printf("DEBUG: mapping report for record %v, tanggal_merah valid: %v, length: %d, raw: %s\n", 
-		dbrep.TravelRecordID, dbrep.TanggalMerah.Valid, len(dbrep.TanggalMerah.RawMessage), string(dbrep.TanggalMerah.RawMessage))
+
 	return models.TravelReport{
 		TravelRecordID: dbrep.TravelRecordID,
 		Text:           fromNullString(dbrep.Text),
@@ -222,15 +227,132 @@ func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.Use
 	return &u, nil
 }
 
-func (r *repository) GetLatestSpdNumber(ctx context.Context) (string, error) {
-	ns, err := r.q.GetLatestSpdNumber(ctx)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", nil
-		}
-		return "", err
+// NextSpdNumber atomically fetches the next sequence value from PostgreSQL.
+// Each call is guaranteed to return a unique, incrementing int64 regardless
+// of concurrent callers — no application-level locking required.
+func (r *repository) NextSpdNumber(ctx context.Context) (int64, error) {
+	return r.q.NextSpdNumber(ctx)
+}
+
+// CreateTravelRecordsBulk inserts every record in [records] inside a single
+// PostgreSQL transaction. Any failure triggers a full rollback of all preceding
+// inserts — the database is never left in a partial state.
+func (r *repository) CreateTravelRecordsBulk(ctx context.Context, records []*models.TravelRecord) error {
+	if len(records) == 0 {
+		return nil
 	}
-	return fromNullString(ns), nil
+
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("CreateTravelRecordsBulk: begin tx: %w", err)
+	}
+	defer tx.Rollback() // no-op after Commit; guard against any early return
+
+	qtx := r.q.WithTx(tx)
+
+	for _, record := range records {
+		if record.ID == uuid.Nil {
+			record.ID = uuid.New()
+		}
+
+		dbr, err := qtx.CreateTravelRecord(ctx, db.CreateTravelRecordParams{
+			ID:               record.ID,
+			SpdNumber:        toNullString(record.SPDNumber),
+			EmployeeID:       record.EmployeeID,
+			CreatorID:        record.CreatorID,
+			StartDate:        toNullTime(record.StartDate),
+			EndDate:          toNullTime(record.EndDate),
+			Location:         toNullString(record.Location),
+			Province:         toNullString(record.Province),
+			Type:             toNullString(record.Type),
+			Purpose:          toNullString(record.Purpose),
+			Stakeholder:      toNullString(record.Stakeholder),
+			Agenda:           toNullString(record.Agenda),
+			Status:           toNullString(record.Status),
+			IsViewed:         sql.NullBool{Bool: record.IsViewed, Valid: true},
+			ReportStatus:     toNullString(record.ReportStatus),
+			PaymentStatus:    toNullString(record.PaymentStatus),
+			TotalCost:        toNullFloat(record.TotalCost),
+			SuratTugasPath:   toNullString(record.SuratTugasPath),
+			SuratTugasNumber: toNullString(record.SuratTugasNumber),
+			SuratTugasDate:   toNullTime(record.SuratTugasDate),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateTravelRecordsBulk: insert record for employee %s: %w", record.EmployeeID, err)
+		}
+
+		// Sync the DB-assigned timestamps back onto the in-memory struct.
+		originalLocations := record.Locations
+		*record = mapDBRecord(dbr)
+		record.Locations = originalLocations
+
+		for _, loc := range record.Locations {
+			_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
+				ID:             uuid.New(),
+				TravelRecordID: record.ID,
+				Location:       loc.Location,
+				Province:       loc.Province,
+				StartDate:      loc.StartDate,
+				EndDate:        loc.EndDate,
+			})
+			if err != nil {
+				return fmt.Errorf("CreateTravelRecordsBulk: insert location for record %s: %w", record.ID, err)
+			}
+		}
+
+		if record.Cost != nil {
+			_, err := qtx.CreateTravelCost(ctx, db.CreateTravelCostParams{
+				TravelRecordID:     record.ID,
+				TicketGo:           toNullFloat(record.Cost.TicketGo),
+				TicketBack:         toNullFloat(record.Cost.TicketBack),
+				DailyAllowanceDays: toNullInt32(record.Cost.DailyAllowanceDays),
+				DailyAllowanceRate: toNullFloat(record.Cost.DailyAllowanceRate),
+				HotelDays:          toNullInt32(record.Cost.HotelDays),
+				HotelRate:          toNullFloat(record.Cost.HotelRate),
+				LocalTransport:     toNullFloat(record.Cost.LocalTransport),
+				RegionalTransport:  toNullFloat(record.Cost.RegionalTransport),
+				TransportMode:      toNullString(record.Cost.TransportMode),
+				TransportAmount:    toNullFloat(record.Cost.TransportAmount),
+				OtherCost:          toNullFloat(record.Cost.OtherCost),
+				OtherCostDesc:      toNullString(record.Cost.OtherCostDesc),
+				ReceiptFiles:       toJsonb(record.Cost.ReceiptFiles),
+				TicketGoFile:       toJsonb(record.Cost.TicketGoFile),
+				TicketBackFile:     toJsonb(record.Cost.TicketBackFile),
+				BoardingPassFile:   toJsonb(record.Cost.BoardingPassFile),
+				HotelFile:          toJsonb(record.Cost.HotelFile),
+				TransportFile:      toJsonb(record.Cost.TransportFile),
+				AdditionalCosts:    toJsonb(record.Cost.AdditionalCosts),
+				Details:            toJsonb(record.Cost.Details),
+			})
+			if err != nil {
+				return fmt.Errorf("CreateTravelRecordsBulk: insert cost for record %s: %w", record.ID, err)
+			}
+		}
+
+		if record.Report != nil {
+			_, err := qtx.CreateTravelReport(ctx, db.CreateTravelReportParams{
+				TravelRecordID: record.ID,
+				Text:           toNullString(record.Report.Text),
+				SubmittedAt:    toNullTime(record.Report.SubmittedAt),
+				Files:          toJsonb(record.Report.Files),
+				SppdFile:       toJsonb(record.Report.SppdFile),
+				SuratTugasFile: toJsonb(record.Report.SuratTugasFile),
+				PpkName:        toNullString(record.Report.PPKName),
+				PpkNip:         toNullString(record.Report.PPKNIP),
+				BendaharaName:  toNullString(record.Report.BendaharaName),
+				BendaharaNip:   toNullString(record.Report.BendaharaNIP),
+				TanggalMerah:   toJsonb(record.Report.TanggalMerah),
+			})
+			if err != nil {
+				return fmt.Errorf("CreateTravelRecordsBulk: insert report for record %s: %w", record.ID, err)
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("CreateTravelRecordsBulk: commit: %w", err)
+	}
+	return nil
 }
 
 func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
@@ -340,6 +462,74 @@ func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return tx.Commit()
+}
+
+// SyncReportBySpd executes an optimized O(1) bulk update via SQL directly.
+// It patches the travel_records and UPSERTs travel_reports for all employees
+// under the same SPD number, fully averting O(N) memory blowout.
+func (r *repository) SyncReportBySpd(ctx context.Context, spd string, src *models.TravelRecord) error {
+	if src == nil || src.Report == nil || spd == "" {
+		return nil
+	}
+
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Update travel_records fields (ST Number, Date, Report Status)
+	_, err = tx.ExecContext(ctx, `
+		UPDATE travel_records SET
+			surat_tugas_number = COALESCE(NULLIF($2, ''), surat_tugas_number),
+			surat_tugas_date = CASE WHEN $3::timestamp IS NOT NULL THEN $3 ELSE surat_tugas_date END,
+			report_status = COALESCE(NULLIF($4, ''), report_status),
+			updated_at = CURRENT_TIMESTAMP
+		WHERE spd_number = $1 AND deleted_at IS NULL
+	`, spd, src.SuratTugasNumber, toNullTime(src.SuratTugasDate), src.ReportStatus)
+	if err != nil {
+		return fmt.Errorf("sync travel_records: %w", err)
+	}
+
+	// 2. Upsert travel_reports for all matching records
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO travel_reports (
+			travel_record_id, text, submitted_at, files, sppd_file, surat_tugas_file, 
+			ppk_name, ppk_nip, bendahara_name, bendahara_nip, tanggal_merah
+		)
+		SELECT 
+			id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+		FROM travel_records 
+		WHERE spd_number = $1 AND deleted_at IS NULL
+		ON CONFLICT (travel_record_id) DO UPDATE SET
+			text = EXCLUDED.text,
+			submitted_at = EXCLUDED.submitted_at,
+			files = EXCLUDED.files,
+			sppd_file = EXCLUDED.sppd_file,
+			surat_tugas_file = EXCLUDED.surat_tugas_file,
+			ppk_name = EXCLUDED.ppk_name,
+			ppk_nip = EXCLUDED.ppk_nip,
+			bendahara_name = EXCLUDED.bendahara_name,
+			bendahara_nip = EXCLUDED.bendahara_nip,
+			tanggal_merah = EXCLUDED.tanggal_merah
+	`,
+		spd,
+		toNullString(src.Report.Text),
+		toNullTime(src.Report.SubmittedAt),
+		toJsonb(src.Report.Files),
+		toJsonb(src.Report.SppdFile),
+		toJsonb(src.Report.SuratTugasFile),
+		toNullString(src.Report.PPKName),
+		toNullString(src.Report.PPKNIP),
+		toNullString(src.Report.BendaharaName),
+		toNullString(src.Report.BendaharaNIP),
+		toJsonb(src.Report.TanggalMerah),
+	)
+	if err != nil {
+		return fmt.Errorf("sync travel_reports upsert: %w", err)
 	}
 
 	return tx.Commit()
@@ -524,7 +714,7 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 
 	qtx := r.q.WithTx(tx)
 
-	fmt.Printf("Attempting to UpdateTravelRecord for ID: %v\n", record.ID)
+
 	_, err = qtx.UpdateTravelRecord(ctx, db.UpdateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
@@ -548,7 +738,6 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 		SuratTugasDate:   toNullTime(record.SuratTugasDate),
 	})
 	if err != nil {
-		fmt.Printf("UpdateTravelRecord failed: %v\n", err)
 		return fmt.Errorf("UpdateTravelRecord: %w", err)
 	}
 

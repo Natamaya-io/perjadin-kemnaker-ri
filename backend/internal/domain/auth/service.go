@@ -89,6 +89,8 @@ func (s *service) Login(email, password string) (string, *models.User, bool, err
 	if err := s.userRepo.UpdateUser(u); err != nil {
 		return "", nil, false, err
 	}
+	s.invalidateCache(context.Background(), "users:*")
+	s.invalidateCache(context.Background(), "demo_users")
 
 	token, err := utils.GenerateJWT(u, s.cfg)
 	if err != nil {
@@ -162,6 +164,8 @@ func (s *service) ChangePassword(userIDStr, newPassword string) error {
 	if err := s.userRepo.UpdateUser(u); err != nil {
 		return err
 	}
+	s.invalidateCache(context.Background(), "users:*")
+	s.invalidateCache(context.Background(), "demo_users")
 
 	return nil
 }

@@ -10,9 +10,7 @@ export const recordsStore = writable<TravelRecord[]>([]);
 export async function loadRecords() {
     if (typeof window === 'undefined' || !localStorage.getItem('auth_token')) return;
     try {
-        console.log("loadRecords() called. Fetching from API...");
         const data = await api.getRecords();
-        console.log("API returned data length:", data?.length);
         recordsStore.set(data || []);
     } catch (e: any) {
         if (e.message === 'Unauthorized') return;

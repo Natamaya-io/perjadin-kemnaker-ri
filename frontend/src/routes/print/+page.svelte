@@ -89,13 +89,6 @@
         toast.success('PDF berhasil diunduh!');
     }
 
-    function handleBack() {
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = '/dashboard/admin/perdin';
-        }
-    }
 </script>
 
 <svelte:head>
@@ -106,11 +99,6 @@
     <!-- Toolbar -->
     <div class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
         <div class="flex items-center gap-4">
-            <button class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600" on:click={handleBack}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </button>
             <div>
                 <h2 class="text-sm font-bold text-slate-800">Pratinjau Dokumen Resmi</h2>
                 <p class="text-xs text-slate-500">{spd || 'Memuat...'}</p>

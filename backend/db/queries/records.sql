@@ -15,11 +15,10 @@ LIMIT 1000;
 -- name: GetTravelRecordByID :one
 SELECT * FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1;
 
--- name: GetLatestSpdNumber :one
-SELECT spd_number FROM travel_records
-WHERE spd_number LIKE 'ID-SPJ-%'
-ORDER BY CAST(SUBSTRING(spd_number FROM 8) AS INTEGER) DESC
-LIMIT 1;
+-- name: NextSpdNumber :one
+-- Returns the next unique sequence value for SPD number generation.
+-- nextval() is atomic and safe under concurrent load.
+SELECT nextval('spd_number_seq')::BIGINT AS next_val;
 
 -- name: GetOverlappingRecords :many
 SELECT * FROM travel_records 
