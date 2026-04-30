@@ -41,6 +41,9 @@
     let pendingOtherUpdatesToSave = []; // From split hotel feature
 
     let isConfirmOpen = false;
+    let isRejectConfirmOpen = false;
+    let isPaidConfirmOpen = false;
+    let recordToPay = null;
 
     // Accordion State
     let expandedGroups = {};
@@ -328,6 +331,56 @@
         }
     }
 
+    function handleModalReject(event) {
+        // Just open confirmation
+        isRejectConfirmOpen = true;
+    }
+
+    async function processReject() {
+        if (!selectedRecord) return;
+        startLoading();
+        try {
+            await updateMultipleRecords([{
+                id: selectedRecord.id,
+                data: {
+                    status: 'Rejected'
+                }
+            }]);
+            toast.success('Pengajuan berhasil ditolak.');
+        } catch (e) {
+            toast.error('Gagal menolak pengajuan.');
+        } finally {
+            stopLoading();
+            isModalOpen = false;
+            isRejectConfirmOpen = false;
+        }
+    }
+
+    function markAsPaid(record) {
+        recordToPay = record;
+        isPaidConfirmOpen = true;
+    }
+
+    async function processPaid() {
+        if (!recordToPay) return;
+        startLoading();
+        try {
+            await updateMultipleRecords([{
+                id: recordToPay.id,
+                data: {
+                    paymentStatus: 'Paid'
+                }
+            }]);
+            toast.success('Dana berhasil dicairkan. Status menjadi Completed.');
+        } catch (e) {
+            toast.error('Gagal memproses pencairan dana.');
+        } finally {
+            stopLoading();
+            isPaidConfirmOpen = false;
+            recordToPay = null;
+        }
+    }
+
     function generateSPD(record) {
         // Find the specific travel record ID or use the SPD string?
         // Since SPD is shared, passing spd string will just pick the first one. We should pass ID in the real app, but for now we'll pass SPD and the employee id if possible.
@@ -470,6 +523,11 @@
                                                         </td>
                                                         <td class="px-6 py-4 align-middle pr-6">
                                                             <div class="flex items-center justify-center gap-2">
+                                                                {#if empRecord.status === 'Approved' && empRecord.paymentStatus !== 'Paid'}
+                                                                    <button class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap" on:click={(e) => { e.stopPropagation(); markAsPaid(empRecord); }}>
+                                                                        Cairkan Dana
+                                                                    </button>
+                                                                {/if}
                                                                 <button class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
                                                                     {empRecord.status === 'Approved' ? 'Detail & Edit' : 'Review'}
                                                                 </button>
@@ -550,12 +608,19 @@
                                                 <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Pegawai</span>
                                                 <div class="font-medium text-sm text-slate-900 leading-tight truncate">{empRecord.employee?.name || '-'}</div>
                                             </div>
-                                            <button 
-                                                class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all shadow-sm whitespace-nowrap" 
-                                                on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}
-                                            >
-                                                {empRecord.status === 'Approved' ? 'Edit' : 'Review'}
-                                            </button>
+                                            <div class="flex gap-1.5">
+                                                {#if empRecord.status === 'Approved' && empRecord.paymentStatus !== 'Paid'}
+                                                    <button class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap" on:click={(e) => { e.stopPropagation(); markAsPaid(empRecord); }}>
+                                                        Cairkan Dana
+                                                    </button>
+                                                {/if}
+                                                <button 
+                                                    class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all shadow-sm whitespace-nowrap" 
+                                                    on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}
+                                                >
+                                                    {empRecord.status === 'Approved' ? 'Edit' : 'Review'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 {/each}
@@ -587,6 +652,7 @@
         bind:editingCosts={editingCosts}
         on:close={() => isModalOpen = false}
         on:save={handleModalSave}
+        on:reject={handleModalReject}
     />
     <ConfirmationModal
         bind:open={isConfirmOpen}
@@ -594,5 +660,21 @@
         description="Apakah Anda yakin data rincian biaya ini sudah sesuai? Status akan diubah menjadi Approved."
         confirmText="Ya, Simpan & Approve"
         onConfirm={processSave}
+    />
+    <ConfirmationModal
+        bind:open={isRejectConfirmOpen}
+        title="Tolak Pengajuan"
+        description="Apakah Anda yakin ingin menolak pengajuan ini? Status akan dikembalikan dan ditandai sebagai Rejected."
+        confirmText="Ya, Tolak Pengajuan"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        onConfirm={processReject}
+    />
+    <ConfirmationModal
+        bind:open={isPaidConfirmOpen}
+        title="Cairkan Dana"
+        description="Apakah Anda yakin dana untuk pegawai ini sudah dicairkan? Status akan berubah menjadi Completed."
+        confirmText="Ya, Tandai Lunas"
+        confirmButtonClass="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+        onConfirm={processPaid}
     />
 </div>

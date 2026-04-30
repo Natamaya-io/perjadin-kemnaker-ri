@@ -58,6 +58,13 @@ export function getStatusBadge(record: any) {
         };
     }
 
+    if (record.status === 'Rejected') {
+        return {
+            label: 'Rejected',
+            class: 'bg-red-50 text-red-700 border-red-200'
+        };
+    }
+
     return {
         label: 'Assigned',
         class: 'bg-yellow-50 text-yellow-700 border-yellow-200'

@@ -958,6 +958,10 @@
                     </Button>
 
                     {#if !isReadOnly}
+                        <Button variant="outline" class="h-10 md:h-11 border-red-200 text-red-600 hover:text-white hover:bg-red-600 bg-red-50 px-4 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl shadow-sm" on:click={() => dispatch('reject', { record })}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 6-12 12"/><path d="m6 6 12 12"/></svg>
+                            <span class="text-xs font-bold uppercase tracking-wider">Tolak Pengajuan</span>
+                        </Button>
                         <Button class="h-10 md:h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/25 px-6 flex-1 sm:flex-none justify-center items-center transition-all rounded-xl" on:click={handleSave}>
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                             <span class="text-xs font-bold uppercase tracking-wider">Simpan Perubahan</span>

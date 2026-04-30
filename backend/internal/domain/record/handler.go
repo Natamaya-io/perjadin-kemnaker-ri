@@ -859,10 +859,31 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
 
-	// SECURITY: IDOR Protection, verifikasi pemilik
+	// SECURITY: IDOR Protection, verifikasi pemilik atau petugas yang ditugaskan
 	userIDStr := c.Get("user_id").(string)
 	userRole := c.Get("role").(string)
-	if userRole != "super_admin" && userRole != "kasubag" && r.CreatorID.String() != userIDStr {
+	
+	hasAccess := false
+	if userRole == "super_admin" || userRole == "kasubag" {
+		hasAccess = true
+	} else if r.CreatorID.String() == userIDStr {
+		hasAccess = true
+	} else if r.EmployeeID.String() == userIDStr {
+		hasAccess = true
+	} else if userRole == "protokol" {
+		// Protokol can edit records of other employees IF they are in the same SPD group
+		allRecords, err := h.svc.GetRecords(nil)
+		if err == nil {
+			for _, rec := range allRecords {
+				if rec.SPDNumber == r.SPDNumber && rec.EmployeeID.String() == userIDStr {
+					hasAccess = true
+					break
+				}
+			}
+		}
+	}
+
+	if !hasAccess {
 		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki akses untuk mengubah data ini")
 	}
 

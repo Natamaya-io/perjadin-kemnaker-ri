@@ -28,7 +28,7 @@
             <Input 
                 type="text" 
                 bind:value={email} 
-                placeholder="nama.depan" 
+                placeholder="nama" 
                 class="pl-11 h-12 text-sm bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all rounded-xl shadow-sm placeholder:text-slate-300" 
             />
         </div>
