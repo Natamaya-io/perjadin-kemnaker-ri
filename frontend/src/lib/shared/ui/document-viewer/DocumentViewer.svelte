@@ -294,6 +294,34 @@
         pageNum = 1;
         loadDocument();
     }
+
+    async function downloadFile() {
+        try {
+            let href;
+            let dlName = filename || 'dokumen';
+
+            if (typeof finalUrl === 'string' && finalUrl.startsWith('data:')) {
+                href = finalUrl;
+            } else {
+                const res = await fetch(finalUrl);
+                const blob = await res.blob();
+                href = URL.createObjectURL(blob);
+            }
+
+            const a = document.createElement('a');
+            a.href = href;
+            a.download = dlName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            if (!finalUrl.startsWith('data:')) {
+                setTimeout(() => URL.revokeObjectURL(href), 10000);
+            }
+        } catch (err) {
+            console.error('Download failed:', err);
+        }
+    }
 </script>
 
 <div class="flex flex-col h-full bg-slate-200/50 rounded-lg overflow-hidden border border-slate-300 shadow-inner relative group select-none">
@@ -332,10 +360,21 @@
             <button class="flex items-center gap-1 p-1.5 sm:p-2 hover:bg-slate-600 rounded text-amber-400 hover:text-amber-300 transition-colors shrink-0" on:click={resetCssZoom}>
                 <span class="text-[10px] font-bold">Reset</span>
             </button>
+            <div class="h-3 sm:h-4 w-px bg-slate-600 mx-1 shrink-0"></div>
+            <button
+                class="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-emerald-600 bg-emerald-500/20 border border-emerald-500/40 rounded-md text-emerald-300 hover:text-white transition-all shrink-0"
+                on:click={downloadFile}
+                title="Unduh file ini"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span class="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Unduh</span>
+            </button>
         </div>
 
         <div class="hidden sm:flex items-center gap-2">
-            <!-- Tombol unduh di sini dihapus karena sudah ada di header utama -->
+            <!-- Tombol unduh di sini dihapus karena sudah ada di toolbar -->
         </div>
     </div>
 

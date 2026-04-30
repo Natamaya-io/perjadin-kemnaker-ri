@@ -1590,7 +1590,9 @@
                                                                             <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
                                                                             <div class="flex gap-2 shrink-0 text-[10px]">
                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                                                                {#if $userStore.role !== 'kasubag'}
                                                                                 <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeBoardingPassFile(empId, bpIdx, idx)}>Hapus</button>
+                                                                                {/if}
                                                                             </div>
                                                                         </div>
                                                                     {/each}
@@ -1598,6 +1600,7 @@
                                                             {/if}
             
 
+                                                            {#if $userStore.role !== 'kasubag'}
                                                             <label class="flex flex-col items-center justify-center w-full h-12 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-2">
                                                                 <div class="flex items-center justify-center pointer-events-none gap-2">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1607,6 +1610,7 @@
                                                                 </div>
                                                                 <input type="file" class="hidden" on:change={(e) => handleBoardingPassFileSelect(empId, e, idx)} />
                                                             </label>
+                                                            {/if}
 
                                                             <!-- Extend Tiket Items -->
                                                             {#if detail.additionalCosts && detail.additionalCosts.length > 0}
@@ -1691,13 +1695,16 @@
                                                                                                     <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{bpFile.name}</span>
                                                                                                     <div class="flex gap-2 shrink-0 text-[10px]">
                                                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-md border border-blue-200 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                                                                                        {#if $userStore.role !== 'kasubag'}
                                                                                                         <button type="button" class="inline-flex items-center justify-center px-2 py-1 md:px-2.5 md:py-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-md border border-red-200 transition-colors" on:click={() => removeAdditionalExtendBoardingPass(empId, bpIdx, costIdx, idx)}>Hapus</button>
+                                                                                                        {/if}
                                                                                                     </div>
                                                                                                 </div>
                                                                                             {/each}
                                                                                         </div>
                                                                                     {/if}
 
+                                                                                    {#if $userStore.role !== 'kasubag'}
                                                                                     <label class="flex flex-col items-center justify-center w-full h-12 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50 hover:border-blue-400 transition-all group mt-2">
                                                                                         <div class="flex items-center justify-center pointer-events-none gap-2">
                                                                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1707,6 +1714,7 @@
                                                                                         </div>
                                                                                         <input type="file" class="hidden" on:change={(e) => handleAdditionalExtendBoardingPassSelect(empId, e, costIdx, idx)} />
                                                                                     </label>
+                                                                                    {/if}
                                                                                 </div>
                                                                             </div>
                                                                         </div>

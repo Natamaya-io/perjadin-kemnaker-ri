@@ -664,32 +664,38 @@
             </div>
 
             <!-- Boarding Pass Files -->
-            {#if detail.boardingPassFiles && detail.boardingPassFiles.length > 0}
-                <div class="pt-3 border-t border-slate-100 space-y-2">
-                    <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
-                        Boarding Pass ({detail.boardingPassFiles.length} file)
-                    </Label>
+            <div class="pt-3 border-t border-slate-100 space-y-2 w-full">
+                <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                    Boarding Pass ({detail.boardingPassFiles ? detail.boardingPassFiles.length : 0} file)
+                </Label>
+                
+                {#if detail.boardingPassFiles && detail.boardingPassFiles.length > 0}
                     <div class="flex flex-col gap-1.5">
                         {#each detail.boardingPassFiles as bpFile, bpIdx}
-                            <div class="flex items-center justify-between p-2 bg-violet-50 border border-violet-200 rounded-md shadow-sm w-full">
+                            <div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-md shadow-sm w-full">
                                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
-                                    <span class="text-[10px] md:text-xs text-violet-800 truncate">{bpFile.name || 'Boarding Pass ' + (bpIdx + 1)}</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                                    <span class="text-[10px] md:text-xs text-blue-800 truncate">{bpFile.name || 'Boarding Pass ' + (bpIdx + 1)}</span>
                                 </div>
                                 <div class="flex gap-1.5 shrink-0 ml-2">
-                                    <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-violet-100 hover:bg-violet-200 text-violet-700 rounded border border-violet-300 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                    <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-100 hover:bg-blue-200 text-blue-700 rounded border border-blue-300 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
                                     {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeBoardingPassFile(bpIdx)}>Hapus</button>{/if}
                                 </div>
                             </div>
                         {/each}
                     </div>
-                </div>
-            {/if}
+                {:else}
+                    <div class="flex flex-col items-center justify-center p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-300 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <p class="text-[10px] text-slate-400 font-medium text-center">Belum ada dokumen Boarding Pass</p>
+                    </div>
+                {/if}
+            </div>
 
             <!-- Upload Boarding Pass (hidden from Kasubag) -->
             {#if !isReadOnly}
-                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-bold uppercase tracking-wider hover:bg-violet-100 transition-all shadow-sm self-start">
+                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm self-start">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                     Tambah Boarding Pass
                     <input type="file" multiple accept="image/*,application/pdf" class="hidden" on:change={handleBoardingPassFileSelect} />
