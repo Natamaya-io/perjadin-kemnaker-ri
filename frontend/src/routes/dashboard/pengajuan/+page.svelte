@@ -79,9 +79,9 @@
     // Group records by SPD for display
     $: groupedRecords = filteredRecords.reduce((/** @type {Record<string, any>} */ acc, record) => {
         if (!acc[record.spd]) {
-            acc[record.spd] = { ...record, employeesList: [record.employee], totalCost: record.totalCost || 0 };
+            acc[record.spd] = { ...record, employeesList: [record], totalCost: record.totalCost || 0 };
         } else {
-            acc[record.spd].employeesList.push(record.employee);
+            acc[record.spd].employeesList.push(record);
             acc[record.spd].totalCost += record.totalCost || 0;
         }
         return acc;

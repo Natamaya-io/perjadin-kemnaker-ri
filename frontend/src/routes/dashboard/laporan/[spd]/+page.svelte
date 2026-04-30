@@ -1302,14 +1302,13 @@
                                     rows="10" 
                                     class="resize-y min-h-[150px] text-base leading-relaxed p-4 border-slate-200 focus:border-blue-300 focus:ring-blue-100 placeholder:text-slate-300 shadow-sm"
                                     placeholder="Deskripsikan hasil kegiatan, kendala yang dihadapi, dan tindak lanjut yang diperlukan..." 
-                                    bind:value={reportText} 
+                                     bind:value={reportText} 
                                     disabled={$userStore.role === 'kasubag'}
                                 />
                                 <p class="text-xs text-slate-400 italic">Maksimal 200 kata. Gunakan bahasa yang baku dan jelas.</p>
                             </div>
 
                             <!-- File Upload Section -->
-                            <!-- ... (same as before) ... -->
                             <div class="space-y-4 pt-4 border-t border-slate-100" transition:fade={{ duration: 200 }}>
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                     <Label class="text-lg font-bold text-slate-800">Dokumentasi Kegiatan</Label>
@@ -1317,7 +1316,7 @@
                                         <span class="text-xs text-slate-400">Max 6 File (JPG/PDF), Max 10MB</span>
                                 </div>
                                 
-                                
+                                {#if $userStore.role !== 'kasubag'}
                                 <label 
                                     class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all group relative
                                     {isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-blue-400'}"
@@ -1339,6 +1338,14 @@
                                     {/if}
                                     <input type="file" multiple class="hidden" on:change={handleFileChange} />
                                 </label>
+                                {:else}
+                                <div class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl border-slate-200 bg-slate-50/50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                    <p class="text-xs text-slate-400 font-medium">Unggah dokumentasi hanya dapat dilakukan oleh Petugas Protokol</p>
+                                </div>
+                                {/if}
                                 
                                 {#if uploadedFiles.length > 0}
                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
