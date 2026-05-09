@@ -43,7 +43,7 @@
 	$: if ($navigating) {
 		navTimer = setTimeout(() => {
 			navLoading = true;
-		}, 100); // 100ms delay before showing
+		}, 800); // 800ms delay before showing global loader to avoid flashes on fast networks
 		// Close sidebar on navigation (redundant if sidebar links dispatch close, but good for safety)
 		mobileSidebarOpen = false;
 	} else {
