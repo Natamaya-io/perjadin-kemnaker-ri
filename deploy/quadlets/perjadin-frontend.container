@@ -5,7 +5,7 @@ After=perjadin-secrets.service perjadin-backend.service
 
 [Container]
 ContainerName=perjadin-frontend
-Image=ghcr.io/raxbyte-org/perjadin-kemnaker-ri-frontend:latest
+Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:latest
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 PublishPort=3000:3000

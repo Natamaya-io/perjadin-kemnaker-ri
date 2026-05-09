@@ -6,7 +6,7 @@ After=perjadin-secrets.service perjadin-db.service perjadin-redis.service perjad
 [Container]
 ContainerName=perjadin-backend
 # Using the pre-built image from registry
-Image=ghcr.io/raxbyte-org/perjadin-kemnaker-ri-backend:latest
+Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:latest
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 Volume=perjadin-uploads.volume:/app/uploads
