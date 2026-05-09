@@ -171,7 +171,7 @@
     background-color: transparent; /* No background track to avoid white gaps */
   }
   .table-scrollbar::-webkit-scrollbar-track:vertical {
-    margin-top: 45px; /* Skips the sticky thead */
+    margin-top: 0;
     margin-bottom: 2px;
   }
   .table-scrollbar::-webkit-scrollbar-track:horizontal {

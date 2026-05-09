@@ -216,8 +216,6 @@
     </div>
 
     <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative flex flex-col">
-        <!-- Filler for scrollbar header gap -->
-        <div class="absolute top-0 right-0 w-[12px] h-[45px] bg-slate-50 border-b border-slate-200 z-30"></div>
         <!-- VIRTUAL SCROLL CONTAINER -->
         <div
             bind:this={scrollContainer}
