@@ -394,7 +394,7 @@
             <div 
                 bind:this={scrollContainer} 
                 on:scroll={handleScroll}
-                class="hidden lg:block overflow-x-auto overflow-y-auto max-h-[70vh] w-full relative scroll-smooth table-scrollbar table-scroll-shadows"
+                class="hidden lg:block overflow-x-auto overflow-y-auto max-h-[70vh] w-full relative table-scrollbar table-scroll-shadows"
             >
                 <table class="w-full text-left text-sm border-collapse min-w-[900px] relative">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500 sticky top-0 z-10 shadow-sm">

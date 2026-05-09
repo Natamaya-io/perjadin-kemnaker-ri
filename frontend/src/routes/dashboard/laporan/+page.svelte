@@ -195,7 +195,7 @@
         <div 
             bind:this={scrollContainer} 
             on:scroll={handleScroll}
-            class="overflow-auto max-h-[70vh] w-full relative scroll-smooth table-scrollbar table-scroll-shadows"
+            class="overflow-auto max-h-[70vh] w-full relative table-scrollbar table-scroll-shadows"
         >
             <table class="w-full text-sm text-left relative">
                 <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
