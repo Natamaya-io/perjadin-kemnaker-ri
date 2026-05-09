@@ -95,7 +95,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 	}
 
 	// Load existing records to check duplicates (by SPD number + employee name)
-	existingRecords, err := h.svc.GetRecords(c.Request().Context(), map[string]interface{}{})
+	existingRecords, err := h.svc.GetRecords(map[string]interface{}{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal memuat data record existing")
 	}
@@ -226,7 +226,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 				Details:            detailsBytesUpd,
 			}
 
-			if err := h.svc.UpdateRecord(c.Request().Context(), &existingRec); err != nil {
+			if err := h.svc.UpdateRecord(&existingRec); err != nil {
 				result.Failed++
 				result.Details = append(result.Details, ImportDetail{
 					Row: rowNum, SPJID: idSPJ, Name: name,
@@ -368,7 +368,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		}
 
 		// Use CreateRecordDirect to bypass overlap check and WA notification
-		if err := h.svc.CreateRecordDirect(c.Request().Context(), record); err != nil {
+		if err := h.svc.CreateRecordDirect(record); err != nil {
 			result.Failed++
 			result.Details = append(result.Details, ImportDetail{
 				Row: rowNum, SPJID: idSPJ, Name: name,
@@ -388,7 +388,7 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 	}
 
 	// Invalidate cache once at the end
-	h.svc.InvalidateAllCache(c.Request().Context())
+	h.svc.InvalidateAllCache()
 
 	return c.JSON(http.StatusOK, result)
 }
