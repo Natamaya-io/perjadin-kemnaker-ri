@@ -215,16 +215,16 @@
         />
     </div>
 
-    <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative">
+    <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative flex flex-col">
         <!-- Filler for scrollbar header gap -->
         <div class="absolute top-0 right-0 w-[12px] h-[45px] bg-slate-50 border-b border-slate-200 z-30"></div>
         <!-- VIRTUAL SCROLL CONTAINER -->
-        <div 
-            bind:this={scrollContainer} 
+        <div
+            bind:this={scrollContainer}
             on:scroll={handleScroll}
-            class="overflow-auto max-h-[70vh] w-full relative table-scrollbar table-scroll-shadows"
-        >
-            <table class="w-full text-sm text-left relative">
+            class="overflow-auto max-h-[calc(100vh-[280px])] min-h-[400px] w-full relative table-scrollbar table-scroll-shadows"
+            style="max-height: calc(100vh - 280px);"
+        >            <table class="w-full text-sm text-left relative">
                 <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
                     <tr>
                         <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50 border-b border-slate-200">ID SPJ</th>
