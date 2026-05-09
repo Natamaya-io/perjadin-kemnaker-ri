@@ -49,7 +49,20 @@
         </div>
     </div>
     <div class="p-4 overflow-y-auto flex-1 space-y-2">
-        {#if filteredEmployees.length === 0}
+        {#if isLoading}
+            <div class="space-y-3 animate-pulse">
+                {#each Array(5) as _}
+                <div class="flex items-center space-x-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+                    <div class="h-5 w-5 bg-slate-200 rounded shrink-0"></div>
+                    <div class="grid gap-2 w-full">
+                        <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                        <div class="h-3 bg-slate-200 rounded w-3/4"></div>
+                        <div class="h-2 bg-slate-200 rounded w-1/3 mt-1"></div>
+                    </div>
+                </div>
+                {/each}
+            </div>
+        {:else if filteredEmployees.length === 0}
             <div class="text-center py-6 text-sm text-slate-500 italic">Tidak ada petugas yang cocok.</div>
         {:else}
             {#each filteredEmployees as employee (employee.id)}
@@ -80,22 +93,6 @@
                                 {/if}
                             </span>
                         {/if}
-                        <span class="text-[10px] text-slate-400 font-mono">NIP. {employee.nip || '-'}</span>
-                    </div>
-                </label>
-            {/each}
-        {/if}
-    </div>
-    {#if !readonly}
-    <div class="p-4 border-t border-slate-100 bg-slate-50/50">
-        <p class="text-xs text-slate-500 text-center mb-3">Pastikan data sudah benar sebelum menyimpan.</p>
-        <Button class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={() => dispatch('submit')}>
-            Simpan Pengajuan
-        </Button>
-    </div>
-    {/if}
-</div>
-{/if}
                         <span class="text-[10px] text-slate-400 font-mono">NIP. {employee.nip || '-'}</span>
                     </div>
                 </label>

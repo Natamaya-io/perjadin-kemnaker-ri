@@ -430,12 +430,3 @@
 
 
 
-sistem."
-            confirmText="Ya, Simpan"
-            onConfirm={processSubmit}
-        />
-    {/if}
-</div>
-
-
-
