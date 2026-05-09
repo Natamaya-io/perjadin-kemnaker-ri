@@ -105,12 +105,6 @@ export const loadUsers = async () => {
     }
 };
 
-// Auto-load users if we are admin or kasubag so they can select protocols
-userStore.subscribe(u => {
-    if (u.loggedIn && (u.role === 'super_admin' || u.role === 'kasubag')) {
-        loadUsers();
-    }
-});
 
 export async function addUser(user: Omit<User, 'id'>) {
     try {

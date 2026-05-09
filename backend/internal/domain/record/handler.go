@@ -104,7 +104,7 @@ func addWorkingDays(t time.Time, days int, holidays []time.Time) time.Time {
 
 func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[string]interface{} {
 	localIndex := 1
-	if allRecords, err := h.svc.GetRecords(map[string]interface{}{}); err == nil {
+	if allRecords, err := h.svc.GetRecords(context.Background(), map[string]interface{}{}); err == nil {
 		sort.Slice(allRecords, func(i, j int) bool {
 			timeI := allRecords[i].CreatedAt.UnixNano()
 			timeJ := allRecords[j].CreatedAt.UnixNano()
@@ -467,12 +467,12 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
 	}
-	record, err := h.svc.GetRecordByID(id)
+	record, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil || record == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	allRecords, _ := h.svc.GetRecords(map[string]interface{}{})
+	allRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{})
 	var spdGroupRecords []models.TravelRecord
 	for _, r := range allRecords {
 		if r.SPDNumber == record.SPDNumber { spdGroupRecords = append(spdGroupRecords, r) }
@@ -635,7 +635,7 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
 	}
-	record, err := h.svc.GetRecordByID(id)
+	record, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil || record == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
@@ -669,7 +669,7 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) (e
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
 	}
-	record, err := h.svc.GetRecordByID(id)
+	record, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil || record == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
@@ -703,7 +703,7 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
 	}
-	record, err := h.svc.GetRecordByID(id)
+	record, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil || record == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
@@ -767,7 +767,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 	}
 
 	if r.SPDNumber == "" {
-		r.SPDNumber, _ = h.svc.GenerateSpdNumber()
+		r.SPDNumber, _ = h.svc.GenerateSpdNumber(c.Request().Context())
 	}
 
 	// Bulk path: all employees share the same SPD and are inserted atomically.
@@ -792,7 +792,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		r.EmployeeID = r.CreatorID
 	}
 
-	if err := h.svc.CreateRecord(&r); err != nil {
+	if err := h.svc.CreateRecord(c.Request().Context(), &r); err != nil {
 		fmt.Printf("Error creating record: %v\n", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -803,9 +803,13 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 func (h *Handler) GetRecords(c echo.Context) error {
 	role := c.Get("role").(string)
 	userIDStr := c.Get("user_id").(string)
-	
-	
-	recs, err := h.svc.GetRecords(nil)
+
+	filters := map[string]interface{}{}
+	if spd := c.QueryParam("spd"); spd != "" {
+		filters["spd"] = spd
+	}
+
+	recs, err := h.svc.GetRecords(c.Request().Context(), filters)
 	if err != nil {
 		fmt.Printf("[ERROR] GetRecords service failed: %v\n", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -840,9 +844,37 @@ func (h *Handler) GetRecords(c echo.Context) error {
 	return c.JSON(http.StatusOK, recs)
 }
 
+func (h *Handler) GetPaginatedRecords(c echo.Context) error {
+	var params models.PaginatedParams
+	if err := c.Bind(&params); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid pagination parameters")
+	}
+
+	role := c.Get("role").(string)
+	userIDStr := c.Get("user_id").(string)
+
+	// If the user is a protokol (employee), they can only see their own records.
+	// If the user is super_admin or kasubag, they can see all.
+	if role == "protokol" {
+		uid, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid User ID")
+		}
+		params.UserID = &uid
+	}
+
+	res, err := h.svc.GetPaginatedRecords(c.Request().Context(), params)
+	if err != nil {
+		fmt.Printf("[ERROR] GetPaginatedRecords failed: %v\n", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
 func (h *Handler) GetRecordByID(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
-	r, _ := h.svc.GetRecordByID(id)
+	r, _ := h.svc.GetRecordByID(c.Request().Context(), id)
 	return c.JSON(http.StatusOK, r)
 }
 
@@ -854,7 +886,7 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	}
 
 	// Read body once for debugging if needed, but Bind is preferred
-	r, err := h.svc.GetRecordByID(id)
+	r, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
@@ -872,7 +904,7 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		hasAccess = true
 	} else if userRole == "protokol" {
 		// Protokol can edit records of other employees IF they are in the same SPD group
-		allRecords, err := h.svc.GetRecords(nil)
+		allRecords, err := h.svc.GetRecords(c.Request().Context(), nil)
 		if err == nil {
 			for _, rec := range allRecords {
 				if rec.SPDNumber == r.SPDNumber && rec.EmployeeID.String() == userIDStr {
@@ -928,7 +960,7 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	r.ID = id // Ensure ID stays correct
 	
 
-	if err := h.svc.UpdateRecord(r); err != nil {
+	if err := h.svc.UpdateRecord(c.Request().Context(), r); err != nil {
 		fmt.Printf("UpdateRecord Service Error: %v\n", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menyimpan ke database: %v", err))
 	}
@@ -940,7 +972,7 @@ func (h *Handler) DeleteRecord(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
 
 	// SECURITY: IDOR Protection
-	r, err := h.svc.GetRecordByID(id)
+	r, err := h.svc.GetRecordByID(c.Request().Context(), id)
 	if err != nil || r == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Data tidak ditemukan")
 	}
@@ -950,7 +982,7 @@ func (h *Handler) DeleteRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Anda tidak memiliki izin menghapus data ini")
 	}
 
-	if err := h.svc.DeleteRecord(id); err != nil {
+	if err := h.svc.DeleteRecord(c.Request().Context(), id); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menghapus data: %v", err))
 	}
 	return c.NoContent(http.StatusNoContent)
@@ -965,4 +997,13 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menghapus SPD: %v", err))
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "deleted"})
+}
+
+func (h *Handler) GetDashboardSummary(c echo.Context) error {
+	summary, err := h.svc.GetDashboardSummary(c.Request().Context())
+	if err != nil {
+		fmt.Printf("GetDashboardSummary Error: %v\n", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal mengambil data dashboard")
+	}
+	return c.JSON(http.StatusOK, summary)
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
@@ -19,30 +20,52 @@ func NewHandler(s Service) *Handler {
 func (h *Handler) GetUsers(c echo.Context) error {
 	role := c.Get("role").(string)
 	uidStr := c.Get("user_id").(string)
+	
+	searchParam := strings.ToLower(c.QueryParam("search"))
+	roleParam := c.QueryParam("role")
 
 	users, err := h.svc.GetUsers()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if role != "super_admin" && role != "kasubag" {
-		var filtered []models.User
-		for _, u := range users {
-			if u.ID.String() == uidStr && u.Role != "alumni_staff" {
-				filtered = append(filtered, u)
-				break
+	var filtered []models.User
+	for _, u := range users {
+		if u.Role == "alumni_staff" {
+			continue
+		}
+		
+		// If not admin/kasubag, can only see self
+		if role != "super_admin" && role != "kasubag" && u.ID.String() != uidStr {
+			continue
+		}
+		
+		if roleParam != "" && u.Role != roleParam {
+			continue
+		}
+		
+		if searchParam != "" {
+			nameMatch := strings.Contains(strings.ToLower(u.Name), searchParam)
+			nipMatch := strings.Contains(strings.ToLower(u.NIP), searchParam)
+			jabatanMatch := strings.Contains(strings.ToLower(u.Jabatan), searchParam)
+			if !nameMatch && !nipMatch && !jabatanMatch {
+				continue
 			}
 		}
-		return c.JSON(http.StatusOK, filtered)
-	}
-
-	var filteredAdmin []models.User
-	for _, u := range users {
-		if u.Role != "alumni_staff" {
-			filteredAdmin = append(filteredAdmin, u)
+		
+		filtered = append(filtered, u)
+		
+		// Limit to 20 if searching to optimize payload
+		if searchParam != "" && len(filtered) >= 20 {
+		    break
 		}
 	}
-	return c.JSON(http.StatusOK, filteredAdmin)
+
+	if filtered == nil {
+	    filtered = []models.User{}
+	}
+
+	return c.JSON(http.StatusOK, filtered)
 }
 
 type CreateUserRequest struct {

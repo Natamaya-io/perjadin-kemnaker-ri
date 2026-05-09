@@ -113,3 +113,103 @@ SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NUL
 
 -- name: DeleteTravelLocationsByRecordID :exec
 UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1;
+
+-- name: GetDashboardStatusCounts :many
+SELECT status, payment_status, COUNT(*) as count 
+FROM travel_records 
+WHERE deleted_at IS NULL
+GROUP BY status, payment_status;
+
+-- name: GetDashboardReportCounts :many
+SELECT report_status, COUNT(*) as count 
+FROM travel_records 
+WHERE deleted_at IS NULL
+GROUP BY report_status;
+
+-- name: GetActiveTripsCount :one
+SELECT COUNT(*) 
+FROM travel_records 
+WHERE deleted_at IS NULL 
+  AND status IN ('Approved', 'Submitted', 'Assigned', 'Draft')
+  AND start_date <= CURRENT_TIMESTAMP 
+  AND end_date >= CURRENT_TIMESTAMP;
+
+-- name: GetTotalTripsCount :one
+SELECT COUNT(DISTINCT spd_number) 
+FROM travel_records 
+WHERE deleted_at IS NULL;
+
+-- name: GetRecentRecords :many
+SELECT * FROM travel_records 
+WHERE deleted_at IS NULL 
+ORDER BY start_date DESC 
+LIMIT 5;
+
+-- name: GetDashboardBudgets :many
+SELECT 
+  EXTRACT(YEAR FROM COALESCE(start_date, created_at))::INT as year,
+  EXTRACT(MONTH FROM COALESCE(start_date, created_at))::INT as month,
+  SUM(total_cost)::FLOAT8 as total
+FROM travel_records
+WHERE deleted_at IS NULL
+GROUP BY year, month
+ORDER BY year DESC, month DESC;
+
+-- name: GetPaginatedSPDs :many
+SELECT travel_records.spd_number
+FROM travel_records
+LEFT JOIN users ON travel_records.employee_id = users.id
+WHERE travel_records.deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('status')::text, '') IS NULL OR travel_records.status = sqlc.narg('status'))
+  AND (NULLIF(sqlc.narg('report_status')::text, '') IS NULL OR travel_records.report_status = sqlc.narg('report_status'))
+  AND (NULLIF(sqlc.narg('payment_status')::text, '') IS NULL OR travel_records.payment_status = sqlc.narg('payment_status'))
+  AND (
+    NULLIF(sqlc.narg('search')::text, '') IS NULL
+    OR travel_records.spd_number ILIKE '%' || sqlc.narg('search') || '%'
+    OR travel_records.location ILIKE '%' || sqlc.narg('search') || '%'
+    OR users.name ILIKE '%' || sqlc.narg('search') || '%'
+  )
+  AND (NULLIF(sqlc.narg('start_date')::timestamp, NULL) IS NULL OR travel_records.start_date >= sqlc.narg('start_date'))
+  AND (NULLIF(sqlc.narg('end_date')::timestamp, NULL) IS NULL OR travel_records.start_date <= sqlc.narg('end_date'))
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR travel_records.employee_id = sqlc.narg('user_id') OR travel_records.creator_id = sqlc.narg('user_id'))
+  AND (NULLIF(sqlc.narg('cursor')::text, '') IS NULL OR travel_records.spd_number < sqlc.narg('cursor'))
+GROUP BY travel_records.spd_number
+ORDER BY travel_records.spd_number DESC
+LIMIT sqlc.arg('limit');
+
+-- name: GetTotalPaginatedSPDsCount :one
+SELECT COUNT(DISTINCT travel_records.spd_number)
+FROM travel_records
+LEFT JOIN users ON travel_records.employee_id = users.id
+WHERE travel_records.deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('status')::text, '') IS NULL OR travel_records.status = sqlc.narg('status'))
+  AND (NULLIF(sqlc.narg('report_status')::text, '') IS NULL OR travel_records.report_status = sqlc.narg('report_status'))
+  AND (NULLIF(sqlc.narg('payment_status')::text, '') IS NULL OR travel_records.payment_status = sqlc.narg('payment_status'))
+  AND (
+    NULLIF(sqlc.narg('search')::text, '') IS NULL
+    OR travel_records.spd_number ILIKE '%' || sqlc.narg('search') || '%'
+    OR travel_records.location ILIKE '%' || sqlc.narg('search') || '%'
+    OR users.name ILIKE '%' || sqlc.narg('search') || '%'
+  )
+  AND (NULLIF(sqlc.narg('start_date')::timestamp, NULL) IS NULL OR travel_records.start_date >= sqlc.narg('start_date'))
+  AND (NULLIF(sqlc.narg('end_date')::timestamp, NULL) IS NULL OR travel_records.start_date <= sqlc.narg('end_date'))
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR travel_records.employee_id = sqlc.narg('user_id') OR travel_records.creator_id = sqlc.narg('user_id'));
+-- name: GetRecordsBySPDs :many
+SELECT * FROM travel_records
+WHERE deleted_at IS NULL
+  AND spd_number = ANY(sqlc.arg('spds')::text[])
+ORDER BY created_at DESC, id ASC;
+
+-- name: GetTravelCostsByRecordIDs :many
+SELECT * FROM travel_costs 
+WHERE travel_record_id = ANY(sqlc.arg('record_ids')::uuid[]);
+
+-- name: GetTravelReportsByRecordIDs :many
+SELECT * FROM travel_reports 
+WHERE travel_record_id = ANY(sqlc.arg('record_ids')::uuid[]);
+
+-- name: GetTravelLocationsByRecordIDs :many
+SELECT * FROM travel_locations 
+WHERE travel_record_id = ANY(sqlc.arg('record_ids')::uuid[]) 
+  AND deleted_at IS NULL 
+ORDER BY start_date ASC, created_at ASC;

@@ -3,6 +3,7 @@
     import { toast } from '$lib/shared/stores/toast';
     import { userStore } from '$lib/features/auth/store';
     import { provincesStore } from '$lib/shared/stores/master-data';
+    import { formatCurrency } from '$lib/shared/utils/utils';
     import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
     import DialogHeader from '$lib/shared/ui/dialog/DialogHeader.svelte';
     import DialogTitle from '$lib/shared/ui/dialog/DialogTitle.svelte';
@@ -265,9 +266,6 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-    }
 
     function formatInputNumber(value) {
         if (value === undefined || value === null || value === '') return '';

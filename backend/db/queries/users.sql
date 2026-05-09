@@ -34,3 +34,6 @@ SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC;
 
 -- name: DeleteUser :exec
 UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1;
+
+-- name: GetUsersByIDs :many
+SELECT * FROM users WHERE id = ANY(sqlc.arg('ids')::uuid[]) AND deleted_at IS NULL;

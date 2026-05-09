@@ -13,24 +13,26 @@ export function getInitials(name: string) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// Cache the NumberFormat instance to prevent severe memory leaks and GC pauses in rendering loops
+export const idrFormatter = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+});
+
 export function formatCurrency(amount: number) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount);
+    if (typeof amount !== 'number') return idrFormatter.format(0);
+    return idrFormatter.format(amount);
 }
 
 export function toTitleCase(str: string) {
     if (!str) return '';
-    return str.split(' ').map(word => {
-        if (!word) return '';
-        // Special case for DKI, DI, NTB, NTT, RI
-        const upper = word.toUpperCase();
+    return str.replace(/\w\S*/g, (txt) => {
+        const upper = txt.toUpperCase();
         if (upper === 'DKI' || upper === 'DI' || upper === 'NTB' || upper === 'NTT' || upper === 'RI') return upper;
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    }).join(' ');
+        return txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
+    });
 }
 
 export function formatLocations(record: any) {

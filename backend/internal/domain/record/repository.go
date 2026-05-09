@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,20 +17,22 @@ import (
 
 type Repository interface {
 	NextSpdNumber(ctx context.Context) (int64, error)
-	CreateTravelRecord(record *models.TravelRecord) error
+	CreateTravelRecord(ctx context.Context, record *models.TravelRecord) error
 	// CreateTravelRecordsBulk inserts all records in a single database transaction.
 	// If any insert fails the entire batch is rolled back — no partial state.
 	CreateTravelRecordsBulk(ctx context.Context, records []*models.TravelRecord) error
-	GetTravelRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
-	GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, error)
-	GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error)
+	GetTravelRecords(ctx context.Context, filters map[string]interface{}) ([]models.TravelRecord, error)
+	GetTravelRecordByID(ctx context.Context, id uuid.UUID) (*models.TravelRecord, error)
+	GetOverlappingRecords(ctx context.Context, employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
-	UpdateTravelRecord(record *models.TravelRecord) error
+	UpdateTravelRecord(ctx context.Context, record *models.TravelRecord) error
 	// SyncReportBySpd atomically pushes report updates to all other records sharing the same SPD.
 	// This avoids pulling the entire database into application memory.
 	SyncReportBySpd(ctx context.Context, spd string, sourceRecord *models.TravelRecord) error
-	DeleteTravelRecord(id uuid.UUID) error
+	DeleteTravelRecord(ctx context.Context, id uuid.UUID) error
 	DeleteTravelRecordsBySpd(ctx context.Context, spd string) error
+	GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error)
+	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
 }
 
 type repository struct {
@@ -355,8 +358,7 @@ func (r *repository) CreateTravelRecordsBulk(ctx context.Context, records []*mod
 	return nil
 }
 
-func (r *repository) CreateTravelRecord(record *models.TravelRecord) error {
-	ctx := context.Background()
+func (r *repository) CreateTravelRecord(ctx context.Context, record *models.TravelRecord) error {
 	tx, err := r.d.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -535,92 +537,134 @@ func (r *repository) SyncReportBySpd(ctx context.Context, spd string, src *model
 	return tx.Commit()
 }
 
-func (r *repository) GetTravelRecords(filters map[string]interface{}) ([]models.TravelRecord, error) {
-	ctx := context.Background()
+func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]interface{}) ([]models.TravelRecord, error) {
 	var statusFilter string
 	if status, ok := filters["status"]; ok && status != "" {
 		statusFilter = status.(string)
 	}
-
-	dbrs, err := r.q.GetTravelRecords(ctx, statusFilter)
-	if err != nil {
-		return nil, err
+	var spdFilter string
+	if spd, ok := filters["spd"]; ok && spd != "" {
+		spdFilter = spd.(string)
 	}
 
-	records := make([]models.TravelRecord, len(dbrs))
-	var wg sync.WaitGroup
+	var dbrs []db.TravelRecord
+	var err error
 
-	for i, dbr := range dbrs {
-		wg.Add(1)
-		go func(index int, d db.TravelRecord) {
-			defer wg.Done()
-			rec := mapDBRecord(d)
-			recPtr := &rec
+	if spdFilter != "" {
+		// Use the optimized query that filters by SPD at the database level
+		dbrs, err = r.q.GetRecordsBySPDs(ctx, []string{spdFilter})
+		if err != nil {
+			return nil, err
+		}
 
-			var relWg sync.WaitGroup
-
-			relWg.Add(1)
-			go func() {
-				defer relWg.Done()
-				emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
-				if emp != nil {
-					recPtr.Employee = *emp
+		// Apply status filter in-memory if it exists
+		if statusFilter != "" {
+			var filtered []db.TravelRecord
+			for _, dbr := range dbrs {
+				if fromNullString(dbr.Status) == statusFilter {
+					filtered = append(filtered, dbr)
 				}
-			}()
-
-			relWg.Add(1)
-			go func() {
-				defer relWg.Done()
-				creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
-				if creator != nil {
-					recPtr.Creator = *creator
-				}
-			}()
-
-			relWg.Add(1)
-			go func() {
-				defer relWg.Done()
-				dbc, err := r.q.GetTravelCostByRecordID(ctx, recPtr.ID)
-				if err == nil {
-					cost := mapDBCost(dbc)
-					recPtr.Cost = &cost
-				}
-			}()
-
-			relWg.Add(1)
-			go func() {
-				defer relWg.Done()
-				dbrep, err := r.q.GetTravelReportByRecordID(ctx, recPtr.ID)
-				if err == nil {
-					rep := mapDBReport(dbrep)
-					recPtr.Report = &rep
-				}
-			}()
-
-			relWg.Add(1)
-			go func() {
-				defer relWg.Done()
-				dbls, err := r.q.GetTravelLocationsByRecordID(ctx, recPtr.ID)
-				if err == nil {
-					locs := make([]models.TravelLocation, len(dbls))
-					for j, dbl := range dbls {
-						locs[j] = mapDBLocation(dbl)
-					}
-					recPtr.Locations = locs
-				}
-			}()
-
-			relWg.Wait()
-			records[index] = *recPtr
-		}(i, dbr)
+			}
+			dbrs = filtered
+		}
+	} else {
+		// Fallback to the paginated/limited query if no specific SPD is requested
+		dbrs, err = r.q.GetTravelRecords(ctx, statusFilter)
+		if err != nil {
+			return nil, err
+		}
 	}
-	wg.Wait()
 
-	return records, nil
+	if len(dbrs) == 0 {
+		return []models.TravelRecord{}, nil
+	}
+
+	var recordIDs []uuid.UUID
+	var userIDs []uuid.UUID
+	userIDMap := make(map[uuid.UUID]bool)
+
+	for _, rec := range dbrs {
+		recordIDs = append(recordIDs, rec.ID)
+		
+		if !userIDMap[rec.EmployeeID] {
+			userIDs = append(userIDs, rec.EmployeeID)
+			userIDMap[rec.EmployeeID] = true
+		}
+		if !userIDMap[rec.CreatorID] {
+			userIDs = append(userIDs, rec.CreatorID)
+			userIDMap[rec.CreatorID] = true
+		}
+	}
+
+	// Fetch Users in Bulk
+	var users []db.User
+	if len(userIDs) > 0 {
+		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+	}
+	userMap := make(map[uuid.UUID]models.User)
+	for _, u := range users {
+		userMap[u.ID] = mapDBUser(u)
+	}
+
+	// Fetch Costs in Bulk
+	var costs []db.TravelCost
+	if len(recordIDs) > 0 {
+		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+	}
+	costMap := make(map[uuid.UUID]*models.TravelCost)
+	for _, c := range costs {
+		mc := mapDBCost(c)
+		costMap[c.TravelRecordID] = &mc
+	}
+
+	// Fetch Reports in Bulk
+	var reports []db.TravelReport
+	if len(recordIDs) > 0 {
+		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+	}
+	reportMap := make(map[uuid.UUID]*models.TravelReport)
+	for _, rep := range reports {
+		mr := mapDBReport(rep)
+		reportMap[rep.TravelRecordID] = &mr
+	}
+
+	// Fetch Locations in Bulk
+	var locs []db.TravelLocation
+	if len(recordIDs) > 0 {
+		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+	}
+	locMap := make(map[uuid.UUID][]models.TravelLocation)
+	for _, l := range locs {
+		locMap[l.TravelRecordID] = append(locMap[l.TravelRecordID], mapDBLocation(l))
+	}
+
+	var travelRecords []models.TravelRecord
+	for _, dbr := range dbrs {
+		tr := mapDBRecord(dbr)
+
+		if u, ok := userMap[dbr.EmployeeID]; ok {
+			tr.Employee = u
+		}
+		if u, ok := userMap[dbr.CreatorID]; ok {
+			tr.Creator = u
+		}
+		if c, ok := costMap[dbr.ID]; ok {
+			tr.Cost = c
+		}
+		if rep, ok := reportMap[dbr.ID]; ok {
+			tr.Report = rep
+		}
+		if l, ok := locMap[dbr.ID]; ok {
+			tr.Locations = l
+		}
+
+		travelRecords = append(travelRecords, tr)
+	}
+
+	return travelRecords, nil
 }
 
-func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
-	ctx := context.Background()
+func (r *repository) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (*models.TravelRecord, error) {
 	dbr, err := r.q.GetTravelRecordByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -629,66 +673,180 @@ func (r *repository) GetTravelRecordByID(id uuid.UUID) (*models.TravelRecord, er
 	rec := mapDBRecord(dbr)
 	recPtr := &rec
 
+	emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
+	if emp != nil {
+		recPtr.Employee = *emp
+	}
+
+	creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
+	if creator != nil {
+		recPtr.Creator = *creator
+	}
+
+	dbc, err := r.q.GetTravelCostByRecordID(ctx, recPtr.ID)
+	if err == nil {
+		cost := mapDBCost(dbc)
+		recPtr.Cost = &cost
+	}
+
+	dbrep, err := r.q.GetTravelReportByRecordID(ctx, recPtr.ID)
+	if err == nil {
+		rep := mapDBReport(dbrep)
+		recPtr.Report = &rep
+	}
+
+	dbls, err := r.q.GetTravelLocationsByRecordID(ctx, recPtr.ID)
+	if err == nil {
+		locs := make([]models.TravelLocation, len(dbls))
+		for j, dbl := range dbls {
+			locs[j] = mapDBLocation(dbl)
+		}
+		recPtr.Locations = locs
+	}
+
+	return recPtr, nil
+}
+
+func (r *repository) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
+	summary := &models.DashboardSummary{}
+
 	var wg sync.WaitGroup
+	var errs []error
+	var errMu sync.Mutex
 
+	// 1. Total Trips
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
-		if emp != nil {
-			recPtr.Employee = *emp
+		total, err := r.q.GetTotalTripsCount(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetTotalTripsCount: %w", err))
+			errMu.Unlock()
+		} else {
+			summary.TotalTrips = total
 		}
 	}()
 
+	// 2. Active Trips
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
-		if creator != nil {
-			recPtr.Creator = *creator
+		active, err := r.q.GetActiveTripsCount(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetActiveTripsCount: %w", err))
+			errMu.Unlock()
+		} else {
+			summary.ActiveTrips = active
 		}
 	}()
 
+	// 3. Status Counts
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbc, err := r.q.GetTravelCostByRecordID(ctx, recPtr.ID)
-		if err == nil {
-			cost := mapDBCost(dbc)
-			recPtr.Cost = &cost
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		dbrep, err := r.q.GetTravelReportByRecordID(ctx, recPtr.ID)
-		if err == nil {
-			rep := mapDBReport(dbrep)
-			recPtr.Report = &rep
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		dbls, err := r.q.GetTravelLocationsByRecordID(ctx, recPtr.ID)
-		if err == nil {
-			locs := make([]models.TravelLocation, len(dbls))
-			for j, dbl := range dbls {
-				locs[j] = mapDBLocation(dbl)
+		counts, err := r.q.GetDashboardStatusCounts(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetDashboardStatusCounts: %w", err))
+			errMu.Unlock()
+		} else {
+			for _, row := range counts {
+				status := fromNullString(row.Status)
+				paymentStatus := fromNullString(row.PaymentStatus)
+				
+				if paymentStatus == "Paid" {
+					summary.StatusCompleted += row.Count
+				} else if status == "Submitted" || status == "Approved" {
+					summary.StatusInProgress += row.Count
+				} else if status == "Draft" || status == "Assigned" {
+					summary.StatusAssigned += row.Count
+				} else if status == "Rejected" {
+					summary.StatusRejected += row.Count
+				}
 			}
-			recPtr.Locations = locs
+		}
+	}()
+
+	// 4. Report Counts
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		counts, err := r.q.GetDashboardReportCounts(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetDashboardReportCounts: %w", err))
+			errMu.Unlock()
+		} else {
+			for _, row := range counts {
+				reportStatus := fromNullString(row.ReportStatus)
+				if reportStatus == "Completed" {
+					summary.ReportCompleted += row.Count
+				} else {
+					summary.ReportPending += row.Count
+				}
+			}
+		}
+	}()
+
+	// 5. Recent Records
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dbRecs, err := r.q.GetRecentRecords(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetRecentRecords: %w", err))
+			errMu.Unlock()
+		} else {
+			recs := make([]models.TravelRecord, len(dbRecs))
+			for i, dbRec := range dbRecs {
+				rec := mapDBRecord(dbRec)
+				// We need the employee to render names
+				emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
+				if emp != nil {
+					rec.Employee = *emp
+				}
+				recs[i] = rec
+			}
+			summary.RecentRecords = recs
+		}
+	}()
+
+	// 6. Budgets
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dbBudgets, err := r.q.GetDashboardBudgets(ctx)
+		if err != nil {
+			errMu.Lock()
+			errs = append(errs, fmt.Errorf("GetDashboardBudgets: %w", err))
+			errMu.Unlock()
+		} else {
+			budgets := make([]models.DashboardBudget, len(dbBudgets))
+			for i, dbb := range dbBudgets {
+				budgets[i] = models.DashboardBudget{
+					Year:  int(dbb.Year),
+					Month: int(dbb.Month),
+					Total: dbb.Total,
+				}
+			}
+			summary.Budgets = budgets
 		}
 	}()
 
 	wg.Wait()
 
-	return recPtr, nil
+	if len(errs) > 0 {
+		return nil, errs[0] // Return the first error
+	}
+
+	return summary, nil
 }
 
-func (r *repository) GetOverlappingRecords(employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error) {
-	dbrs, err := r.q.GetOverlappingRecords(context.Background(), db.GetOverlappingRecordsParams{
+func (r *repository) GetOverlappingRecords(ctx context.Context, employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error) {
+	dbrs, err := r.q.GetOverlappingRecords(ctx, db.GetOverlappingRecordsParams{
 		EmployeeID: employeeID,
 		StartDate:  toNullTime(endDate),
 		EndDate:    toNullTime(startDate),
@@ -704,8 +862,7 @@ func (r *repository) GetOverlappingRecords(employeeID uuid.UUID, startDate, endD
 	return records, nil
 }
 
-func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
-	ctx := context.Background()
+func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.TravelRecord) error {
 	tx, err := r.d.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -855,8 +1012,8 @@ func (r *repository) UpdateTravelRecord(record *models.TravelRecord) error {
 	return tx.Commit()
 }
 
-func (r *repository) DeleteTravelRecord(id uuid.UUID) error {
-	return r.q.DeleteTravelRecord(context.Background(), id)
+func (r *repository) DeleteTravelRecord(ctx context.Context, id uuid.UUID) error {
+	return r.q.DeleteTravelRecord(ctx, id)
 }
 
 func (r *repository) DeleteTravelRecordsBySpd(ctx context.Context, spd string) error {
@@ -878,4 +1035,282 @@ func (r *repository) DeleteTravelRecordsBySpd(ctx context.Context, spd string) e
 	}
 
 	return tx.Commit()
+}
+
+func (r *repository) GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error) {
+	if params.Limit < 1 {
+		params.Limit = 10
+	}
+
+	offset := 0
+	if params.Cursor != "" {
+		parsed, err := strconv.Atoi(params.Cursor)
+		if err == nil {
+			offset = parsed
+		}
+	}
+
+	// 1. Build dynamic SQL for GetPaginatedSPDs
+	query := `
+		SELECT travel_records.spd_number
+		FROM travel_records
+		LEFT JOIN users ON travel_records.employee_id = users.id
+		WHERE travel_records.deleted_at IS NULL
+	`
+	var args []interface{}
+	argId := 1
+
+	if params.Status != "" {
+		query += fmt.Sprintf(" AND travel_records.status = $%d", argId)
+		args = append(args, params.Status)
+		argId++
+	}
+	if params.ReportStatus != "" {
+		query += fmt.Sprintf(" AND travel_records.report_status = $%d", argId)
+		args = append(args, params.ReportStatus)
+		argId++
+	}
+	if params.PaymentStatus != "" {
+		query += fmt.Sprintf(" AND travel_records.payment_status = $%d", argId)
+		args = append(args, params.PaymentStatus)
+		argId++
+	}
+	if params.Search != "" {
+		query += fmt.Sprintf(` AND (
+			travel_records.spd_number ILIKE '%%' || $%d || '%%'
+			OR travel_records.location ILIKE '%%' || $%d || '%%'
+			OR users.name ILIKE '%%' || $%d || '%%'
+		)`, argId, argId, argId)
+		args = append(args, params.Search)
+		argId++
+	}
+	if params.StartDate != nil {
+		query += fmt.Sprintf(" AND travel_records.start_date >= $%d", argId)
+		args = append(args, params.StartDate)
+		argId++
+	}
+	if params.EndDate != nil {
+		query += fmt.Sprintf(" AND travel_records.start_date <= $%d", argId)
+		args = append(args, params.EndDate)
+		argId++
+	}
+	if params.UserID != nil {
+		query += fmt.Sprintf(" AND (travel_records.employee_id = $%d OR travel_records.creator_id = $%d)", argId, argId)
+		args = append(args, params.UserID)
+		argId++
+	}
+
+	query += " GROUP BY travel_records.spd_number"
+
+	// Sorting
+	switch params.SortBy {
+	case "spj-asc":
+		query += " ORDER BY travel_records.spd_number ASC"
+	case "spj-desc":
+		query += " ORDER BY travel_records.spd_number DESC"
+	case "date-asc":
+		query += " ORDER BY MAX(travel_records.start_date) ASC, travel_records.spd_number ASC"
+	case "date-desc":
+		query += " ORDER BY MAX(travel_records.start_date) DESC, travel_records.spd_number DESC"
+	case "cost-asc":
+		query += " ORDER BY SUM(travel_records.total_cost) ASC, travel_records.spd_number ASC"
+	case "cost-desc":
+		query += " ORDER BY SUM(travel_records.total_cost) DESC, travel_records.spd_number DESC"
+	default:
+		query += " ORDER BY travel_records.spd_number DESC"
+	}
+
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argId, argId+1)
+	args = append(args, params.Limit, offset)
+
+	rows, err := r.d.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dynamic GetPaginatedSPDs: %w", err)
+	}
+	defer rows.Close()
+
+	var spdStrings []string
+	for rows.Next() {
+		var spd sql.NullString
+		if err := rows.Scan(&spd); err != nil {
+			return nil, err
+		}
+		if spd.Valid {
+			spdStrings = append(spdStrings, spd.String)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// 2. Get the total count of distinct SPDs
+	countParams := db.GetTotalPaginatedSPDsCountParams{
+		Status:        toNullString(params.Status),
+		ReportStatus:  toNullString(params.ReportStatus),
+		PaymentStatus: toNullString(params.PaymentStatus),
+		Search:        toNullString(params.Search),
+		StartDate:     sql.NullTime{Time: time.Time{}, Valid: false}, // Will map below
+		EndDate:       sql.NullTime{Time: time.Time{}, Valid: false},
+		UserID:        uuid.NullUUID{Valid: false},
+	}
+	
+	if params.StartDate != nil {
+		countParams.StartDate = sql.NullTime{Time: *params.StartDate, Valid: true}
+	}
+	if params.EndDate != nil {
+		countParams.EndDate = sql.NullTime{Time: *params.EndDate, Valid: true}
+	}
+	if params.UserID != nil {
+		countParams.UserID = uuid.NullUUID{UUID: *params.UserID, Valid: true}
+	}
+
+	totalItems, err := r.q.GetTotalPaginatedSPDsCount(ctx, countParams)
+	if err != nil {
+		return nil, fmt.Errorf("GetTotalPaginatedSPDsCount: %w", err)
+	}
+
+	// 3. If no SPDs found, return empty early
+	if len(spdStrings) == 0 {
+		return &models.PaginatedResponse{
+			Data:       []models.TravelRecord{},
+			TotalItems: totalItems,
+			NextCursor: "",
+			Limit:      params.Limit,
+		}, nil
+	}
+
+	// Calculate NextCursor based on offset
+	nextCursor := ""
+	if len(spdStrings) == params.Limit {
+		nextCursor = strconv.Itoa(offset + len(spdStrings))
+	}
+
+	// 4. Fetch the actual records for those SPDs
+
+	records, err := r.q.GetRecordsBySPDs(ctx, spdStrings)
+	if err != nil {
+		return nil, fmt.Errorf("GetRecordsBySPDs: %w", err)
+	}
+
+	// 5. Bulk Fetch Relationships to prevent N+1 Queries
+	var recordIDs []uuid.UUID
+	var userIDs []uuid.UUID
+	userIDMap := make(map[uuid.UUID]bool)
+
+	for _, rec := range records {
+		recordIDs = append(recordIDs, rec.ID)
+		
+		if !userIDMap[rec.EmployeeID] {
+			userIDs = append(userIDs, rec.EmployeeID)
+			userIDMap[rec.EmployeeID] = true
+		}
+		if !userIDMap[rec.CreatorID] {
+			userIDs = append(userIDs, rec.CreatorID)
+			userIDMap[rec.CreatorID] = true
+		}
+	}
+
+	// Fetch Users in Bulk
+	var users []db.User
+	if len(userIDs) > 0 {
+		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+	}
+	userMap := make(map[uuid.UUID]models.User)
+	for _, u := range users {
+		userMap[u.ID] = mapDBUser(u)
+	}
+
+	// Fetch Costs in Bulk
+	var costs []db.TravelCost
+	if len(recordIDs) > 0 {
+		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+	}
+	costMap := make(map[uuid.UUID]*models.TravelCost)
+	for _, c := range costs {
+		mc := mapDBCost(c)
+		costMap[c.TravelRecordID] = &mc
+	}
+
+	// Fetch Reports in Bulk
+	var reports []db.TravelReport
+	if len(recordIDs) > 0 {
+		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+	}
+	reportMap := make(map[uuid.UUID]*models.TravelReport)
+	for _, rep := range reports {
+		mr := mapDBReport(rep)
+		reportMap[rep.TravelRecordID] = &mr
+	}
+
+	// Fetch Locations in Bulk
+	var locs []db.TravelLocation
+	if len(recordIDs) > 0 {
+		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+	}
+	locMap := make(map[uuid.UUID][]models.TravelLocation)
+	for _, l := range locs {
+		locMap[l.TravelRecordID] = append(locMap[l.TravelRecordID], mapDBLocation(l))
+	}
+
+	// 6. Map to Domain Models in O(1) time
+	var travelRecords []models.TravelRecord
+	
+	// Create a map to group records by SPD first
+	recordsBySpd := make(map[string][]models.TravelRecord)
+	for _, rec := range records {
+		spdStr := fromNullString(rec.SpdNumber)
+		tr := models.TravelRecord{
+			Base: models.Base{
+				ID:        rec.ID,
+				CreatedAt: rec.CreatedAt.Time,
+				UpdatedAt: rec.UpdatedAt.Time,
+			},
+			SPDNumber:     spdStr,
+			EmployeeID:    rec.EmployeeID,
+			CreatorID:     rec.CreatorID,
+			StartDate:     rec.StartDate.Time,
+			EndDate:       rec.EndDate.Time,
+			Location:      fromNullString(rec.Location),
+			Province:      fromNullString(rec.Province),
+			Type:          fromNullString(rec.Type),
+			Purpose:       fromNullString(rec.Purpose),
+			Stakeholder:   fromNullString(rec.Stakeholder),
+			Agenda:        fromNullString(rec.Agenda),
+			Status:        fromNullString(rec.Status),
+			IsViewed:      rec.IsViewed.Bool,
+			ReportStatus:  fromNullString(rec.ReportStatus),
+			PaymentStatus: fromNullString(rec.PaymentStatus),
+			TotalCost:     fromNullFloat(rec.TotalCost),
+		}
+
+		if u, ok := userMap[rec.EmployeeID]; ok {
+			tr.Employee = u
+		}
+		if u, ok := userMap[rec.CreatorID]; ok {
+			tr.Creator = u
+		}
+		if c, ok := costMap[rec.ID]; ok {
+			tr.Cost = c
+		}
+		if rep, ok := reportMap[rec.ID]; ok {
+			tr.Report = rep
+		}
+		if l, ok := locMap[rec.ID]; ok {
+			tr.Locations = l
+		}
+
+		recordsBySpd[spdStr] = append(recordsBySpd[spdStr], tr)
+	}
+
+	// Now append them to travelRecords strictly in the order of spdStrings
+	for _, spd := range spdStrings {
+		travelRecords = append(travelRecords, recordsBySpd[spd]...)
+	}
+
+	return &models.PaginatedResponse{
+		Data:       travelRecords,
+		TotalItems: totalItems,
+		NextCursor: nextCursor,
+		Limit:      params.Limit,
+	}, nil
 }

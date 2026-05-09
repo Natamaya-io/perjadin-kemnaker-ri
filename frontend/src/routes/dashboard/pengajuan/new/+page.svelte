@@ -1,7 +1,7 @@
-﻿<script>
+<script>
     import { onMount } from 'svelte';
     import { api } from '$lib/shared/api';
-    import { userStore, usersStore } from '$lib/features/auth/store';
+    import { userStore } from '$lib/features/auth/store';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { recordsStore, addRecord, loadRecords } from '$lib/features/pengajuan/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
@@ -25,8 +25,9 @@
 
     $: selectedType = $page.url.searchParams.get('type');
 
-    // Filter users for employee selection (Protokol role only)
-    $: protokolOfficers = $usersStore.filter(u => u.role === 'protokol');
+    // Fetch users for employee selection (Protokol role only)
+    /** @type {any[]} */
+    let protokolOfficers = [];
 
     // Form State
     /** 
@@ -96,9 +97,9 @@
     // Cost Calculations
     $: days = formData.locations.reduce((total, loc) => {
         if (!loc.startDate || !loc.endDate) return total;
-        const start = new Date(loc.startDate);
-        const end = new Date(loc.endDate);
-        const diffTime = end.getTime() - start.getTime();
+        const start = Date.parse(loc.startDate);
+        const end = Date.parse(loc.endDate);
+        const diffTime = end - start;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         return total + (diffDays > 0 ? diffDays : 0);
     }, 0);
@@ -108,11 +109,11 @@
         const provData = $provincesStore.find(p => p.name === loc.province);
         const rate = provData ? provData.luarKota : 0;
         
-        const start = new Date(loc.startDate);
-        const end = new Date(loc.endDate);
+        const start = Date.parse(loc.startDate);
+        const end = Date.parse(loc.endDate);
         let locDays = 0;
-        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-            const diffTime = end.getTime() - start.getTime();
+        if (!isNaN(start) && !isNaN(end)) {
+            const diffTime = end - start;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             locDays = diffDays > 0 ? diffDays : 0;
         }
@@ -123,11 +124,11 @@
 	$: costBreakdown = Object.values(formData.locations.reduce((acc, loc) => {
 	    const provData = $provincesStore.find(p => p.name === loc.province);
     	const rate = provData ? provData.luarKota : 0;
-    	const start = new Date(loc.startDate);
-    	const end = new Date(loc.endDate);
+    	const start = Date.parse(loc.startDate);
+    	const end = Date.parse(loc.endDate);
     	let locDays = 0;
-    	if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        	const diffTime = end.getTime() - start.getTime();
+    	if (!isNaN(start) && !isNaN(end)) {
+        	const diffTime = end - start;
         	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         	locDays = diffDays > 0 ? diffDays : 0;
    		}
@@ -141,17 +142,7 @@
         return acc;
 	}, {}));
     
-    $: disabledEmployeeIds = $recordsStore
-        .filter(r => {
-             if (r.status === 'Rejected') return false;
-             if (!minStartDate || !maxEndDate) return false;
-             const start = new Date(minStartDate);
-             const end = new Date(maxEndDate);
-             const rStart = new Date(r.startDate);
-             const rEnd = new Date(r.endDate);
-             return (rStart <= end && rEnd >= start);
-        })
-        .map(r => r.employee?.id).filter(Boolean);
+    $: disabledEmployeeIds = []; // We rely on backend validation for overlapping employees instead of checking on the frontend.
 
     $: {
         if (!$loadingStore && !isSuccessfullySubmitted && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
@@ -178,20 +169,6 @@
         }
     }
 
-    function generateId() {
-        let maxId = 0;
-        for (const record of $recordsStore) {
-            if (record.spd && record.spd.startsWith('ID-SPJ-')) {
-                const numStr = record.spd.substring(7);
-                const num = parseInt(numStr, 10);
-                if (!isNaN(num) && num > maxId) {
-                    maxId = num;
-                }
-            }
-        }
-        return `ID-SPJ-${(maxId + 1).toString().padStart(3, '0')}`;
-    }
-    
     function handleSubmit() {
         if (formData.selectedEmployees.length > 20) {
             toast.warning('Maksimal 20 Petugas Protokol yang diperbolehkan dalam satu pengajuan.');
@@ -202,10 +179,9 @@
             toast.error('Harap lengkapi semua field wajib di setiap lokasi dan pilih minimal satu pegawai.');
             return;
         }
-
         if (formData.locations.some(loc => {
-            const start = new Date(loc.startDate);
-            const end = new Date(loc.endDate);
+            const start = Date.parse(loc.startDate);
+            const end = Date.parse(loc.endDate);
             return end < start;
         })) {
             toast.error('Ada tanggal selesai yang mendahului tanggal mulai.');
@@ -234,7 +210,7 @@
         }
 
         const tripData = {
-            spd: generateId(),
+            spd: "", // Leave empty to let the backend generate safely
             email: $userStore.email,
             startDate: minStartDate,
             endDate: maxEndDate,
@@ -265,7 +241,7 @@
                 goto('/dashboard');
             }
         } catch (e) {
-            toast.error('Gagal menyimpan pengajuan.');
+            toast.error(e.message || 'Gagal menyimpan pengajuan.');
         } finally {
             stopLoading();
         }
@@ -286,8 +262,16 @@
             return;
         }
 
-        if (localStorage.getItem('auth_token') && $recordsStore.length === 0) {
-            await loadRecords();
+        if (localStorage.getItem('auth_token')) {
+            try {
+                const [officers] = await Promise.all([
+                    api.getUsers({ role: 'protokol' })
+                ]);
+                
+                protokolOfficers = officers;
+            } catch (e) {
+                console.error("Failed to load initial data", e);
+            }
         }
     });
 </script>

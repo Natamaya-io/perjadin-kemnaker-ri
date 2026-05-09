@@ -12,7 +12,7 @@
     
     import { api } from '$lib/shared/api';
     import { updateRecord, deleteRecord, addRecord } from '$lib/features/pengajuan/store';
-    import { usersStore, userStore } from '$lib/features/auth/store';
+    import { userStore } from '$lib/features/auth/store';
     import { toast } from '$lib/shared/stores/toast';
     import { formatCurrency, getStatusBadge, toTitleCase } from '$lib/shared/utils/utils';
     import regenciesData from '$lib/shared/assets/regencies.json';
@@ -27,7 +27,8 @@
     let isEditing = false;
     let isLoading = false;
     
-    $: protokolOfficers = $usersStore.filter(u => u.role === 'protokol');
+    /** @type {any[]} */
+    let protokolOfficers = [];
     let selectedEmployeeIds = [];
     let initialEmployeeIds = [];
     let prevOpen = false;
@@ -69,13 +70,16 @@
     
     $: if (open && !prevOpen) {
         prevOpen = true;
+        // Fetch officers dynamically when modal opens
+        api.getUsers({ role: 'protokol' }).then(users => protokolOfficers = users).catch(console.error);
+        
         if (records.length > 0) {
             const firstRecord = records[0];
             // Format dates to YYYY-MM-DD for input type="date"
             const formatForInput = (isoString) => {
                 if (!isoString) return '';
-                const d = new Date(isoString);
-                return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+                const timestamp = Date.parse(isoString);
+                return isNaN(timestamp) ? '' : new Date(timestamp).toISOString().split('T')[0];
             };
             
             formData = {
@@ -116,11 +120,11 @@
 		).reduce((acc, loc) => {
 			const provData = provinces.find(p => p.name === loc.province);
 			const rate = provData ? provData.luarKota : 0;
-			const start = new Date(loc.startDate);
-			const end = new Date(loc.endDate) ;
+			const start = Date.parse(loc.startDate);
+			const end = Date.parse(loc.endDate);
 			let locDays = 0;
-			if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-				const diffTime = end.getTime() - start.getTime();
+			if (!isNaN(start) && !isNaN(end)) {
+				const diffTime = end - start;
 				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 				locDays = diffDays > 0 ? diffDays : 0;
 			}
@@ -407,7 +411,7 @@
                                             disabled={isLoading}
                                         >
                                             {#if isLoading}
-                                                <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                                             {:else}
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                                             {/if}
@@ -464,7 +468,7 @@
                                             disabled={isLoading}
                                         >
                                             {#if isLoading}
-                                                <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                                             {:else}
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                                             {/if}
@@ -621,9 +625,8 @@
                 <Button variant="ghost" on:click={() => isEditing = false} disabled={isLoading} class="min-w-[100px] hover:bg-slate-100">Batal</Button>
                 <Button variant="default" class="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px]" on:click={handleSave} disabled={isLoading}>
                     {#if isLoading}
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg class="animate-paper-flight -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                         </svg>
                         Menyimpan...
                     {:else}

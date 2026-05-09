@@ -1,12 +1,13 @@
 <script>
-    import { recordsStore, updateRecord } from '$lib/features/pengajuan/store';
+    import { paginatedRecordsStore, paginatedMetadataStore, loadPaginatedRecords, updateRecord, isFetchingRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
     import { provincesStore } from '$lib/shared/stores/master-data';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge, toTitleCase, formatLocations } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
+    import { createVirtualizer } from '@tanstack/svelte-virtual';
     
     // Components
     import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
@@ -21,18 +22,25 @@
 
     // Filter & Sort State
     let searchQuery = '';
-    let statusFilter = 'all'; // 'all', 'Submitted', 'Approved'
+    let statusFilter = 'all';
     let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
 
-    // Modal State
+    let statusOptions = [
+        { value: 'all', label: 'Semua Status' },
+        { value: 'Submitted', label: 'Menunggu Persetujuan' },
+        { value: 'Approved', label: 'Disetujui' },
+        { value: 'Rejected', label: 'Ditolak' }
+    ];
+
+    let debounceTimer;
     let isModalOpen = false;
     let selectedRecord = null;
     let editingCosts = {};
     let allRecordsInSelectedSpd = [];
     $: if (selectedRecord) {
-        allRecordsInSelectedSpd = $recordsStore.filter(r => r.spd === selectedRecord.spd);
+        allRecordsInSelectedSpd = $paginatedRecordsStore.filter(r => r.spd === selectedRecord.spd);
     } else {
         allRecordsInSelectedSpd = [];
     }
@@ -53,85 +61,60 @@
         expandedGroups = expandedGroups; // Trigger reactivity
     }
 
-    // We MUST use a deterministic sort based on timestamp, but we MUST group by SPD first
-    // if the timestamps are identical, to prevent numbers scattering across different SPDs.
-    $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
+    let limit = 50;
+    let currentCursor = '';
+
+    // Reactively refetch when filters change
+    $: {
+        // Read dependencies
+        const s = searchQuery;
+        const st = statusFilter;
+        const so = sortOption;
+        const sd = startDate;
+        const ed = endDate;
         
-        // 1. Primary Sort: Time (Oldest first)
-        if (timeA !== timeB) {
-            return timeA - timeB;
+        if (typeof window !== 'undefined') {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentCursor = '';
+                fetchRecords(false);
+            }, 300);
         }
-        
-        // 2. Secondary Sort: SPD Number
-        // Keeps index numbers contiguous for the same SPD if created simultaneously
-        const spdA = a.spd || '';
-        const spdB = b.spd || '';
-        if (spdA !== spdB) {
-            return spdA.localeCompare(spdB);
+    }
+
+    function fetchRecords(append = false) {
+        let statusParam = statusFilter === 'all' ? undefined : statusFilter;
+        let sortByParam = sortOption;
+
+        let startIso, endIso;        if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0,0,0,0);
+            startIso = start.toISOString();
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23,59,59,999);
+            endIso = end.toISOString();
         }
 
-        // 3. Tertiary Sort: Employee Name (matches backend Go sort)
-        // Guarantees absolute stability inside the accordion
-        const nameA = a.employee?.name || '';
-        const nameB = b.employee?.name || '';
-        if (nameA !== nameB) return nameA.localeCompare(nameB);
-        return (a.id || '').localeCompare(b.id || '');
-    });
-    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
+        const params = {
+            limit,
+            search: searchQuery,
+            status: statusParam,
+            sort_by: sortByParam,
+            start_date: startIso,
+            end_date: endIso,
+        };
 
-    // Derived Records
-    $: filteredRecords = $recordsStore
-        .filter(r => {
-            const query = searchQuery.toLowerCase();
-            const matchSearch = 
-                (r.employee?.name?.toLowerCase() || '').includes(query) ||
-                (r.spd?.toLowerCase() || '').includes(query) ||
-                (r.location?.toLowerCase() || '').includes(query);
-            
-            const badge = getStatusBadge(r);
-            const matchStatus = statusFilter === 'all' || badge.label === statusFilter;
-            
-            let matchDate = true;
-            if (startDate || endDate) {
-                const recordDate = new Date(r.startDate).setHours(0,0,0,0);
-                const start = startDate ? new Date(startDate).setHours(0,0,0,0) : null;
-                const end = endDate ? new Date(endDate).setHours(0,0,0,0) : null;
+        if (append && currentCursor) {
+            params.cursor = currentCursor;
+        }
 
-                if (start && end) {
-                    matchDate = recordDate >= start && recordDate <= end;
-                } else if (start) {
-                    matchDate = recordDate >= start;
-                } else if (end) {
-                    matchDate = recordDate <= end;
-                }
-            }
+        loadPaginatedRecords(params, append);
+    }
 
-            return matchSearch && matchStatus && matchDate;
-        })
-        .sort((a, b) => {
-            let diff = 0;
-            if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-            else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
-            else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
-            else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
-                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-                diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
-            }
-            
-            if (diff === 0) {
-                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-                if (numA && numB && numB !== numA) return numB - numA;
-                return (b.spd || '').localeCompare(a.spd || '');
-            }
-            return diff;
-        });
-
-    $: groupedRecords = filteredRecords.reduce((acc, record) => {
+    // Grouping is now extremely cheap because the store only contains the current page (~10 SPDs max)
+    $: groupedRecordsMap = $paginatedRecordsStore.reduce((acc, record) => {
         if (!acc[record.spd]) {
             acc[record.spd] = { ...record, employeesList: [record] };
         } else {
@@ -139,38 +122,22 @@
         }
         return acc;
     }, {});
+    
+    // Maintain the order of SPDs exactly as returned by Postgres pagination query
+    $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
+    $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
 
-    $: uniqueRecords = Object.values(groupedRecords).map(group => {
-        // Sort employeesList within each group by their global index (descending NO. SPD, smallest at bottom)
-        const sortedEmployees = [...group.employeesList].sort((a, b) => {
-            const indexA = recordToIndexMap.get(a.id) || 0;
-            const indexB = recordToIndexMap.get(b.id) || 0;
-            return indexB - indexA;
-        });
-        return { ...group, employeesList: sortedEmployees };
-    }).sort((a, b) => {
-        let diff = 0;
-        if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-        else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        else if (sortOption === 'cost-desc' || sortOption === 'cost-asc') {
-            const costA = a.employeesList ? a.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0) : (a.totalCost || 0);
-            const costB = b.employeesList ? b.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0) : (b.totalCost || 0);
-            diff = sortOption === 'cost-desc' ? costB - costA : costA - costB;
+    let scrollContainer;
+    function handleScroll() {
+        if (!scrollContainer || $isFetchingRecords) return;
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        if (scrollHeight - scrollTop - clientHeight < 200) {
+            if ($paginatedMetadataStore.nextCursor) {
+                currentCursor = $paginatedMetadataStore.nextCursor;
+                fetchRecords(true);
+            }
         }
-        else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
-            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-            diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
-        }
-        
-        if (diff === 0) {
-            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-            if (numA && numB && numB !== numA) return numB - numA;
-            return (b.spd || '').localeCompare(a.spd || '');
-        }
-        return diff;
-    });
+    }
 
     function openEditModal(record) {
         selectedRecord = record;
@@ -216,7 +183,7 @@
             // 2. Additional updates from split hotel feature
             if (pendingOtherUpdatesToSave.length > 0) {
                 for (const updateInfo of pendingOtherUpdatesToSave) {
-                    const targetRecord = $recordsStore.find(r => r.id === updateInfo.empId);
+                    const targetRecord = $paginatedRecordsStore.find(r => r.id === updateInfo.empId);
                     if (!targetRecord) continue;
 
                     let newTargetCosts = JSON.parse(JSON.stringify(targetRecord.costs || {}));
@@ -322,6 +289,7 @@
             await updateMultipleRecords(updates);
             
             toast.success('Rincian biaya berhasil disimpan!');
+            fetchRecords();
         } catch (e) {
             toast.error('Gagal menyimpan perubahan.');
         } finally {
@@ -347,6 +315,7 @@
                 }
             }]);
             toast.success('Pengajuan berhasil ditolak.');
+            fetchRecords();
         } catch (e) {
             toast.error('Gagal menolak pengajuan.');
         } finally {
@@ -372,6 +341,7 @@
                 }
             }]);
             toast.success('Dana berhasil dicairkan. Status menjadi Completed.');
+            fetchRecords();
         } catch (e) {
             toast.error('Gagal memproses pencairan dana.');
         } finally {
@@ -415,15 +385,19 @@
             bind:sortOption
             bind:startDate
             bind:endDate
+            statusOptions={statusOptions}
         />
     </div>
     {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <!-- Desktop Table View -->
-            <div class="hidden lg:block overflow-x-auto w-full">
-                <table class="w-full text-left text-sm border-collapse min-w-[900px]">
-                    <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500">
+            <div 
+                bind:this={scrollContainer} 
+                on:scroll={handleScroll}
+                class="hidden lg:block overflow-x-auto overflow-y-auto max-h-[70vh] w-full relative scroll-smooth table-scrollbar table-scroll-shadows"
+            >
+                <table class="w-full text-left text-sm border-collapse min-w-[900px] relative">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500 sticky top-0 z-10 shadow-sm">
                         <tr>
                             <th class="px-6 py-4 whitespace-nowrap w-[12%]">ID SPJ</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[28%]">Lokasi</th>
@@ -433,8 +407,26 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        {#each uniqueRecords as record (record.spd)}
-                            <!-- Group Header Row -->
+                        {#if uniqueRecords.length === 0}
+                            <tr>
+                                <td colspan="5" class="p-12 text-center text-slate-500 bg-slate-50/50">
+                                    {#if $isFetchingRecords}
+                                        <div class="flex flex-col items-center justify-center py-6 gap-3">
+                                            <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                                </svg>
+                                            </div>
+                                            <span class="text-sm font-semibold text-slate-500 tracking-wide animate-pulse">Sedang memuat data...</span>
+                                        </div>
+                                    {:else}
+                                        Belum ada pengajuan yang masuk.
+                                    {/if}
+                                </td>
+                            </tr>
+                        {:else}
+                            {#each uniqueRecords as record (record.spd)}
+                                <!-- Group Header Row -->
                             <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd)}>
                                 <td class="px-6 py-3 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
@@ -459,7 +451,7 @@
                                 </td>
                                 <td class="px-6 py-3 whitespace-nowrap text-right">
                                     <div class="px-3 py-1 inline-flex bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-lg border border-blue-100">
-                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(record.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0))}
+                                        {formatCurrency(record.employeesList.reduce((sum, e) => sum + (e.totalCost || 0), 0))}
                                     </div>
                                 </td>
                                 <td class="px-6 py-3 whitespace-nowrap text-center">
@@ -489,7 +481,7 @@
                                                         <td class="px-6 py-4 align-middle">
                                                             <div class="flex items-center gap-3 pl-2">
                                                                 <div class="w-2 h-2 rounded-full bg-slate-300 shrink-0"></div>
-                                                                <div class="font-mono font-bold text-slate-700">{String(recordToIndexMap.get(empRecord.id) || 0).padStart(3, '0')}</div>
+                                                                <div class="font-mono font-bold text-slate-700">{String(record.employeesList.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</div>
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle">
@@ -514,12 +506,12 @@
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle text-left">
-                                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {empRecord.status === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
-                                                                {empRecord.status === 'Draft' ? 'Belum Lengkap' : 'Lengkap'}
+                                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {empRecord.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' : empRecord.status === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
+                                                                {empRecord.status === 'Rejected' ? 'Rejected' : empRecord.status === 'Draft' ? 'Belum Lengkap' : 'Lengkap'}
                                                             </span>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle text-right font-mono font-medium text-blue-600">
-                                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(empRecord.totalCost || 0)}
+                                                            {formatCurrency(empRecord.totalCost || 0)}
                                                         </td>
                                                         <td class="px-6 py-4 align-middle pr-6">
                                                             <div class="flex items-center justify-center gap-2">
@@ -541,12 +533,17 @@
                                 </tr>
                             {/if}
                         {/each}
-                        {#if uniqueRecords.length === 0}
+                        
+                        {#if $isFetchingRecords && currentCursor}
                             <tr>
-                                <td colspan="5" class="p-12 text-center text-slate-500 bg-slate-50/50">
-                                    Belum ada pengajuan yang masuk.
+                                <td colspan="5" class="p-4 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                        <span class="text-sm text-slate-500">Memuat data selanjutnya...</span>
+                                    </div>
                                 </td>
                             </tr>
+                        {/if}
                         {/if}
                     </tbody>
                 </table>
@@ -598,7 +595,7 @@
                                 {#each record.employeesList as empRecord}
                                     <div class="p-4 flex flex-col gap-3">
                                         <div class="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                            <span>NO. SPD: {String(recordToIndexMap.get(empRecord.id) || 0).padStart(3, '0')}</span>
+                                            <span>NO. SPD: {String(record.employeesList.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</span>
                                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
                                                 {getStatusBadge(empRecord).label}
                                             </span>
@@ -630,10 +627,19 @@
                 {/each}
                 {#if uniqueRecords.length === 0}
                     <div class="p-12 text-center text-slate-500 bg-white">
-                        Belum ada pengajuan yang masuk.
+                        {#if $isFetchingRecords}
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                <span>Sedang memuat data...</span>
+                            </div>
+                        {:else}
+                            Belum ada pengajuan yang masuk.
+                        {/if}
                     </div>
                 {/if}
             </div>
+
+            <!-- Removed Pagination Footer -->
         </div>
     {:else}
         <div class="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">

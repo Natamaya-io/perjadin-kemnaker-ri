@@ -6,15 +6,51 @@ import { browser } from '$app/environment';
 
 // --- Travel Records ---
 export const recordsStore = writable<TravelRecord[]>([]);
+export const paginatedRecordsStore = writable<TravelRecord[]>([]);
+export const paginatedMetadataStore = writable<{totalItems: number, nextCursor: string | null, limit: number}>({
+    totalItems: 0,
+    nextCursor: null,
+    limit: 50
+});
 
-export async function loadRecords() {
+export const isFetchingRecords = writable<boolean>(false);
+
+export async function loadRecords(spd?: string) {
     if (typeof window === 'undefined' || !localStorage.getItem('auth_token')) return;
+    isFetchingRecords.set(true);
     try {
-        const data = await api.getRecords();
+        const filters = spd ? { spd } : { limit: 100 }; // Prevent over-fetching by adding a limit if no spd
+        const data = await api.getRecords(filters);
         recordsStore.set(data || []);
     } catch (e: any) {
         if (e.message === 'Unauthorized') return;
         console.warn("Failed to load records (backend might be starting):", e.message);
+    } finally {
+        isFetchingRecords.set(false);
+    }
+}
+
+export async function loadPaginatedRecords(params: import('$lib/shared/api/types').PaginatedParams, append = false) {
+    if (typeof window === 'undefined' || !localStorage.getItem('auth_token')) return;
+    
+    isFetchingRecords.set(true);
+    try {
+        const response = await api.getPaginatedRecords(params);
+        if (append) {
+            paginatedRecordsStore.update(current => [...current, ...(response.data || [])]);
+        } else {
+            paginatedRecordsStore.set(response.data || []);
+        }
+        paginatedMetadataStore.set({
+            totalItems: response.totalItems,
+            nextCursor: response.nextCursor || null,
+            limit: response.limit
+        });
+    } catch (e: any) {
+        if (e.message === 'Unauthorized') return;
+        console.warn("Failed to load paginated records:", e.message);
+    } finally {
+        isFetchingRecords.set(false);
     }
 }
 

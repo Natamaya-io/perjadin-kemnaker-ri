@@ -91,6 +91,45 @@ export interface ImportResult {
     details: ImportDetail[];
 }
 
+export interface DashboardBudget {
+    year: number;
+    month: number;
+    total: number;
+}
+
+export interface DashboardSummary {
+    totalTrips: number;
+    activeTrips: number;
+    statusCompleted: number;
+    statusInProgress: number;
+    statusAssigned: number;
+    statusRejected: number;
+    reportCompleted: number;
+    reportPending: number;
+    recentRecords: TravelRecord[];
+    budgets: DashboardBudget[];
+}
+
+export interface PaginatedParams {
+    cursor?: string;
+    limit?: number;
+    search?: string;
+    status?: string;
+    report_status?: string;
+    payment_status?: string;
+    sort_by?: string;
+    start_date?: string; // ISO string
+    end_date?: string;   // ISO string
+    user_id?: string;
+}
+
+export interface PaginatedResponse {
+    data: TravelRecord[];
+    totalItems: number;
+    nextCursor: string;
+    limit: number;
+}
+
 export interface ApiClient {
     // Auth
     login(email: string, password?: string): Promise<{ user: User; token?: string; require_password_change?: boolean }>;
@@ -101,7 +140,7 @@ export interface ApiClient {
     getCurrentUser(): Promise<User | null>;
 
     // User Management (Admin)
-    getUsers(): Promise<User[]>;
+    getUsers(filters?: { role?: string; search?: string }): Promise<User[]>;
     createUser(user: Omit<User, 'id'>): Promise<User>;
     updateUser(id: string | number, user: Partial<User>): Promise<User>;
     deleteUser(id: string | number): Promise<void>;
@@ -110,7 +149,9 @@ export interface ApiClient {
     uploadFile(file: File): Promise<{path: string}>;
 
     // Records
+    getDashboardSummary(): Promise<DashboardSummary>;
     getRecords(filters?: Record<string, any>): Promise<TravelRecord[]>;
+    getPaginatedRecords(params: PaginatedParams): Promise<PaginatedResponse>;
     getRecordById(id: string): Promise<TravelRecord | null>;
     exportSpdPdf(id: string): Promise<Blob>;
     exportSpdDocx(id: string): Promise<Blob>;

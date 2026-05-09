@@ -15,20 +15,22 @@ import (
 )
 
 type Service interface {
-	GenerateSpdNumber() (string, error)
-	CreateRecord(record *models.TravelRecord) error
+	GenerateSpdNumber(ctx context.Context) (string, error)
+	CreateRecord(ctx context.Context, record *models.TravelRecord) error
 	// CreateRecordsBulk validates and inserts a group of records atomically.
 	// All overlap checks run before any DB write — if any employee has a conflict
 	// the entire batch is rejected. If the DB write fails mid-batch, the single
 	// outer transaction rolls everything back automatically.
 	CreateRecordsBulk(ctx context.Context, records []*models.TravelRecord) error
-	CreateRecordDirect(record *models.TravelRecord) error // For import: skips overlap check & WA notification
-	InvalidateAllCache()                                  // Kept for interface compat, but safe
-	GetRecords(filters map[string]interface{}) ([]models.TravelRecord, error)
-	GetRecordByID(id uuid.UUID) (*models.TravelRecord, error)
-	UpdateRecord(record *models.TravelRecord) error
-	DeleteRecord(id uuid.UUID) error
+	CreateRecordDirect(ctx context.Context, record *models.TravelRecord) error // For import: skips overlap check & WA notification
+	InvalidateAllCache(ctx context.Context)                                    // Kept for interface compat, but safe
+	GetRecords(ctx context.Context, filters map[string]interface{}) ([]models.TravelRecord, error)
+	GetRecordByID(ctx context.Context, id uuid.UUID) (*models.TravelRecord, error)
+	UpdateRecord(ctx context.Context, record *models.TravelRecord) error
+	DeleteRecord(ctx context.Context, id uuid.UUID) error
 	DeleteRecordsBySpd(ctx context.Context, spd string) error
+	GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error)
+	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
 }
 
 type service struct {
@@ -45,8 +47,8 @@ func NewService(repo Repository, cfg *config.Config, rdb *redis.Client) Service 
 // It delegates entirely to the PostgreSQL spd_number_seq sequence via nextval(),
 // which is atomic and safe under any level of concurrent load.
 // No application-level locking, no SELECT MAX, no regex parsing.
-func (s *service) GenerateSpdNumber() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (s *service) GenerateSpdNumber(ctx context.Context) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	seq, err := s.repo.NextSpdNumber(ctx)
@@ -93,11 +95,11 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 	}
 }
 
-func (s *service) InvalidateAllCache() {
-	s.invalidateRecordCaches(context.Background())
+func (s *service) InvalidateAllCache(ctx context.Context) {
+	s.invalidateRecordCaches(ctx)
 }
 
-func (s *service) CreateRecord(record *models.TravelRecord) error {
+func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord) error {
 	if len(record.Locations) == 0 {
 		return errors.New("at least one location is required")
 	}
@@ -118,7 +120,7 @@ func (s *service) CreateRecord(record *models.TravelRecord) error {
 	record.StartDate = minStart
 	record.EndDate = maxEnd
 
-	overlapping, err := s.repo.GetOverlappingRecords(record.EmployeeID, record.StartDate, record.EndDate)
+	overlapping, err := s.repo.GetOverlappingRecords(ctx, record.EmployeeID, record.StartDate, record.EndDate)
 	if err != nil {
 		return err
 	}
@@ -129,13 +131,16 @@ func (s *service) CreateRecord(record *models.TravelRecord) error {
 	record.Status = "Draft"
 	record.ReportStatus = "Pending"
 
-	err = s.repo.CreateTravelRecord(record)
+	err = s.repo.CreateTravelRecord(ctx, record)
 	if err == nil {
-		s.invalidateRecordCaches(context.Background(), record.ID)
+		s.invalidateRecordCaches(ctx, record.ID)
 
 		// Send WhatsApp Notification
 		go func() {
-			user, err := s.repo.GetUserByID(context.Background(), record.EmployeeID)
+			// Using a background context here since the parent request context might be cancelled after response
+			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			user, err := s.repo.GetUserByID(bgCtx, record.EmployeeID)
 			if err == nil && user != nil && user.NomorHP != "" {
 				msg := fmt.Sprintf("*PEMBERITAHUAN PERJALANAN DINAS*\n\nHalo %s,\nAnda telah ditugaskan untuk perjalanan dinas baru.\n\n*Detail Penugasan:*\nNo. SPD: %s\nTujuan: %s, %s\nTanggal: %s s/d %s\nKeperluan: %s\n\nSilakan cek aplikasi Perjadin untuk detail selengkapnya dan mengunduh Surat Tugas.",
 					user.Name,
@@ -187,7 +192,7 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 		r.StartDate = minStart
 		r.EndDate = maxEnd
 
-		overlapping, err := s.repo.GetOverlappingRecords(r.EmployeeID, r.StartDate, r.EndDate)
+		overlapping, err := s.repo.GetOverlappingRecords(ctx, r.EmployeeID, r.StartDate, r.EndDate)
 		if err != nil {
 			return fmt.Errorf("overlap check for employee %s: %w", r.EmployeeID, err)
 		}
@@ -237,7 +242,7 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 
 // CreateRecordDirect creates a record without overlap checking or WhatsApp notification.
 // Used for bulk import operations.
-func (s *service) CreateRecordDirect(record *models.TravelRecord) error {
+func (s *service) CreateRecordDirect(ctx context.Context, record *models.TravelRecord) error {
 	if len(record.Locations) == 0 {
 		return errors.New("at least one location is required")
 	}
@@ -262,25 +267,32 @@ func (s *service) CreateRecordDirect(record *models.TravelRecord) error {
 		record.ReportStatus = "Pending"
 	}
 
-	err := s.repo.CreateTravelRecord(record)
+	err := s.repo.CreateTravelRecord(ctx, record)
 	if err == nil {
-		s.InvalidateAllCache()
+		s.InvalidateAllCache(ctx)
 	}
 	return err
 }
 
-func (s *service) GetRecords(filters map[string]interface{}) ([]models.TravelRecord, error) {
-	ctx := context.Background()
+func (s *service) GetRecords(ctx context.Context, filters map[string]interface{}) ([]models.TravelRecord, error) {
 	var statusFilter string
+	var spdFilter string
 	if filters != nil {
 		if status, ok := filters["status"]; ok && status != "" {
 			statusFilter = status.(string)
 		}
+		if spd, ok := filters["spd"]; ok && spd != "" {
+			spdFilter = spd.(string)
+		}
 	}
 
 	cacheKey := "records:all"
-	if statusFilter != "" {
+	if statusFilter != "" && spdFilter != "" {
+		cacheKey = fmt.Sprintf("records:status:%s:spd:%s", statusFilter, spdFilter)
+	} else if statusFilter != "" {
 		cacheKey = fmt.Sprintf("records:status:%s", statusFilter)
+	} else if spdFilter != "" {
+		cacheKey = fmt.Sprintf("records:spd:%s", spdFilter)
 	}
 
 	if s.redisClient != nil {
@@ -293,7 +305,7 @@ func (s *service) GetRecords(filters map[string]interface{}) ([]models.TravelRec
 		}
 	}
 
-	records, err := s.repo.GetTravelRecords(filters)
+	records, err := s.repo.GetTravelRecords(ctx, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -308,8 +320,7 @@ func (s *service) GetRecords(filters map[string]interface{}) ([]models.TravelRec
 	return records, nil
 }
 
-func (s *service) GetRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
-	ctx := context.Background()
+func (s *service) GetRecordByID(ctx context.Context, id uuid.UUID) (*models.TravelRecord, error) {
 	cacheKey := fmt.Sprintf("records:id:%s", id.String())
 
 	if s.redisClient != nil {
@@ -322,7 +333,7 @@ func (s *service) GetRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
 		}
 	}
 
-	record, err := s.repo.GetTravelRecordByID(id)
+	record, err := s.repo.GetTravelRecordByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +348,7 @@ func (s *service) GetRecordByID(id uuid.UUID) (*models.TravelRecord, error) {
 	return record, nil
 }
 
-func (s *service) UpdateRecord(record *models.TravelRecord) error {
+func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord) error {
 	if len(record.Locations) > 0 {
 		// Calculate overall start and end dates
 		var minStart, maxEnd time.Time
@@ -356,9 +367,9 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 		record.EndDate = maxEnd
 	}
 
-	err := s.repo.UpdateTravelRecord(record)
+	err := s.repo.UpdateTravelRecord(ctx, record)
 	if err == nil {
-		s.invalidateRecordCaches(context.Background(), record.ID)
+		s.invalidateRecordCaches(ctx, record.ID)
 
 		// NEW: If a report was updated, sync it to all other records in the same SPD group
 		// using an O(1) SQL bulk update. Completely avoids O(N) memory fetching.
@@ -376,8 +387,8 @@ func (s *service) UpdateRecord(record *models.TravelRecord) error {
 	return err
 }
 
-func (s *service) DeleteRecord(id uuid.UUID) error {
-	err := s.repo.DeleteTravelRecord(id)
+func (s *service) DeleteRecord(ctx context.Context, id uuid.UUID) error {
+	err := s.repo.DeleteTravelRecord(ctx, id)
 	if err == nil {
 		go s.invalidateRecordCaches(context.Background(), id)
 	}
@@ -390,4 +401,47 @@ func (s *service) DeleteRecordsBySpd(ctx context.Context, spd string) error {
 		go s.invalidateRecordCaches(context.Background())
 	}
 	return err
+}
+
+func (s *service) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
+	cacheKey := "dashboard:summary"
+
+	if s.redisClient != nil {
+		val, err := s.redisClient.Get(ctx, cacheKey).Result()
+		if err == nil && val != "" {
+			var summary models.DashboardSummary
+			if err := json.Unmarshal([]byte(val), &summary); err == nil {
+				// Fire background revalidation (Stale-While-Revalidate)
+				go func() {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+					fresh, err := s.repo.GetDashboardSummary(bgCtx)
+					if err == nil {
+						if data, err := json.Marshal(fresh); err == nil {
+							s.redisClient.Set(bgCtx, cacheKey, data, 15*time.Minute)
+						}
+					}
+				}()
+				return &summary, nil
+			}
+		}
+	}
+
+	// Cache miss or error
+	summary, err := s.repo.GetDashboardSummary(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.redisClient != nil {
+		if data, err := json.Marshal(summary); err == nil {
+			s.redisClient.Set(ctx, cacheKey, data, 15*time.Minute)
+		}
+	}
+
+	return summary, nil
+}
+
+func (s *service) GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error) {
+	return s.repo.GetPaginatedRecords(ctx, params)
 }

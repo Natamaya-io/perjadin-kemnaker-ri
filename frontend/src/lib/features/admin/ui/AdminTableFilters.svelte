@@ -7,12 +7,16 @@
 	export let sortOption = 'date-desc';
 	export let startDate = '';
 	export let endDate = '';
+	export let statusOptions = [
+		{ value: 'all', label: 'Semua Status' },
+		{ value: 'In Progress', label: 'In Progress' },
+		{ value: 'Completed', label: 'Completed' }
+	];
 </script>
 
-<div class="flex flex-col gap-3 w-full">
-	<div class="flex flex-col sm:flex-row items-center gap-2 w-full">
-		<!-- Search -->
-		<div class="relative w-full sm:w-64">
+<div class="flex flex-wrap items-center gap-3 w-full">
+	<!-- Search -->
+	<div class="relative w-full sm:w-64">
 			<div
 				class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"
 			>
@@ -43,9 +47,9 @@
 		<div class="flex gap-2 w-full sm:w-auto">
 			<div class="flex-1 sm:flex-none sm:w-32">
 				<Select bind:value={statusFilter} class="h-9 text-xs w-full bg-white border-slate-200">
-					<option value="all">Semua Status</option>
-					<option value="In Progress">In Progress</option>
-					<option value="Completed">Completed</option>
+					{#each statusOptions as option}
+						<option value={option.value}>{option.label}</option>
+					{/each}
 				</Select>
 			</div>
 
@@ -60,7 +64,6 @@
 				</Select>
 			</div>
 		</div>
-	</div>
 
 	<!-- Date Filters -->
 	<div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1">

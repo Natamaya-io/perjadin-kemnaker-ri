@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { cn, getStatusBadge } from '$lib/shared/utils/utils';
+    import { cn, getStatusBadge, formatCurrency } from '$lib/shared/utils/utils';
     import { userStore } from '$lib/features/auth/store';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import TableRow from '$lib/shared/ui/table/TableRow.svelte';
@@ -10,10 +10,6 @@
 
     const dispatch = createEventDispatcher();
 
-    /** @param {number|bigint} amount */
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-    }
 </script>
 
 <TableRow class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">

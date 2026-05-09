@@ -1,8 +1,13 @@
 <script>
-    import { usersStore, addUser, updateUser, removeUser } from '$lib/features/auth/store';
+    import { usersStore, addUser, updateUser, removeUser, loadUsers } from '$lib/features/auth/store';
     import { userStore } from '$lib/features/auth/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { cn } from '$lib/shared/utils/utils';
+    import { onMount } from 'svelte';
+    
+    onMount(() => {
+        loadUsers();
+    });
     
     // UI Components
     import ChangePasswordModal from '$lib/features/auth/ui/ChangePasswordModal.svelte';

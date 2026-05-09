@@ -1,8 +1,8 @@
 <script>
-    import { recordsStore, loadRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import { formatCurrency } from '$lib/shared/utils/utils';
 
     // Granular Components
     import WelcomeBanner from '$lib/features/dashboard/ui/welcome/WelcomeBanner.svelte';
@@ -19,9 +19,11 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
+    export let data;
+
     // Helper for currency
     function formatIDR(amount) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+        return formatCurrency(amount);
     }
 
     // Compact currency for card display (shorter format for large numbers)
@@ -34,43 +36,44 @@
             const val = (amount / 1_000_000).toFixed(1);
             return `Rp ${val.replace('.', ',')} Jt`;
         }
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+        return formatCurrency(amount);
     }
 
-    $: records = $recordsStore;
-    $: myRecords = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : records.filter(r => {
-        if (!r) return false;
-        const myEmail = $userStore.email || '';
-        const myName = $userStore.name || '';
-        const recEmail = r.email || '';
-        const empEmail = r.employee?.email || '';
-        const empName = r.employee?.name || '';
-        
-        // Match by email OR by name OR by user ID
-        return recEmail === myEmail || 
-               empEmail === myEmail || 
-               empName === myName ||
-               r.creatorId === $userStore.id ||
-               r.employeeId === $userStore.id;
-    });
+    $: stats = data.stats || {
+        totalTrips: 0,
+        activeTrips: 0,
+        statusCompleted: 0,
+        statusInProgress: 0,
+        statusAssigned: 0,
+        statusRejected: 0,
+        reportCompleted: 0,
+        reportPending: 0,
+        recentRecords: [],
+        budgets: []
+    };
 
-
-    // Stats Logic (Scoped to Role)
-    $: statsSource = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? records : myRecords;
-
-    // Group by SPD to avoid counting multiple employees in the same trip as multiple trips
-    $: uniqueTrips = Object.values(statsSource.reduce((acc, r) => {
-        if (!acc[r.spd]) acc[r.spd] = r;
-        return acc;
-    }, {}));
-
-    $: myUniqueTrips = Object.values(myRecords.reduce((acc, r) => {
-        if (!acc[r.spd]) acc[r.spd] = r;
-        return acc;
-    }, {}));
-
-    $: totalTrips = uniqueTrips.length;
+    $: totalTrips = stats.totalTrips;
+    $: activeTrips = stats.activeTrips;
     
+    // Server-Side Chart Data
+    $: statusData = [
+        { label: 'Completed', value: stats.statusCompleted, color: '#10b981' },
+        { label: 'In Progress', value: stats.statusInProgress, color: '#f97316' },
+        { label: 'Assigned', value: stats.statusAssigned, color: '#eab308' },
+        { label: 'Ditolak', value: stats.statusRejected, color: '#ef4444' }
+    ].filter(d => d.value > 0);
+
+    $: reportData = [
+         { label: 'Laporan Selesai', value: stats.reportCompleted, color: '#3b82f6' },
+         { label: 'Belum Lapor', value: stats.reportPending, color: '#a855f7' }
+    ].filter(d => d.value > 0);
+
+    // Recent Records
+    $: recentRecords = stats.recentRecords.map((r, i) => ({ ...r, nomorSpdPetugas: String(i+1).padStart(3, '0') }));
+    $: newAssignments = stats.statusAssigned;
+    $: pendingReports = stats.reportPending;
+    $: myUniqueTrips = [...new Map(stats.recentRecords.map(item => [item.spd, item])).values()];
+
     // --- Budget Filter Logic ---
     const currentDate = new Date();
     let filterMonth = 0; // 0 = Semua Bulan
@@ -81,84 +84,29 @@
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
-    // Generate available years from records
     $: availableYears = (() => {
         const years = new Set();
         years.add(currentDate.getFullYear());
-        statsSource.forEach(r => {
-            if (r.startDate) years.add(new Date(r.startDate).getFullYear());
-            if (r.createdAt) years.add(new Date(r.createdAt).getFullYear());
-        });
+        stats.budgets.forEach(b => years.add(b.year));
         return [...years].sort((a, b) => b - a);
     })();
 
-    // Filtered total cost based on month/year selection
-    $: filteredTotalCost = statsSource
-        .filter(r => {
-            const date = r.startDate ? new Date(r.startDate) : (r.createdAt ? new Date(r.createdAt) : null);
-            if (!date) return false;
-            const yearMatch = date.getFullYear() === filterYear;
-            const monthMatch = filterMonth === 0 || (date.getMonth() + 1) === filterMonth;
-            return yearMatch && monthMatch;
-        })
-        .reduce((acc, r) => acc + (r.totalCost || 0), 0);
+    $: filteredTotalCost = stats.budgets.reduce((acc, b) => {
+        const yearMatch = b.year === filterYear;
+        const monthMatch = filterMonth === 0 || b.month === filterMonth;
+        
+        if (yearMatch && monthMatch) {
+            return acc + b.total;
+        }
+        return acc;
+    }, 0);
     
-    // Unfiltered total for "all time" reference
-    $: totalCost = statsSource.reduce((acc, r) => acc + (r.totalCost || 0), 0);
+    $: totalCost = stats.budgets.reduce((acc, b) => acc + b.total, 0);
 
     // Description text based on filter
     $: budgetDescription = filterMonth === 0 
         ? `Realisasi tahun ${filterYear}` 
         : `${monthNames[filterMonth]} ${filterYear}`;
-    
-    $: activeTrips = uniqueTrips.filter(r => {
-        if (!r.startDate || !r.endDate) return false;
-        const now = new Date();
-        const start = new Date(r.startDate);
-        const end = new Date(r.endDate);
-        // Reset time for accurate day comparison
-        now.setHours(0,0,0,0);
-        start.setHours(0,0,0,0);
-        end.setHours(0,0,0,0);
-        return now >= start && now <= end && (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Assigned' || r.status === 'Draft');
-    }).length;
-    
-    $: pendingReports = myUniqueTrips.filter(r => (r.status === 'Approved' || r.status === 'Submitted' || r.status === 'Draft' || r.status === 'Assigned') && r.reportStatus !== 'Completed').length;
-    $: newAssignments = myUniqueTrips.filter(r => r.status === 'Draft' || r.status === 'Assigned').length;        
-    
-    // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
-    $: allRecordsSorted = [...records].sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        if (timeA !== timeB) return timeA - timeB;
-        const spdA = a.spd || '';
-        const spdB = b.spd || '';
-        if (spdA !== spdB) return spdA.localeCompare(spdB);
-        const nameA = a.employee?.name || '';
-        const nameB = b.employee?.name || '';
-        if (nameA !== nameB) return nameA.localeCompare(nameB);
-        return (a.id || '').localeCompare(b.id || '');
-    });
-    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
-
-    // Recent Logic
-    $: recentRecords = [...myRecords].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5).map(record => {
-        const nomorSpdPetugas = String(recordToIndexMap.get(record.id) || 0).padStart(3, '0');
-        return { ...record, nomorSpdPetugas };
-    });    
-    
-    // Chart Data
-    $: statusData = [
-        { label: 'Completed', value: records.filter(r => r.paymentStatus === 'Paid').length, color: '#10b981' }, // emerald-500
-        { label: 'In Progress', value: records.filter(r => (r.status === 'Submitted' || r.status === 'Approved') && r.paymentStatus !== 'Paid').length, color: '#f97316' }, // orange-500
-        { label: 'Assigned', value: records.filter(r => r.status === 'Draft' || r.status === 'Assigned').length, color: '#eab308' }, // yellow-500
-        { label: 'Ditolak', value: records.filter(r => r.status === 'Rejected').length, color: '#ef4444' }   // red-500
-    ].filter(d => d.value > 0);
-
-    $: reportData = [
-         { label: 'Laporan Selesai', value: records.filter(r => r.reportStatus === 'Completed').length, color: '#3b82f6' }, // blue-500
-         { label: 'Belum Lapor', value: records.filter(r => r.reportStatus !== 'Completed').length, color: '#a855f7' } // purple-500
-    ].filter(d => d.value > 0);
 
     let showMonthDropdown = false;
     let showYearDropdown = false;
@@ -190,7 +138,6 @@
         showMonthDropdown = false;
     }
 
-    // Close dropdowns on click outside
     function handleClickOutside(e) {
         const target = e.target;
         if (!target.closest('.budget-dropdown-wrapper')) {
@@ -198,11 +145,8 @@
             showYearDropdown = false;
         }
     }
-
-    onMount(() => {
-        loadRecords();
-    });
 </script>
+
 
 <div class="space-y-8 pb-20">
     <!-- 1. Welcome Section (Organism) -->

@@ -148,3 +148,50 @@ type SBMRate struct {
 	// Transport Taksi (Perjalanan Dinas Dalam Negeri)
 	TaxiRate float64 `json:"taxiRate"`
 }
+
+// ==========================================
+// Dashboard Aggregation Models
+// ==========================================
+
+type DashboardSummary struct {
+	TotalTrips     int64 `json:"totalTrips"`
+	ActiveTrips    int64 `json:"activeTrips"`
+	
+	StatusCompleted int64 `json:"statusCompleted"`
+	StatusInProgress int64 `json:"statusInProgress"`
+	StatusAssigned   int64 `json:"statusAssigned"`
+	StatusRejected   int64 `json:"statusRejected"`
+
+	ReportCompleted int64 `json:"reportCompleted"`
+	ReportPending   int64 `json:"reportPending"`
+	
+	RecentRecords []TravelRecord `json:"recentRecords"`
+	Budgets       []DashboardBudget `json:"budgets"`
+}
+
+type DashboardBudget struct {
+	Year  int     `json:"year"`
+	Month int     `json:"month"`
+	Total float64 `json:"total"`
+}
+
+type PaginatedParams struct {
+	Cursor        string     `query:"cursor"`
+	Limit         int        `query:"limit"`
+	Search        string     `query:"search"`
+	Status        string     `query:"status"`
+	ReportStatus  string     `query:"report_status"`
+	PaymentStatus string     `query:"payment_status"`
+	SortBy        string     `query:"sort_by"`
+	StartDate     *time.Time `query:"start_date"`
+	EndDate       *time.Time `query:"end_date"`
+	UserID        *uuid.UUID `query:"user_id"`
+}
+
+type PaginatedResponse struct {
+	Data       []TravelRecord `json:"data"`
+	TotalItems int64          `json:"totalItems"`
+	NextCursor string         `json:"nextCursor"`
+	Limit      int            `json:"limit"`
+}
+

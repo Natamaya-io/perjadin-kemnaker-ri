@@ -100,8 +100,15 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- User Management ---
-    async getUsers(): Promise<User[]> {
-        return this.request<User[]>('/users');
+    async getUsers(filters?: { role?: string; search?: string }): Promise<User[]> {
+        let query = '';
+        if (filters) {
+            const params = new URLSearchParams();
+            if (filters.role) params.append('role', filters.role);
+            if (filters.search) params.append('search', filters.search);
+            query = '?' + params.toString();
+        }
+        return this.request<User[]>(`/users${query}`);
     }
 
     async createUser(user: Omit<User, 'id'>): Promise<User> {
@@ -150,9 +157,20 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- Records ---
+    async getDashboardSummary(): Promise<import('./types').DashboardSummary> {
+        return this.request<import('./types').DashboardSummary>('/dashboard/summary');
+    }
+
     async getRecords(filters?: Record<string, any>): Promise<TravelRecord[]> {
         const query = filters ? '?' + new URLSearchParams(filters).toString() : '';
         return this.request<TravelRecord[]>(`/records${query}`);
+    }
+
+    async getPaginatedRecords(params: import('./types').PaginatedParams): Promise<import('./types').PaginatedResponse> {
+        // Remove undefined values
+        const cleanParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined && v !== ''));
+        const query = new URLSearchParams(cleanParams as any).toString();
+        return this.request<import('./types').PaginatedResponse>(`/records/paginated?${query}`);
     }
 
     async getRecordById(id: string): Promise<TravelRecord | null> {

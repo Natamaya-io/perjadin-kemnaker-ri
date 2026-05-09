@@ -4,7 +4,6 @@
     import { fly } from 'svelte/transition';
     import { loadRecords } from '$lib/features/pengajuan/store';
     import { loadMasterData } from '$lib/shared/stores/master-data';
-    import { public_env } from '$lib/shared/api/index'; // Standard way in this project to access env
     
     // Login Components
     import LoginBackground from '$lib/features/auth/ui/LoginBackground.svelte';

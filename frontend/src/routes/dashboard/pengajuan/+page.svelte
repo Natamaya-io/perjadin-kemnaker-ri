@@ -1,12 +1,14 @@
 <script>
-    import { recordsStore, deleteRecordBySpd, loadRecords } from '$lib/features/pengajuan/store';
+    import { paginatedRecordsStore, paginatedMetadataStore, loadPaginatedRecords, deleteRecordBySpd, isFetchingRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
-    import { getStatusBadge, toTitleCase, formatLocations } from '$lib/shared/utils/utils';
+    import { getStatusBadge, toTitleCase, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
     
+    import { createVirtualizer } from '@tanstack/svelte-virtual';
+
     import Table from '$lib/shared/ui/table/Table.svelte';
     import TableHeader from '$lib/shared/ui/table/TableHeader.svelte';
     import TableRow from '$lib/shared/ui/table/TableRow.svelte';
@@ -19,65 +21,91 @@
 
     // Filter & Sort State
     let searchQuery = '';
-    let statusFilter = 'all'; // 'all', 'In Progress', 'Completed'
+    let statusFilter = 'all';
     let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
     
-    // Derived Records: Filter only records created by the current user (or all if super_admin/kasubag)
-    // Group by SPD number since one submission can have multiple employees
-    $: myRecords = $recordsStore
-        .filter(r => {
-            if ($userStore?.role === 'super_admin' || $userStore?.role === 'kasubag') return true;
-            const creatorEmail = r.creator?.email || r.email; // fallback to email if it was stored that way
-            const creatorId = r.creatorId || r.creator?.id;
-            return creatorEmail === $userStore?.email || creatorId === $userStore?.id;
-        });
+    let statusOptions = [
+        { value: 'all', label: 'Semua Status' },
+        { value: 'Draft', label: 'Draft' },
+        { value: 'Submitted', label: 'Menunggu Persetujuan' },
+        { value: 'Approved', label: 'Disetujui' },
+        { value: 'Rejected', label: 'Ditolak' }
+    ];
 
-    $: filteredRecords = myRecords
-        .filter(r => {
-            const query = searchQuery.toLowerCase();
-            const matchSearch = 
-                (r.spd?.toLowerCase() || '').includes(query) ||
-                (r.location?.toLowerCase() || '').includes(query) ||
-                (r.purpose?.toLowerCase() || '').includes(query) ||
-                (r.employee?.name?.toLowerCase() || '').includes(query);
-            
-            const badge = getStatusBadge(r);
-            const matchStatus = statusFilter === 'all' || badge.label === statusFilter;
-            
-            let matchDate = true;
-            if (startDate || endDate) {
-                const recordDate = new Date(r.startDate).setHours(0,0,0,0);
-                const start = startDate ? new Date(startDate).setHours(0,0,0,0) : null;
-                const end = endDate ? new Date(endDate).setHours(0,0,0,0) : null;
+    let debounceTimer;
+    let currentCursor = '';
 
-                if (start && end) {
-                    matchDate = recordDate >= start && recordDate <= end;
-                } else if (start) {
-                    matchDate = recordDate >= start;
-                } else if (end) {
-                    matchDate = recordDate <= end;
-                }
-            }
-
-            return matchSearch && matchStatus && matchDate;
-        })
-        .sort((a, b) => {
-            if (sortOption === 'date-desc') return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-            if (sortOption === 'date-asc') return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            if (sortOption === 'cost-desc') return (b.totalCost || 0) - (a.totalCost || 0);
-            if (sortOption === 'cost-asc') return (a.totalCost || 0) - (b.totalCost || 0);
-            if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
-                const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-                const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-                return sortOption === 'spj-desc' ? numB - numA : numA - numB;
-            }
-            return 0;
-        });
+    // Reactively refetch when filters change (Resetting)
+    $: {
+        const s = searchQuery;
+        const st = statusFilter;
+        const so = sortOption;
+        const sd = startDate;
+        const ed = endDate;
         
+        if (typeof window !== 'undefined') {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentCursor = '';
+                fetchRecords(false);
+            }, 300);
+        }
+    }
+
+    onMount(() => {
+        // Automatically fetch fresh records every time the page is visited
+        if (typeof window !== 'undefined') {
+            currentCursor = '';
+            fetchRecords(false);
+        }
+    });
+
+    onDestroy(() => {
+        if (typeof window !== 'undefined') {
+            clearTimeout(debounceTimer);
+        }
+    });
+
+    function fetchRecords(append = false) {
+        if (!$userStore) return;
+
+        let statusParam = statusFilter === 'all' ? undefined : statusFilter;
+        let sortByParam = sortOption;
+
+        let startIso, endIso;        if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0,0,0,0);
+            startIso = start.toISOString();
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23,59,59,999);
+            endIso = end.toISOString();
+        }
+
+        const targetUserId = ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') ? undefined : $userStore.id;
+
+        const params = {
+            limit: 20,
+            search: searchQuery,
+            status: statusParam,
+            sort_by: sortByParam,
+            start_date: startIso,
+            end_date: endIso,
+            user_id: targetUserId
+        };
+
+        if (append && currentCursor) {
+            params.cursor = currentCursor;
+        }
+
+        loadPaginatedRecords(params, append);
+    }
+
     // Group records by SPD for display
-    $: groupedRecords = filteredRecords.reduce((/** @type {Record<string, any>} */ acc, record) => {
+    $: groupedRecordsMap = $paginatedRecordsStore.reduce((/** @type {Record<string, any>} */ acc, record) => {
         if (!acc[record.spd]) {
             acc[record.spd] = { ...record, employeesList: [record], totalCost: record.totalCost || 0 };
         } else {
@@ -87,26 +115,30 @@
         return acc;
     }, {});
     
-    $: uniqueRecords = Object.values(groupedRecords).sort((a, b) => {
-        let diff = 0;
-        if (sortOption === 'date-desc') diff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-        else if (sortOption === 'date-asc') diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        else if (sortOption === 'cost-desc') diff = (b.totalCost || 0) - (a.totalCost || 0);
-        else if (sortOption === 'cost-asc') diff = (a.totalCost || 0) - (b.totalCost || 0);
-        else if (sortOption === 'spj-desc' || sortOption === 'spj-asc') {
-            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-            diff = sortOption === 'spj-desc' ? numB - numA : numA - numB;
-        }
-        
-        if (diff === 0) {
-            const numA = parseInt((a.spd || '').replace(/\D/g, '') || '0');
-            const numB = parseInt((b.spd || '').replace(/\D/g, '') || '0');
-            if (numA && numB && numB !== numA) return numB - numA;
-            return (b.spd || '').localeCompare(a.spd || '');
-        }
-        return diff;
+    // Maintain SPD order
+    $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
+    $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
+
+    let scrollContainer;
+    let virtualizer;
+    $: virtualizer = createVirtualizer({
+        count: uniqueRecords.length,
+        getScrollElement: () => scrollContainer,
+        estimateSize: () => 100, // Estimated row height
+        overscan: 5, // Render 5 items outside viewport for smooth scrolling
     });
+
+    // Infinite Scroll logic: fetch more when reaching bottom
+    function handleScroll() {
+        if (!scrollContainer || $isFetchingRecords) return;
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        if (scrollHeight - scrollTop - clientHeight < 200) {
+            if ($paginatedMetadataStore.nextCursor) {
+                currentCursor = $paginatedMetadataStore.nextCursor;
+                fetchRecords(true);
+            }
+        }
+    }
 
     let isReviewOpen = false;
     /** @type {any[]} */
@@ -117,7 +149,7 @@
 
     /** @param {string} spd */
     function handleReview(spd) {
-        selectedRecords = myRecords.filter(r => r.spd === spd);
+        selectedRecords = $paginatedRecordsStore.filter(r => r.spd === spd);
         isReviewOpen = true;
     }
 
@@ -140,10 +172,12 @@
             }
         }
     }
+
     onMount(() => {
-        loadRecords();
         if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
             goto('/dashboard');
+        } else {
+            fetchRecords(false);
         }
     });
 </script>
@@ -177,107 +211,154 @@
             bind:sortOption 
             bind:startDate
             bind:endDate
+            statusOptions={statusOptions}
         />
     </div>
 
-    <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div class="overflow-x-auto w-full">
-            <Table class="w-full text-sm text-left">
-                <TableHeader class="bg-slate-50 border-b border-slate-200">
-                    <TableRow class="hover:bg-slate-50/50">
-                        <TableHead class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3">ID SPJ</TableHead>
-                        <TableHead class="min-w-[250px] font-semibold text-slate-700 py-3">Tujuan & Lokasi</TableHead>
-                        <TableHead class="min-w-[130px] font-semibold text-slate-700 py-3">Tanggal</TableHead>
-                        <TableHead class="min-w-[160px] font-semibold text-slate-700 text-center py-3">Status</TableHead>
-                        <TableHead class="min-w-[180px] font-semibold text-slate-700 text-center py-3">Total SBM</TableHead>
-                        <TableHead class="w-[140px] min-w-[140px] font-semibold text-slate-700 text-center pr-4 py-3">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
+    <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative">
+        <!-- Filler for scrollbar header gap -->
+        <div class="absolute top-0 right-0 w-[12px] h-[45px] bg-slate-50 border-b border-slate-200 z-30"></div>
+        <!-- VIRTUAL SCROLL CONTAINER -->
+        <div 
+            bind:this={scrollContainer} 
+            on:scroll={handleScroll}
+            class="overflow-auto max-h-[70vh] w-full relative scroll-smooth table-scrollbar table-scroll-shadows"
+        >
+            <table class="w-full text-sm text-left relative">
+                <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                        <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50 border-b border-slate-200">ID SPJ</th>
+                        <th class="min-w-[250px] font-semibold text-slate-700 py-3 bg-slate-50 border-b border-slate-200">Tujuan & Lokasi</th>
+                        <th class="min-w-[130px] font-semibold text-slate-700 py-3 bg-slate-50 border-b border-slate-200">Tanggal</th>
+                        <th class="min-w-[160px] font-semibold text-slate-700 text-center py-3 bg-slate-50 border-b border-slate-200">Status</th>
+                        <th class="min-w-[180px] font-semibold text-slate-700 text-center py-3 bg-slate-50 border-b border-slate-200">Total SBM</th>
+                        <th class="w-[140px] min-w-[140px] font-semibold text-slate-700 text-center pr-4 py-3 bg-slate-50 border-b border-slate-200">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {#if uniqueRecords.length === 0}
-                        <TableRow>
-                            <TableCell colspan="6" class="p-12 text-center text-slate-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Belum ada pengajuan yang Anda buat.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each uniqueRecords as record (record.id)}
-                            <TableRow class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
-                                <TableCell class="font-mono text-xs text-slate-500 pl-4 py-4 align-middle">
-                                    {record.spd}
-                                    <div class="mt-1">
-                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 text-[10px] text-slate-400">
-                                        {record.employeesList.length} Petugas
-                                    </div>
-                                </TableCell>
-                                <TableCell class="py-4 align-middle">
-                                    <div class="font-medium text-slate-800 text-sm line-clamp-2">{record.purpose}</div>
-                                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        {formatLocations(record)}
-                                    </div>
-                                </TableCell>
-                                <TableCell class="py-4 align-middle text-xs text-slate-600">
-                                    <div class="whitespace-nowrap">
-                                        {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
-                                    </div>
-                                    <div class="text-slate-400 my-0.5 text-[10px]">s/d</div>
-                                    <div class="whitespace-nowrap">
-                                        {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
-                                    </div>
-                                </TableCell>
-                                <TableCell class="py-4 align-middle">
-                                    <div class="flex flex-col gap-1.5 items-center justify-center">
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
-                                            {getStatusBadge(record).label}
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell class="text-center py-4 align-middle">
-                                    <span class="font-mono font-semibold text-slate-700 text-sm whitespace-nowrap">
-                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(record.totalCost || 0)}
-                                    </span>
-                                </TableCell>
-                                <TableCell class="text-center pr-4 py-4 align-middle">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button 
-                                            class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
-                                            title="Review"
-                                            on:click={() => handleReview(record.spd)}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <tr>
+                            <td colspan="6" class="p-12 text-center text-slate-500">
+                                {#if $isFetchingRecords}
+                                    <div class="flex flex-col items-center justify-center py-6 gap-3">
+                                        <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                                             </svg>
-                                        </button>
-                                        {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.employeesList[0].creator?.email || record.employeesList[0].email) === $userStore?.email || (record.employeesList[0].creatorId || record.employeesList[0].creator?.id) === $userStore?.id}
+                                        </div>
+                                        <span class="text-sm font-semibold text-slate-500 tracking-wide animate-pulse">Sedang memuat data...</span>
+                                    </div>
+                                {:else}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Belum ada pengajuan.
+                                {/if}
+                            </td>
+                        </tr>
+                    {:else}
+                        <!-- Virtual Window Top Spacer -->
+                        {#if $virtualizer.getVirtualItems().length > 0}
+                            <tr style="height: {$virtualizer.getVirtualItems()[0].start}px"></tr>
+                            
+                            <!-- Virtual Rendered Rows -->
+                            {#each $virtualizer.getVirtualItems() as virtualRow (virtualRow.index)}
+                                {@const record = uniqueRecords[virtualRow.index]}
+                                <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
+                                    <td class="font-mono text-xs text-slate-500 pl-4 py-4 align-middle">
+                                        {record.spd}
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 text-[10px] text-slate-400">
+                                            {record.employeesList.length} Petugas
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle">
+                                        <div class="font-medium text-slate-800 text-sm line-clamp-2">
+                                            {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
+                                        </div>
+                                        <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            {formatLocations(record)}
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle text-xs text-slate-600">
+                                        <div class="whitespace-nowrap">
+                                            {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </div>
+                                        <div class="text-slate-400 my-0.5 text-[10px]">s/d</div>
+                                        <div class="whitespace-nowrap">
+                                            {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle text-center">
+                                        <div class="flex flex-col gap-1.5 items-center justify-center">
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
+                                                {getStatusBadge(record).label}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center py-4 align-middle">
+                                        <span class="font-mono font-semibold text-slate-700 text-sm whitespace-nowrap">
+                                            {formatCurrency(record.totalCost || 0)}
+                                        </span>
+                                    </td>
+                                    <td class="text-center pr-4 py-4 align-middle">
+                                        <div class="flex items-center justify-center gap-2">
                                             <button 
-                                                class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
-                                                title="Hapus"
-                                                on:click={() => handleDelete(record.spd)}
+                                                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
+                                                title="Review"
+                                                on:click={() => handleReview(record.spd)}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
-                                        {/if}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
+                                            {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.employeesList[0].creator?.email || record.employeesList[0].email) === $userStore?.email || (record.employeesList[0].creatorId || record.employeesList[0].creator?.id) === $userStore?.id}
+                                                <button 
+                                                    class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
+                                                    title="Hapus"
+                                                    on:click={() => handleDelete(record.spd)}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            {/if}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {/each}
+                            
+                            <!-- Virtual Window Bottom Spacer -->
+                            <tr style="height: {$virtualizer.getTotalSize() - $virtualizer.getVirtualItems()[$virtualizer.getVirtualItems().length - 1].end}px"></tr>
+                            
+                            <!-- Loading Indicator when scrolling near bottom -->
+                            {#if $isFetchingRecords && currentCursor}
+                                <tr>
+                                    <td colspan="6" class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-3">
+                                            <div class="relative flex items-center justify-center overflow-hidden w-8 h-8">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-500 animate-paper-flight drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                                </svg>
+                                            </div>
+                                            <span class="text-sm font-semibold text-slate-500 animate-pulse tracking-wide">Memuat data selanjutnya...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {/if}
+                        {/if}
                     {/if}
-                </TableBody>
-            </Table>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

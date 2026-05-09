@@ -5,6 +5,10 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		host: true,
+		watch: {
+			usePolling: true,
+			interval: 500
+		},
 		proxy: {
 			'/api': {
 				target: process.env.BACKEND_URL || 'http://127.0.0.1:8081',

@@ -142,7 +142,9 @@ func main() {
 		
 		protected.POST("/upload", recordHandler.UploadFile)
 
+		protected.GET("/dashboard/summary", recordHandler.GetDashboardSummary)
 		protected.GET("/records", recordHandler.GetRecords)
+		protected.GET("/records/paginated", recordHandler.GetPaginatedRecords)
 		protected.POST("/records", recordHandler.CreateRecord)
 		protected.GET("/records/:id", recordHandler.GetRecordByID)
 		protected.GET("/records/:id/spd-stream", recordHandler.ExportSpdPDF)

@@ -82,12 +82,13 @@ func TestLogin_Success(t *testing.T) {
 	mockRepo.On("UpdateUser", mock.AnythingOfType("*models.User")).Return(nil)
 
 	// Execute
-	token, user, err := service.Login("test@example.com", "password123")
+	token, user, reqPassChange, err := service.Login("test@example.com", "password123")
 
 	// Assertions
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 	assert.NotNil(t, user)
+	assert.False(t, reqPassChange)
 	assert.Equal(t, "test@example.com", user.Email)
 	assert.NotEmpty(t, user.SessionID) // Session ID should be generated
 
@@ -103,7 +104,7 @@ func TestLogin_InvalidEmail(t *testing.T) {
 	mockRepo.On("GetUserByEmail", "wrong@example.com").Return(nil, errors.New("not found"))
 
 	// Execute
-	token, user, err := service.Login("wrong@example.com", "password123")
+	token, user, _, err := service.Login("wrong@example.com", "password123")
 
 	// Assertions
 	assert.Error(t, err)
@@ -129,7 +130,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	mockRepo.On("GetUserByEmail", "test@example.com").Return(fakeUser, nil)
 
 	// Execute with wrong password
-	token, user, err := service.Login("test@example.com", "wrongpassword")
+	token, user, _, err := service.Login("test@example.com", "wrongpassword")
 
 	// Assertions
 	assert.Error(t, err)

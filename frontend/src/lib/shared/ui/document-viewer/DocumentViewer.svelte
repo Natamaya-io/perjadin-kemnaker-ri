@@ -290,6 +290,16 @@
         // Redundant call removed to prevent race conditions with the reactive block below
     });
 
+    onDestroy(() => {
+        // Prevent massive memory leaks when navigating away while PDF is open/rendering
+        if (currentRenderTask) {
+            currentRenderTask.cancel().catch(() => {});
+        }
+        if (pdfDoc) {
+            pdfDoc.destroy().catch(() => {});
+        }
+    });
+
     $: if (url) {
         pageNum = 1;
         loadDocument();
@@ -383,8 +393,12 @@
         {#if loading}
             <div class="absolute inset-0 flex items-center justify-center bg-white/80 z-20 backdrop-blur-[2px]">
                 <div class="flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <span class="text-sm font-semibold text-slate-600 animate-pulse">Memproses Dokumen...</span>
+                    <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-blue-600 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-600 animate-pulse tracking-wide">Memproses Dokumen...</span>
                 </div>
             </div>
         {/if}

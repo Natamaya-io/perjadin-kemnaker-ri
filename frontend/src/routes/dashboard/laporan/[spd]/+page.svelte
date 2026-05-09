@@ -12,14 +12,14 @@
         return cleanName;
     }
     import { page } from '$app/stores';
-    import { recordsStore, updateRecord, loadRecords, updateMultipleRecords } from '$lib/features/pengajuan/store';
+    import { recordsStore, updateRecord, loadRecords, updateMultipleRecords, isFetchingRecords } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { provincesStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { getInitials, toTitleCase } from '$lib/shared/utils/utils';
+    import { getInitials, toTitleCase, formatCurrency } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
     
@@ -408,9 +408,6 @@
 	     const provData = $provincesStore.find(p => p.name === loc.province);
 	     return provData ? provData.luarKota : 0;
 	}
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount || 0);
-    }
 
     function formatInputNumber(value) {
         if (value === undefined || value === null || value === '') return '';
@@ -729,8 +726,9 @@
     }
 
     onMount(async () => {
-        if ($recordsStore.length === 0) {
-            await loadRecords();
+        const hasSpd = $recordsStore.some(r => r.spd === decodeURIComponent(spd));
+        if (!hasSpd) {
+            await loadRecords(spd);
         }
     });
 
@@ -885,7 +883,7 @@
                     lastDraftSavedAt: new Date().toISOString()
                 }
             });
-            await loadRecords();
+            await loadRecords(spd);
             tanggalMerahList = tmSnapshot;
             toast.success('Draf Laporan Kegiatan berhasil disimpan!');
         } catch (error) {
@@ -941,7 +939,7 @@
                     submittedAt: new Date().toISOString()
                 }
             });
-            await loadRecords();
+            await loadRecords(spd);
             tanggalMerahList = tmSnapshot;
             toast.success('Laporan Kegiatan berhasil disubmit!');
             goto('/dashboard/laporan');
@@ -1058,7 +1056,18 @@
         {/if}
     </div>
 
-    {#if !record}
+    {#if $isFetchingRecords}
+        <div class="flex items-center justify-center p-12 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex flex-col items-center justify-center space-y-4">
+                <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </div>
+                <p class="text-slate-500 font-medium animate-pulse tracking-wide">Memuat data perjalanan dinas...</p>
+            </div>
+        </div>
+    {:else if !record}
         <div class="text-red-500 p-4 border border-red-200 rounded bg-red-50">Data perjalanan dinas tidak ditemukan.</div>
     {:else}
         <!-- Header Info -->
@@ -1378,30 +1387,28 @@
                                                     </div>
                                                 {/if}
                                                 
-                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10" on:click|stopPropagation>
-                                                    <div class="flex gap-2">
-                                                        <button 
-                                                            class="bg-white/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-white/40 transform hover:scale-110 transition-all shadow-lg"
-                                                            on:click|stopPropagation={() => openPreview(file)}
-                                                            title="Lihat"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </button>
-                                                        
-                                                        {#if $userStore.role !== 'kasubag'}
-                                                        <button 
-                                                            class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
-                                                            on:click|stopPropagation={() => removeFile(i)}
-                                                            title="Hapus file"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                        </button>
-                                                        {/if}
-                                                    </div>
+                                                <div class="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                                                    <button 
+                                                        class="bg-white/80 backdrop-blur-sm text-slate-700 p-2 rounded-full hover:bg-white hover:text-blue-600 shadow-sm transition-all"
+                                                        on:click|stopPropagation={() => openPreview(file)}
+                                                        title="Lihat"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </button>
+                                                    
+                                                    {#if $userStore.role !== 'kasubag'}
+                                                    <button 
+                                                        class="bg-white/80 backdrop-blur-sm text-slate-700 p-2 rounded-full hover:bg-red-500 hover:text-white shadow-sm transition-all"
+                                                        on:click|stopPropagation={() => removeFile(i)}
+                                                        title="Hapus file"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
+                                                    {/if}
                                                 </div>
 
                                                 <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-[2px] text-white text-[9px] px-1.5 py-0.5 rounded pointer-events-none z-0">
