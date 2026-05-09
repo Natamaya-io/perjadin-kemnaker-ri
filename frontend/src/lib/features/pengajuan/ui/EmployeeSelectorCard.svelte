@@ -11,6 +11,8 @@
     export let disabledIds = [];
     /** @type {boolean} */
     export let readonly = false;
+    /** @type {boolean} */
+    export let isLoading = false;
 
     const dispatch = createEventDispatcher();
     
@@ -78,6 +80,22 @@
                                 {/if}
                             </span>
                         {/if}
+                        <span class="text-[10px] text-slate-400 font-mono">NIP. {employee.nip || '-'}</span>
+                    </div>
+                </label>
+            {/each}
+        {/if}
+    </div>
+    {#if !readonly}
+    <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+        <p class="text-xs text-slate-500 text-center mb-3">Pastikan data sudah benar sebelum menyimpan.</p>
+        <Button class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" on:click={() => dispatch('submit')}>
+            Simpan Pengajuan
+        </Button>
+    </div>
+    {/if}
+</div>
+{/if}
                         <span class="text-[10px] text-slate-400 font-mono">NIP. {employee.nip || '-'}</span>
                     </div>
                 </label>

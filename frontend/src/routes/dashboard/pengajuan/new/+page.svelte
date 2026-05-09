@@ -399,14 +399,14 @@
                     readonly={isReadOnly}
                 />
                 
-                <EmployeeSelectorCard disabledIds={disabledEmployeeIds} 
+                <EmployeeSelectorCard disabledIds={disabledEmployeeIds}
                     employees={protokolOfficers}
                     selectedEmployees={formData.selectedEmployees}
+                    isLoading={isFetchingOfficers}
                     readonly={isReadOnly}
                     on:toggle={toggleEmployee}
                     on:submit={handleSubmit}
                 />
-
                 {#if days > 0 && formData.selectedEmployees.length > 0}
                     <CostEstimateCard
                         breakdown={costBreakdown}
@@ -422,6 +422,15 @@
             bind:open={isConfirmOpen}
             title="Simpan Pengajuan"
             description="Apakah Anda yakin data pengajuan ini sudah benar? Setelah disimpan, data akan masuk ke sistem."
+            confirmText="Ya, Simpan"
+            onConfirm={processSubmit}
+        />
+    {/if}
+</div>
+
+
+
+sistem."
             confirmText="Ya, Simpan"
             onConfirm={processSubmit}
         />
