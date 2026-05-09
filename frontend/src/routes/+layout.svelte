@@ -41,20 +41,13 @@
 		mobileSidebarOpen = false;
 	}
 
-	// Handle navigation loading safely
+	// Navigation handling - We removed navLoading completely to prevent phantom loaders.
+	// SvelteKit's client-side routing is fast enough that a full-screen blocker is jarring.
+	// Instead, we just close the sidebar on navigation.
 	beforeNavigate(({ to, from }) => {
 		if (to?.url.pathname !== from?.url.pathname) {
-			clearTimeout(navTimer);
-			navTimer = setTimeout(() => {
-				navLoading = true;
-			}, 600); 
 			mobileSidebarOpen = false;
 		}
-	});
-
-	afterNavigate(() => {
-		clearTimeout(navTimer);
-		navLoading = false;
 	});
 
 	// Handle loadingStore securely without reactivity loops
@@ -77,7 +70,7 @@
 		isLoading = false;
 	});
 
-	$: showLoader = isLoading || navLoading || storeLoading;
+	$: showLoader = isLoading || storeLoading;
 </script>
 
 {#if showLoader && !MAINTENANCE_MODE}
