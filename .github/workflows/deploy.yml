@@ -109,5 +109,6 @@ jobs:
             cp -r deploy/quadlets/* ~/.config/containers/systemd/ || true
             cp deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
             systemctl --user daemon-reload
+            systemctl --user restart perjadin-backend.service perjadin-frontend.service
             podman auto-update
 
