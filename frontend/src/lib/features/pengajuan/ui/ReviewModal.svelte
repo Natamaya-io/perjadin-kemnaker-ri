@@ -435,7 +435,7 @@
 
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs flex justify-between items-center">
-                                    <span>Nomor SPD (Hanya Angka)</span>
+                                    <span>Nomor SPJ</span>
                                     {#if !isEditing && isEditable && formData.spdNumberInput !== (baseRecord.spd ? baseRecord.spd.replace('ID-SPJ-', '') : '')}
                                         <button 
                                             on:click={saveSpdNumberOnly}

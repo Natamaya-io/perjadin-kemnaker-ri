@@ -97,7 +97,7 @@
         </div>
 
         <div class="space-y-2">
-            <Label class="text-slate-600">Nomor SPD <span class="text-xs text-slate-400 font-normal">(Opsional - Kosongkan untuk Otomatis)</span></Label>
+            <Label class="text-slate-600">Nomor SPJ <span class="text-xs text-slate-400 font-normal">(Opsional - Kosongkan untuk Otomatis)</span></Label>
             <div class="flex items-center">
                 <span class="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 text-sm rounded-l-md h-11">
                     ID-SPJ-
