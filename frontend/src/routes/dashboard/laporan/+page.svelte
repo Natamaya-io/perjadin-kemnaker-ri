@@ -204,18 +204,13 @@
                 <tbody>
                     {#if displayRecords.length === 0}
                         <tr>
-                            <td colspan="5" class="p-12 text-center text-slate-500">
+                            <td colspan="5" class="p-0">
                                 {#if $isFetchingRecords}
-                                    <div class="flex flex-col items-center justify-center py-6 gap-3">
-                                        <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                                            </svg>
-                                        </div>
-                                        <span class="text-sm font-semibold text-slate-500 tracking-wide animate-pulse">Sedang memuat data...</span>
-                                    </div>
+                                    <SkeletonTable rows={8} columns={5} />
                                 {:else}
-                                    <EmptyState />
+                                    <div class="p-12 text-center text-slate-500">
+                                        <EmptyState />
+                                    </div>
                                 {/if}
                             </td>
                         </tr>
@@ -504,6 +499,24 @@
                 {/if}
             </div>
             <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-hidden bg-slate-100 relative p-0">
+            {#if previewUrl}
+                <DocumentViewer 
+                    url={previewUrl} 
+                    type={previewType} 
+                    filename={previewFilename} 
+                />
+            {/if}
+        </div>
+    </div>
+</Dialog>
+k={() => isPreviewOpen = false}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>

@@ -231,21 +231,16 @@
                 <tbody>
                     {#if uniqueRecords.length === 0}
                         <tr>
-                            <td colspan="6" class="p-12 text-center text-slate-500">
+                            <td colspan="6" class="p-0">
                                 {#if $isFetchingRecords}
-                                    <div class="flex flex-col items-center justify-center py-6 gap-3">
-                                        <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                                            </svg>
-                                        </div>
-                                        <span class="text-sm font-semibold text-slate-500 tracking-wide animate-pulse">Sedang memuat data...</span>
-                                    </div>
+                                    <SkeletonTable rows={8} columns={6} />
                                 {:else}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    Belum ada pengajuan.
+                                    <div class="p-12 text-center text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Belum ada pengajuan.
+                                    </div>
                                 {/if}
                             </td>
                         </tr>
@@ -348,6 +343,31 @@
                                     </td>
                                 </tr>
                             {/if}
+                        {/if}
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<ReviewModal
+    bind:open={isReviewOpen}
+    records={selectedRecords}
+    provinces={$provincesStore}
+    stakeholders={$stakeholdersStore}
+    on:saved={() => fetchRecords(false)}
+/>
+<ConfirmationModal 
+    bind:open={isDeleteModalOpen}
+    title="Hapus Pengajuan"
+    description="Apakah Anda yakin ingin membatalkan dan menghapus pengajuan SPJ {spdToDelete}? Tindakan ini tidak dapat dibatalkan."
+    confirmText="Ya, Hapus"
+    cancelText="Batal"
+    onConfirm={processDelete}
+    variant="destructive"
+/>
+                    {/if}
                         {/if}
                     {/if}
                 </tbody>
