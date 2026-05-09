@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPO_NAME: raxbyte-org/perjadin-kemnaker-ri
+  REPO_NAME: myceldev-com/perjadin-kemnaker-ri
 
 jobs:
   build-push-backend:
