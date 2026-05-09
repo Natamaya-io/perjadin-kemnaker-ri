@@ -74,13 +74,7 @@
     }
 
     // Reactively refetch when filters change
-    $: {
-        const s = searchQuery;
-        const st = statusFilter;
-        const so = sortOption;
-        const sd = startDate;
-        const ed = endDate;
-
+    function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -89,6 +83,7 @@
             }, 300);
         }
     }
+    $: searchQuery, statusFilter, sortOption, startDate, endDate, handleFiltersChanged();
 
     function fetchRecords(append = false) {
         if (!$userStore) return;

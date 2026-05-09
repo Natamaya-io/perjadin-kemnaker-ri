@@ -65,15 +65,8 @@
     let limit = 50;
     let currentCursor = '';
 
-    // Reactively refetch when filters change
-    $: {
-        // Read dependencies
-        const s = searchQuery;
-        const st = statusFilter;
-        const so = sortOption;
-        const sd = startDate;
-        const ed = endDate;
-
+    // Reactively refetch when filters change (Resetting)
+    function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -82,9 +75,9 @@
             }, 300);
         }
     }
+    $: searchQuery, statusFilter, sortOption, startDate, endDate, handleFiltersChanged();
 
-    function fetchRecords(append = false) {
-        let statusParam = statusFilter === 'all' ? undefined : statusFilter;
+    function fetchRecords(append = false) {        let statusParam = statusFilter === 'all' ? undefined : statusFilter;
         let sortByParam = sortOption;
 
         let startIso, endIso;
