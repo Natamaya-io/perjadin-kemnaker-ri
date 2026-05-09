@@ -2,11 +2,11 @@
 	import '../app.css';
 	import { userStore } from '$lib/features/auth/store';
 	import { loadingStore } from '$lib/shared/stores/loading';
-	import { page, navigating } from '$app/stores';
+	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import { fly, fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate, afterNavigate } from '$app/navigation';
 
 	import GlobalLoader from '$lib/shared/ui/loader/GlobalLoader.svelte';
 	import Toaster from '$lib/shared/ui/toast/Toaster.svelte';
@@ -41,28 +41,35 @@
 		mobileSidebarOpen = false;
 	}
 
-	// Handle navigation loading with debounce
-	$: if ($navigating) {
-		clearTimeout(navTimer);
-		navTimer = setTimeout(() => {
-			navLoading = true;
-		}, 600); // Reduced from 800ms to 600ms for better responsiveness
-		mobileSidebarOpen = false;
-	} else {
+	// Handle navigation loading safely
+	beforeNavigate(({ to, from }) => {
+		if (to?.url.pathname !== from?.url.pathname) {
+			clearTimeout(navTimer);
+			navTimer = setTimeout(() => {
+				navLoading = true;
+			}, 600); 
+			mobileSidebarOpen = false;
+		}
+	});
+
+	afterNavigate(() => {
 		clearTimeout(navTimer);
 		navLoading = false;
-	}
+	});
 
-	// Handle loadingStore with threshold to avoid flashes
-	$: if ($loadingStore) {
-		clearTimeout(storeTimer);
-		storeTimer = setTimeout(() => {
-			storeLoading = true;
-		}, 300); // Only show if loading takes > 300ms
-	} else {
-		clearTimeout(storeTimer);
-		storeLoading = false;
+	// Handle loadingStore securely without reactivity loops
+	function handleStoreLoading(isLoadingState) {
+		if (isLoadingState) {
+			clearTimeout(storeTimer);
+			storeTimer = setTimeout(() => {
+				storeLoading = true;
+			}, 300);
+		} else {
+			clearTimeout(storeTimer);
+			storeLoading = false;
+		}
 	}
+	$: handleStoreLoading($loadingStore);
 
 	// Handle initial hydration loading
 	onMount(() => {
