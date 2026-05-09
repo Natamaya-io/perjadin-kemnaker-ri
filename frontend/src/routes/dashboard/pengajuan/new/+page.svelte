@@ -28,6 +28,7 @@
     // Fetch users for employee selection (Protokol role only)
     /** @type {any[]} */
     let protokolOfficers = [];
+    let isFetchingOfficers = true;
 
     // Form State
     /** 
@@ -271,7 +272,11 @@
                 protokolOfficers = officers;
             } catch (e) {
                 console.error("Failed to load initial data", e);
+            } finally {
+                isFetchingOfficers = false;
             }
+        } else {
+            isFetchingOfficers = false;
         }
     });
 </script>

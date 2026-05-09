@@ -29,6 +29,8 @@
 	let isLoading = true; // Start true for initial hydration
 	let navLoading = false;
 	let navTimer;
+	let storeLoading = false;
+	let storeTimer;
 	let mobileSidebarOpen = false;
 
 	function toggleMobileSidebar() {
@@ -41,26 +43,34 @@
 
 	// Handle navigation loading with debounce
 	$: if ($navigating) {
+		clearTimeout(navTimer);
 		navTimer = setTimeout(() => {
 			navLoading = true;
-		}, 800); // 800ms delay before showing global loader to avoid flashes on fast networks
-		// Close sidebar on navigation (redundant if sidebar links dispatch close, but good for safety)
+		}, 600); // Reduced from 800ms to 600ms for better responsiveness
 		mobileSidebarOpen = false;
 	} else {
 		clearTimeout(navTimer);
 		navLoading = false;
 	}
 
+	// Handle loadingStore with threshold to avoid flashes
+	$: if ($loadingStore) {
+		clearTimeout(storeTimer);
+		storeTimer = setTimeout(() => {
+			storeLoading = true;
+		}, 300); // Only show if loading takes > 300ms
+	} else {
+		clearTimeout(storeTimer);
+		storeLoading = false;
+	}
+
 	// Handle initial hydration loading
 	onMount(() => {
-		// Simulate a brief "hard refresh" loading if needed, or just turn off immediately
-		// A small delay feels more "app-like" on hard refresh
-		setTimeout(() => {
-			isLoading = false;
-		}, 500);
+		// Remove artificial delay for better "instant" feel
+		isLoading = false;
 	});
 
-	$: showLoader = isLoading || navLoading || $loadingStore;
+	$: showLoader = isLoading || navLoading || storeLoading;
 </script>
 
 {#if showLoader && !MAINTENANCE_MODE}
