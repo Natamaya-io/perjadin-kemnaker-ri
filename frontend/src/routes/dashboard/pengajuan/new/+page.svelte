@@ -58,6 +58,7 @@
         ],
         suratTugas: null,
         suratTugasNumber: '',
+        spdNumberInput: '',
         purpose: 'persiapan', // Default
         stakeholder: '',
         agenda: '',
@@ -210,8 +211,14 @@
             }
         }
 
+        let finalSpd = "";
+        if (formData.spdNumberInput) {
+            const paddedNumber = String(formData.spdNumberInput).padStart(3, '0');
+            finalSpd = `ID-SPJ-${paddedNumber}`;
+        }
+
         const tripData = {
-            spd: "", // Leave empty to let the backend generate safely
+            spd: finalSpd, // Use the manually crafted SPD if provided, else empty
             email: $userStore.email,
             startDate: minStartDate,
             endDate: maxEndDate,
@@ -383,6 +390,7 @@
                     email={$userStore.email} 
                     bind:suratTugas={formData.suratTugas}
                     bind:suratTugasNumber={formData.suratTugasNumber}
+                    bind:spdNumberInput={formData.spdNumberInput}
                     readonly={isReadOnly}
                 />
                 

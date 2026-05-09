@@ -47,6 +47,7 @@
 
     let pendingGrandTotal = 0; // To store calculation result for confirmation
     let pendingOtherUpdatesToSave = []; // From split hotel feature
+    let pendingSpdToSave = '';
 
     let isConfirmOpen = false;
     let isRejectConfirmOpen = false;
@@ -72,7 +73,7 @@
         const so = sortOption;
         const sd = startDate;
         const ed = endDate;
-        
+
         if (typeof window !== 'undefined') {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -86,7 +87,8 @@
         let statusParam = statusFilter === 'all' ? undefined : statusFilter;
         let sortByParam = sortOption;
 
-        let startIso, endIso;        if (startDate) {
+        let startIso, endIso;
+        if (startDate) {
             const start = new Date(startDate);
             start.setHours(0,0,0,0);
             startIso = start.toISOString();
@@ -122,7 +124,7 @@
         }
         return acc;
     }, {});
-    
+
     // Maintain the order of SPDs exactly as returned by Postgres pagination query
     $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
     $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
@@ -143,12 +145,13 @@
         selectedRecord = record;
         editingCosts = { ...record.costs }; // Clone costs
         pendingOtherUpdatesToSave = []; // Reset
+        pendingSpdToSave = record.spd || ''; // Reset pending SPD
         isModalOpen = true;
     }
 
     function handleModalSave(event) {
-        const { editingCosts: newCosts, grandTotal, pendingOtherUpdates } = event.detail;
-        
+        const { editingCosts: newCosts, grandTotal, pendingOtherUpdates, spd } = event.detail;
+
         if (newCosts.localTransport > 500000) {
             toast.warning('Transport Lokal maksimal Rp 500.000');
             return;
@@ -158,6 +161,7 @@
         editingCosts = newCosts;
         pendingGrandTotal = grandTotal;
         pendingOtherUpdatesToSave = pendingOtherUpdates || [];
+        pendingSpdToSave = spd || selectedRecord.spd;
         isConfirmOpen = true;
     }
 
@@ -174,6 +178,7 @@
             updates.push({
                 id: selectedRecord.id,
                 data: {
+                    spd: pendingSpdToSave, // Send the edited SPD
                     costs: { ...editingCosts },
                     totalCost: pendingGrandTotal,
                     status: 'Approved'

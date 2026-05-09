@@ -363,13 +363,13 @@
     </div>
 </div>
 
-<ReviewModal 
-    bind:open={isReviewOpen} 
-    records={selectedRecords} 
-    provinces={$provincesStore} 
-    stakeholders={$stakeholdersStore} 
+<ReviewModal
+    bind:open={isReviewOpen}
+    records={selectedRecords}
+    provinces={$provincesStore}
+    stakeholders={$stakeholdersStore}
+    on:saved={() => fetchRecords(false)}
 />
-
 <ConfirmationModal 
     bind:open={isDeleteModalOpen}
     title="Hapus Pengajuan"

@@ -3,6 +3,7 @@
     import Input from '$lib/shared/ui/input/Input.svelte';
 
     export let email = '';
+    export let spdNumberInput = '';
     /** @type {File | null} */
     export let suratTugas = null;
     export let suratTugasNumber = '';
@@ -93,6 +94,17 @@
         <div class="space-y-2">
             <Label class="text-slate-600">Email Pengaju</Label>
             <Input value={email} readonly disabled class="bg-slate-50 text-slate-500 border-slate-200" />
+        </div>
+
+        <div class="space-y-2">
+            <Label class="text-slate-600">Nomor SPD <span class="text-xs text-slate-400 font-normal">(Opsional - Kosongkan untuk Otomatis)</span></Label>
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 text-sm rounded-l-md h-11">
+                    ID-SPJ-
+                </span>
+                <Input type="number" min="1" bind:value={spdNumberInput} placeholder="Cth: 005" disabled={readonly} class="flex-1 rounded-none rounded-r-md h-11 border-slate-300 focus:ring-blue-500 focus:border-blue-500 {readonly ? 'bg-slate-50 opacity-70 cursor-not-allowed' : ''}" />
+            </div>
+            <p class="text-[10px] text-slate-400">Hanya angka. Isi jika ingin menentukan nomor urut secara manual.</p>
         </div>
         
         <div class="space-y-2 pt-2">

@@ -45,8 +45,10 @@
     });
 
     let selectedLocationIndex = 0;
+    let editingSpd = ''; // Added here
 
     $: if (open && record) {
+        editingSpd = record.spd || ''; // Set value here
         const locationsCount = costBreakdown.length;
         if (!editingCosts.details) {
             editingCosts.details = [];
@@ -516,7 +518,7 @@
         editingCosts.dailyAllowanceRate = sbmRateAvg;
         editingCosts.dailyAllowanceDays = days;
 
-        dispatch('save', { editingCosts, grandTotal, pendingOtherUpdates: pendingOtherUpdatesToSave });
+        dispatch('save', { editingCosts, grandTotal, pendingOtherUpdates: pendingOtherUpdatesToSave, spd: editingSpd });
     }
 </script>
 

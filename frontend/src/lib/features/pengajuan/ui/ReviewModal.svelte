@@ -218,6 +218,32 @@
         }
     }
 
+	async function saveSpdNumberOnly() {
+        if (!formData.spdNumberInput) {
+            toast.error('Nomor SPD tidak boleh kosong jika ingin diubah.');
+            return;
+        }
+
+        isLoading = true;
+        try {
+            const finalSpd = `ID-SPJ-${String(formData.spdNumberInput).padStart(3, '0')}`;
+            
+            // Update all records in the SPD group
+            for (const record of records) {
+                await updateRecord(record.id, {
+                    spd: finalSpd
+                });
+            }
+
+            toast.success('Nomor SPD berhasil diperbarui.');
+            dispatch('saved');
+        } catch (e) {
+            toast.error('Gagal memperbarui Nomor SPD.');
+        } finally {
+            isLoading = false;
+        }
+    }
+
 	async function handleSave() {
         if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province)) {
             toast.error('Harap lengkapi field wajib di setiap lokasi.');
@@ -236,8 +262,14 @@
 
         isLoading = true;
         try {
+            let finalSpd = baseRecord.spd;
+            if (formData.spdNumberInput && formData.spdNumberInput !== (baseRecord.spd ? baseRecord.spd.replace('ID-SPJ-', '') : '')) {
+                finalSpd = `ID-SPJ-${String(formData.spdNumberInput).padStart(3, '0')}`;
+            }
+
             const commonData = {
                 ...formData,
+                spd: finalSpd, // Include potentially edited SPD
                 startDate: minStartDate ? new Date(minStartDate).toISOString() : null,
                 endDate: maxEndDate ? new Date(maxEndDate).toISOString() : null,
                 // Backward compatibility for summary
@@ -400,6 +432,42 @@
                                     </Button>
                                 </div>
                             {/if}
+
+                            <div class="space-y-1.5 pt-2">
+                                <Label class="text-slate-600 text-xs flex justify-between items-center">
+                                    <span>Nomor SPD (Hanya Angka)</span>
+                                    {#if !isEditing && isEditable && formData.spdNumberInput !== (baseRecord.spd ? baseRecord.spd.replace('ID-SPJ-', '') : '')}
+                                        <button 
+                                            on:click={saveSpdNumberOnly}
+                                            class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-tight flex items-center gap-1"
+                                            disabled={isLoading}
+                                        >
+                                            {#if isLoading}
+                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                            {:else}
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                                            {/if}
+                                            Simpan Nomor
+                                        </button>
+                                    {/if}
+                                </Label>
+                                <div class="flex items-center">
+                                    <span class="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 text-sm rounded-l-md h-10">
+                                        ID-SPJ-
+                                    </span>
+                                    <Input 
+                                        type="number"
+                                        min="1"
+                                        bind:value={formData.spdNumberInput} 
+                                        disabled={!isEditing && !isEditable} 
+                                        class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-emerald-500 focus:border-emerald-500 {(!isEditing && !isEditable) ? 'bg-slate-50 opacity-70 cursor-default' : (isEditing ? 'bg-white' : 'bg-emerald-50/30')}" 
+                                        placeholder="Cth: 005" 
+                                    />
+                                </div>
+                                {#if !isEditing && isEditable}
+                                    <p class="text-[10px] text-slate-400 italic">Isi untuk mengganti nomor SPD.</p>
+                                {/if}
+                            </div>
 
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs flex justify-between items-center">
