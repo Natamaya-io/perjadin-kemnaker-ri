@@ -87,11 +87,11 @@
     $: availableYears = (() => {
         const years = new Set();
         years.add(currentDate.getFullYear());
-        stats.budgets.forEach(b => years.add(b.year));
+        (stats.budgets || []).forEach(b => years.add(b.year));
         return [...years].sort((a, b) => b - a);
     })();
 
-    $: filteredTotalCost = stats.budgets.reduce((acc, b) => {
+    $: filteredTotalCost = (stats.budgets || []).reduce((acc, b) => {
         const yearMatch = b.year === filterYear;
         const monthMatch = filterMonth === 0 || b.month === filterMonth;
         
@@ -101,7 +101,7 @@
         return acc;
     }, 0);
     
-    $: totalCost = stats.budgets.reduce((acc, b) => acc + b.total, 0);
+    $: totalCost = (stats.budgets || []).reduce((acc, b) => acc + b.total, 0);
 
     // Description text based on filter
     $: budgetDescription = filterMonth === 0 

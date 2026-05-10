@@ -801,12 +801,28 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 			errMu.Unlock()
 		} else {
 			recs := make([]models.TravelRecord, len(dbRecs))
+			var userIDs []uuid.UUID
+			userSet := make(map[uuid.UUID]bool)
+			for _, dbRec := range dbRecs {
+				if !userSet[dbRec.EmployeeID] {
+					userIDs = append(userIDs, dbRec.EmployeeID)
+					userSet[dbRec.EmployeeID] = true
+				}
+			}
+
+			userMap := make(map[uuid.UUID]models.User)
+			if len(userIDs) > 0 {
+				if users, err := r.q.GetUsersByIDs(ctx, userIDs); err == nil {
+					for _, u := range users {
+						userMap[u.ID] = mapDBUser(u)
+					}
+				}
+			}
+
 			for i, dbRec := range dbRecs {
 				rec := mapDBRecord(dbRec)
-				// We need the employee to render names
-				emp, _ := r.GetUserByID(ctx, rec.EmployeeID)
-				if emp != nil {
-					rec.Employee = *emp
+				if emp, ok := userMap[rec.EmployeeID]; ok {
+					rec.Employee = emp
 				}
 				recs[i] = rec
 			}
@@ -839,7 +855,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Wait()
 
 	if len(errs) > 0 {
-		return nil, errs[0] // Return the first error
+		fmt.Printf("[Dashboard Summary] Encountered %d errors during aggregation. Partial data will be returned. First error: %v\n", len(errs), errs[0])
 	}
 
 	return summary, nil
