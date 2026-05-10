@@ -2,6 +2,7 @@
     import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
     import { api } from '$lib/shared/api';
+    import { dashboardSummaryStore } from '$lib/features/dashboard/store';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import { formatCurrency } from '$lib/shared/utils/utils';
 
@@ -20,7 +21,8 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
-    let isFetchingStats = true;
+    // Only show loading spinner if we don't have cached data yet
+    let isFetchingStats = !$dashboardSummaryStore;
 
     // Helper for currency
     function formatIDR(amount) {
@@ -40,7 +42,7 @@
         return formatCurrency(amount);
     }
 
-    let stats = {
+    $: stats = $dashboardSummaryStore || {
         totalTrips: 0,
         activeTrips: 0,
         statusCompleted: 0,
@@ -55,8 +57,11 @@
 
     onMount(async () => {
         try {
+            // Silently fetch fresh data in the background
             const data = await api.getDashboardSummary();
-            if (data) stats = data;
+            if (data) {
+                dashboardSummaryStore.set(data);
+            }
         } catch (e) {
             console.error("Failed to load dashboard summary:", e);
         } finally {
