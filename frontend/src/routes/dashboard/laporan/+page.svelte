@@ -37,6 +37,7 @@
 
     let debounceTimer;
     let currentCursor = '';
+    let isInitialMount = true;
 
     // Detail Modal State
     let isDetailModalOpen = false;
@@ -76,6 +77,12 @@
     // Reactively refetch when filters change
     function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
+            if (isInitialMount && $paginatedRecordsStore.length > 0) {
+                isInitialMount = false;
+                return; // Skip initial fetch to preserve 0-second SPA caching
+            }
+            isInitialMount = false;
+
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 currentCursor = '';
@@ -145,7 +152,7 @@
     });
 
     onMount(() => {
-        fetchRecords(false);
+        // Fetch is handled by reactive handleFiltersChanged if store is empty
     });
 </script>
 
