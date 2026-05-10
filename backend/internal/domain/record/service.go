@@ -2,6 +2,8 @@ package record
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -443,5 +445,34 @@ func (s *service) GetDashboardSummary(ctx context.Context) (*models.DashboardSum
 }
 
 func (s *service) GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error) {
-	return s.repo.GetPaginatedRecords(ctx, params)
+	if s.redisClient == nil {
+		return s.repo.GetPaginatedRecords(ctx, params)
+	}
+
+	// Create a deterministic hash of the parameters for the cache key
+	paramsBytes, err := json.Marshal(params)
+	if err != nil {
+		return s.repo.GetPaginatedRecords(ctx, params)
+	}
+	hash := sha256.Sum256(paramsBytes)
+	cacheKey := fmt.Sprintf("records:paginated:%s", hex.EncodeToString(hash[:]))
+
+	cached, err := s.redisClient.Get(ctx, cacheKey).Result()
+	if err == nil && cached != "" {
+		var response models.PaginatedResponse
+		if err := json.Unmarshal([]byte(cached), &response); err == nil {
+			return &response, nil
+		}
+	}
+
+	response, err := s.repo.GetPaginatedRecords(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	if cacheBytes, err := json.Marshal(response); err == nil {
+		s.redisClient.Set(ctx, cacheKey, cacheBytes, 15*time.Minute)
+	}
+
+	return response, nil
 }
