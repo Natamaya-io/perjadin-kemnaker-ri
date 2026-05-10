@@ -72,6 +72,9 @@
     // Track record ID untuk deteksi navigasi antar SPD
     let loadedForRecordId = '';
     
+    // Prevent false positive "Not Found" error during initial SWR fetch
+    let initialLoad = true;
+    
     // Signatories
     let ppkName = '';
     let ppkNip = '';
@@ -726,9 +729,13 @@
     }
 
     onMount(async () => {
-        const hasSpd = $recordsStore.some(r => r.spd === decodeURIComponent(spd));
-        if (!hasSpd) {
-            await loadRecords(spd);
+        try {
+            const hasSpd = $recordsStore.some(r => r.spd === decodeURIComponent(spd));
+            if (!hasSpd) {
+                await loadRecords(spd);
+            }
+        } finally {
+            initialLoad = false;
         }
     });
 
@@ -1058,7 +1065,7 @@
 
     {#if !record}
         <!-- Prevent error flash on first load by showing skeleton if records are empty and likely fetching -->
-        {#if $isFetchingRecords || $recordsStore.length === 0}
+        {#if $isFetchingRecords || initialLoad}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-8 animate-pulse">
                 <div class="flex flex-col gap-4">
                     <div class="h-8 bg-slate-200 rounded w-1/3"></div>
