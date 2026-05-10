@@ -26,7 +26,6 @@
 		if (browser) goto('/login');
 	}
 
-	let isLoading = true; // Start true for initial hydration
 	let navLoading = false;
 	let navTimer;
 	let storeLoading = false;
@@ -66,11 +65,10 @@
 
 	// Handle initial hydration loading
 	onMount(() => {
-		// Remove artificial delay for better "instant" feel
-		isLoading = false;
+		// Initialization logic if any
 	});
 
-	$: showLoader = isLoading || storeLoading;
+	$: showLoader = storeLoading;
 </script>
 
 {#if showLoader && !MAINTENANCE_MODE}
