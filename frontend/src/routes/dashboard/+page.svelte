@@ -1,6 +1,7 @@
 <script>
     import { userStore } from '$lib/features/auth/store';
     import { onMount } from 'svelte';
+    import { api } from '$lib/shared/api';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import { formatCurrency } from '$lib/shared/utils/utils';
 
@@ -19,7 +20,7 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
-    export let data;
+    let isFetchingStats = true;
 
     // Helper for currency
     function formatIDR(amount) {
@@ -39,7 +40,7 @@
         return formatCurrency(amount);
     }
 
-    $: stats = data.stats || {
+    let stats = {
         totalTrips: 0,
         activeTrips: 0,
         statusCompleted: 0,
@@ -51,6 +52,17 @@
         recentRecords: [],
         budgets: []
     };
+
+    onMount(async () => {
+        try {
+            const data = await api.getDashboardSummary();
+            if (data) stats = data;
+        } catch (e) {
+            console.error("Failed to load dashboard summary:", e);
+        } finally {
+            isFetchingStats = false;
+        }
+    });
 
     $: totalTrips = stats.totalTrips;
     $: activeTrips = stats.activeTrips;
@@ -148,7 +160,15 @@
 </script>
 
 
-<div class="space-y-8 pb-20">
+<div class="space-y-8 pb-20 relative">
+    {#if isFetchingStats}
+        <div class="absolute inset-0 z-50 bg-slate-50/50 backdrop-blur-[2px] flex items-start justify-center pt-32 rounded-2xl">
+            <div class="flex flex-col items-center justify-center gap-3 bg-white p-4 rounded-xl shadow-lg border border-slate-200">
+                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-sm font-semibold text-slate-600 animate-pulse">Menghitung Statistik...</span>
+            </div>
+        </div>
+    {/if}
     <!-- 1. Welcome Section (Organism) -->
     <WelcomeBanner role={$userStore.role}>
         <WelcomeContent role={$userStore.role} />
