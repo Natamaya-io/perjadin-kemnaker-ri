@@ -93,15 +93,19 @@ api.setUnauthorizedHandler(() => {
 
 // --- User Database Management (Admin) ---
 export const usersStore = writable<User[]>([]);
+export const isFetchingUsers = writable(false);
 
 export const loadUsers = async () => {
     if (!isBrowser || !localStorage.getItem('auth_token')) return;
+    isFetchingUsers.set(true);
     try {
         const users = await api.getUsers();
         usersStore.set(users);
     } catch (e: any) {
         if (e.message === 'Unauthorized') return;
         console.warn("Failed to load users (backend might be starting):", e.message);
+    } finally {
+        isFetchingUsers.set(false);
     }
 };
 

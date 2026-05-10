@@ -1,5 +1,5 @@
 <script>
-    import { usersStore, addUser, updateUser, removeUser, loadUsers } from '$lib/features/auth/store';
+    import { usersStore, addUser, updateUser, removeUser, loadUsers, isFetchingUsers } from '$lib/features/auth/store';
     import { userStore } from '$lib/features/auth/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { cn } from '$lib/shared/utils/utils';
@@ -187,7 +187,14 @@
 
         <!-- Card Grid View (Responsive) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {#if filteredUsers.length === 0}
+            {#if $isFetchingUsers}
+                <div class="col-span-full text-center py-12 text-slate-500 italic bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col items-center justify-center gap-4">
+                        <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <span class="font-medium animate-pulse text-slate-600">Memuat data user...</span>
+                    </div>
+                </div>
+            {:else if filteredUsers.length === 0}
                 <div class="col-span-full text-center py-12 text-slate-500 italic bg-white rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
