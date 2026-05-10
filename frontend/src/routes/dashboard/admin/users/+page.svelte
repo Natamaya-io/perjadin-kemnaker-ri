@@ -6,7 +6,9 @@
     import { onMount } from 'svelte';
     
     onMount(() => {
-        loadUsers();
+        if ($usersStore.length === 0) {
+            loadUsers();
+        }
     });
     
     // UI Components
@@ -61,6 +63,9 @@
         tingkatBiaya: ''
     };
 
+    let currentPage = 1;
+    let itemsPerPage = 12;
+
     $: filteredUsers = $usersStore.filter(u => 
         u.role !== 'keuangan' && (
             (u.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
@@ -68,6 +73,14 @@
             (u.nip || '').includes(searchQuery)
         )
     );
+
+    $: totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
+    $: paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset pagination to page 1 when search query changes
+    $: if (searchQuery !== undefined) {
+        currentPage = 1;
+    }
 
     function openAddModal() {
         editingId = null;
@@ -187,14 +200,43 @@
 
         <!-- Card Grid View (Responsive) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {#if $isFetchingUsers}
-                <div class="col-span-full text-center py-12 text-slate-500 italic bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <div class="flex flex-col items-center justify-center gap-4">
-                        <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                        <span class="font-medium animate-pulse text-slate-600">Memuat data user...</span>
+            {#if $isFetchingUsers && $usersStore.length === 0}
+                {#each Array(8) as _}
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 relative animate-pulse">
+                        <div class="absolute top-4 right-4 flex gap-2">
+                             <div class="h-4 w-4 bg-slate-200 rounded"></div>
+                             <div class="h-4 w-4 bg-slate-200 rounded"></div>
+                        </div>
+                        <div>
+                            <div class="h-5 bg-slate-200 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-slate-100 rounded w-1/2 mt-1 mb-2"></div>
+                            
+                            <div class="grid grid-cols-2 gap-y-3 gap-x-4 mt-3">
+                                <div>
+                                    <div class="h-2 bg-slate-200 rounded w-8 mb-1"></div>
+                                    <div class="h-3 bg-slate-200 rounded w-16"></div>
+                                </div>
+                                <div>
+                                    <div class="h-2 bg-slate-200 rounded w-16 mb-1"></div>
+                                    <div class="h-3 bg-slate-200 rounded w-12"></div>
+                                </div>
+                                <div class="col-span-2">
+                                    <div class="h-2 bg-slate-200 rounded w-24 mb-1"></div>
+                                    <div class="h-3 bg-slate-200 rounded w-full"></div>
+                                    <div class="h-3 bg-slate-100 rounded w-3/4 mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-center justify-between border-t border-slate-100 pt-3 mt-2">
+                             <div class="h-5 bg-slate-200 rounded-full w-20"></div>
+                             <div class="flex items-center gap-1.5">
+                                 <div class="h-4 w-4 bg-slate-200 rounded"></div>
+                                 <div class="h-3 bg-slate-200 rounded w-24"></div>
+                             </div>
+                        </div>
                     </div>
-                </div>
-            {:else if filteredUsers.length === 0}
+                {/each}
+            {:else if paginatedUsers.length === 0}
                 <div class="col-span-full text-center py-12 text-slate-500 italic bg-white rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,7 +246,7 @@
                     </div>
                 </div>
             {:else}
-                {#each filteredUsers as user (user.id)}
+                {#each paginatedUsers as user (user.id)}
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 relative hover:shadow-md hover:border-slate-300 transition-all">
                         <div class="absolute top-4 right-4 flex gap-2">
                              <button class="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Edit" on:click={() => openEditModal(user)}>
@@ -254,6 +296,52 @@
                 {/each}
             {/if}
         </div>
+
+        <!-- Pagination Controls -->
+        {#if totalPages > 1}
+            <div class="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 mt-6 rounded-xl shadow-sm">
+                <div class="flex flex-1 justify-between sm:hidden">
+                    <Button variant="outline" size="sm" disabled={currentPage === 1} on:click={() => currentPage--}>
+                        Sebelumnya
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={currentPage === totalPages} on:click={() => currentPage++}>
+                        Selanjutnya
+                    </Button>
+                </div>
+                <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-slate-700">
+                            Menampilkan <span class="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> hingga <span class="font-medium">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> dari <span class="font-medium">{filteredUsers.length}</span> hasil
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button on:click={() => currentPage--} disabled={currentPage === 1} class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            {#each Array(totalPages) as _, i}
+                                {#if totalPages <= 7 || (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage))}
+                                    <button on:click={() => currentPage = i + 1} class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {currentPage === i + 1 ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0'}">
+                                        {i + 1}
+                                    </button>
+                                {:else if i === 1 || i === totalPages - 2}
+                                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0">...</span>
+                                {/if}
+                            {/each}
+                            <button on:click={() => currentPage++} disabled={currentPage === totalPages} class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        {/if}
     {/if}
 
     <Dialog open={isModalOpen} on:close={() => isModalOpen = false}>
