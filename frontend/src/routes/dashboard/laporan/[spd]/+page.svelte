@@ -1056,19 +1056,34 @@
         {/if}
     </div>
 
-    {#if $isFetchingRecords}
-        <div class="flex items-center justify-center p-12 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex flex-col items-center justify-center space-y-4">
-                <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
+    {#if !record}
+        <!-- Prevent error flash on first load by showing skeleton if records are empty and likely fetching -->
+        {#if $isFetchingRecords || $recordsStore.length === 0}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-8 animate-pulse">
+                <div class="flex flex-col gap-4">
+                    <div class="h-8 bg-slate-200 rounded w-1/3"></div>
+                    <div class="h-4 bg-slate-100 rounded w-1/4"></div>
                 </div>
-                <p class="text-slate-500 font-medium animate-pulse tracking-wide">Memuat data perjalanan dinas...</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div class="h-10 bg-slate-100 rounded"></div>
+                        <div class="h-32 bg-slate-50 rounded border border-slate-100"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="h-10 bg-slate-100 rounded"></div>
+                        <div class="h-32 bg-slate-50 rounded border border-slate-100"></div>
+                    </div>
+                </div>
             </div>
-        </div>
-    {:else if !record}
-        <div class="text-red-500 p-4 border border-red-200 rounded bg-red-50">Data perjalanan dinas tidak ditemukan.</div>
+        {:else}
+            <div class="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-red-200 rounded-xl bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="text-lg font-medium text-red-800">Data Tidak Ditemukan</h3>
+                <p class="text-red-600/80 max-w-sm mt-1">Surat Perjalanan Dinas dengan nomor <b>{decodeURIComponent(spd)}</b> tidak ditemukan atau Anda tidak memiliki akses.</p>
+            </div>
+        {/if}
     {:else}
         <!-- Header Info -->
         {#if currentTab === 'laporan'}

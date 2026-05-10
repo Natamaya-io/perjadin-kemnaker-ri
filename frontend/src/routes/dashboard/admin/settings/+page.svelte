@@ -8,31 +8,41 @@
     import Label from '$lib/shared/ui/label/Label.svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
 
+    import { settingsStore } from '$lib/shared/stores/settings';
+
     const api = new RealApiClient();
     
-    // Form state
+    // Form state seeded from SWR cache
     let settings = {
-        ppk_name: '',
-        ppk_nip: '',
-        bendahara_name: '',
-        bendahara_nip: ''
+        ppk_name: $settingsStore.ppk_name || '',
+        ppk_nip: $settingsStore.ppk_nip || '',
+        bendahara_name: $settingsStore.bendahara_name || '',
+        bendahara_nip: $settingsStore.bendahara_nip || ''
     };
+    
+    // Subscribe to store updates directly
+    $: if ($settingsStore.isLoaded && !settings.ppk_name) {
+        settings = { ...$settingsStore };
+    }
 
     onMount(async () => {
-        startLoading();
+        // Silently fetch data in the background (SWR pattern)
         try {
             const data = await api.getSettings();
-            settings = {
-                ppk_name: data.ppk_name || '',
-                ppk_nip: data.ppk_nip || '',
-                bendahara_name: data.bendahara_name || '',
-                bendahara_nip: data.bendahara_nip || ''
-            };
+            if (data) {
+                const newSettings = {
+                    ppk_name: data.ppk_name || '',
+                    ppk_nip: data.ppk_nip || '',
+                    bendahara_name: data.bendahara_name || '',
+                    bendahara_nip: data.bendahara_nip || '',
+                    isLoaded: true
+                };
+                settingsStore.set(newSettings);
+                // Also update local state if it hasn't been edited
+                settings = { ...newSettings };
+            }
         } catch (error) {
-            toast.error('Gagal mengambil pengaturan global.');
-            console.error(error);
-        } finally {
-            stopLoading();
+            console.error("Failed to load settings in background:", error);
         }
     });
 
@@ -75,26 +85,34 @@
                         <div class="pb-2 border-b border-slate-100">
                             <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Pejabat Pembuat Komitmen (PPK)</span>
                         </div>
-                        <div class="space-y-4">
-                            <div class="space-y-1.5">
-                                <Label for="ppk_name" class="text-xs font-semibold text-slate-600">Nama Lengkap</Label>
-                                <Input 
-                                    id="ppk_name"
-                                    bind:value={settings.ppk_name}
-                                    placeholder="Contoh: Arief Hafidiyanto"
-                                    class="focus:ring-indigo-500"
-                                />
+                        {#if !$settingsStore.isLoaded && !settings.ppk_name}
+                            <!-- Skeleton loader for PPK -->
+                            <div class="space-y-4 animate-pulse">
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-24"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-16"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
                             </div>
-                            <div class="space-y-1.5">
-                                <Label for="ppk_nip" class="text-xs font-semibold text-slate-600">NIP</Label>
-                                <Input 
-                                    id="ppk_nip"
-                                    bind:value={settings.ppk_nip}
-                                    placeholder="Contoh: 19720827 200312 1 002"
-                                    class="font-mono"
-                                />
+                        {:else}
+                            <div class="space-y-4">
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_name" class="text-xs font-semibold text-slate-600">Nama Lengkap</Label>
+                                    <Input 
+                                        id="ppk_name"
+                                        bind:value={settings.ppk_name}
+                                        placeholder="Contoh: Arief Hafidiyanto"
+                                        class="focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_nip" class="text-xs font-semibold text-slate-600">NIP</Label>
+                                    <Input 
+                                        id="ppk_nip"
+                                        bind:value={settings.ppk_nip}
+                                        placeholder="Contoh: 19720827 200312 1 002"
+                                        class="font-mono"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        {/if}
                     </div>
 
                     <!-- Bendahara -->
@@ -102,26 +120,34 @@
                         <div class="pb-2 border-b border-slate-100">
                             <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Bendahara Pengeluaran Pembantu</span>
                         </div>
-                        <div class="space-y-4">
-                            <div class="space-y-1.5">
-                                <Label for="bendahara_name" class="text-xs font-semibold text-slate-600">Nama Lengkap</Label>
-                                <Input 
-                                    id="bendahara_name"
-                                    bind:value={settings.bendahara_name}
-                                    placeholder="Contoh: Liana Setyawati"
-                                    class="focus:ring-indigo-500"
-                                />
+                        {#if !$settingsStore.isLoaded && !settings.bendahara_name}
+                            <!-- Skeleton loader for Bendahara -->
+                            <div class="space-y-4 animate-pulse">
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-24"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-16"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
                             </div>
-                            <div class="space-y-1.5">
-                                <Label for="bendahara_nip" class="text-xs font-semibold text-slate-600">NIP</Label>
-                                <Input 
-                                    id="bendahara_nip"
-                                    bind:value={settings.bendahara_nip}
-                                    placeholder="Contoh: 19800512 200901 2 001"
-                                    class="font-mono"
-                                />
+                        {:else}
+                            <div class="space-y-4">
+                                <div class="space-y-1.5">
+                                    <Label for="bendahara_name" class="text-xs font-semibold text-slate-600">Nama Lengkap</Label>
+                                    <Input 
+                                        id="bendahara_name"
+                                        bind:value={settings.bendahara_name}
+                                        placeholder="Contoh: Liana Setyawati"
+                                        class="focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label for="bendahara_nip" class="text-xs font-semibold text-slate-600">NIP</Label>
+                                    <Input 
+                                        id="bendahara_nip"
+                                        bind:value={settings.bendahara_nip}
+                                        placeholder="Contoh: 19800512 200901 2 001"
+                                        class="font-mono"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        {/if}
                     </div>
                 </div>
             </div>
