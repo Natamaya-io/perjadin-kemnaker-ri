@@ -160,9 +160,9 @@ func main() {
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)
-		protected.POST("/users", userHandler.CreateUser)
-		protected.PUT("/users/:id", userHandler.UpdateUser)
-		protected.DELETE("/users/:id", userHandler.DeleteUser)
+		protected.POST("/users", userHandler.CreateUser, middleware.RoleMiddleware("super_admin"))
+		protected.PUT("/users/:id", userHandler.UpdateUser, middleware.RoleMiddleware("super_admin"))
+		protected.DELETE("/users/:id", userHandler.DeleteUser, middleware.RoleMiddleware("super_admin"))
 
 		// Master Data
 		protected.GET("/master/provinces", masterHandler.GetProvinces)
