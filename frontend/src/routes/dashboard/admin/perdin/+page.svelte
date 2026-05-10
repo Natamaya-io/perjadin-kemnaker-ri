@@ -406,22 +406,26 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         {#if uniqueRecords.length === 0}
-                            <tr>
-                                <td colspan="5" class="p-12 text-center text-slate-500 bg-slate-50/50">
-                                    {#if $isFetchingRecords}
-                                        <div class="flex flex-col items-center justify-center py-6 gap-3">
-                                            <div class="relative flex items-center justify-center overflow-hidden w-24 h-24">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-500 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                                                </svg>
-                                            </div>
-                                            <span class="text-sm font-semibold text-slate-500 tracking-wide animate-pulse">Sedang memuat data...</span>
-                                        </div>
-                                    {:else}
+                            {#if $isFetchingRecords}
+                                {#each Array(5) as _}
+                                    <tr class="bg-white border-b border-slate-100 animate-pulse">
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-slate-200 rounded w-20"></div></td>
+                                        <td class="px-6 py-4">
+                                            <div class="h-4 bg-slate-200 rounded w-48 mb-2"></div>
+                                            <div class="h-3 bg-slate-100 rounded w-32"></div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-slate-200 rounded w-32"></div></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right"><div class="h-6 bg-slate-200 rounded-lg w-24 ml-auto"></div></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center"><div class="h-5 bg-slate-200 rounded-full w-20 mx-auto"></div></td>
+                                    </tr>
+                                {/each}
+                            {:else}
+                                <tr>
+                                    <td colspan="5" class="p-12 text-center text-slate-500 bg-slate-50/50">
                                         Belum ada pengajuan yang masuk.
-                                    {/if}
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            {/if}
                         {:else}
                             {#each uniqueRecords as record (record.spd)}
                                 <!-- Group Header Row -->
@@ -624,16 +628,31 @@
                     </div>
                 {/each}
                 {#if uniqueRecords.length === 0}
-                    <div class="p-12 text-center text-slate-500 bg-white">
-                        {#if $isFetchingRecords}
-                            <div class="flex items-center justify-center gap-3">
-                                <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                <span>Sedang memuat data...</span>
+                    {#if $isFetchingRecords}
+                        {#each Array(4) as _}
+                            <div class="p-4 bg-white border-b border-slate-200 animate-pulse flex flex-col gap-3">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-5 bg-slate-200 rounded w-24"></div>
+                                        <div class="h-4 bg-slate-200 rounded-full w-16"></div>
+                                    </div>
+                                    <div class="h-6 bg-slate-200 rounded w-6"></div>
+                                </div>
+                                <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+                                <div class="flex flex-col gap-2 mt-1">
+                                    <div class="h-3 bg-slate-200 rounded w-full"></div>
+                                    <div class="flex justify-between items-center">
+                                        <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+                                        <div class="h-3 bg-slate-200 rounded w-16"></div>
+                                    </div>
+                                </div>
                             </div>
-                        {:else}
+                        {/each}
+                    {:else}
+                        <div class="p-12 text-center text-slate-500 bg-white">
                             Belum ada pengajuan yang masuk.
-                        {/if}
-                    </div>
+                        </div>
+                    {/if}
                 {/if}
             </div>
 
