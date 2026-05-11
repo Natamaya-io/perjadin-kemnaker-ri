@@ -63,6 +63,8 @@ export async function addRecord(tripData: any) {
     try {
         const newRecords = await api.createRecord(tripData);
         recordsStore.update(current => [...newRecords, ...current]);
+        paginatedRecordsStore.update(current => [...newRecords, ...current]);
+        paginatedMetadataStore.update(m => ({ ...m, totalItems: m.totalItems + newRecords.length }));
         return newRecords;
     } catch (e) {
         console.error("Failed to add record", e);
@@ -74,6 +76,9 @@ export async function updateRecord(id: string, data: Partial<TravelRecord>) {
     try {
         const updated = await api.updateRecord(id, data);
         recordsStore.update(current => 
+            current.map(r => r.id === id ? { ...r, ...updated, employee: updated.employee?.id ? updated.employee : r.employee } : r)
+        );
+        paginatedRecordsStore.update(current => 
             current.map(r => r.id === id ? { ...r, ...updated, employee: updated.employee?.id ? updated.employee : r.employee } : r)
         );
         return updated;
@@ -114,6 +119,16 @@ export async function deleteRecord(id: string) {
 export async function deleteRecordBySpd(spd: string) {
     // Optimistic update: remove from UI immediately
     recordsStore.update(current => current.filter(r => r.spd !== spd));
+    
+    let deletedCount = 0;
+    paginatedRecordsStore.update(current => {
+        const filtered = current.filter(r => r.spd !== spd);
+        deletedCount = current.length - filtered.length;
+        return filtered;
+    });
+    if (deletedCount > 0) {
+        paginatedMetadataStore.update(m => ({ ...m, totalItems: Math.max(0, m.totalItems - deletedCount) }));
+    }
 
     try {
         await api.deleteRecordsBySpd(spd);

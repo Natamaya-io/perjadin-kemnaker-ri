@@ -94,8 +94,9 @@
         return acc;
     }, {});
     
-    // Flat display - No Virtualization to prevent top jumping, exactly like Admin Perdin
-    $: displayRecords = $paginatedRecordsStore;
+    // Flat display - Deduplicate by SPD to display only one row per SPJ, preserving order
+    $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
+    $: displayRecords = uniqueSPDs.map(spd => $paginatedRecordsStore.find(r => r.spd === spd));
 
     let scrollContainer;
 

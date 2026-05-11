@@ -92,6 +92,12 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 		}
 	}
 
+	// Always wipe paginated caches because any CRUD operation alters total items, order, or content
+	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:*", 0).Iterator()
+	for iterPaginated.Next(ctx) {
+		keys = append(keys, iterPaginated.Val())
+	}
+
 	if len(keys) > 0 {
 		s.redisClient.Del(ctx, keys...)
 	}

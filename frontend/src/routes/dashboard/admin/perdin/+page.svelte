@@ -490,7 +490,7 @@
                                                         <td class="px-6 py-4 align-middle">
                                                             <div class="flex items-center gap-3 pl-2">
                                                                 <div class="w-2 h-2 rounded-full bg-slate-300 shrink-0"></div>
-                                                                <div class="font-mono font-bold text-slate-700">{String(record.employeesList.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</div>
+                                                                <div class="font-mono font-bold text-slate-700">{String(sortOption.includes('desc') ? $paginatedMetadataStore.totalItems - $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) : $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</div>
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle">
@@ -604,7 +604,7 @@
                                 {#each record.employeesList as empRecord}
                                     <div class="p-4 flex flex-col gap-3">
                                         <div class="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                            <span>NO. SPD: {String(record.employeesList.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</span>
+                                            <span>NO. SPD: {String(sortOption.includes('desc') ? $paginatedMetadataStore.totalItems - $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) : $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</span>
                                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
                                                 {getStatusBadge(empRecord).label}
                                             </span>
