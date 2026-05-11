@@ -77,10 +77,6 @@
     // Reactively refetch when filters change
     function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
-            if (isInitialMount && $paginatedRecordsStore.length > 0) {
-                isInitialMount = false;
-                return; // Skip initial fetch to preserve 0-second SPA caching
-            }
             isInitialMount = false;
 
             clearTimeout(debounceTimer);
