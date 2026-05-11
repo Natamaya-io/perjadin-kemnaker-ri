@@ -189,9 +189,10 @@ type PaginatedParams struct {
 }
 
 type PaginatedResponse struct {
-	Data       []TravelRecord `json:"data"`
-	TotalItems int64          `json:"totalItems"`
-	NextCursor string         `json:"nextCursor"`
-	Limit      int            `json:"limit"`
+	Data         []TravelRecord `json:"data"`
+	TotalItems   int64          `json:"totalItems"`
+	TotalRecords int64          `json:"totalRecords"`
+	NextCursor   string         `json:"nextCursor"`
+	Limit        int            `json:"limit"`
 }
 

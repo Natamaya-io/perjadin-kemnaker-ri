@@ -7,8 +7,9 @@ import { browser } from '$app/environment';
 // --- Travel Records ---
 export const recordsStore = writable<TravelRecord[]>([]);
 export const paginatedRecordsStore = writable<TravelRecord[]>([]);
-export const paginatedMetadataStore = writable<{totalItems: number, nextCursor: string | null, limit: number}>({
+export const paginatedMetadataStore = writable<{totalItems: number, totalRecords: number, nextCursor: string | null, limit: number}>({
     totalItems: 0,
+    totalRecords: 0,
     nextCursor: null,
     limit: 50
 });
@@ -43,6 +44,7 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
         }
         paginatedMetadataStore.set({
             totalItems: response.totalItems,
+            totalRecords: response.totalRecords,
             nextCursor: response.nextCursor || null,
             limit: response.limit
         });
@@ -64,7 +66,7 @@ export async function addRecord(tripData: any) {
         const newRecords = await api.createRecord(tripData);
         recordsStore.update(current => [...newRecords, ...current]);
         paginatedRecordsStore.update(current => [...newRecords, ...current]);
-        paginatedMetadataStore.update(m => ({ ...m, totalItems: m.totalItems + newRecords.length }));
+        paginatedMetadataStore.update(m => ({ ...m, totalItems: m.totalItems + 1, totalRecords: m.totalRecords + newRecords.length }));
         return newRecords;
     } catch (e) {
         console.error("Failed to add record", e);
@@ -127,7 +129,7 @@ export async function deleteRecordBySpd(spd: string) {
         return filtered;
     });
     if (deletedCount > 0) {
-        paginatedMetadataStore.update(m => ({ ...m, totalItems: Math.max(0, m.totalItems - deletedCount) }));
+        paginatedMetadataStore.update(m => ({ ...m, totalItems: Math.max(0, m.totalItems - 1), totalRecords: Math.max(0, m.totalRecords - deletedCount) }));
     }
 
     try {

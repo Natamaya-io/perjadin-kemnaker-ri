@@ -1185,13 +1185,70 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		return nil, fmt.Errorf("GetTotalPaginatedSPDsCount: %w", err)
 	}
 
+	// Calculate totalRecords (employees) dynamically
+	countRecordsQuery := `
+		SELECT COUNT(travel_records.id)
+		FROM travel_records
+		LEFT JOIN users ON travel_records.employee_id = users.id
+		WHERE travel_records.deleted_at IS NULL
+	`
+	var countRecordsArgs []interface{}
+	argIdCount := 1
+
+	if params.Status != "" {
+		countRecordsQuery += fmt.Sprintf(" AND travel_records.status = $%d", argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.Status)
+		argIdCount++
+	}
+	if params.ReportStatus != "" {
+		countRecordsQuery += fmt.Sprintf(" AND travel_records.report_status = $%d", argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.ReportStatus)
+		argIdCount++
+	}
+	if params.PaymentStatus != "" {
+		countRecordsQuery += fmt.Sprintf(" AND travel_records.payment_status = $%d", argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.PaymentStatus)
+		argIdCount++
+	}
+	if params.Search != "" {
+		countRecordsQuery += fmt.Sprintf(` AND (
+			travel_records.spd_number ILIKE '%%' || $%d || '%%'
+			OR travel_records.location ILIKE '%%' || $%d || '%%'
+			OR users.name ILIKE '%%' || $%d || '%%'
+		)`, argIdCount, argIdCount, argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.Search)
+		argIdCount++
+	}
+	if params.StartDate != nil {
+		countRecordsQuery += fmt.Sprintf(" AND travel_records.start_date >= $%d", argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.StartDate)
+		argIdCount++
+	}
+	if params.EndDate != nil {
+		countRecordsQuery += fmt.Sprintf(" AND travel_records.start_date <= $%d", argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.EndDate)
+		argIdCount++
+	}
+	if params.UserID != nil {
+		countRecordsQuery += fmt.Sprintf(" AND (travel_records.employee_id = $%d OR travel_records.creator_id = $%d)", argIdCount, argIdCount)
+		countRecordsArgs = append(countRecordsArgs, params.UserID)
+		argIdCount++
+	}
+
+	var totalRecords int64
+	err = r.d.QueryRowContext(ctx, countRecordsQuery, countRecordsArgs...).Scan(&totalRecords)
+	if err != nil {
+		return nil, fmt.Errorf("count total records: %w", err)
+	}
+
 	// 3. If no SPDs found, return empty early
 	if len(spdStrings) == 0 {
 		return &models.PaginatedResponse{
-			Data:       []models.TravelRecord{},
-			TotalItems: totalItems,
-			NextCursor: "",
-			Limit:      params.Limit,
+			Data:         []models.TravelRecord{},
+			TotalItems:   totalItems,
+			TotalRecords: totalRecords,
+			NextCursor:   "",
+			Limit:        params.Limit,
 		}, nil
 	}
 
@@ -1324,9 +1381,10 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	}
 
 	return &models.PaginatedResponse{
-		Data:       travelRecords,
-		TotalItems: totalItems,
-		NextCursor: nextCursor,
-		Limit:      params.Limit,
+		Data:         travelRecords,
+		TotalItems:   totalItems,
+		TotalRecords: totalRecords,
+		NextCursor:   nextCursor,
+		Limit:        params.Limit,
 	}, nil
 }

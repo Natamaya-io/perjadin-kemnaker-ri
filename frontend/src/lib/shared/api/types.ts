@@ -126,6 +126,7 @@ export interface PaginatedParams {
 export interface PaginatedResponse {
     data: TravelRecord[];
     totalItems: number;
+    totalRecords: number;
     nextCursor: string;
     limit: number;
 }
