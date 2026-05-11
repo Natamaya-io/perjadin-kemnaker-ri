@@ -784,7 +784,7 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 			fmt.Printf("Error creating bulk records: %v\n", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		return c.NoContent(http.StatusCreated)
+		return c.JSON(http.StatusCreated, batch)
 	}
 
 	// Single employee path — unchanged behaviour.

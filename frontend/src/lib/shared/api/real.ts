@@ -268,21 +268,24 @@ export class RealApiClient implements ApiClient {
              locations: locations
          };
 
-         // The backend CreateRecordsBulk returns 201 Created with NO CONTENT (or just empty)
-         // So we don't expect a JSON response here.
+         // The backend CreateRecordsBulk now returns the created records.
          try {
-             await this.request('/records', {
+             const res = await this.request<TravelRecord[]>('/records', {
                  method: 'POST',
                  body: JSON.stringify(payload)
              });
-         } catch (e: any) {
-             // If this.request throws SyntaxError for empty JSON, we can ignore it since 201 is success
-             if (!e.message.includes('Unexpected end of JSON input') && !e.message.includes('JSON')) {
-                 throw e;
+             
+             // Attach employee data manually from the original selection so the UI has all info immediately
+             if (Array.isArray(res)) {
+                 return res.map(r => {
+                     const emp = employees.find((e: any) => e.id === r.employeeId);
+                     return { ...r, employee: emp };
+                 });
              }
+             return res as any;
+         } catch (e: any) {
+             throw e;
          }
-
-         return [];
     }
     async updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
         const safeDate = (d: any) => {
