@@ -93,7 +93,7 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 	}
 
 	// Always wipe paginated caches because any CRUD operation alters total items, order, or content
-	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:*", 0).Iterator()
+	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:v2:*", 0).Iterator()
 	for iterPaginated.Next(ctx) {
 		keys = append(keys, iterPaginated.Val())
 	}
@@ -461,7 +461,7 @@ func (s *service) GetPaginatedRecords(ctx context.Context, params models.Paginat
 		return s.repo.GetPaginatedRecords(ctx, params)
 	}
 	hash := sha256.Sum256(paramsBytes)
-	cacheKey := fmt.Sprintf("records:paginated:%s", hex.EncodeToString(hash[:]))
+	cacheKey := fmt.Sprintf("records:paginated:v2:%s", hex.EncodeToString(hash[:]))
 
 	cached, err := s.redisClient.Get(ctx, cacheKey).Result()
 	if err == nil && cached != "" {
