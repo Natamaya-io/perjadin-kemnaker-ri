@@ -31,7 +31,7 @@ type Service interface {
 	UpdateRecord(ctx context.Context, record *models.TravelRecord) error
 	DeleteRecord(ctx context.Context, id uuid.UUID) error
 	DeleteRecordsBySpd(ctx context.Context, spd string) error
-	GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error)
+	GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error)
 	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
 }
 
@@ -75,6 +75,8 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 		"records:status:Approved",
 		"records:status:Rejected",
 		"records:status:Revised",
+		"dashboard:summary",
+		"dashboard:summary:global",
 	}
 
 	for _, id := range ids {
@@ -96,6 +98,11 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:*", 0).Iterator()
 	for iterPaginated.Next(ctx) {
 		keys = append(keys, iterPaginated.Val())
+	}
+
+	iterDashboard := s.redisClient.Scan(ctx, 0, "dashboard:summary:user:*", 0).Iterator()
+	for iterDashboard.Next(ctx) {
+		keys = append(keys, iterDashboard.Val())
 	}
 
 	if len(keys) > 0 {
@@ -411,8 +418,11 @@ func (s *service) DeleteRecordsBySpd(ctx context.Context, spd string) error {
 	return err
 }
 
-func (s *service) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
-	cacheKey := "dashboard:summary"
+func (s *service) GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error) {
+	cacheKey := "dashboard:summary:global"
+	if role == "protokol" && userIDStr != "" {
+		cacheKey = fmt.Sprintf("dashboard:summary:user:%s", userIDStr)
+	}
 
 	if s.redisClient != nil {
 		val, err := s.redisClient.Get(ctx, cacheKey).Result()
@@ -420,23 +430,23 @@ func (s *service) GetDashboardSummary(ctx context.Context) (*models.DashboardSum
 			var summary models.DashboardSummary
 			if err := json.Unmarshal([]byte(val), &summary); err == nil {
 				// Fire background revalidation (Stale-While-Revalidate)
-				go func() {
+				go func(r string, u string, key string) {
 					bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
-					fresh, err := s.repo.GetDashboardSummary(bgCtx)
+					fresh, err := s.repo.GetDashboardSummary(bgCtx, r, u)
 					if err == nil {
 						if data, err := json.Marshal(fresh); err == nil {
-							s.redisClient.Set(bgCtx, cacheKey, data, 15*time.Minute)
+							s.redisClient.Set(bgCtx, key, data, 15*time.Minute)
 						}
 					}
-				}()
+				}(role, userIDStr, cacheKey)
 				return &summary, nil
 			}
 		}
 	}
 
 	// Cache miss or error
-	summary, err := s.repo.GetDashboardSummary(ctx)
+	summary, err := s.repo.GetDashboardSummary(ctx, role, userIDStr)
 	if err != nil {
 		return nil, err
 	}

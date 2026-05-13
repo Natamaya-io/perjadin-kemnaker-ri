@@ -31,7 +31,7 @@ type Repository interface {
 	SyncReportBySpd(ctx context.Context, spd string, sourceRecord *models.TravelRecord) error
 	DeleteTravelRecord(ctx context.Context, id uuid.UUID) error
 	DeleteTravelRecordsBySpd(ctx context.Context, spd string) error
-	GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error)
+	GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error)
 	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
 }
 
@@ -707,8 +707,15 @@ func (r *repository) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (*mo
 	return recPtr, nil
 }
 
-func (r *repository) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
+func (r *repository) GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error) {
 	summary := &models.DashboardSummary{}
+
+	var nullUserID uuid.NullUUID
+	if role == "protokol" && userIDStr != "" {
+		if uid, err := uuid.Parse(userIDStr); err == nil {
+			nullUserID = uuid.NullUUID{UUID: uid, Valid: true}
+		}
+	}
 
 	var wg sync.WaitGroup
 	var errs []error
@@ -718,7 +725,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		total, err := r.q.GetTotalTripsCount(ctx)
+		total, err := r.q.GetTotalTripsCount(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetTotalTripsCount: %w", err))
@@ -732,7 +739,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		active, err := r.q.GetActiveTripsCount(ctx)
+		active, err := r.q.GetActiveTripsCount(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetActiveTripsCount: %w", err))
@@ -746,7 +753,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		counts, err := r.q.GetDashboardStatusCounts(ctx)
+		counts, err := r.q.GetDashboardStatusCounts(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetDashboardStatusCounts: %w", err))
@@ -773,7 +780,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		counts, err := r.q.GetDashboardReportCounts(ctx)
+		counts, err := r.q.GetDashboardReportCounts(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetDashboardReportCounts: %w", err))
@@ -794,7 +801,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbRecs, err := r.q.GetRecentRecords(ctx)
+		dbRecs, err := r.q.GetRecentRecords(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetRecentRecords: %w", err))
@@ -834,7 +841,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbBudgets, err := r.q.GetDashboardBudgets(ctx)
+		dbBudgets, err := r.q.GetDashboardBudgets(ctx, nullUserID)
 		if err != nil {
 			errMu.Lock()
 			errs = append(errs, fmt.Errorf("GetDashboardBudgets: %w", err))
@@ -863,9 +870,9 @@ func (r *repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 
 func (r *repository) GetOverlappingRecords(ctx context.Context, employeeID uuid.UUID, startDate, endDate time.Time) ([]models.TravelRecord, error) {
 	dbrs, err := r.q.GetOverlappingRecords(ctx, db.GetOverlappingRecordsParams{
-		EmployeeID: employeeID,
-		StartDate:  toNullTime(endDate),
-		EndDate:    toNullTime(startDate),
+		EmployeeID:   employeeID,
+		NewEndDate:   toNullTime(endDate),
+		NewStartDate: toNullTime(startDate),
 	})
 	if err != nil {
 		return nil, err

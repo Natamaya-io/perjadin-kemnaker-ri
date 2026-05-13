@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 query
 .geminiignore
 .cursorrules
+clean_local_db.ps1
+*.exe

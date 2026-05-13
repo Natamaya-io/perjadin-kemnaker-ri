@@ -23,8 +23,8 @@ SELECT nextval('spd_number_seq')::BIGINT AS next_val;
 -- name: GetOverlappingRecords :many
 SELECT * FROM travel_records 
 WHERE employee_id = $1 
-  AND start_date <= $2 
-  AND end_date >= $3 
+  AND start_date <= sqlc.arg('new_end_date')
+  AND end_date >= sqlc.arg('new_start_date')
   AND status != 'Rejected'
   AND deleted_at IS NULL;
 
@@ -118,12 +118,14 @@ UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_i
 SELECT status, payment_status, COUNT(*) as count 
 FROM travel_records 
 WHERE deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
 GROUP BY status, payment_status;
 
 -- name: GetDashboardReportCounts :many
 SELECT report_status, COUNT(*) as count 
 FROM travel_records 
 WHERE deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
 GROUP BY report_status;
 
 -- name: GetActiveTripsCount :one
@@ -132,16 +134,19 @@ FROM travel_records
 WHERE deleted_at IS NULL 
   AND status IN ('Approved', 'Submitted', 'Assigned', 'Draft')
   AND start_date <= CURRENT_TIMESTAMP 
-  AND end_date >= CURRENT_TIMESTAMP;
+  AND end_date >= CURRENT_TIMESTAMP
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'));
 
 -- name: GetTotalTripsCount :one
 SELECT COUNT(DISTINCT spd_number) 
 FROM travel_records 
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'));
 
 -- name: GetRecentRecords :many
 SELECT * FROM travel_records 
 WHERE deleted_at IS NULL 
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
 ORDER BY start_date DESC 
 LIMIT 5;
 
@@ -152,6 +157,7 @@ SELECT
   SUM(total_cost)::FLOAT8 as total
 FROM travel_records
 WHERE deleted_at IS NULL
+  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
 GROUP BY year, month
 ORDER BY year DESC, month DESC;
 

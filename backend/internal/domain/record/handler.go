@@ -1000,7 +1000,10 @@ func (h *Handler) DeleteRecordsBySpd(c echo.Context) error {
 }
 
 func (h *Handler) GetDashboardSummary(c echo.Context) error {
-	summary, err := h.svc.GetDashboardSummary(c.Request().Context())
+	role := c.Get("role").(string)
+	userIDStr := c.Get("user_id").(string)
+
+	summary, err := h.svc.GetDashboardSummary(c.Request().Context(), role, userIDStr)
 	if err != nil {
 		fmt.Printf("GetDashboardSummary Error: %v\n", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal mengambil data dashboard")

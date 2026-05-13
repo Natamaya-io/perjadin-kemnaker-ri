@@ -221,6 +221,11 @@
                                     <div class="font-medium text-slate-800 text-sm line-clamp-2">
                                         {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                     </div>
+                                    {#if record.agenda}
+                                    <div class="text-[11px] text-slate-600 mt-1.5 font-medium bg-slate-50/80 inline-block px-2 py-1 rounded-md border border-slate-200">
+                                        <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
+                                    </div>
+                                    {/if}
                                     <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
