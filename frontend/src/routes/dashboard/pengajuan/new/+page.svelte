@@ -41,6 +41,7 @@
      *   }>,
      *   suratTugas: File | null,
      *   suratTugasNumber: string,
+     *   spdNumberInput: string,
      *   purpose: string,
      *   stakeholder: string,
      *   agenda: string,

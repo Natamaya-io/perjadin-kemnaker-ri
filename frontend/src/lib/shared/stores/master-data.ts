@@ -52,7 +52,7 @@ export const STAKEHOLDERS = [
 ];
 
 export const provincesStore = writable(PROVINCES);
-export const sbmRatesStore = writable([]);
+export const sbmRatesStore = writable<any[]>([]);
 export const stakeholdersStore = writable(STAKEHOLDERS);
 
 export async function loadMasterData() {

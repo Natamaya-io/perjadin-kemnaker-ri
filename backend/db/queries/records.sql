@@ -114,6 +114,22 @@ SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NUL
 -- name: DeleteTravelLocationsByRecordID :exec
 UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1;
 
+-- name: SyncSpdSequence :exec
+DO $$
+DECLARE
+    max_id bigint;
+    has_records boolean;
+BEGIN
+    SELECT MAX(CAST(NULLIF(regexp_replace(spd_number, '\D', '', 'g'), '') AS BIGINT)) INTO max_id FROM travel_records WHERE spd_number ILIKE 'ID-SPJ-%' AND deleted_at IS NULL;
+    SELECT COUNT(*) > 0 INTO has_records FROM travel_records WHERE deleted_at IS NULL;
+    
+    IF has_records THEN
+        PERFORM setval('spd_number_seq', COALESCE(max_id, 1), true);
+    ELSE
+        PERFORM setval('spd_number_seq', 1, false);
+    END IF;
+END $$;
+
 -- name: GetDashboardStatusCounts :many
 SELECT status, payment_status, COUNT(*) as count 
 FROM travel_records 

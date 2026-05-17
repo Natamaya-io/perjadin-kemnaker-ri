@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 

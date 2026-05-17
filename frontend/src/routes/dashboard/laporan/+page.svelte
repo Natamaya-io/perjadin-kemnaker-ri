@@ -35,6 +35,7 @@
         { value: 'Completed', label: 'Selesai' }
     ];
 
+    /** @type {ReturnType<typeof setTimeout>} */
     let debounceTimer;
     let currentCursor = '';
     let isInitialMount = true;
@@ -309,7 +310,7 @@
                     </div>
                     <div class="space-y-4.5 flex-1 relative z-10">
                         <div>
-                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPD</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Nomor SPJ</span>
                             <span class="font-mono text-slate-800 font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block text-sm shadow-sm">{selectedDetailRecord.spd}</span>
                         </div>
                         <div>

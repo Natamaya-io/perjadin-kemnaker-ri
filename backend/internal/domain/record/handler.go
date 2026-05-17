@@ -766,10 +766,6 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 		r.CreatorID, _ = uuid.Parse(creatorIDStr)
 	}
 
-	if r.SPDNumber == "" {
-		r.SPDNumber, _ = h.svc.GenerateSpdNumber(c.Request().Context())
-	}
-
 	// Bulk path: all employees share the same SPD and are inserted atomically.
 	// A failure for any one employee rolls back the entire batch.
 	if len(r.EmployeeIDs) > 0 {

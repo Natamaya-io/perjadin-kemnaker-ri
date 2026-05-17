@@ -31,6 +31,7 @@ type Repository interface {
 	SyncReportBySpd(ctx context.Context, spd string, sourceRecord *models.TravelRecord) error
 	DeleteTravelRecord(ctx context.Context, id uuid.UUID) error
 	DeleteTravelRecordsBySpd(ctx context.Context, spd string) error
+	SyncSpdSequence(ctx context.Context) error
 	GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error)
 	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
 }
@@ -1058,6 +1059,10 @@ func (r *repository) DeleteTravelRecordsBySpd(ctx context.Context, spd string) e
 	}
 
 	return tx.Commit()
+}
+
+func (r *repository) SyncSpdSequence(ctx context.Context) error {
+	return r.q.SyncSpdSequence(ctx)
 }
 
 func (r *repository) GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error) {

@@ -11,7 +11,7 @@
 
 <tr class="group hover:bg-slate-50/80 transition-all duration-200 cursor-default">
     {#if isProtokol}
-        <!-- Nomor SPD Column -->
+        <!-- Nomor SPJ Column -->
         <td class="px-6 py-4 align-top">
             <span class="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
                 {record.nomorSpdPetugas || '001'}

@@ -100,6 +100,16 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 		keys = append(keys, iterPaginated.Val())
 	}
 
+	iterSpd := s.redisClient.Scan(ctx, 0, "records:spd:*", 0).Iterator()
+	for iterSpd.Next(ctx) {
+		keys = append(keys, iterSpd.Val())
+	}
+
+	iterStatusSpd := s.redisClient.Scan(ctx, 0, "records:status:*:spd:*", 0).Iterator()
+	for iterStatusSpd.Next(ctx) {
+		keys = append(keys, iterStatusSpd.Val())
+	}
+
 	iterDashboard := s.redisClient.Scan(ctx, 0, "dashboard:summary:user:*", 0).Iterator()
 	for iterDashboard.Next(ctx) {
 		keys = append(keys, iterDashboard.Val())
@@ -145,6 +155,22 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 
 	record.Status = "Draft"
 	record.ReportStatus = "Pending"
+
+	// VALIDATION: Prevent duplicate SPD Number assignment manually.
+	if record.SPDNumber != "" {
+		existingRecords, err := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": record.SPDNumber})
+		if err == nil && len(existingRecords) > 0 {
+			return fmt.Errorf("nomor SPJ %s sudah digunakan oleh perjalanan dinas lain", record.SPDNumber)
+		}
+	}
+
+	if record.SPDNumber == "" {
+		spd, err := s.GenerateSpdNumber(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to generate SPD number: %w", err)
+		}
+		record.SPDNumber = spd
+	}
 
 	err = s.repo.CreateTravelRecord(ctx, record)
 	if err == nil {
@@ -217,6 +243,17 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 
 		r.Status = "Draft"
 		r.ReportStatus = "Pending"
+	}
+
+	// Generate SPD number safely AFTER validation passes
+	if records[0].SPDNumber == "" {
+		spd, err := s.GenerateSpdNumber(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to generate SPD number: %w", err)
+		}
+		for _, r := range records {
+			r.SPDNumber = spd
+		}
 	}
 
 	// --- Phase 2: single atomic DB write ---
@@ -382,9 +419,36 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 		record.EndDate = maxEnd
 	}
 
+	// VALIDATION: Prevent duplicate SPD Number assignment manually.
+	// If the user tries to assign an SPD number that already exists in the database
+	// and doesn't belong to the current travel record or its group.
+	if record.SPDNumber != "" {
+		existingRecords, err := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": record.SPDNumber})
+		if err == nil && len(existingRecords) > 0 {
+			// Check if we are trying to steal an SPD number from another trip
+			for _, er := range existingRecords {
+				// The record is trying to change its SPD to an existing one, but it wasn't part of that group originally
+				if er.ID != record.ID {
+					// We must fetch the original state of this record to see if its spd actually changed
+					original, _ := s.repo.GetTravelRecordByID(ctx, record.ID)
+					if original != nil && original.SPDNumber != record.SPDNumber {
+						return fmt.Errorf("nomor SPD %s sudah digunakan oleh perjalanan dinas lain", record.SPDNumber)
+					}
+				}
+			}
+		}
+	}
+
 	err := s.repo.UpdateTravelRecord(ctx, record)
 	if err == nil {
 		s.invalidateRecordCaches(ctx, record.ID)
+
+		// Resynchronize the sequence safely to accommodate manual SPD number overrides
+		go func(bgCtx context.Context) {
+			if syncErr := s.repo.SyncSpdSequence(bgCtx); syncErr != nil {
+				fmt.Printf("Warning: failed to sync SPD sequence after UpdateRecord: %v\n", syncErr)
+			}
+		}(context.Background())
 
 		// NEW: If a report was updated, sync it to all other records in the same SPD group
 		// using an O(1) SQL bulk update. Completely avoids O(N) memory fetching.
@@ -405,7 +469,12 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 func (s *service) DeleteRecord(ctx context.Context, id uuid.UUID) error {
 	err := s.repo.DeleteTravelRecord(ctx, id)
 	if err == nil {
-		go s.invalidateRecordCaches(context.Background(), id)
+		go func() {
+			s.invalidateRecordCaches(context.Background(), id)
+			if syncErr := s.repo.SyncSpdSequence(context.Background()); syncErr != nil {
+				fmt.Printf("Warning: failed to sync SPD sequence after DeleteRecord: %v\n", syncErr)
+			}
+		}()
 	}
 	return err
 }
@@ -413,7 +482,12 @@ func (s *service) DeleteRecord(ctx context.Context, id uuid.UUID) error {
 func (s *service) DeleteRecordsBySpd(ctx context.Context, spd string) error {
 	err := s.repo.DeleteTravelRecordsBySpd(ctx, spd)
 	if err == nil {
-		go s.invalidateRecordCaches(context.Background())
+		go func() {
+			s.invalidateRecordCaches(context.Background())
+			if syncErr := s.repo.SyncSpdSequence(context.Background()); syncErr != nil {
+				fmt.Printf("Warning: failed to sync SPD sequence after DeleteRecordsBySpd: %v\n", syncErr)
+			}
+		}()
 	}
 	return err
 }

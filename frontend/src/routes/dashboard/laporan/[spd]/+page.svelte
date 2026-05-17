@@ -2107,7 +2107,8 @@
                                 type="text" 
                                 value={formatInputNumber(splitHotelData.totalBill)} 
                                 on:input={(e) => {
-                                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                                    const target = Object(e.target);
+                                    const raw = (target.value || '').replace(/[^0-9]/g, '');
                                     splitHotelData.totalBill = parseInt(raw, 10) || 0;
                                 }}
                                 class="pl-9 bg-white border-slate-200 font-semibold" 

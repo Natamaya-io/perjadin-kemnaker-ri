@@ -235,7 +235,7 @@
                 });
             }
 
-            toast.success('Nomor SPD berhasil diperbarui.');
+            toast.success('Nomor SPJ berhasil diperbarui.');
             dispatch('saved');
         } catch (e) {
             toast.error('Gagal memperbarui Nomor SPD.');
@@ -465,7 +465,7 @@
                                     />
                                 </div>
                                 {#if !isEditing && isEditable}
-                                    <p class="text-[10px] text-slate-400 italic">Isi untuk mengganti nomor SPD.</p>
+                                    <p class="text-[10px] text-slate-400 italic">Isi untuk mengganti nomor SPJ.</p>
                                 {/if}
                             </div>
 

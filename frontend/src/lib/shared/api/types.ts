@@ -54,6 +54,7 @@ export interface TravelRecord {
     id: string;
     spd: string;
     employee: User;
+    employeeId?: string;
     creator?: User;
     creatorId?: string;
     email: string; // Creator email

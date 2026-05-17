@@ -34,6 +34,7 @@
         { value: 'Rejected', label: 'Ditolak' }
     ];
 
+    /** @type {ReturnType<typeof setTimeout>} */
     let debounceTimer;
     let isInitialMount = true;
     let isModalOpen = false;
