@@ -254,7 +254,7 @@
             if (details.length < locations.length) {
                 for (let i = details.length; i < locations.length; i++) {
                     details.push({
-                        transportMode: 'Pesawat',
+                        transportMode: 'Pesawat/Kendaraan Umum',
                         ticketGo: 0,
                         ticketBack: 0,
                         hotelDays: 0,
@@ -276,50 +276,53 @@
             };
         });
         localCosts = { ...localCosts }; // Trigger reactivity
+        updateTotals(recordsList, $provincesStore);
     }
 
-    $: {
-        if (Object.keys(localCosts).length > 0) {
-            let updated = false;
-            for (let r of recordsList) {
-                const empId = r.id;
-                if (localCosts[empId] && localCosts[empId].costs.details) {
-                    const locations = getLocations(r);
-                    let grandTotal = 0;
+    // Use a reactive statement that only depends on recordsList and provincesStore to prevent Svelte 5 infinite loops
+    $: updateTotals(recordsList, $provincesStore);
 
-                    // Calculate total across all locations
-                    localCosts[empId].costs.details.forEach((detail, idx) => {
-                        const loc = locations[idx];
-                        if (!loc) return;
-                        
-                        const days = getDaysForLocation(loc);
-                        const rate = getRateForLocation(loc); // SBM Rate
-                        const sbmTotal = days * rate;
+    function updateTotals(records, provinces) {
+        if (!records || Object.keys(localCosts).length === 0 || !provinces) return;
+        let updated = false;
+        for (let r of records) {
+            const empId = r.id;
+            if (localCosts[empId] && localCosts[empId].costs.details) {
+                const locations = getLocations(r);
+                let grandTotal = 0;
 
-                        const totalHotel = ((detail.hotelDays || 0) * (detail.hotelRate || 0)) + (detail.additionalCosts || []).reduce((sum, c) => c.name === 'Extend Penginapan' ? sum + (Number(c.amount) || 0) : sum, 0);
-                        const totalTicket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
-                        const totalTransportAmount = Number(detail.transportAmount || 0);
-                        const totalAdditional = (detail.additionalCosts || []).reduce((sum, cost) => {
-                            if (cost.name === 'Extend Tiket') {
-                                return sum + (Number(cost.ticketGo) || 0) + (Number(cost.ticketBack) || 0) + (Number(cost.amount) || 0);
-                            } else if (cost.name === 'Extend Penginapan') {
-                                return sum;
-                            }
-                            return sum + (Number(cost.amount) || 0);
-                        }, 0);
-                        
-                        grandTotal += sbmTotal + totalHotel + totalTicket + totalTransportAmount + totalAdditional;
-                    });
+                // Calculate total across all locations
+                localCosts[empId].costs.details.forEach((detail, idx) => {
+                    const loc = locations[idx];
+                    if (!loc) return;
                     
-                    if (localCosts[empId].totalCost !== grandTotal) {
-                        localCosts[empId].totalCost = grandTotal;
-                        updated = true;
-                    }
+                    const days = getDaysForLocation(loc);
+                    const rate = provinces.find(p => p.name === loc.province)?.luarKota || 0; // SBM Rate
+                    const sbmTotal = days * rate;
+
+                    const totalHotel = ((detail.hotelDays || 0) * (detail.hotelRate || 0)) + (detail.additionalCosts || []).reduce((sum, c) => c.name === 'Extend Penginapan' ? sum + (Number(c.amount) || 0) : sum, 0);
+                    const totalTicket = Number(detail.ticketGo || 0) + Number(detail.ticketBack || 0);
+                    const totalTransportAmount = Number(detail.transportAmount || 0);
+                    const totalAdditional = (detail.additionalCosts || []).reduce((sum, cost) => {
+                        if (cost.name === 'Extend Tiket') {
+                            return sum + (Number(cost.ticketGo) || 0) + (Number(cost.ticketBack) || 0) + (Number(cost.amount) || 0);
+                        } else if (cost.name === 'Extend Penginapan') {
+                            return sum;
+                        }
+                        return sum + (Number(cost.amount) || 0);
+                    }, 0);
+                    
+                    grandTotal += sbmTotal + totalHotel + totalTicket + totalTransportAmount + totalAdditional;
+                });
+                
+                if (localCosts[empId].totalCost !== grandTotal) {
+                    localCosts[empId].totalCost = grandTotal;
+                    updated = true;
                 }
             }
-            if (updated) {
-                localCosts = { ...localCosts };
-            }
+        }
+        if (updated) {
+            localCosts = { ...localCosts };
         }
     }
 
@@ -698,26 +701,45 @@
     }
     // Guard: load semua field form saat pertama kali atau saat navigasi ke record baru
     $: if (record && record.reportData && (!isDataLoaded || record.id !== loadedForRecordId)) {
-        reportText = record.reportData.text || '';
-        uploadedFiles = record.reportData.files || [];
+        // Only overwrite if switching record OR if local state is empty
+        if (record.id !== loadedForRecordId || !reportText) {
+            reportText = record.reportData.text || '';
+        }
+        
+        if (record.id !== loadedForRecordId || uploadedFiles.length === 0) {
+            const rawFiles = record.reportData.files;
+            uploadedFiles = Array.isArray(rawFiles) ? rawFiles : [];
+        }
+
         // Normalisasi: {} dari toJsonb(nil) dianggap null agar tidak render 'file kosong'
         const _rawSppd = record.reportData.sppdFile;
-        sppdFile = (_rawSppd && typeof _rawSppd === 'object' && Object.keys(_rawSppd).length > 0) ? _rawSppd : null;
+        if (record.id !== loadedForRecordId || !sppdFile) {
+            sppdFile = (_rawSppd && typeof _rawSppd === 'object' && !Array.isArray(_rawSppd) && Object.keys(_rawSppd).length > 0) ? _rawSppd : null;
+        }
+
         const _rawST = record.reportData.suratTugasFile;
-        suratTugasFile = (_rawST && typeof _rawST === 'object' && Object.keys(_rawST).length > 0) ? _rawST : null;
-        manualSuratTugasNumber = record.suratTugasNumber || '';
+        if (record.id !== loadedForRecordId || !suratTugasFile) {
+            suratTugasFile = (_rawST && typeof _rawST === 'object' && !Array.isArray(_rawST) && Object.keys(_rawST).length > 0) ? _rawST : null;
+        }
+
+        if (record.id !== loadedForRecordId || !manualSuratTugasNumber) {
+            manualSuratTugasNumber = record.suratTugasNumber || '';
+        }
+
         // Sync tanggalMerahList dari store (hanya saat load awal atau ganti record)
-        const _raw = record.reportData.tanggalMerah;
-        try {
-            if (Array.isArray(_raw)) {
-                tanggalMerahList = [..._raw];
-            } else if (typeof _raw === 'string' && _raw.length > 0) {
-                tanggalMerahList = JSON.parse(_raw);
-            } else {
+        if (record.id !== loadedForRecordId || tanggalMerahList.length === 0) {
+            const _raw = record.reportData.tanggalMerah;
+            try {
+                if (Array.isArray(_raw)) {
+                    tanggalMerahList = [..._raw];
+                } else if (typeof _raw === 'string' && _raw.length > 0) {
+                    tanggalMerahList = JSON.parse(_raw);
+                } else {
+                    tanggalMerahList = [];
+                }
+            } catch {
                 tanggalMerahList = [];
             }
-        } catch {
-            tanggalMerahList = [];
         }
         loadedForRecordId = record.id;
         isDataLoaded = true;
@@ -1508,9 +1530,8 @@
                                                 <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
                                                     <Select disabled={$userStore.role === 'kasubag'} bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
-                                                        <option value="Pesawat">Pesawat Udara</option>
-                                                        <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
-                                                        <option value="Kendaraan Dinas">Kendaraan Dinas</option>
+                                                        <option value="Pesawat/Kendaraan Umum">Pesawat/Kendaraan Umum</option>
+                                                        <option value="Mobil">Mobil</option>
                                                     </Select>
                                                 </div>
 

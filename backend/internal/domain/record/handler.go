@@ -299,6 +299,9 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 	if !record.StartDate.IsZero() {
 		refDate = record.StartDate
 	}
+	if !tglSurat.IsZero() {
+		refDate = tglSurat
+	}
 	if !record.EndDate.IsZero() {
 		tanggalLaporan = addWorkingDays(record.EndDate, 1, holidays)
 		tanggalRincian = addWorkingDays(record.EndDate, 3, holidays)
@@ -341,10 +344,12 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		"tanggal_perjalanan_doc": tanggalPerjalananDoc,
 		"terbilang": terbilangHari,
 		"bulan": utils.GetIndonesianMonths()[int(record.StartDate.Month())], "tahun": fmt.Sprintf("%d", record.StartDate.Year()),
-		"tgl_cetak": utils.FormatIndonesianDate(now), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
+		"tgl_cetak": utils.FormatIndonesianDate(tglCetak), "nama_ppk": namaPpk, "nip_ppk": nipPpk,
 		"nama_bendahara": namaBendahara, "nip_bendahara": nipBendahara, "jabatan_ppk": jabPpk, "jabatan_bendahara": jabBendahara,
-		"isi_laporan": isiLaporan, "tanggal_dikeluarkan": utils.FormatIndonesianDate(now),
+		"isi_laporan": isiLaporan, "tanggal_dikeluarkan": utils.FormatIndonesianDate(tglCetak),
 		"tanggal_laporan": utils.FormatIndonesianDate(tanggalLaporan), "tanggal_rincian": utils.FormatIndonesianDate(tanggalRincian),
+		"tanggal_spd": utils.FormatIndonesianDate(tglCetak), "tgl_spd": utils.FormatIndonesianDate(tglCetak),
+		"tanggal_st": utils.FormatIndonesianDate(tglSurat), "tgl_st": utils.FormatIndonesianDate(tglSurat),
 	}
 	type Detail struct {
 		TransportMode string `json:"transportMode"`
@@ -640,9 +645,53 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
+	allRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{})
+	var spdGroupRecords []models.TravelRecord
+	for _, r := range allRecords {
+		if r.SPDNumber == record.SPDNumber { spdGroupRecords = append(spdGroupRecords, r) }
+	}
+	sort.Slice(spdGroupRecords, func(i, j int) bool {
+		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
+		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
+
+		getPriority := func(name string) int {
+			if strings.Contains(name, "auditya hermawan") { return 1 }
+			if strings.Contains(name, "mochamad gufron") { return 2 }
+			if strings.Contains(name, "muhammad isa") { return 3 }
+			return 4
+		}
+
+		pI := getPriority(nameI)
+		pJ := getPriority(nameJ)
+		if pI != pJ { return pI < pJ }
+
+		nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
+		nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
+		
+		hasNIPI := nipI != "" && nipI != "-"
+		hasNIPJ := nipJ != "" && nipJ != "-"
+
+		if hasNIPI && !hasNIPJ { return true } else if !hasNIPI && hasNIPJ { return false }
+		return spdGroupRecords[i].CreatedAt.Unix() < spdGroupRecords[j].CreatedAt.Unix()
+	})
+
 	vars := h.mapTravelToDocument(record, 1)
 	vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
 	vars["tgl_cetak"] = vars["tanggal_laporan"]
+	
+	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
+	for i, ordinal := range ordinals {
+		if i < len(spdGroupRecords) {
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = spdGroupRecords[i].Employee.Name
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = spdGroupRecords[i].Employee.NIP
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = fmt.Sprintf("%d.", i+1)
+		} else { 
+			vars[fmt.Sprintf("nama_petugas_%s", ordinal)] = "__REMOVE_ROW__" 
+			vars[fmt.Sprintf("nip_petugas_%s", ordinal)] = ""
+			vars[fmt.Sprintf("no_urut_%s", ordinal)] = ""
+		}
+	}
+
 	payload := document.DocumentRequest{TemplateName: "Berkas Luar Kota - Laporan.docx", Variables: vars}
 	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
 	filename := fmt.Sprintf("Laporan_%s_%s.docx", record.Employee.Name, record.SPDNumber)
@@ -678,9 +727,11 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) (e
 	if prefix == "Laporan" {
 		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
 		vars["tgl_cetak"] = vars["tanggal_laporan"]
+		vars["tanggal_no_surat"] = vars["tanggal_laporan"]
 	} else if prefix == "Rincian" {
 		vars["tanggal_dikeluarkan"] = vars["tanggal_rincian"]
 		vars["tgl_cetak"] = vars["tanggal_rincian"]
+		vars["tanggal_no_surat"] = vars["tanggal_rincian"]
 		vars["bulan"] = ""
 		vars["tahun"] = ""
 	}
@@ -712,9 +763,11 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 	if prefix == "Laporan" {
 		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
 		vars["tgl_cetak"] = vars["tanggal_laporan"]
+		vars["tanggal_no_surat"] = vars["tanggal_laporan"]
 	} else if prefix == "Rincian" {
 		vars["tanggal_dikeluarkan"] = vars["tanggal_rincian"]
 		vars["tgl_cetak"] = vars["tanggal_rincian"]
+		vars["tanggal_no_surat"] = vars["tanggal_rincian"]
 		vars["bulan"] = ""
 		vars["tahun"] = ""
 	}

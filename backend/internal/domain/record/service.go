@@ -85,21 +85,7 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 		}
 	}
 
-	if len(ids) == 0 {
-		// If no specific IDs are passed, it implies a full wipe (like DeleteRecordsBySpd or UpdateRecord sync)
-		// We should clear ALL individual record caches as well using Scan.
-		iter := s.redisClient.Scan(ctx, 0, "records:id:*", 0).Iterator()
-		for iter.Next(ctx) {
-			keys = append(keys, iter.Val())
-		}
-	}
-
-	// Always wipe paginated caches because any CRUD operation alters total items, order, or content
-	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:*", 0).Iterator()
-	for iterPaginated.Next(ctx) {
-		keys = append(keys, iterPaginated.Val())
-	}
-
+	// Always wipe SPD-related and paginated caches because any CRUD operation alters group content or lists
 	iterSpd := s.redisClient.Scan(ctx, 0, "records:spd:*", 0).Iterator()
 	for iterSpd.Next(ctx) {
 		keys = append(keys, iterSpd.Val())
@@ -110,13 +96,36 @@ func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) 
 		keys = append(keys, iterStatusSpd.Val())
 	}
 
+	iterPaginated := s.redisClient.Scan(ctx, 0, "records:paginated:*", 0).Iterator()
+	for iterPaginated.Next(ctx) {
+		keys = append(keys, iterPaginated.Val())
+	}
+
+	if len(ids) == 0 {
+		// If no specific IDs are passed, it implies a potentially larger wipe
+		// We should clear ALL individual record caches as well using Scan.
+		iter := s.redisClient.Scan(ctx, 0, "records:id:*", 0).Iterator()
+		for iter.Next(ctx) {
+			keys = append(keys, iter.Val())
+		}
+	}
+
 	iterDashboard := s.redisClient.Scan(ctx, 0, "dashboard:summary:user:*", 0).Iterator()
 	for iterDashboard.Next(ctx) {
 		keys = append(keys, iterDashboard.Val())
 	}
 
 	if len(keys) > 0 {
-		s.redisClient.Del(ctx, keys...)
+		// Remove duplicates before deletion for efficiency
+		uniqueKeys := make(map[string]bool)
+		finalKeys := make([]string, 0, len(keys))
+		for _, k := range keys {
+			if !uniqueKeys[k] {
+				uniqueKeys[k] = true
+				finalKeys = append(finalKeys, k)
+			}
+		}
+		s.redisClient.Del(ctx, finalKeys...)
 	}
 }
 

@@ -16,9 +16,6 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -extldflags '-static'" -o main ./cmd/api/main.go
 
-# Compress binary
-RUN upx --best --lzma main
-
 # Stage 2: Ultra-lightweight runtime
 FROM alpine:latest
 

@@ -1,29 +1,90 @@
-<script>
+<script lang="ts">
     import { page } from '$app/stores';
     import { recordsStore, loadRecords } from '$lib/features/pengajuan/store';
     import { onMount, onDestroy } from 'svelte';
     import { toast } from '$lib/shared/stores/toast';
     import { api } from '$lib/shared/api';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
+    import type { TravelRecord } from '$lib/shared/api/types';
 
-    let type = $page.url.searchParams.get('type'); // 'spd', 'rincian', 'laporan'
-    let spd = $page.url.searchParams.get('spd');
-    let recordId = $page.url.searchParams.get('id');
-    
-    $: allRecordsForSpd = $recordsStore.filter(r => r.spd === spd);
-    $: record = recordId 
-        ? $recordsStore.find(r => r.id === recordId) || (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null)
-        : (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null);
+    let type: string = '';
+    let spd: string = '';
+    let recordId: string = '';
+    let record: TravelRecord | null = null;
 
-    let pdfUrl = '';
-    let isGeneratingPdf = false;
-    let isDataLoaded = false;
-    let pdfError = '';
-    let hasAttemptedLoad = false;
+    let pdfUrl: string = '';
+    let isGeneratingPdf: boolean = false;
+    let isDataLoaded: boolean = false;
+    let pdfError: string = '';
+    let currentRecordIdForPdf: string | null = null;
 
-    $: if (isDataLoaded && record && !hasAttemptedLoad) {
-        hasAttemptedLoad = true;
-        loadPdfPreview();
+    let unsubPage: () => void;
+    let unsubRecords: () => void;
+
+    onMount(async () => {
+        unsubPage = page.subscribe(($page) => {
+            type = $page.url.searchParams.get('type') || ''; 
+            spd = $page.url.searchParams.get('spd') || '';
+            recordId = $page.url.searchParams.get('id') || '';
+            updateState();
+        });
+
+        unsubRecords = recordsStore.subscribe(() => {
+            updateState();
+        });
+
+        try {
+            const initialSpd = $page.url.searchParams.get('spd') || '';
+            const initialId = $page.url.searchParams.get('id') || '';
+
+            // Check if we need to load records
+            let needsLoad = true;
+            const unsubscribeCheck = recordsStore.subscribe(recs => {
+                if (recs.length > 0) {
+                    if (initialId) {
+                        needsLoad = !recs.some(r => r.id === initialId);
+                    } else if (initialSpd) {
+                        needsLoad = !recs.some(r => r.spd === initialSpd);
+                    } else {
+                        needsLoad = false;
+                    }
+                }
+            });
+            unsubscribeCheck();
+
+            if (needsLoad) {
+                await loadRecords(initialSpd || undefined);
+            }
+            isDataLoaded = true;
+            updateState();
+        } catch (e) {
+            console.error(e);
+            toast.error('Gagal memuat data perjalanan.');
+        }
+    });
+
+    onDestroy(() => {
+        if (unsubPage) unsubPage();
+        if (unsubRecords) unsubRecords();
+        if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
+    });
+
+    function updateState() {
+        if (!isDataLoaded) return;
+
+        let recs: TravelRecord[] = [];
+        const unsub = recordsStore.subscribe(val => recs = val);
+        unsub();
+
+        const allRecordsForSpd = spd ? recs.filter(r => r.spd === spd) : [];
+        record = recordId 
+            ? recs.find(r => r.id === recordId) || (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null)
+            : (allRecordsForSpd.length > 0 ? allRecordsForSpd[0] : null);
+
+        if (record && record.id !== currentRecordIdForPdf) {
+            currentRecordIdForPdf = record.id;
+            loadPdfPreview();
+        }
     }
 
     async function loadPdfPreview() {
@@ -32,8 +93,7 @@
         isGeneratingPdf = true;
         pdfError = '';
         try {
-            // Kembali gunakan PDF karena Gotenberg sudah terintegrasi komprehensif
-            let pdfBlob;
+            let pdfBlob: Blob | undefined;
             if (type === 'spd') {
                 pdfBlob = await api.exportSpdPdf(record.id);
             } else if (type === 'laporan') {
@@ -42,11 +102,12 @@
                 pdfBlob = await api.exportRincianPdf(record.id);
             }
 
-            if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
-            pdfUrl = window.URL.createObjectURL(pdfBlob);
-            
+            if (pdfBlob) {
+                if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
+                pdfUrl = window.URL.createObjectURL(pdfBlob);
+            }
             isGeneratingPdf = false;
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error loading PDF preview:', e);
             pdfError = e.message || 'Terjadi kesalahan saat memuat dokumen.';
             toast.error('Gagal membuat pratinjau PDF.');
@@ -54,25 +115,9 @@
         }
     }
 
-    onMount(async () => {
-        try {
-            if ($recordsStore.length === 0) {
-                await loadRecords(spd);
-            }
-            isDataLoaded = true;
-        } catch (e) {
-            console.error(e);
-            toast.error('Gagal memuat data perjalanan.');
-        }
-    });
-
-    onDestroy(() => {
-        if (pdfUrl && pdfUrl.startsWith('blob:')) window.URL.revokeObjectURL(pdfUrl);
-    });
-
     async function downloadPdf() {
-        if (!pdfUrl || !record) return;
-        
+        if (!pdfUrl || !record || !record.employee) return;
+
         const filename = type === 'spd' 
             ? `SPD_${record.employee.name}_${spd.replace(/\//g, '_')}` 
             : type === 'laporan' 
@@ -85,10 +130,9 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
+
         toast.success('PDF berhasil diunduh!');
     }
-
 </script>
 
 <svelte:head>

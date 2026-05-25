@@ -5,3 +5,4 @@ sqlc.log
 sqlc.zip
 cmd/seeder_huge/main
 cmd/seeder_huge/main.exe
+coverage.out

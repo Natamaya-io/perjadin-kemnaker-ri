@@ -141,3 +141,52 @@ func TestLogin_WrongPassword(t *testing.T) {
 	// UpdateUser should NEVER be called if password fails
 	mockRepo.AssertNotCalled(t, "UpdateUser")
 }
+
+func TestRegister_Success(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	cfg := &config.Config{}
+	service := NewService(mockRepo, cfg, nil)
+
+	mockRepo.On("CreateUser", mock.AnythingOfType("*models.User")).Return(nil)
+
+	user, err := service.Register("new@example.com", "password123", "New User", "staf")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, "new@example.com", user.Email)
+	assert.Equal(t, "New User", user.Name)
+	assert.Equal(t, "staf", user.Role)
+	assert.Equal(t, "password123", user.DemoPassword)
+	// Make sure password is hashed
+	assert.NotEqual(t, "password123", user.Password)
+	errCompare := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte("password123"))
+	assert.NoError(t, errCompare)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_Success(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	cfg := &config.Config{}
+	service := NewService(mockRepo, cfg, nil)
+
+	userID := uuid.New()
+	fakeUser := &models.User{
+		Base: models.Base{ID: userID},
+		Email: "test@example.com",
+		DemoPassword: "oldpassword",
+	}
+
+	mockRepo.On("GetUserByID", userID).Return(fakeUser, nil)
+	mockRepo.On("UpdateUser", mock.AnythingOfType("*models.User")).Return(nil)
+
+	err := service.ChangePassword(userID.String(), "newpassword123")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "", fakeUser.DemoPassword) // Should be cleared
+	// Ensure new password is set and hashed
+	errCompare := bcrypt.CompareHashAndPassword([]byte(fakeUser.Password), []byte("newpassword123"))
+	assert.NoError(t, errCompare)
+
+	mockRepo.AssertExpectations(t)
+}

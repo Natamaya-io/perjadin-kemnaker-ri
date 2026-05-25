@@ -65,7 +65,7 @@
         // Fill missing locations
         while (editingCosts.details.length < locationsCount) {
             editingCosts.details.push({
-                transportMode: 'Pesawat',
+                transportMode: 'Pesawat/Kendaraan Umum',
                 ticketGo: 0, ticketBack: 0,
                 hotelDays: 0, hotelRate: 0,
                 transportAmount: 0,
@@ -557,9 +557,8 @@
         <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5 mb-2">
             <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
             <Select bind:value={editingCosts.details[selectedLocationIndex].transportMode} disabled={isReadOnly} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}">
-                <option value="Pesawat">Pesawat Udara</option>
-                <option value="Kendaraan Umum">Kendaraan Umum / Kereta</option>
-                <option value="Kendaraan Dinas">Kendaraan Dinas</option>
+                <option value="Pesawat/Kendaraan Umum">Pesawat/Kendaraan Umum</option>
+                <option value="Mobil">Mobil</option>
             </Select>
         </div>
 

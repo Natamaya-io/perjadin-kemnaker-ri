@@ -197,7 +197,7 @@
                     const targetLocCount = targetRecord.locations?.length || 1;
                     while (newTargetCosts.details.length < targetLocCount) {
                         newTargetCosts.details.push({
-                            transportMode: 'Pesawat',
+                            transportMode: 'Pesawat/Kendaraan Umum',
                             ticketGo: 0, ticketBack: 0,
                             hotelDays: 0, hotelRate: 0,
                             transportAmount: 0,

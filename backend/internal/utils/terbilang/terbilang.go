@@ -33,5 +33,8 @@ func Terbilang(n int) string {
 }
 
 func FormatTerbilang(n int) string {
-	return strings.TrimSpace(Terbilang(n))
+	// Clean up any double spaces that might occur from the recursive string concatenation
+	res := Terbilang(n)
+	res = strings.ReplaceAll(res, "  ", " ")
+	return strings.TrimSpace(res)
 }

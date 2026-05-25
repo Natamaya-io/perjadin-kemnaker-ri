@@ -161,7 +161,15 @@ func GenerateSpdOverlay(record *models.TravelRecord) ([]byte, error) {
 
 	// Footer / Tanda Tangan
 	drawText(155, 271, "Jakarta")
-	drawText(155, 277, formatDate(record.SuratTugasDate)) 
+	
+	spdDate := record.SuratTugasDate
+	if spdDate.IsZero() {
+		spdDate = record.StartDate
+	}
+	if spdDate.IsZero() {
+		spdDate = time.Now()
+	}
+	drawText(155, 277, formatDate(spdDate)) 
 	
 	// PPK Details
 	drawTextBold(150, 305, "Arief Hafidiyanto")
