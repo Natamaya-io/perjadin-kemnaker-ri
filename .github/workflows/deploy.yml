@@ -97,18 +97,45 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Execute Deployment Commands via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Copy Quadlets to Server
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
+          source: "deploy/quadlets/*"
+          target: "perjadin-app/deploy/quadlets"
+          strip_components: 2
+
+      - name: Execute Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY: ${{ env.REGISTRY }}
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          envs: GH_TOKEN,REGISTRY
           script: |
-            cd ~/perjadin-app
-            git pull origin main
-            cp -r deploy/quadlets/* ~/.config/containers/systemd/ || true
-            cp deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
+            # Login to GHCR to allow podman auto-update to pull private images
+            echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            
+            # Ensure target directories exist
+            mkdir -p ~/.config/containers/systemd/
+            mkdir -p ~/.config/systemd/user/
+            
+            # Copy quadlets to systemd directory
+            cp -r ~/perjadin-app/deploy/quadlets/* ~/.config/containers/systemd/ || true
+            cp ~/perjadin-app/deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
+            
+            # Reload systemd and restart services
             systemctl --user daemon-reload
             systemctl --user restart perjadin-backend.service perjadin-frontend.service
+            
+            # Trigger auto-update
             podman auto-update
 
