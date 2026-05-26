@@ -57,11 +57,11 @@ func JWTMiddleware(cfg *config.Config, repo user.Repository) echo.MiddlewareFunc
 			}
 
 			sessionID, ok := claims["session_id"].(string)
-			// If session_id is missing in token (old tokens) or doesn't match DB, reject.
-			// Allowing missing session_id only if you want to support rolling update without logging everyone out immediately.
-			// But "One Account One User" implies strict check.
-			if !ok || sessionID != user.SessionID {
-				return echo.NewHTTPError(401, "Session Expired: Logged in from another device")
+			// If session_id exists in token, it MUST match the one in DB.
+			// This implements "One Account One User" policy.
+			// We only allow missing session_id if it's not present in the token at all (for backward compatibility).
+			if ok && sessionID != "" && user.SessionID != "" && sessionID != user.SessionID {
+				return echo.NewHTTPError(401, "Sesi Anda telah berakhir karena login dari perangkat lain")
 			}
 
 			// Store user info in context

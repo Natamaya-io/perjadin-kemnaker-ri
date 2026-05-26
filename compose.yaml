@@ -5,7 +5,7 @@ services:
   # Database Service (PostgreSQL)
   # ==============================================
   db:
-    image: docker.io/library/postgres:16-alpine
+    image: public.ecr.aws/docker/library/postgres:16-alpine
     container_name: ${COMPOSE_PROJECT_NAME}_db
     environment:
       - POSTGRES_USER=${DB_USER:-perjadin_user}
@@ -26,7 +26,7 @@ services:
   # Redis Service (Caching & Session Store)
   # ==============================================
   redis:
-    image: docker.io/library/redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     container_name: ${COMPOSE_PROJECT_NAME}_redis
     ports:
       - "${REDIS_PORT}:6379"

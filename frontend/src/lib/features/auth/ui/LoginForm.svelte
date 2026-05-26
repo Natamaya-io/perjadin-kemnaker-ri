@@ -2,6 +2,7 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Label from '$lib/shared/ui/label/Label.svelte';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import { createEventDispatcher } from 'svelte';
 
     export let email = '';
@@ -71,7 +72,7 @@
     <Button type="submit" class="w-full h-12 text-sm font-bold text-white shadow-lg shadow-blue-500/30 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all transform active:scale-[0.98] rounded-xl" disabled={isLoading}>
         {#if isLoading}
             <div class="flex items-center justify-center gap-2">
-                <svg class="animate-paper-flight h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                <LottieLoader size="40px" className="brightness-0 invert" />
                 <span>Memproses...</span>
             </div>
         {:else}

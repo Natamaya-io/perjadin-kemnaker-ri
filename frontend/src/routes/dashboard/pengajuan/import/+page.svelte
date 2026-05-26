@@ -4,6 +4,7 @@
     import { userStore } from '$lib/features/auth/store';
     import { api } from '$lib/shared/api';
     import { toast } from '$lib/shared/stores/toast';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import type { ImportResult } from '$lib/shared/api/types';
 
     let fileInput: HTMLInputElement;
@@ -129,9 +130,7 @@
                     {#if selectedFile}
                         <button type="button" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center shadow-sm shadow-blue-200 text-sm disabled:opacity-70 disabled:cursor-not-allowed" on:click={handleUpload} disabled={isUploading}>
                             {#if isUploading}
-                                <svg class="animate-paper-flight -ml-1 mr-2 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                                </svg>
+                                <LottieLoader size="32px" className="brightness-0 invert -ml-1" />
                                 Mengupload...
                             {:else}
                                 Import Sekarang

@@ -140,7 +140,7 @@ func TestJWTMiddleware_InvalidSession(t *testing.T) {
 	assert.Error(t, err)
 	httpErr, _ := err.(*echo.HTTPError)
 	assert.Equal(t, http.StatusUnauthorized, httpErr.Code)
-	assert.Contains(t, httpErr.Message.(string), "Session Expired")
+	assert.Contains(t, httpErr.Message.(string), "Sesi Anda telah berakhir")
 }
 
 func TestRoleMiddleware_Allowed(t *testing.T) {

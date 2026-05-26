@@ -37,8 +37,7 @@ if (initialUser.loggedIn && isBrowser && !initialUser.requirePasswordChange) {
     (async () => {
         await refreshUserProfile(); // Mutlak: Tunggu profil refresh agar ID sinkron
         await Promise.all([
-            loadMasterData(),
-            loadRecords()
+            loadMasterData()
         ]);
     })();
 }
@@ -68,7 +67,6 @@ export const login = async (email: string, password?: string) => {
         // Load data on login
         if (!require_password_change) {
             loadMasterData();
-            loadRecords();
         }
         
         return { success: true, user, require_password_change };

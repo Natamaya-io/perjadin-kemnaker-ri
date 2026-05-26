@@ -1,5 +1,6 @@
 <script>
     import { paginatedRecordsStore, paginatedMetadataStore, loadPaginatedRecords, deleteRecordBySpd, isFetchingRecords, updateRecord } from '$lib/features/pengajuan/store';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import { userStore } from '$lib/features/auth/store';
     import { onMount, onDestroy } from 'svelte';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
@@ -292,10 +293,11 @@
                         {#if $isFetchingRecords && currentCursor}
                             <tr>
                                 <td colspan="5" class="p-6 text-center">
-                                    <div class="flex items-center justify-center gap-3">
-                                        <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                        <span class="text-sm font-bold text-slate-500 animate-pulse tracking-wide">Memuat data selanjutnya...</span>
+                                    <div class="flex items-center justify-center gap-1">
+                                        <LottieLoader size="32px" />
+                                        <span class="text-sm text-slate-500">Memuat data selanjutnya...</span>
                                     </div>
+
                                 </td>
                             </tr>
                         {/if}

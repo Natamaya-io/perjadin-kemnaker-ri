@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.25-alpine AS builder
+FROM public.ecr.aws/docker/library/golang:1.25-alpine AS builder
 
 # Install SSL ca certificates and UPX
 RUN apk --no-cache add ca-certificates tzdata upx
@@ -17,7 +17,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -extldflags '-static'" -o main ./cmd/api/main.go
 
 # Stage 2: Ultra-lightweight runtime
-FROM alpine:latest
+FROM public.ecr.aws/docker/library/alpine:latest
 
 # Install tzdata for proper time handling in Go
 RUN apk --no-cache add tzdata ca-certificates

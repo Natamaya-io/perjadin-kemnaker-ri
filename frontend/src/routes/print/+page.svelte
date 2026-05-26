@@ -6,6 +6,7 @@
     import { api } from '$lib/shared/api';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
     import type { TravelRecord } from '$lib/shared/api/types';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
 
     let type: string = '';
     let spd: string = '';
@@ -52,8 +53,8 @@
             });
             unsubscribeCheck();
 
-            if (needsLoad) {
-                await loadRecords(initialSpd || undefined);
+            if (needsLoad && (initialSpd || initialId)) {
+                await loadRecords(initialSpd || initialId); // loadRecords takes spd, but id is better than nothing although loadRecords uses spd. We just don't want undefined.
             }
             isDataLoaded = true;
             updateState();
@@ -150,15 +151,6 @@
         </div>
         
         <div class="flex items-center gap-3">
-            {#if isGeneratingPdf}
-                <div class="flex items-center gap-2 text-amber-600 text-xs font-medium animate-pulse">
-                    <svg class="animate-paper-flight h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
-                    Menghasilkan Dokumen...
-                </div>
-            {/if}
-
         </div>
     </div>
 
@@ -166,12 +158,8 @@
     <div class="flex-1 overflow-hidden relative">
         {#if isGeneratingPdf && !pdfUrl}
             <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                <div class="relative flex items-center justify-center overflow-hidden w-24 h-24 mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-blue-600 animate-paper-flight drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
-                </div>
-                <p class="text-slate-600 font-medium">Sedang menyiapkan pratinjau PDF...</p>
+                <LottieLoader size="200px" className="-mt-6" />
+                <p class="text-slate-600 font-medium -mt-6">Sedang menyiapkan pratinjau PDF...</p>
                 <p class="text-slate-400 text-sm mt-2">Ini mungkin memakan waktu beberapa detik karena merender via LibreOffice.</p>
             </div>
         {/if}

@@ -1,5 +1,5 @@
 # Stage 1: Build the SvelteKit app
-FROM node:20-alpine AS builder
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Install production dependencies
-FROM node:20-alpine AS deps
+FROM public.ecr.aws/docker/library/node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # Install, then aggressively prune node_modules
@@ -36,7 +36,7 @@ RUN npm install --omit=dev && \
     find node_modules -type d -name "docs" -exec rm -rf {} +
 
 # Stage 3: Production runtime
-FROM alpine:3.20
+FROM public.ecr.aws/docker/library/alpine:3.20
 
 # Install nodejs
 RUN apk add --no-cache nodejs

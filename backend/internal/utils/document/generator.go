@@ -45,7 +45,7 @@ func NewGenerator(gotenbergURL string, templateDir string) *Generator {
 		gotenbergURL: gotenbergURL,
 		templateDir:  templateDir,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 300 * time.Second,
 		},
 	}
 }

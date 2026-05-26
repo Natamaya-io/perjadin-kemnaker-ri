@@ -49,7 +49,6 @@
     function onPasswordChanged() {
         // Password changed successfully — now load deferred data and redirect
         loadMasterData();
-        loadRecords();
         goto('/dashboard');
     }
 </script>

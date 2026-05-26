@@ -10,6 +10,7 @@
     import WelcomeBanner from '$lib/features/dashboard/ui/welcome/WelcomeBanner.svelte';
     import WelcomeContent from '$lib/features/dashboard/ui/welcome/WelcomeContent.svelte';
     import WelcomeActions from '$lib/features/dashboard/ui/welcome/WelcomeActions.svelte';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
 
     import StatsGrid from '$lib/features/dashboard/ui/stats/StatsGrid.svelte';
     import StatCard from '$lib/features/dashboard/ui/stats/StatCard.svelte';
@@ -168,9 +169,9 @@
 <div class="space-y-8 pb-20 relative">
     {#if isFetchingStats}
         <div class="absolute inset-0 z-50 bg-slate-50/50 backdrop-blur-[2px] flex items-start justify-center pt-32 rounded-2xl">
-            <div class="flex flex-col items-center justify-center gap-3 bg-white p-4 rounded-xl shadow-lg border border-slate-200">
-                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-sm font-semibold text-slate-600 animate-pulse">Menghitung Statistik...</span>
+            <div class="flex flex-col items-center justify-center gap-1 bg-white p-4 rounded-xl shadow-lg border border-slate-200">
+                <LottieLoader size="80px" />
+                <span class="text-sm font-semibold text-slate-600 animate-pulse -mt-2">Menghitung Statistik...</span>
             </div>
         </div>
     {/if}

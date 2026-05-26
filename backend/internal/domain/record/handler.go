@@ -477,11 +477,7 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	allRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{})
-	var spdGroupRecords []models.TravelRecord
-	for _, r := range allRecords {
-		if r.SPDNumber == record.SPDNumber { spdGroupRecords = append(spdGroupRecords, r) }
-	}
+	spdGroupRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
 	sort.Slice(spdGroupRecords, func(i, j int) bool {
 		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
 		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
@@ -645,11 +641,7 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	allRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{})
-	var spdGroupRecords []models.TravelRecord
-	for _, r := range allRecords {
-		if r.SPDNumber == record.SPDNumber { spdGroupRecords = append(spdGroupRecords, r) }
-	}
+	spdGroupRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
 	sort.Slice(spdGroupRecords, func(i, j int) bool {
 		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
 		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
@@ -869,6 +861,9 @@ func (h *Handler) GetRecords(c echo.Context) error {
 	if spd := c.QueryParam("spd"); spd != "" {
 		filters["spd"] = spd
 	}
+	if limit := c.QueryParam("limit"); limit != "" {
+		filters["limit"] = limit
+	}
 
 	recs, err := h.svc.GetRecords(c.Request().Context(), filters)
 	if err != nil {
@@ -883,24 +878,40 @@ func (h *Handler) GetRecords(c echo.Context) error {
 			fmt.Printf("[ERROR] Failed to parse userID from context: %v\n", err)
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid User ID")
 		}
-		
+
+		// Optimization: If a specific SPD is requested, check if the user has access to it
+		if spd := c.QueryParam("spd"); spd != "" {
+			hasAccess := false
+			for _, r := range recs {
+				if r.EmployeeID == uid || r.CreatorID == uid {
+					hasAccess = true
+					break
+				}
+			}
+			if !hasAccess {
+				return c.JSON(http.StatusOK, []models.TravelRecord{})
+			}
+			// If has access to the SPD, they can see all records in it
+			return c.JSON(http.StatusOK, recs)
+		}
+
+		// Otherwise, filter normally (e.g. for a global list)
 		spds := make(map[string]bool)
 		for _, r := range recs { 
-			// Protokol can see records where they are the employee OR the creator
 			if r.EmployeeID == uid || r.CreatorID == uid { 
 				spds[r.SPDNumber] = true 
 			} 
 		}
-		
+
 		res := make([]models.TravelRecord, 0)
 		for _, r := range recs { 
 			if spds[r.SPDNumber] { 
 				res = append(res, r) 
 			} 
 		}
-		
 		return c.JSON(http.StatusOK, res)
 	}
+
 	
 	return c.JSON(http.StatusOK, recs)
 }

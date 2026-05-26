@@ -8,6 +8,7 @@
     import Select from '$lib/shared/ui/select/Select.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     
     import { api } from '$lib/shared/api';
@@ -443,7 +444,7 @@
                                             disabled={isLoading}
                                         >
                                             {#if isLoading}
-                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                                <LottieLoader size="32px" className="brightness-0 invert" />
                                             {:else}
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                                             {/if}
@@ -479,7 +480,7 @@
                                             disabled={isLoading}
                                         >
                                             {#if isLoading}
-                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                                <LottieLoader size="32px" className="brightness-0 invert" />
                                             {:else}
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                                             {/if}
@@ -536,7 +537,7 @@
                                             disabled={isLoading}
                                         >
                                             {#if isLoading}
-                                                <svg class="animate-paper-flight h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                                <LottieLoader size="32px" className="brightness-0 invert" />
                                             {:else}
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                                             {/if}
@@ -693,9 +694,7 @@
                 <Button variant="ghost" on:click={() => isEditing = false} disabled={isLoading} class="min-w-[100px] hover:bg-slate-100">Batal</Button>
                 <Button variant="default" class="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px]" on:click={handleSave} disabled={isLoading}>
                     {#if isLoading}
-                        <svg class="animate-paper-flight -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                        </svg>
+                        <LottieLoader size="36px" className="brightness-0 invert -ml-1" />
                         Menyimpan...
                     {:else}
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

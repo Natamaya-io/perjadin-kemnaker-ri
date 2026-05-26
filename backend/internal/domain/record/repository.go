@@ -547,6 +547,13 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	if spd, ok := filters["spd"]; ok && spd != "" {
 		spdFilter = spd.(string)
 	}
+	
+	limit := 1000
+	if l, ok := filters["limit"]; ok && l != "" {
+		if parsedLimit, err := strconv.Atoi(l.(string)); err == nil {
+			limit = parsedLimit
+		}
+	}
 
 	var dbrs []db.TravelRecord
 	var err error
@@ -570,9 +577,14 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 		}
 	} else {
 		// Fallback to the paginated/limited query if no specific SPD is requested
+		// Need a custom query if limit is dynamic, but since we rely on sqlc let's see.
+		// For now we just return standard limited records.
 		dbrs, err = r.q.GetTravelRecords(ctx, statusFilter)
 		if err != nil {
 			return nil, err
+		}
+		if len(dbrs) > limit {
+			dbrs = dbrs[:limit]
 		}
 	}
 
@@ -1078,33 +1090,31 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		}
 	}
 
-	// 1. Build dynamic SQL for GetPaginatedSPDs
-	query := `
-		SELECT travel_records.spd_number
-		FROM travel_records
-		LEFT JOIN users ON travel_records.employee_id = users.id
-		WHERE travel_records.deleted_at IS NULL
-	`
+	// 1. Build common WHERE clause and arguments
+	whereClause := "WHERE travel_records.deleted_at IS NULL"
 	var args []interface{}
 	argId := 1
 
 	if params.Status != "" {
-		query += fmt.Sprintf(" AND travel_records.status = $%d", argId)
+		whereClause += fmt.Sprintf(" AND travel_records.status = $%d", argId)
 		args = append(args, params.Status)
 		argId++
 	}
 	if params.ReportStatus != "" {
-		query += fmt.Sprintf(" AND travel_records.report_status = $%d", argId)
+		whereClause += fmt.Sprintf(" AND travel_records.report_status = $%d", argId)
 		args = append(args, params.ReportStatus)
 		argId++
 	}
 	if params.PaymentStatus != "" {
-		query += fmt.Sprintf(" AND travel_records.payment_status = $%d", argId)
+		whereClause += fmt.Sprintf(" AND travel_records.payment_status = $%d", argId)
 		args = append(args, params.PaymentStatus)
 		argId++
 	}
+
+	joinClause := ""
 	if params.Search != "" {
-		query += fmt.Sprintf(` AND (
+		joinClause = "LEFT JOIN users ON travel_records.employee_id = users.id"
+		whereClause += fmt.Sprintf(` AND (
 			travel_records.spd_number ILIKE '%%' || $%d || '%%'
 			OR travel_records.location ILIKE '%%' || $%d || '%%'
 			OR users.name ILIKE '%%' || $%d || '%%'
@@ -1112,145 +1122,122 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		args = append(args, params.Search)
 		argId++
 	}
+
 	if params.StartDate != nil {
-		query += fmt.Sprintf(" AND travel_records.start_date >= $%d", argId)
+		whereClause += fmt.Sprintf(" AND travel_records.start_date >= $%d", argId)
 		args = append(args, params.StartDate)
 		argId++
 	}
 	if params.EndDate != nil {
-		query += fmt.Sprintf(" AND travel_records.start_date <= $%d", argId)
+		whereClause += fmt.Sprintf(" AND travel_records.start_date <= $%d", argId)
 		args = append(args, params.EndDate)
 		argId++
 	}
 	if params.UserID != nil {
-		query += fmt.Sprintf(" AND (travel_records.employee_id = $%d OR travel_records.creator_id = $%d)", argId, argId)
+		whereClause += fmt.Sprintf(" AND (travel_records.employee_id = $%d OR travel_records.creator_id = $%d)", argId, argId)
 		args = append(args, params.UserID)
 		argId++
 	}
 
-	query += " GROUP BY travel_records.spd_number"
-
-	// Sorting
-	switch params.SortBy {
-	case "spj-asc":
-		query += " ORDER BY travel_records.spd_number ASC"
-	case "spj-desc":
-		query += " ORDER BY travel_records.spd_number DESC"
-	case "date-asc":
-		query += " ORDER BY MAX(travel_records.start_date) ASC, travel_records.spd_number ASC"
-	case "date-desc":
-		query += " ORDER BY MAX(travel_records.start_date) DESC, travel_records.spd_number DESC"
-	case "cost-asc":
-		query += " ORDER BY SUM(travel_records.total_cost) ASC, travel_records.spd_number ASC"
-	case "cost-desc":
-		query += " ORDER BY SUM(travel_records.total_cost) DESC, travel_records.spd_number DESC"
-	default:
-		query += " ORDER BY travel_records.spd_number DESC"
-	}
-
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argId, argId+1)
-	args = append(args, params.Limit, offset)
-
-	rows, err := r.d.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("dynamic GetPaginatedSPDs: %w", err)
-	}
-	defer rows.Close()
-
+	// 2. Prepare parallel queries
+	var wg sync.WaitGroup
 	var spdStrings []string
-	for rows.Next() {
-		var spd sql.NullString
-		if err := rows.Scan(&spd); err != nil {
-			return nil, err
-		}
-		if spd.Valid {
-			spdStrings = append(spdStrings, spd.String)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	// 2. Get the total count of distinct SPDs
-	countParams := db.GetTotalPaginatedSPDsCountParams{
-		Status:        toNullString(params.Status),
-		ReportStatus:  toNullString(params.ReportStatus),
-		PaymentStatus: toNullString(params.PaymentStatus),
-		Search:        toNullString(params.Search),
-		StartDate:     sql.NullTime{Time: time.Time{}, Valid: false}, // Will map below
-		EndDate:       sql.NullTime{Time: time.Time{}, Valid: false},
-		UserID:        uuid.NullUUID{Valid: false},
-	}
-	
-	if params.StartDate != nil {
-		countParams.StartDate = sql.NullTime{Time: *params.StartDate, Valid: true}
-	}
-	if params.EndDate != nil {
-		countParams.EndDate = sql.NullTime{Time: *params.EndDate, Valid: true}
-	}
-	if params.UserID != nil {
-		countParams.UserID = uuid.NullUUID{UUID: *params.UserID, Valid: true}
-	}
-
-	totalItems, err := r.q.GetTotalPaginatedSPDsCount(ctx, countParams)
-	if err != nil {
-		return nil, fmt.Errorf("GetTotalPaginatedSPDsCount: %w", err)
-	}
-
-	// Calculate totalRecords (employees) dynamically
-	countRecordsQuery := `
-		SELECT COUNT(travel_records.id)
-		FROM travel_records
-		LEFT JOIN users ON travel_records.employee_id = users.id
-		WHERE travel_records.deleted_at IS NULL
-	`
-	var countRecordsArgs []interface{}
-	argIdCount := 1
-
-	if params.Status != "" {
-		countRecordsQuery += fmt.Sprintf(" AND travel_records.status = $%d", argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.Status)
-		argIdCount++
-	}
-	if params.ReportStatus != "" {
-		countRecordsQuery += fmt.Sprintf(" AND travel_records.report_status = $%d", argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.ReportStatus)
-		argIdCount++
-	}
-	if params.PaymentStatus != "" {
-		countRecordsQuery += fmt.Sprintf(" AND travel_records.payment_status = $%d", argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.PaymentStatus)
-		argIdCount++
-	}
-	if params.Search != "" {
-		countRecordsQuery += fmt.Sprintf(` AND (
-			travel_records.spd_number ILIKE '%%' || $%d || '%%'
-			OR travel_records.location ILIKE '%%' || $%d || '%%'
-			OR users.name ILIKE '%%' || $%d || '%%'
-		)`, argIdCount, argIdCount, argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.Search)
-		argIdCount++
-	}
-	if params.StartDate != nil {
-		countRecordsQuery += fmt.Sprintf(" AND travel_records.start_date >= $%d", argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.StartDate)
-		argIdCount++
-	}
-	if params.EndDate != nil {
-		countRecordsQuery += fmt.Sprintf(" AND travel_records.start_date <= $%d", argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.EndDate)
-		argIdCount++
-	}
-	if params.UserID != nil {
-		countRecordsQuery += fmt.Sprintf(" AND (travel_records.employee_id = $%d OR travel_records.creator_id = $%d)", argIdCount, argIdCount)
-		countRecordsArgs = append(countRecordsArgs, params.UserID)
-		argIdCount++
-	}
-
+	var totalItems int64
 	var totalRecords int64
-	err = r.d.QueryRowContext(ctx, countRecordsQuery, countRecordsArgs...).Scan(&totalRecords)
-	if err != nil {
-		return nil, fmt.Errorf("count total records: %w", err)
+	var errMain, errCountSPDs, errCountRecords error
+
+	wg.Add(3)
+
+	// A. Main Query (Get Paginated SPDs)
+	go func() {
+		defer wg.Done()
+		mainQuery := fmt.Sprintf(`
+			SELECT travel_records.spd_number
+			FROM travel_records
+			%s
+			%s
+			GROUP BY travel_records.spd_number
+		`, joinClause, whereClause)
+
+		// Sorting
+		switch params.SortBy {
+		case "spj-asc":
+			mainQuery += " ORDER BY travel_records.spd_number ASC"
+		case "spj-desc":
+			mainQuery += " ORDER BY travel_records.spd_number DESC"
+		case "date-asc":
+			mainQuery += " ORDER BY MAX(travel_records.start_date) ASC, travel_records.spd_number ASC"
+		case "date-desc":
+			mainQuery += " ORDER BY MAX(travel_records.start_date) DESC, travel_records.spd_number DESC"
+		case "cost-asc":
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) ASC, travel_records.spd_number ASC"
+		case "cost-desc":
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) DESC, travel_records.spd_number DESC"
+		default:
+			mainQuery += " ORDER BY travel_records.spd_number DESC"
+		}
+
+		mainQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argId, argId+1)
+		mainArgs := append([]interface{}{}, args...)
+		mainArgs = append(mainArgs, params.Limit, offset)
+
+		rows, err := r.d.QueryContext(ctx, mainQuery, mainArgs...)
+		if err != nil {
+			errMain = fmt.Errorf("dynamic GetPaginatedSPDs: %w", err)
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var spd sql.NullString
+			if err := rows.Scan(&spd); err != nil {
+				errMain = err
+				return
+			}
+			if spd.Valid {
+				spdStrings = append(spdStrings, spd.String)
+			}
+		}
+		errMain = rows.Err()
+	}()
+
+	// B. Count Total SPDs
+	go func() {
+		defer wg.Done()
+		countSPDsQuery := fmt.Sprintf(`
+			SELECT COUNT(DISTINCT travel_records.spd_number)
+			FROM travel_records
+			%s
+			%s
+		`, joinClause, whereClause)
+
+		errCountSPDs = r.d.QueryRowContext(ctx, countSPDsQuery, args...).Scan(&totalItems)
+	}()
+
+	// C. Count Total Records (Employees)
+	go func() {
+		defer wg.Done()
+		countRecordsQuery := fmt.Sprintf(`
+			SELECT COUNT(travel_records.id)
+			FROM travel_records
+			%s
+			%s
+		`, joinClause, whereClause)
+
+		errCountRecords = r.d.QueryRowContext(ctx, countRecordsQuery, args...).Scan(&totalRecords)
+	}()
+
+	wg.Wait()
+
+	// Check for any errors from parallel queries
+	if errMain != nil {
+		return nil, errMain
+	}
+	if errCountSPDs != nil {
+		return nil, fmt.Errorf("count total items: %w", errCountSPDs)
+	}
+	if errCountRecords != nil {
+		return nil, fmt.Errorf("count total records: %w", errCountRecords)
 	}
 
 	// 3. If no SPDs found, return empty early
@@ -1271,7 +1258,6 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	}
 
 	// 4. Fetch the actual records for those SPDs
-
 	records, err := r.q.GetRecordsBySPDs(ctx, spdStrings)
 	if err != nil {
 		return nil, fmt.Errorf("GetRecordsBySPDs: %w", err)

@@ -5,7 +5,7 @@ After=perjadin-secrets.service
 
 [Container]
 ContainerName=perjadin-redis
-Image=docker.io/library/redis:7-alpine
+Image=public.ecr.aws/docker/library/redis:7-alpine
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 Volume=perjadin-redis.volume:/data

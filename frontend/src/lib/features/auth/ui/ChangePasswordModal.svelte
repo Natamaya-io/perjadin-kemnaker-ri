@@ -6,6 +6,7 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Label from '$lib/shared/ui/label/Label.svelte';
+    import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
 
     export let isOpen = false;
 
@@ -248,9 +249,7 @@
                             class="w-full text-sm font-semibold h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
                             {#if isLoading}
-                                <svg class="animate-paper-flight -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                                </svg>
+                                <LottieLoader size="36px" className="brightness-0 invert -ml-1" />
                                 Menyimpan...
                             {:else}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
