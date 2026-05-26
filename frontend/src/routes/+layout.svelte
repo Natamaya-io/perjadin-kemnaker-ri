@@ -14,6 +14,8 @@
 	// Layout Components
 	import Sidebar from '$lib/shared/ui/layout/Sidebar.svelte';
 	import MobileHeader from '$lib/shared/ui/layout/MobileHeader.svelte';
+	import SessionExpiredModal from '$lib/features/auth/ui/SessionExpiredModal.svelte';
+	import { sessionExpiredReason } from '$lib/features/auth/store';
 
 	$: activeRoute = $page.url?.pathname || '';
 	$: isBlankPage = activeRoute.startsWith('/login') || activeRoute.startsWith('/print');
@@ -23,7 +25,9 @@
 
 	// Auth Redirect
 	$: if (!MAINTENANCE_MODE && !$userStore.loggedIn && !isBlankPage) {
-		if (browser) goto('/login');
+		if (browser && !$sessionExpiredReason) {
+			goto('/login');
+		}
 	}
 
 	let navLoading = false;
@@ -188,4 +192,9 @@
 			</main>
 		</div>
 	</div>
+
+	<!-- Render the Session Expired Modal if a reason exists -->
+	{#if $sessionExpiredReason}
+		<SessionExpiredModal reason={$sessionExpiredReason} />
+	{/if}
 {/if}

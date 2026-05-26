@@ -6,7 +6,7 @@ const BASE_URL = '/api/v1';
 
 export class RealApiClient implements ApiClient {
     private token: string | null = null;
-    private unauthorizedHandler: (() => void) | null = null;
+    private unauthorizedHandler: ((reason?: string) => void) | null = null;
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -14,7 +14,7 @@ export class RealApiClient implements ApiClient {
         }
     }
 
-    setUnauthorizedHandler(handler: () => void) {
+    setUnauthorizedHandler(handler: (reason?: string) => void) {
         this.unauthorizedHandler = handler;
     }
 
@@ -37,12 +37,6 @@ export class RealApiClient implements ApiClient {
         }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                if (this.unauthorizedHandler) {
-                    this.unauthorizedHandler();
-                }
-                throw new Error("Unauthorized");
-            }
             const errorText = await response.text();
             let errorMessage = `API Error: ${response.status}`;
             try {
@@ -51,6 +45,14 @@ export class RealApiClient implements ApiClient {
             } catch (e) {
                 // ignore
             }
+
+            if (response.status === 401) {
+                if (this.unauthorizedHandler) {
+                    this.unauthorizedHandler(errorMessage);
+                }
+                throw new Error("Unauthorized");
+            }
+            
             throw new Error(errorMessage);
         }
 

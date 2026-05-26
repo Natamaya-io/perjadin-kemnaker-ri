@@ -22,6 +22,9 @@ const initialUser = storedUser ? JSON.parse(storedUser) : {
 
 export const userStore = writable(initialUser);
 
+// Store to track if session is expired and the reason why
+export const sessionExpiredReason = writable<string | null>(null);
+
 // Persist to localStorage whenever userStore changes
 userStore.subscribe(val => {
     if (isBrowser) {
@@ -82,12 +85,16 @@ export const logout = async () => {
 };
 
 // Auto-logout on 401 Unauthorized from any API call
-api.setUnauthorizedHandler(() => {
-    console.warn("Session expired or unauthorized. Logging out...");
+api.setUnauthorizedHandler((reason) => {
+    console.warn("Session expired or unauthorized:", reason);
+    sessionExpiredReason.set(reason || "Sesi Anda telah berakhir. Silakan login kembali.");
+    
+    // Clear user state but DO NOT redirect yet. Let the UI show the modal.
+    // The user will be redirected to /login when they click the button in the modal.
     userStore.set({ email: null, role: null, loggedIn: false });
     clearStores();
     if (isBrowser) {
-        window.location.href = '/login';
+        localStorage.removeItem('auth_token');
     }
 });
 

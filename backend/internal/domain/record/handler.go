@@ -173,7 +173,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		dest = strings.Join(locs, " & ")
 		prov = strings.Join(provs, " & ")
 	}
-	transportMode := "-"
+	transportMode := ""
 	if record.Cost != nil && record.Cost.TransportMode != "" {
 		transportMode = record.Cost.TransportMode
 	}
@@ -338,7 +338,7 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		"pangkat": pangkat, "golongan": golongan,
 		"pangkat_gol": fmt.Sprintf("%s (%s)", pangkat, golongan), "jabatan": record.Employee.Jabatan,
 		"maksud_perjalanan": cleanMaksud, "tujuan_perjalanan": cleanMaksud, "stakeholder": cleanStakeholder,
-		"tujuan": dest, "kota": dest, "provinsi": prov, "transportasi": transportMode,
+		"tujuan": dest, "kota": dest, "provinsi": prov, "transportasi": transportMode, "mode_transportasi": transportMode,
 		"tanggal_berangkat": utils.FormatIndonesianDate(record.StartDate), "tanggal_mulai": tanggalMulaiStr,
 		"tanggal_selesai": utils.FormatIndonesianDate(record.EndDate), "lama_hari": formatNumber(days),
 		"tanggal_perjalanan_doc": tanggalPerjalananDoc,
@@ -734,6 +734,12 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) (e
 		vars["tanggal_no_surat"] = vars["tanggal_rincian"]
 		vars["bulan"] = ""
 		vars["tahun"] = ""
+	} else if prefix == "SPD" {
+		if record.SuratTugasDate.IsZero() {
+			vars["tanggal_dikeluarkan"] = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+		} else {
+			vars["tanggal_dikeluarkan"] = utils.FormatIndonesianDate(record.SuratTugasDate)
+		}
 	}
 	payload := document.DocumentRequest{TemplateName: templateName, Variables: vars}
 	pdfBytes, err := h.docGen.Generate(c.Request().Context(), payload)
@@ -770,6 +776,12 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 		vars["tanggal_no_surat"] = vars["tanggal_rincian"]
 		vars["bulan"] = ""
 		vars["tahun"] = ""
+	} else if prefix == "SPD" {
+		if record.SuratTugasDate.IsZero() {
+			vars["tanggal_dikeluarkan"] = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+		} else {
+			vars["tanggal_dikeluarkan"] = utils.FormatIndonesianDate(record.SuratTugasDate)
+		}
 	}
 	payload := document.DocumentRequest{TemplateName: templateName, Variables: vars}
 	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
