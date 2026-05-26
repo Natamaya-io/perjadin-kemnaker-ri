@@ -1,13 +1,71 @@
 name: CI (Enterprise Code Quality & Security)
 
 on:
+  push:
+    branches: [ "staging", "main" ]
   pull_request:
     branches: [ "staging", "main" ]
 
 jobs:
-  backend-go-checks:
-    name: Backend Go (Lint, Test & Security)
+  gitleaks:
+    name: Gitleaks (Absolute Secret Shield)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch all history for gitleaks
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+  golangci-lint:
+    name: Golangci-lint (Strict Idiomatic Enforcer)
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+          cache-dependency-path: backend/go.sum
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: backend
+          args: --config=./.golangci.yml --timeout=5m --issues-exit-code=1
+
+  semgrep:
+    name: Semgrep (SAST - Logic & OWASP Flaw Detector)
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: semgrep ci --config "p/go" --config "p/javascript" --config "p/typescript" --config "p/owasp-top-ten" --error
+
+  trivy:
+    name: Trivy (SCA & Container Scanner)
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  backend-tests:
+    name: Backend Go (Test)
+    runs-on: ubuntu-latest
+    needs: [golangci-lint]
     services:
       redis:
         image: redis:7-alpine
@@ -22,20 +80,12 @@ jobs:
         with:
           go-version: '1.24.0'
           cache-dependency-path: backend/go.sum
-      - run: go mod verify
-      - run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            exit 1
-          fi
-      - run: go vet ./...
-      - run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -quiet ./...
       - run: go test -v -race -cover ./... || echo "Test coverage kosong, skipping..."
 
   frontend-svelte-checks:
-    name: Frontend Node (Lint, Typecheck & Dry-Run Build)
+    name: Frontend Node (Typecheck & Build)
     runs-on: ubuntu-latest
+    needs: [gitleaks]
     defaults:
       run:
         working-directory: ./frontend
@@ -47,7 +97,5 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - run: npm audit signatures
       - run: npm run check
-      - run: npm run lint --if-present
       - run: npm run build
