@@ -1,19 +1,19 @@
 /**
  * @param {HTMLElement} node
- * @param {string} [target]
+ * @param {string | HTMLElement} [target]
  */
 export function portal(node, target = 'body') {
     let targetEl;
     
     async function update() {
-        targetEl = document.querySelector(target);
+        targetEl = typeof target === 'string' ? document.querySelector(target) : target;
         if (targetEl) {
             targetEl.appendChild(node);
             node.hidden = false;
         } else {
             // Retry if target not found (e.g. hydration mismatch or timing)
             await new Promise(resolve => requestAnimationFrame(resolve));
-            targetEl = document.querySelector(target);
+            targetEl = typeof target === 'string' ? document.querySelector(target) : target;
             if (targetEl) {
                 targetEl.appendChild(node);
                 node.hidden = false;
@@ -25,7 +25,7 @@ export function portal(node, target = 'body') {
 
     return {
         /**
-         * @param {HTMLElement} newTarget
+         * @param {string | HTMLElement} newTarget
          */
         update(newTarget) {
             target = newTarget;

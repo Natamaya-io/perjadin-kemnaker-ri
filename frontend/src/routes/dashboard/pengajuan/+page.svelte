@@ -84,7 +84,7 @@
     }
 
     // Grouping only for Review Modal data integrity
-    $: groupedRecordsMap = $paginatedRecordsStore.reduce((acc, record) => {
+    $: groupedRecordsMap = $paginatedRecordsStore.reduce((/** @type {Record<string, any[]>} */ acc, record) => {
         if (!acc[record.spd]) {
             acc[record.spd] = [];
         }
@@ -94,7 +94,7 @@
     
     // Flat display - Deduplicate by SPD to display only one row per SPJ, preserving order
     $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
-    $: displayRecords = uniqueSPDs.map(spd => $paginatedRecordsStore.find(r => r.spd === spd));
+    $: displayRecords = /** @type {any[]} */ (uniqueSPDs.map(spd => $paginatedRecordsStore.find(r => r.spd === spd)).filter(Boolean));
 
     let scrollContainer;
 

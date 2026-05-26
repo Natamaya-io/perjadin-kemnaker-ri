@@ -1,9 +1,6 @@
 run:
   timeout: 5m
   tests: false
-  skip-dirs:
-    - db/migrations
-    - pkg/database
 
 linters:
   disable-all: true
@@ -29,5 +26,8 @@ linters-settings:
     check-blank: true
 
 issues:
+  exclude-dirs:
+    - db/migrations
+    - pkg/database
   max-issues-per-linter: 0
   max-same-issues: 0

@@ -7,7 +7,6 @@ const config = {
 	kit: {
 		// Setting biar output folder namanya 'build'
 		adapter: adapter({ out: 'build', precompress: false }),
-                csrf: { checkOrigin: false },
 		output: {
 			preloadStrategy: 'modulepreload'
 		}

@@ -124,7 +124,7 @@
         return total + (rate * locDays);
     }, 0);
 
-	$: costBreakdown = Object.values(formData.locations.reduce((acc, loc) => {
+	$: costBreakdown = Object.values(formData.locations.reduce((/** @type {Record<string, any>} */ acc, loc) => {
 	    const provData = $provincesStore.find(p => p.name === loc.province);
     	const rate = provData ? provData.luarKota : 0;
     	const start = Date.parse(loc.startDate);
@@ -145,7 +145,8 @@
         return acc;
 	}, {}));
     
-    $: disabledEmployeeIds = []; // We rely on backend validation for overlapping employees instead of checking on the frontend.
+    /** @type {string[]} */
+    let disabledEmployeeIds = []; // We rely on backend validation for overlapping employees instead of checking on the frontend.
 
     $: {
         if (!$loadingStore && !isSuccessfullySubmitted && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
@@ -250,7 +251,8 @@
                 goto('/dashboard');
             }
         } catch (e) {
-            toast.error(e.message || 'Gagal menyimpan pengajuan.');
+            const err = /** @type {Error} */ (e);
+            toast.error(err.message || 'Gagal menyimpan pengajuan.');
         } finally {
             stopLoading();
         }
