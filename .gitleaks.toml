@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Ignore revoked historical PAT"
+  regexes = ['''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''']
