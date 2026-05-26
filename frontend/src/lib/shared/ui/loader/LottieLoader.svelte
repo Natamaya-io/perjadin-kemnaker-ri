@@ -8,12 +8,16 @@
     export let className = '';
 
     onMount(() => {
-        if (browser && !window.lottiePlayerScriptLoaded) {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
-            script.async = true;
-            document.head.appendChild(script);
-            window.lottiePlayerScriptLoaded = true;
+        if (browser) {
+            // @ts-ignore
+            if (!window.lottiePlayerScriptLoaded) {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+                script.async = true;
+                document.head.appendChild(script);
+                // @ts-ignore
+                window.lottiePlayerScriptLoaded = true;
+            }
         }
     });
 </script>

@@ -24,6 +24,9 @@ export function portal(node, target = 'body') {
     update();
 
     return {
+        /**
+         * @param {HTMLElement} newTarget
+         */
         update(newTarget) {
             target = newTarget;
             update();
