@@ -3,7 +3,7 @@
     import { goto } from '$app/navigation';
     import { onMount, onDestroy } from 'svelte';
     import { browser } from '$app/environment';
-    import { page } from '$app/stores';
+    import { page, navigating } from '$app/stores';
     import ChangePasswordModal from '$lib/features/auth/ui/ChangePasswordModal.svelte';
 
     let unsubscribeUser;
@@ -95,3 +95,27 @@
         isPasswordModalVisible = false;
     }} 
 />
+
+{#if $navigating}
+    <div class="global-progress-bar"></div>
+{/if}
+
+<style>
+    .global-progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: #3b82f6; /* Tailwind blue-500 */
+        z-index: 99999;
+        animation: loader-progress 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        transform-origin: left;
+    }
+
+    @keyframes loader-progress {
+        0% { transform: scaleX(0); opacity: 1; }
+        50% { transform: scaleX(0.7); opacity: 1; }
+        100% { transform: scaleX(1); opacity: 0; }
+    }
+</style>
