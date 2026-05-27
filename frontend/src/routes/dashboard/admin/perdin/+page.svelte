@@ -21,6 +21,18 @@
     // UI Helpers
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
 
+    export let data;
+
+    $: if (data?.recordsResponse) {
+        paginatedRecordsStore.set(data.recordsResponse.data || []);
+        paginatedMetadataStore.set({
+            totalItems: data.recordsResponse.totalItems,
+            totalRecords: data.recordsResponse.totalRecords,
+            nextCursor: data.recordsResponse.nextCursor || null,
+            limit: data.recordsResponse.limit
+        });
+    }
+
     // Filter & Sort State
     let searchQuery = '';
     let statusFilter = 'all';
@@ -71,6 +83,10 @@
     // Reactively refetch when filters change (Resetting)
     function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
+            if (isInitialMount && data?.recordsResponse) {
+                isInitialMount = false;
+                return;
+            }
             isInitialMount = false;
 
             clearTimeout(debounceTimer);

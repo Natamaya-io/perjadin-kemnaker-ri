@@ -36,6 +36,18 @@
         { value: 'Completed', label: 'Selesai' }
     ];
 
+    export let data;
+
+    $: if (data?.recordsResponse) {
+        paginatedRecordsStore.set(data.recordsResponse.data || []);
+        paginatedMetadataStore.set({
+            totalItems: data.recordsResponse.totalItems,
+            totalRecords: data.recordsResponse.totalRecords,
+            nextCursor: data.recordsResponse.nextCursor || null,
+            limit: data.recordsResponse.limit
+        });
+    }
+
     /** @type {ReturnType<typeof setTimeout>} */
     let debounceTimer;
     let currentCursor = '';
@@ -79,6 +91,10 @@
     // Reactively refetch when filters change
     function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
+            if (isInitialMount && data?.recordsResponse) {
+                isInitialMount = false;
+                return;
+            }
             isInitialMount = false;
 
             clearTimeout(debounceTimer);

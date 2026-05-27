@@ -22,6 +22,8 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
+    export let data;
+
     // Only show loading spinner if we don't have cached data yet
     let isFetchingStats = !$dashboardSummaryStore;
 
@@ -43,6 +45,12 @@
         return formatCurrency(amount);
     }
 
+    // Reactively inject pre-fetched data into store
+    $: if (data?.summary) {
+        dashboardSummaryStore.set(data.summary);
+        isFetchingStats = false;
+    }
+
     $: stats = $dashboardSummaryStore || {
         totalTrips: 0,
         activeTrips: 0,
@@ -56,16 +64,17 @@
         budgets: []
     };
 
-    onMount(async () => {
-        try {
-            // Silently fetch fresh data in the background
-            const data = await api.getDashboardSummary();
-            if (data) {
-                dashboardSummaryStore.set(data);
-            }
-        } catch (e) {
-            console.error("Failed to load dashboard summary:", e);
-        } finally {
+    onMount(() => {
+        // If data wasn't prefetched (e.g. hard reload and load failed), fallback fetch
+        if (!$dashboardSummaryStore && !data?.summary) {
+            isFetchingStats = true;
+            api.getDashboardSummary()
+                .then(res => {
+                    if (res) dashboardSummaryStore.set(res);
+                })
+                .catch(e => console.error("Failed to load dashboard summary:", e))
+                .finally(() => isFetchingStats = false);
+        } else {
             isFetchingStats = false;
         }
     });
