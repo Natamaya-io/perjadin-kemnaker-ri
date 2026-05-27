@@ -11,11 +11,7 @@
     // Use $page directly for reactivity
     $: activeRoute = $page.url.pathname;
     
-    let isSidebarOpen = true;
-
-    function toggleSidebar() {
-        isSidebarOpen = !isSidebarOpen;
-    }
+    let isSidebarOpen = false;
 
     function handleLinkClick() {
         dispatch('close');
@@ -106,34 +102,27 @@
     }
 </script>
 
-<aside class="sidebar-root fixed md:sticky inset-y-0 left-0 z-[60] flex flex-col h-[100dvh] max-w-[85vw] bg-white border-r border-slate-200 shadow-xl md:shadow-[2px_0_8px_-3px_rgba(0,0,0,0.05)] print:hidden transition-[width,transform] duration-200 ease-out transform {mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} {isSidebarOpen || mobileOpen ? 'w-[280px]' : 'w-[80px]'}" style="will-change: width, transform;">
+<aside 
+    class="sidebar-root fixed md:sticky inset-y-0 left-0 z-[60] flex flex-col h-[100dvh] max-w-[85vw] bg-white border-r border-slate-200 shadow-xl md:shadow-[2px_0_8px_-3px_rgba(0,0,0,0.05)] print:hidden transition-[width,transform] duration-75 ease-out transform {mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} {isSidebarOpen || mobileOpen ? 'w-[280px]' : 'w-[80px]'}" 
+    style="will-change: width, transform;"
+    on:mouseenter={() => { if (!mobileOpen) isSidebarOpen = true; }}
+    on:mouseleave={() => { if (!mobileOpen) isSidebarOpen = false; }}
+>
     <!-- Logo Section Wrapper -->
     <div class="sidebar-header-wrapper w-full relative flex-none z-50">
         <!-- Header Container: Transitions padding-left to center logo -->
-        <div class="sidebar-header-container border-b border-slate-100/80 flex items-center h-[88px] transition-all duration-200 ease-out {isSidebarOpen || mobileOpen ? 'pl-6 pr-5 justify-between' : 'justify-center px-0'}">
-            <div class="logo-group flex items-center transition-all duration-200 {isSidebarOpen || mobileOpen ? 'gap-3' : 'gap-0'} overflow-hidden">
+        <div class="sidebar-header-container border-b border-slate-100/80 flex items-center h-[88px] transition-all duration-75 ease-out {isSidebarOpen || mobileOpen ? 'pl-6 pr-5 justify-between' : 'justify-center px-0'}">
+            <div class="logo-group flex items-center transition-all duration-75 {isSidebarOpen || mobileOpen ? 'gap-3' : 'gap-0'} overflow-hidden">
                 <div class="logo-image-wrapper flex-shrink-0">
                     <img src="/kemnaker-ri.webp" alt="Logo" class="h-10 w-auto object-contain" />
                 </div>
-                <div class="logo-text-wrapper flex flex-col leading-none transition-all duration-200 {isSidebarOpen || mobileOpen ? 'opacity-100 translate-x-0 max-w-[200px]' : 'opacity-0 -translate-x-4 max-w-0 overflow-hidden'}">
+                <div class="logo-text-wrapper flex flex-col leading-none transition-all duration-75 {isSidebarOpen || mobileOpen ? 'opacity-100 translate-x-0 max-w-[200px]' : 'opacity-0 -translate-x-4 max-w-0 overflow-hidden'}">
                     <span class="logo-title font-serif font-bold text-lg text-slate-900 tracking-tight whitespace-nowrap">Perjadin</span>
                     <span class="logo-subtitle font-sans text-[10px] font-medium text-slate-500 tracking-[0.2em] uppercase whitespace-nowrap">Protokol</span>
                 </div>
             </div>
         </div>
         
-        <!-- Toggle Button (Desktop Only) -->
-        <button 
-            class="absolute top-[34px] -right-3 hidden md:flex items-center justify-center h-6 w-6 bg-white border border-slate-200 rounded-full shadow-sm text-slate-400 hover:text-white hover:bg-slate-800 hover:border-slate-800 transition-all duration-200 z-50 focus:outline-none focus:ring-2 focus:ring-slate-200 cursor-pointer"
-            on:click={toggleSidebar}
-            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-            aria-label={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-300" style="transform: rotate({isSidebarOpen ? 180 : 0}deg);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-        </button>
-
         <!-- Close Button (Mobile Only) -->
         <button 
             class="absolute top-[30px] right-4 md:hidden flex items-center justify-center h-8 w-8 text-slate-400 hover:text-slate-600 focus:outline-none"
@@ -154,11 +143,11 @@
                 {#if hasAccess(group.role) && hasVisibleItems(group)}
                     {#if group.header}
                         <!-- Section Label -->
-                        <div class="nav-item-wrapper w-full pt-4 pb-2 relative h-8 flex items-center justify-center transition-all duration-200 {isSidebarOpen || mobileOpen ? 'px-3' : 'px-0'}">
-                             <span class="absolute text-[10px] font-bold text-slate-400 uppercase tracking-widest transition-all duration-200 {isSidebarOpen || mobileOpen ? 'opacity-100 left-3' : 'opacity-0 left-0'} whitespace-nowrap">
+                        <div class="nav-item-wrapper w-full pt-4 pb-2 relative h-8 flex items-center justify-center transition-all duration-75 {isSidebarOpen || mobileOpen ? 'px-3' : 'px-0'}">
+                             <span class="absolute text-[10px] font-bold text-slate-400 uppercase tracking-widest transition-all duration-75 {isSidebarOpen || mobileOpen ? 'opacity-100 left-3' : 'opacity-0 left-0'} whitespace-nowrap">
                                 {group.header}
                              </span>
-                             <div class="h-px bg-slate-200 transition-all duration-200 {isSidebarOpen || mobileOpen ? 'w-0 opacity-0' : 'w-8 opacity-100'}"></div>
+                             <div class="h-px bg-slate-200 transition-all duration-75 {isSidebarOpen || mobileOpen ? 'w-0 opacity-0' : 'w-8 opacity-100'}"></div>
                         </div>
                     {/if}
 
@@ -167,16 +156,16 @@
                             <div class="nav-item-wrapper w-full">
                                 <div class="nav-item-container" title={!isSidebarOpen && !mobileOpen ? item.label : ""}>
                                     <a 
-                                        class="nav-link flex items-center {isSidebarOpen || mobileOpen ? '' : 'justify-center'} px-3 py-2.5 rounded-xl transition-all duration-200 group whitespace-nowrap {isActive(item.href, activeRoute) ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 text-blue-700 shadow-sm ring-1 ring-blue-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}" 
+                                        class="nav-link flex items-center {isSidebarOpen || mobileOpen ? '' : 'justify-center'} px-3 py-2.5 rounded-xl transition-all duration-75 group whitespace-nowrap {isActive(item.href, activeRoute) ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 text-blue-700 shadow-sm ring-1 ring-blue-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}" 
                                         href={item.href}
                                         on:click={handleLinkClick}
                                     >
-                                        <span class="icon-wrapper flex-shrink-0 transition-all duration-200 ml-0 {isActive(item.href, activeRoute) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}">
+                                        <span class="icon-wrapper flex-shrink-0 transition-all duration-75 ml-0 {isActive(item.href, activeRoute) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}">
                                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
                                             </svg>
                                         </span>
-                                        <span class="text-wrapper transition-all duration-200 {isSidebarOpen || mobileOpen ? 'opacity-100 translate-x-0 ml-3 max-w-[200px]' : 'opacity-0 -translate-x-2 ml-0 max-w-0 overflow-hidden'}">
+                                        <span class="text-wrapper transition-all duration-75 {isSidebarOpen || mobileOpen ? 'opacity-100 translate-x-0 ml-3 max-w-[200px]' : 'opacity-0 -translate-x-2 ml-0 max-w-0 overflow-hidden'}">
                                             <span class="text-inner font-medium text-sm">{item.label}</span>
                                         </span>
                                     </a>
@@ -192,9 +181,9 @@
     <!-- User Profile & Logout (Pinned to Bottom) -->
     <div class="sidebar-footer-wrapper border-t border-slate-100 bg-slate-50/50 flex-none z-50">
         <div class="sidebar-footer-content p-4">
-            <div class="user-session-card flex items-center {isSidebarOpen || mobileOpen ? 'justify-between' : 'justify-center'} px-1 py-1 transition-all duration-200">
+            <div class="user-session-card flex items-center {isSidebarOpen || mobileOpen ? 'justify-between' : 'justify-center'} px-1 py-1 transition-all duration-75">
                 <!-- User Identity Section -->
-                <div class="user-identity-section flex items-center overflow-hidden transition-all duration-200 {isSidebarOpen || mobileOpen ? 'opacity-100 max-w-[250px] ml-0 gap-3' : 'opacity-0 max-w-0 ml-0 gap-0'}">
+                <div class="user-identity-section flex items-center overflow-hidden transition-all duration-75 {isSidebarOpen || mobileOpen ? 'opacity-100 max-w-[250px] ml-0 gap-3' : 'opacity-0 max-w-0 ml-0 gap-0'}">
                     
                     <!-- Avatar Wrapper -->
                     <div class="avatar-wrapper flex-shrink-0">
@@ -230,8 +219,8 @@
                 <!-- Session Actions Section -->
                 <div class="session-actions-section flex items-center {isSidebarOpen || mobileOpen ? 'ml-0' : 'mx-auto w-full justify-center'}">
                     <div class="logout-button-container">
-                        <button class="logout-btn group relative flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-100" title="Logout" on:click={logout}>
-                            <div class="icon-wrapper transition-transform duration-200 group-hover:scale-110">
+                        <button class="logout-btn group relative flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-75 focus:outline-none focus:ring-2 focus:ring-red-100" title="Logout" on:click={logout}>
+                            <div class="icon-wrapper transition-transform duration-75 group-hover:scale-110">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
