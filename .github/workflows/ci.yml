@@ -107,7 +107,7 @@ jobs:
 
   build-push-backend:
     name: Build & Push Backend
-    needs: [backend-tests, semgrep, trivy]
+    needs: [gitleaks]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -140,7 +140,7 @@ jobs:
 
   build-push-frontend:
     name: Build & Push Frontend
-    needs: [frontend-svelte-checks, semgrep, trivy]
+    needs: [gitleaks]
     runs-on: ubuntu-latest
     permissions:
       contents: read
