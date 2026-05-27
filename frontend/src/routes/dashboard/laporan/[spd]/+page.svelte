@@ -97,6 +97,7 @@
 
     // Split Hotel Modal State
     let showSplitHotelModal = false;
+    /** @type {{ sourceEmpId: string | null, locationIndex: number, totalBill: number, days: any, selectedEmpIds: string[], isExtend: boolean, extendIdx: number }} */
     let splitHotelData = {
         sourceEmpId: null,
         locationIndex: 0,
@@ -784,7 +785,7 @@
                 uploadedFiles = [...uploadedFiles, {
                     name: file.name,
                     type: file.type,
-                    data: e.target.result,
+                    data: /** @type {string} */ (e.target?.result || ''),
                     timestamp: new Date(file.lastModified).toISOString()
                 }];
             };
@@ -796,6 +797,7 @@
         // @ts-ignore
         const selectedFiles = Array.from(event.target.files);
         processFiles(selectedFiles);
+        // @ts-ignore
         event.target.value = ''; 
     }
 
@@ -806,6 +808,7 @@
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error('File SPPD terlalu besar. Maksimal 10MB.');
+            // @ts-ignore
             event.target.value = '';
             return;
         }
@@ -814,11 +817,12 @@
             sppdFile = { 
                 name: file.name, 
                 type: file.type, 
-                data: e.target.result, 
+                data: /** @type {string} */ (e.target?.result || ''), 
                 timestamp: new Date(file.lastModified).toISOString()
             };
         };
         reader.readAsDataURL(file);
+        // @ts-ignore
         event.target.value = '';
     }
 
@@ -829,6 +833,7 @@
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error('File Surat Tugas terlalu besar. Maksimal 10MB.');
+            // @ts-ignore
             event.target.value = '';
             return;
         }
@@ -837,11 +842,12 @@
             suratTugasFile = { 
                 name: file.name, 
                 type: file.type, 
-                data: e.target.result, 
+                data: /** @type {string} */ (e.target?.result || ''), 
                 timestamp: new Date(file.lastModified).toISOString()
             };
         };
         reader.readAsDataURL(file);
+        // @ts-ignore
         event.target.value = '';
     }
 

@@ -17,12 +17,12 @@ export interface User {
 export interface TravelCost {
     ticketGo: number;
     ticketBack: number;
-    dailyAllowanceDays: number;
-    dailyAllowanceRate: number;
-    hotelDays: number;
-    hotelRate: number;
-    localTransport: number;
-    regionalTransport: number;
+    dailyAllowanceDays?: number;
+    dailyAllowanceRate?: number;
+    hotelDays?: number;
+    hotelRate?: number;
+    localTransport?: number;
+    regionalTransport?: number;
     transportMode: string;
     transportAmount?: number;
     otherCost?: number;
@@ -34,11 +34,12 @@ export interface TravelCost {
 
 export interface TravelReport {
     text: string;
-    submittedAt: string;
+    submittedAt?: string;
     files: any[];
     sppdFile?: any;
     suratTugasFile?: any;
     tanggalMerah?: string | string[];
+    lastDraftSavedAt?: string;
 }
 
 export interface TravelLocation {
@@ -60,8 +61,11 @@ export interface TravelRecord {
     email: string; // Creator email
     startDate: string;
     endDate: string;
+    createdAt: string;
     suratTugasPath?: string;
     suratTugasNumber?: string;
+    suratTugasDate?: string;
+    isViewed?: boolean;
     location: string;
     province: string;
     locations?: TravelLocation[];
@@ -70,7 +74,7 @@ export interface TravelRecord {
     stakeholder: string;
     agenda: string;
     status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
-    reportStatus: 'Pending' | 'Completed';
+    reportStatus: 'Pending' | 'Completed' | 'Draft';
     totalCost: number;
     costs?: TravelCost;
     reportData?: TravelReport | null;
