@@ -9,7 +9,7 @@ ContainerName=perjadin-backend
 Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:latest
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
-Volume=perjadin_prod_backend_uploads:/app/uploads
+Volume=perjadin-uploads.volume:/app/uploads
 PublishPort=8081:8081
 
 # Hardcoded non-secret envs specific to infrastructure routing
