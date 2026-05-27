@@ -3,6 +3,7 @@ package record
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -14,6 +15,35 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/sqlc-dev/pqtype"
 )
+
+type CursorData struct {
+	SPD    string `json:"spd"`
+	Offset int    `json:"offset"`
+	Sort   string `json:"sort"`
+}
+
+func encodeCursor(data CursorData) string {
+	b, _ := json.Marshal(data)
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func decodeCursor(c string) CursorData {
+	var data CursorData
+	if c == "" {
+		return data
+	}
+	// Backward compatibility with raw offset string
+	if offset, err := strconv.Atoi(c); err == nil {
+		data.Offset = offset
+		return data
+	}
+	
+	b, err := base64.RawURLEncoding.DecodeString(c)
+	if err == nil {
+		json.Unmarshal(b, &data)
+	}
+	return data
+}
 
 type Repository interface {
 	NextSpdNumber(ctx context.Context) (int64, error)
@@ -1116,13 +1146,8 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		params.Limit = 10
 	}
 
-	offset := 0
-	if params.Cursor != "" {
-		parsed, err := strconv.Atoi(params.Cursor)
-		if err == nil {
-			offset = parsed
-		}
-	}
+	cursorData := decodeCursor(params.Cursor)
+	offset := cursorData.Offset
 
 	// 1. Build common WHERE clause and arguments
 	whereClause := "WHERE travel_records.deleted_at IS NULL"
@@ -1185,13 +1210,30 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	// A. Main Query (Get Paginated SPDs)
 	go func() {
 		defer wg.Done()
+
+		mainWhereClause := whereClause
+		mainArgs := append([]interface{}{}, args...)
+		mainArgId := argId
+
+		if cursorData.SPD != "" && (params.SortBy == "spj-desc" || params.SortBy == "") {
+			mainWhereClause += fmt.Sprintf(" AND travel_records.spd_number < $%d", mainArgId)
+			mainArgs = append(mainArgs, cursorData.SPD)
+			mainArgId++
+			offset = 0 // Keyset Pagination: No offset needed
+		} else if cursorData.SPD != "" && params.SortBy == "spj-asc" {
+			mainWhereClause += fmt.Sprintf(" AND travel_records.spd_number > $%d", mainArgId)
+			mainArgs = append(mainArgs, cursorData.SPD)
+			mainArgId++
+			offset = 0 // Keyset Pagination: No offset needed
+		}
+
 		mainQuery := fmt.Sprintf(`
 			SELECT travel_records.spd_number
 			FROM travel_records
 			%s
 			%s
 			GROUP BY travel_records.spd_number
-		`, joinClause, whereClause)
+		`, joinClause, mainWhereClause)
 
 		// Sorting
 		switch params.SortBy {
@@ -1211,8 +1253,7 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 			mainQuery += " ORDER BY travel_records.spd_number DESC"
 		}
 
-		mainQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argId, argId+1)
-		mainArgs := append([]interface{}{}, args...)
+		mainQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", mainArgId, mainArgId+1)
 		mainArgs = append(mainArgs, params.Limit, offset)
 
 		rows, err := r.d.QueryContext(ctx, mainQuery, mainArgs...)
@@ -1285,10 +1326,15 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		}, nil
 	}
 
-	// Calculate NextCursor based on offset
+	// Calculate NextCursor based on offset & last SPD
 	nextCursor := ""
 	if len(spdStrings) == params.Limit {
-		nextCursor = strconv.Itoa(offset + len(spdStrings))
+		nextCursorData := CursorData{
+			SPD:    spdStrings[len(spdStrings)-1],
+			Offset: cursorData.Offset + len(spdStrings),
+			Sort:   params.SortBy,
+		}
+		nextCursor = encodeCursor(nextCursorData)
 	}
 
 	// 4. Fetch the actual records for those SPDs
