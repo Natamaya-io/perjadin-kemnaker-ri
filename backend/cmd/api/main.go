@@ -39,7 +39,19 @@ func runMigrations(db *sql.DB, sugar *zap.SugaredLogger) {
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		sugar.Fatalf("Migration failed: %v", err)
+		if strings.Contains(err.Error(), "Dirty database") {
+			sugar.Warnf("Detected dirty database. Forcing version 12 and retrying...")
+			// We force to 12 because migration 13 failed
+			if forceErr := m.Force(12); forceErr != nil {
+				sugar.Fatalf("Failed to force migration version: %v", forceErr)
+			}
+			// Retry Up after forcing
+			if retryErr := m.Up(); retryErr != nil && retryErr != migrate.ErrNoChange {
+				sugar.Fatalf("Migration failed after force: %v", retryErr)
+			}
+		} else {
+			sugar.Fatalf("Migration failed: %v", err)
+		}
 	}
 	sugar.Info("Migrations applied successfully.")
 }
