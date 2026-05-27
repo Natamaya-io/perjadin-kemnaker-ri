@@ -1,4 +1,5 @@
 <script>
+    import { createVirtualizer } from '@tanstack/svelte-virtual';
     import { paginatedRecordsStore, paginatedMetadataStore, loadPaginatedRecords, updateRecord, isFetchingRecords } from '$lib/features/pengajuan/store';
     import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import { userStore } from '$lib/features/auth/store';
@@ -8,7 +9,7 @@
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
     import { getStatusBadge, toTitleCase, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
-    import { createVirtualizer } from '@tanstack/svelte-virtual';
+    
     
     // Components
     import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
@@ -69,7 +70,6 @@
     let isPaidConfirmOpen = false;
     let recordToPay = null;
 
-    // Accordion State
     let expandedGroups = {};
 
     function toggleGroup(spd) {
@@ -79,6 +79,39 @@
 
     let limit = 50;
     let currentCursor = '';
+
+    
+    let scrollContainer;
+    let virtualizer;
+
+    $: if (typeof window !== 'undefined' && scrollContainer) {
+        const vOptions = {
+            count: uniqueRecords.length,
+            getScrollElement: () => scrollContainer,
+            estimateSize: (index) => {
+                const record = uniqueRecords[index];
+                // Base header row: ~48px
+                let h = 48;
+                if (expandedGroups[record.spd]) {
+                    // Employee header: ~40px
+                    h += 40;
+                    // Employee row: ~60px
+                    h += (record.employeesList.length * 60);
+                }
+                return h;
+            },
+            overscan: 5
+        };
+
+        if (!virtualizer) {
+            virtualizer = createVirtualizer(vOptions);
+        } else {
+            $virtualizer.setOptions(vOptions);
+        }
+    }
+
+    $: virtualItems = $virtualizer ? $virtualizer.getVirtualItems() : [];
+    $: totalSize = $virtualizer ? $virtualizer.getTotalSize() : 0;
 
     // Reactively refetch when filters change (Resetting)
     function handleFiltersChanged() {
@@ -143,7 +176,6 @@
     $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
     $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
 
-    let scrollContainer;
     function handleScroll() {
         if (!scrollContainer || $isFetchingRecords) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
@@ -448,7 +480,16 @@
                                 </tr>
                             {/if}
                         {:else}
-                            {#each uniqueRecords as record (record.spd)}
+                            {#if virtualItems.length > 0}
+                                {@const paddingTop = virtualItems[0].start}
+                                {@const paddingBottom = totalSize - virtualItems[virtualItems.length - 1].end}
+                                
+                                {#if paddingTop > 0}
+                                    <tr><td colspan="5" style="height: {paddingTop}px; padding: 0; border: none;"></td></tr>
+                                {/if}
+
+                                {#each virtualItems as virtualRow (virtualRow.index)}
+                                    {@const record = uniqueRecords[virtualRow.index]}
                                 <!-- Group Header Row -->
                             <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd)}>
                                 <td class="px-6 py-3 whitespace-nowrap">
@@ -555,7 +596,12 @@
                                     </td>
                                 </tr>
                             {/if}
-                        {/each}
+                                {/each}
+
+                                {#if paddingBottom > 0}
+                                    <tr><td colspan="5" style="height: {paddingBottom}px; padding: 0; border: none;"></td></tr>
+                                {/if}
+                            {/if}
                         
                         {#if $isFetchingRecords && currentCursor}
                             <tr>
