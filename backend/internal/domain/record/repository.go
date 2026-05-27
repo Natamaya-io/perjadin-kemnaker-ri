@@ -1356,6 +1356,13 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	reportMap := make(map[uuid.UUID]*models.TravelReport)
 	for _, rep := range reports {
 		mr := mapDBReport(rep)
+		// SECURITY & PERFORMANCE: DO NOT return huge Base64 PDF files in the paginated table response!
+		// This prevents 200MB+ memory spikes and OOM Killer crashes.
+		mr.Files = nil
+		mr.SppdFile = nil
+		mr.SuratTugasFile = nil
+		mr.TanggalMerah = nil
+		
 		reportMap[rep.TravelRecordID] = &mr
 	}
 
