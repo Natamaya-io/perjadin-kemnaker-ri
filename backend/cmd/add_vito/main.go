@@ -23,8 +23,9 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+	if pingErr := db.Ping(); pingErr != nil {
+		log.Printf("Failed to ping database: %v", pingErr)
+		return
 	}
 
 	email := "ramvito@kemnaker.go.id"
@@ -32,7 +33,8 @@ func main() {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("Failed to hash password: %v", err)
+		log.Printf("Failed to hash password: %v", err)
+		return
 	}
 
 	id := uuid.New()
@@ -42,7 +44,8 @@ func main() {
 	`, id, email, string(hashedPassword), "Vito", "super_admin", password)
 
 	if err != nil {
-		log.Fatalf("Failed to create user: %v", err)
+		log.Printf("Failed to create user: %v", err)
+		return
 	}
 
 	log.Println("User ramvito@kemnaker.go.id created successfully.")

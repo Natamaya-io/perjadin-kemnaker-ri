@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func run() error {
 	cfg := config.LoadConfig()
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
@@ -17,13 +23,13 @@ func main() {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return fmt.Errorf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
 	rows, err := db.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		return fmt.Errorf("query failed: %v", err)
 	}
 	defer rows.Close()
 
@@ -31,8 +37,9 @@ func main() {
 	for rows.Next() {
 		var tableName string
 		if err := rows.Scan(&tableName); err != nil {
-			log.Fatal(err)
+			return err
 		}
 		fmt.Println("-", tableName)
 	}
+	return nil
 }

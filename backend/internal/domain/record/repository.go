@@ -250,7 +250,9 @@ func (r *repository) CreateTravelRecordsBulk(ctx context.Context, records []*mod
 	if err != nil {
 		return fmt.Errorf("CreateTravelRecordsBulk: begin tx: %w", err)
 	}
-	defer tx.Rollback() // no-op after Commit; guard against any early return
+	defer func() {
+		_ = tx.Rollback() //nolint:errcheck
+	}() // no-op after Commit; guard against any early return
 
 	qtx := r.q.WithTx(tx)
 
@@ -364,7 +366,9 @@ func (r *repository) CreateTravelRecord(ctx context.Context, record *models.Trav
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() //nolint:errcheck
+	}()
 
 	qtx := r.q.WithTx(tx)
 
@@ -482,7 +486,9 @@ func (r *repository) SyncReportBySpd(ctx context.Context, spd string, src *model
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() //nolint:errcheck
+	}()
 
 	// 1. Update travel_records fields (ST Number, Date, Report Status)
 	_, err = tx.ExecContext(ctx, `
@@ -541,16 +547,17 @@ func (r *repository) SyncReportBySpd(ctx context.Context, spd string, src *model
 func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]interface{}) ([]models.TravelRecord, error) {
 	var statusFilter string
 	if status, ok := filters["status"]; ok && status != "" {
-		statusFilter = status.(string)
+		statusFilter, _ = status.(string) //nolint:errcheck
 	}
 	var spdFilter string
 	if spd, ok := filters["spd"]; ok && spd != "" {
-		spdFilter = spd.(string)
+		spdFilter, _ = spd.(string) //nolint:errcheck
 	}
 	
 	limit := 1000
 	if l, ok := filters["limit"]; ok && l != "" {
-		if parsedLimit, err := strconv.Atoi(l.(string)); err == nil {
+		lStr, _ := l.(string) //nolint:errcheck
+		if parsedLimit, err := strconv.Atoi(lStr); err == nil {
 			limit = parsedLimit
 		}
 	}
@@ -612,7 +619,11 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	// Fetch Users in Bulk
 	var users []db.User
 	if len(userIDs) > 0 {
-		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+		var errU error
+		users, errU = r.q.GetUsersByIDs(ctx, userIDs)
+		if errU != nil {
+			fmt.Printf("GetUsersByIDs err: %v\n", errU)
+		}
 	}
 	userMap := make(map[uuid.UUID]models.User)
 	for _, u := range users {
@@ -622,7 +633,11 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	// Fetch Costs in Bulk
 	var costs []db.TravelCost
 	if len(recordIDs) > 0 {
-		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		var errC error
+		costs, errC = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		if errC != nil {
+			fmt.Printf("GetTravelCosts err: %v\n", errC)
+		}
 	}
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
@@ -633,7 +648,11 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	// Fetch Reports in Bulk
 	var reports []db.TravelReport
 	if len(recordIDs) > 0 {
-		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		var errR error
+		reports, errR = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		if errR != nil {
+			fmt.Printf("GetTravelReports err: %v\n", errR)
+		}
 	}
 	reportMap := make(map[uuid.UUID]*models.TravelReport)
 	for _, rep := range reports {
@@ -644,7 +663,11 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	// Fetch Locations in Bulk
 	var locs []db.TravelLocation
 	if len(recordIDs) > 0 {
-		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		var errL error
+		locs, errL = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		if errL != nil {
+			fmt.Printf("GetTravelLocations err: %v\n", errL)
+		}
 	}
 	locMap := make(map[uuid.UUID][]models.TravelLocation)
 	for _, l := range locs {
@@ -686,12 +709,18 @@ func (r *repository) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (*mo
 	rec := mapDBRecord(dbr)
 	recPtr := &rec
 
-	emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
+	emp, errEmp := r.GetUserByID(ctx, recPtr.EmployeeID)
+	if errEmp != nil {
+		fmt.Printf("GetUserByID err: %v\n", errEmp)
+	}
 	if emp != nil {
 		recPtr.Employee = *emp
 	}
 
-	creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
+	creator, errCr := r.GetUserByID(ctx, recPtr.CreatorID)
+	if errCr != nil {
+		fmt.Printf("GetUserByID err: %v\n", errCr)
+	}
 	if creator != nil {
 		recPtr.Creator = *creator
 	}
@@ -776,13 +805,14 @@ func (r *repository) GetDashboardSummary(ctx context.Context, role string, userI
 				status := fromNullString(row.Status)
 				paymentStatus := fromNullString(row.PaymentStatus)
 				
-				if paymentStatus == "Paid" {
+				switch {
+				case paymentStatus == "Paid":
 					summary.StatusCompleted += row.Count
-				} else if status == "Submitted" || status == "Approved" {
+				case status == "Submitted" || status == "Approved":
 					summary.StatusInProgress += row.Count
-				} else if status == "Draft" || status == "Assigned" {
+				case status == "Draft" || status == "Assigned":
 					summary.StatusAssigned += row.Count
-				} else if status == "Rejected" {
+				case status == "Rejected":
 					summary.StatusRejected += row.Count
 				}
 			}
@@ -903,7 +933,9 @@ func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.Trav
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() //nolint:errcheck
+	}()
 
 	qtx := r.q.WithTx(tx)
 
@@ -1057,7 +1089,9 @@ func (r *repository) DeleteTravelRecordsBySpd(ctx context.Context, spd string) e
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() //nolint:errcheck
+	}()
 
 	qtx := r.q.WithTx(tx)
 	spdStr := toNullString(spd)
@@ -1284,7 +1318,11 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	// Fetch Users in Bulk
 	var users []db.User
 	if len(userIDs) > 0 {
-		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+		var errU error
+		users, errU = r.q.GetUsersByIDs(ctx, userIDs)
+		if errU != nil {
+			fmt.Printf("GetUsersByIDs err: %v\n", errU)
+		}
 	}
 	userMap := make(map[uuid.UUID]models.User)
 	for _, u := range users {
@@ -1294,7 +1332,11 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	// Fetch Costs in Bulk
 	var costs []db.TravelCost
 	if len(recordIDs) > 0 {
-		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		var errC error
+		costs, errC = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		if errC != nil {
+			fmt.Printf("GetTravelCosts err: %v\n", errC)
+		}
 	}
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
@@ -1305,7 +1347,11 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	// Fetch Reports in Bulk
 	var reports []db.TravelReport
 	if len(recordIDs) > 0 {
-		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		var errR error
+		reports, errR = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		if errR != nil {
+			fmt.Printf("GetTravelReports err: %v\n", errR)
+		}
 	}
 	reportMap := make(map[uuid.UUID]*models.TravelReport)
 	for _, rep := range reports {
@@ -1316,7 +1362,11 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	// Fetch Locations in Bulk
 	var locs []db.TravelLocation
 	if len(recordIDs) > 0 {
-		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		var errL error
+		locs, errL = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		if errL != nil {
+			fmt.Printf("GetTravelLocations err: %v\n", errL)
+		}
 	}
 	locMap := make(map[uuid.UUID][]models.TravelLocation)
 	for _, l := range locs {

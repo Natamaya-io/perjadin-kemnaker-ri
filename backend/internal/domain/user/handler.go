@@ -18,8 +18,16 @@ func NewHandler(s Service) *Handler {
 }
 
 func (h *Handler) GetUsers(c echo.Context) error {
-	role := c.Get("role").(string)
-	uidStr := c.Get("user_id").(string)
+	roleVal := c.Get("role")
+	role, ok := roleVal.(string)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid role")
+	}
+	uidVal := c.Get("user_id")
+	uidStr, ok := uidVal.(string)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid user ID")
+	}
 	
 	searchParam := strings.ToLower(c.QueryParam("search"))
 	roleParam := c.QueryParam("role")
@@ -132,7 +140,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 	}
 
 	var req UpdateUserRequest
-	if err := c.Bind(&req); err != nil {
+	if bindErr := c.Bind(&req); bindErr != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 

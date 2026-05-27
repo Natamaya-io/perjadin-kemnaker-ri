@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func run() error {
 	cfg := config.LoadConfig()
 
 	// Try to connect as postgres user
@@ -40,10 +46,10 @@ func main() {
 			"localhost", cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.Port, cfg.Database.SSLMode)
 		db, err = sql.Open("postgres", dsn)
 		if err != nil {
-			log.Fatalf("Failed to connect to database: %v", err)
+			return fmt.Errorf("failed to connect to database: %v", err)
 		}
-		if err := db.Ping(); err != nil {
-			log.Fatalf("Failed to ping database: %v", err)
+		if pingErr := db.Ping(); pingErr != nil {
+			return fmt.Errorf("failed to ping database: %v", pingErr)
 		}
 	}
 	defer db.Close()
@@ -68,14 +74,15 @@ func main() {
 
 	_, err = db.Exec("UPDATE schema_migrations SET dirty = false;")
 	if err != nil {
-		log.Fatalf("Failed to update schema_migrations: %v", err)
+		return fmt.Errorf("failed to update schema_migrations: %v", err)
 	}
 	
 	// Drop everything to start fresh
 	_, err = db.Exec("DROP TABLE IF EXISTS schema_migrations, users, travel_records, travel_costs, travel_reports, provinces, sbm_rates CASCADE;")
 	if err != nil {
-		log.Fatalf("Failed to drop tables: %v", err)
+		return fmt.Errorf("failed to drop tables: %v", err)
 	}
 
 	log.Println("Schema migrations fixed. Try running docker-compose up again.")
+	return nil
 }

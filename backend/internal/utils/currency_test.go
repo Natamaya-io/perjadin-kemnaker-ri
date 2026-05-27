@@ -5,8 +5,8 @@ import "testing"
 func TestFormatRupiah(t *testing.T) {
 	tests := []struct {
 		name     string
-		amount   float64
 		expected string
+		amount   float64
 	}{
 		{
 			name:     "Zero amount",

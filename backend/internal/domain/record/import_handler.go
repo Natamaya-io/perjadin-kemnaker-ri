@@ -16,20 +16,20 @@ import (
 
 // ImportResult holds the summary of an import operation
 type ImportResult struct {
+	Details   []ImportDetail `json:"details"`
 	TotalRows int            `json:"totalRows"`
 	Imported  int            `json:"imported"`
 	Updated   int            `json:"updated"`
 	Skipped   int            `json:"skipped"`
 	Failed    int            `json:"failed"`
-	Details   []ImportDetail `json:"details"`
 }
 
 type ImportDetail struct {
-	Row     int    `json:"row"`
 	SPJID   string `json:"spjId"`
 	Name    string `json:"name"`
-	Status  string `json:"status"` // "imported", "skipped_duplicate", "skipped_thr", "skipped_no_user", "failed"
+	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
+	Row     int    `json:"row"`
 }
 
 // ImportExcel handles bulk import of travel records from an Excel file
@@ -76,8 +76,10 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 
 	// Get creator ID from JWT (the logged-in superadmin)
 	creatorID := uuid.Nil
-	if creatorIDStr, ok := c.Get("user_id").(string); ok && creatorIDStr != "" {
-		creatorID, _ = uuid.Parse(creatorIDStr)
+	if creatorIDStr, ok := c.Get("user_id").(string /*nolint:errcheck*/); ok && creatorIDStr != "" {
+		if cid, parseErr := uuid.Parse(creatorIDStr); parseErr == nil {
+			creatorID = cid
+		}
 	}
 	if creatorID == uuid.Nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User tidak terautentikasi")
@@ -210,7 +212,10 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 					"additionalCosts": additionalCostsUpd,
 				},
 			}
-			detailsBytesUpd, _ := json.Marshal(detailsArrUpd)
+			detailsBytesUpd, errM := json.Marshal(detailsArrUpd)
+			if errM != nil {
+				detailsBytesUpd = []byte("[]")
+			}
 
 			existingRec.TotalCost = totalCostUpd
 			existingRec.Cost = &models.TravelCost{
@@ -245,8 +250,14 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		}
 
 		// Parse dates - since we use RawCellValue, we can actually read the raw unformatted serial or standard text
-		colW, _ := excelize.ColumnNumberToName(23)
-		colX, _ := excelize.ColumnNumberToName(24)
+		colW, errW := excelize.ColumnNumberToName(23)
+		if errW != nil {
+			colW = "W"
+		}
+		colX, errX := excelize.ColumnNumberToName(24)
+		if errX != nil {
+			colX = "X"
+		}
 		startDate := readExcelDate(f, sheetName, fmt.Sprintf("%s%d", colW, rowNum))
 		endDate := readExcelDate(f, sheetName, fmt.Sprintf("%s%d", colX, rowNum))
 
@@ -260,19 +271,19 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		}
 
 		// Parse cost fields
-		ticketCost := safeParseFloat(getCell(5))      // F: Tiket
-		dailyRate := safeParseFloat(getCell(8))        // I: Uang Harian
-		dailyDays := safeParseInt(getCell(6))          // G: Jumlah Hari
-		hotelNights := safeParseInt(getCell(10))       // K: Jml Hari Menginap
-		hotelRate := safeParseFloat(getCell(11))       // L: Hotel
-		localTransport := safeParseFloat(getCell(13))  // N: Transport Lokal
+		ticketCost := safeParseFloat(getCell(5))         // F: Tiket
+		dailyRate := safeParseFloat(getCell(8))          // I: Uang Harian
+		dailyDays := safeParseInt(getCell(6))            // G: Jumlah Hari
+		hotelNights := safeParseInt(getCell(10))         // K: Jml Hari Menginap
+		hotelRate := safeParseFloat(getCell(11))         // L: Hotel
+		localTransport := safeParseFloat(getCell(13))    // N: Transport Lokal
 		regionalTransport := safeParseFloat(getCell(14)) // O: Transport Daerah
-		totalCost := safeParseFloat(getCell(15))       // P: Jumlah
+		totalCost := safeParseFloat(getCell(15))         // P: Jumlah
 
 		// Check if cell has a background fill color (e.g. red highlight = incomplete)
 		cellA := fmt.Sprintf("A%d", rowNum)
 		styleID, err := f.GetCellStyle(sheetName, cellA)
-		
+
 		recordStatus := "Approved"
 		reportStatus := "Completed"
 		paymentStatus := "Paid"
@@ -282,13 +293,13 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 			if recordPurpose == "" {
 				recordPurpose = "Pembayaran THR"
 			} else {
-				recordPurpose = recordPurpose + " (THR)"
+				recordPurpose += " (THR)"
 			}
 		} else {
 			if err == nil {
-				style, _ := f.GetStyle(styleID)
+				style, getStyleErr := f.GetStyle(styleID)
 				// Pattern 1 is solid fill
-				if style != nil && style.Fill.Pattern == 1 && len(style.Fill.Color) > 0 {
+				if getStyleErr == nil && style != nil && style.Fill.Pattern == 1 && len(style.Fill.Color) > 0 {
 					color := strings.ToUpper(style.Fill.Color[0])
 					// Ignore white/black
 					if !strings.HasSuffix(color, "FFFFFF") && !strings.HasSuffix(color, "000000") {
@@ -352,7 +363,10 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 			},
 		}
 
-		detailsBytes, _ := json.Marshal(detailsArr)
+		detailsBytes, errM := json.Marshal(detailsArr)
+		if errM != nil {
+			detailsBytes = []byte("[]")
+		}
 
 		record.Cost = &models.TravelCost{
 			TicketGo:           ticketCost,
@@ -409,8 +423,8 @@ func readExcelDate(f *excelize.File, sheet, cellRef string) time.Time {
 		}
 	}
 
-	formattedVal, _ := f.GetCellValue(sheet, cellRef)
-	if formattedVal == "" {
+	formattedVal, valErr := f.GetCellValue(sheet, cellRef)
+	if valErr != nil || formattedVal == "" {
 		return time.Time{}
 	}
 
@@ -494,7 +508,6 @@ func safeParseFloat(s string) float64 {
 	}
 	return val
 }
-
 
 // safeParseInt safely parses a string to int.
 // Handles Indonesian number format (dots as thousands separators).

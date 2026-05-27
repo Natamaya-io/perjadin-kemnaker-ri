@@ -1,0 +1,390 @@
+internal/utils/document/generator.go:190:12: Error return value of `io.ReadAll` is not checked (errcheck)
+		content, _ := io.ReadAll(rc)
+		         ^
+internal/utils/document/generator.go:229:6: Error return value of `writer.Create` is not checked (errcheck)
+		w, _ := writer.Create(name)
+		   ^
+internal/utils/document/generator.go:230:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write(content)
+		       ^
+internal/utils/document/generator.go:234:6: Error return value of `writer.Create` is not checked (errcheck)
+		w, _ := writer.Create("word/" + name)
+		   ^
+internal/utils/document/generator.go:235:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write(data)
+		       ^
+internal/utils/document/generator.go:257:21: Error return value of `tag.Int` is not checked (errcheck)
+				if orientation, _ := tag.Int(0); orientation >= 5 && orientation <= 8 {
+				                ^
+internal/utils/document/generator.go:299:8: Error return value of `writer.CreateFormFile` is not checked (errcheck)
+	part, _ := writer.CreateFormFile("files", "document.docx")
+	      ^
+internal/utils/document/generator.go:300:9: Error return value of `io.Copy` is not checked (errcheck)
+	io.Copy(part, bytes.NewReader(docxBytes))
+	       ^
+internal/utils/document/generator.go:303:7: Error return value of `http.NewRequestWithContext` is not checked (errcheck)
+	req, _ := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/libreoffice/convert", body)
+	     ^
+internal/utils/document/generator.go:313:6: Error return value of `io.ReadAll` is not checked (errcheck)
+		b, _ := io.ReadAll(resp.Body)
+		   ^
+internal/utils/document/generator.go:327:9: Error return value of `writer.CreateFormFile` is not checked (errcheck)
+		part, _ := writer.CreateFormFile("files", fmt.Sprintf("%d.pdf", i))
+		      ^
+internal/utils/document/generator.go:328:10: Error return value of `io.Copy` is not checked (errcheck)
+		io.Copy(part, bytes.NewReader(p))
+		       ^
+internal/utils/document/generator.go:345:6: Error return value of `io.ReadAll` is not checked (errcheck)
+		b, _ := io.ReadAll(resp.Body)
+		   ^
+cmd/clear_perjadin/main.go:44:9: Error return value of `res.RowsAffected` is not checked (errcheck)
+		rows, _ := res.RowsAffected()
+		      ^
+cmd/seeder_huge/main.go:41:12: Error return value of `rows.Scan` is not checked (errcheck)
+		rows.Scan(&name)
+		         ^
+cmd/seeder_huge/main.go:85:15: Error return value of `tx.Rollback` is not checked (errcheck)
+			tx.Rollback()
+			           ^
+cmd/seeder_huge/main.go:97:15: Error return value of `tx.Rollback` is not checked (errcheck)
+			tx.Rollback()
+			           ^
+internal/domain/user/handler.go:21:10: Error return value is not checked (errcheck)
+	role := c.Get("role").(string)
+	        ^
+internal/domain/user/handler.go:22:12: Error return value is not checked (errcheck)
+	uidStr := c.Get("user_id").(string)
+	          ^
+internal/middleware/auth_middleware.go:81:16: Error return value is not checked (errcheck)
+			userRole := c.Get("role").(string)
+			            ^
+internal/domain/auth/handler.go:88:12: Error return value is not checked (errcheck)
+	userId := c.Get("user_id").(string) // assuming middleware sets this
+	          ^
+internal/domain/auth/handler.go:99:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/auth/handler.go:100:10: Error return value of `uuid.Parse` is not checked (errcheck)
+	userID, _ := uuid.Parse(userIDStr)
+	        ^
+internal/seeder/seeder.go:31:18: Error return value of `bcrypt.GenerateFromPassword` is not checked (errcheck)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	                ^
+internal/seeder/seeder.go:285:18: Error return value of `bcrypt.GenerateFromPassword` is not checked (errcheck)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	                ^
+internal/domain/record/handler.go:229:7: Error return value of `h.masterSvc.GetSettings` is not checked (errcheck)
+		gs, _ := h.masterSvc.GetSettings(context.Background())
+		    ^
+internal/domain/record/handler.go:371:72: Error return value of `json.Unmarshal` is not checked (errcheck)
+	if record.Cost != nil && len(record.Cost.Details) > 0 { json.Unmarshal(record.Cost.Details, &costDetails) }
+	                                                                      ^
+internal/domain/record/handler.go:480:19: Error return value of `h.svc.GetRecords` is not checked (errcheck)
+	spdGroupRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
+	                 ^
+internal/domain/record/handler.go:644:19: Error return value of `h.svc.GetRecords` is not checked (errcheck)
+	spdGroupRecords, _ := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
+	                 ^
+internal/domain/record/handler.go:688:13: Error return value of `h.docGen.GenerateDocx` is not checked (errcheck)
+	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
+	           ^
+internal/domain/record/handler.go:779:13: Error return value of `h.docGen.GenerateDocx` is not checked (errcheck)
+	docxBytes, _ := h.docGen.GenerateDocx(c.Request().Context(), payload)
+	           ^
+internal/domain/record/handler.go:801:7: Error return value of `file.Open` is not checked (errcheck)
+	src, _ := file.Open()
+	     ^
+internal/domain/record/handler.go:804:7: Error return value of `os.Create` is not checked (errcheck)
+	dst, _ := os.Create(filepath.Join("uploads", filename))
+	     ^
+internal/domain/record/handler.go:806:9: Error return value of `io.Copy` is not checked (errcheck)
+	io.Copy(dst, src)
+	       ^
+internal/domain/record/handler.go:823:16: Error return value of `uuid.Parse` is not checked (errcheck)
+		r.CreatorID, _ = uuid.Parse(creatorIDStr)
+		             ^
+internal/domain/record/handler.go:857:10: Error return value is not checked (errcheck)
+	role := c.Get("role").(string)
+	        ^
+internal/domain/record/handler.go:858:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/record/handler.go:925:10: Error return value is not checked (errcheck)
+	role := c.Get("role").(string)
+	        ^
+internal/domain/record/handler.go:926:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/record/handler.go:948:6: Error return value of `uuid.Parse` is not checked (errcheck)
+	id, _ := uuid.Parse(c.Param("id"))
+	    ^
+internal/domain/record/handler.go:949:5: Error return value of `h.svc.GetRecordByID` is not checked (errcheck)
+	r, _ := h.svc.GetRecordByID(c.Request().Context(), id)
+	   ^
+internal/domain/record/handler.go:967:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/record/handler.go:968:14: Error return value is not checked (errcheck)
+	userRole := c.Get("role").(string)
+	            ^
+internal/domain/record/handler.go:995:13: Error return value of `io.ReadAll` is not checked (errcheck)
+	bodyBytes, _ := io.ReadAll(c.Request().Body)
+	           ^
+internal/domain/record/handler.go:999:16: Error return value of `json.Unmarshal` is not checked (errcheck)
+	json.Unmarshal(bodyBytes, &rawMap)
+	              ^
+internal/domain/record/handler.go:1007:8: Error return value of `json.Marshal` is not checked (errcheck)
+				b, _ := json.Marshal(tm)
+				   ^
+internal/domain/record/handler.go:1044:6: Error return value of `uuid.Parse` is not checked (errcheck)
+	id, _ := uuid.Parse(c.Param("id"))
+	    ^
+internal/domain/record/handler.go:1051:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/record/handler.go:1052:14: Error return value is not checked (errcheck)
+	userRole := c.Get("role").(string)
+	            ^
+internal/domain/record/handler.go:1064:14: Error return value is not checked (errcheck)
+	userRole := c.Get("role").(string)
+	            ^
+internal/domain/record/handler.go:1075:10: Error return value is not checked (errcheck)
+	role := c.Get("role").(string)
+	        ^
+internal/domain/record/handler.go:1076:15: Error return value is not checked (errcheck)
+	userIDStr := c.Get("user_id").(string)
+	             ^
+internal/domain/record/import_handler.go:80:14: Error return value of `uuid.Parse` is not checked (errcheck)
+		creatorID, _ = uuid.Parse(creatorIDStr)
+		           ^
+internal/domain/record/import_handler.go:213:21: Error return value of `json.Marshal` is not checked (errcheck)
+			detailsBytesUpd, _ := json.Marshal(detailsArrUpd)
+			                 ^
+internal/domain/record/import_handler.go:248:9: Error return value of `excelize.ColumnNumberToName` is not checked (errcheck)
+		colW, _ := excelize.ColumnNumberToName(23)
+		      ^
+internal/domain/record/import_handler.go:249:9: Error return value of `excelize.ColumnNumberToName` is not checked (errcheck)
+		colX, _ := excelize.ColumnNumberToName(24)
+		      ^
+internal/domain/record/import_handler.go:289:12: Error return value of `f.GetStyle` is not checked (errcheck)
+				style, _ := f.GetStyle(styleID)
+				       ^
+internal/domain/record/import_handler.go:355:17: Error return value of `json.Marshal` is not checked (errcheck)
+		detailsBytes, _ := json.Marshal(detailsArr)
+		              ^
+internal/domain/record/import_handler.go:412:16: Error return value of `f.GetCellValue` is not checked (errcheck)
+	formattedVal, _ := f.GetCellValue(sheet, cellRef)
+	              ^
+internal/domain/record/repository.go:253:19: Error return value of `tx.Rollback` is not checked (errcheck)
+	defer tx.Rollback() // no-op after Commit; guard against any early return
+	                 ^
+internal/domain/record/repository.go:367:19: Error return value of `tx.Rollback` is not checked (errcheck)
+	defer tx.Rollback()
+	                 ^
+internal/domain/record/repository.go:485:19: Error return value of `tx.Rollback` is not checked (errcheck)
+	defer tx.Rollback()
+	                 ^
+internal/domain/record/repository.go:544:18: Error return value is not checked (errcheck)
+		statusFilter = status.(string)
+		               ^
+internal/domain/record/repository.go:548:15: Error return value is not checked (errcheck)
+		spdFilter = spd.(string)
+		            ^
+internal/domain/record/repository.go:553:39: Error return value is not checked (errcheck)
+		if parsedLimit, err := strconv.Atoi(l.(string)); err == nil {
+		                                    ^
+internal/domain/record/repository.go:615:10: Error return value of `r.q.GetUsersByIDs` is not checked (errcheck)
+		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+		       ^
+internal/domain/record/repository.go:625:10: Error return value of `r.q.GetTravelCostsByRecordIDs` is not checked (errcheck)
+		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		       ^
+internal/domain/record/repository.go:636:12: Error return value of `r.q.GetTravelReportsByRecordIDs` is not checked (errcheck)
+		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		         ^
+internal/domain/record/repository.go:647:9: Error return value of `r.q.GetTravelLocationsByRecordIDs` is not checked (errcheck)
+		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		      ^
+internal/domain/record/repository.go:689:7: Error return value of `r.GetUserByID` is not checked (errcheck)
+	emp, _ := r.GetUserByID(ctx, recPtr.EmployeeID)
+	     ^
+internal/domain/record/repository.go:694:11: Error return value of `r.GetUserByID` is not checked (errcheck)
+	creator, _ := r.GetUserByID(ctx, recPtr.CreatorID)
+	         ^
+internal/domain/record/repository.go:906:19: Error return value of `tx.Rollback` is not checked (errcheck)
+	defer tx.Rollback()
+	                 ^
+internal/domain/record/repository.go:1060:19: Error return value of `tx.Rollback` is not checked (errcheck)
+	defer tx.Rollback()
+	                 ^
+internal/domain/record/repository.go:1287:10: Error return value of `r.q.GetUsersByIDs` is not checked (errcheck)
+		users, _ = r.q.GetUsersByIDs(ctx, userIDs)
+		       ^
+internal/domain/record/repository.go:1297:10: Error return value of `r.q.GetTravelCostsByRecordIDs` is not checked (errcheck)
+		costs, _ = r.q.GetTravelCostsByRecordIDs(ctx, recordIDs)
+		       ^
+internal/domain/record/repository.go:1308:12: Error return value of `r.q.GetTravelReportsByRecordIDs` is not checked (errcheck)
+		reports, _ = r.q.GetTravelReportsByRecordIDs(ctx, recordIDs)
+		         ^
+internal/domain/record/repository.go:1319:9: Error return value of `r.q.GetTravelLocationsByRecordIDs` is not checked (errcheck)
+		locs, _ = r.q.GetTravelLocationsByRecordIDs(ctx, recordIDs)
+		      ^
+internal/domain/record/service.go:343:19: Error return value is not checked (errcheck)
+			statusFilter = status.(string)
+			               ^
+internal/domain/record/service.go:346:16: Error return value is not checked (errcheck)
+			spdFilter = spd.(string)
+			            ^
+internal/domain/record/service.go:442:16: Error return value of `s.repo.GetTravelRecordByID` is not checked (errcheck)
+					original, _ := s.repo.GetTravelRecordByID(ctx, record.ID)
+					          ^
+cmd/api/main.go:52:10: Error return value of `zap.NewProduction` is not checked (errcheck)
+	logger, _ := zap.NewProduction()
+	        ^
+cmd/api/main.go:53:19: Error return value of `logger.Sync` is not checked (errcheck)
+	defer logger.Sync()
+	                 ^
+cmd/add_vito/main.go:27:3: exitAfterDefer: log.Fatalf will exit, and `defer db.Close()` will not run (gocritic)
+		log.Fatalf("Failed to ping database: %v", err)
+		^
+internal/utils/document/generator.go:194:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if name == "word/document.xml" {
+		^
+internal/utils/document/generator.go:289:8: wrapperFunc: use strings.ReplaceAll method in `strings.Replace(xml, placeholder1, drawing, -1)` (gocritic)
+	xml = strings.Replace(xml, placeholder1, drawing, -1)
+	      ^
+internal/utils/document/generator.go:290:8: wrapperFunc: use strings.ReplaceAll method in `strings.Replace(xml, placeholder2, drawing, -1)` (gocritic)
+	xml = strings.Replace(xml, placeholder2, drawing, -1)
+	      ^
+internal/utils/document/generator.go:291:8: wrapperFunc: use strings.ReplaceAll method in `strings.Replace(xml, placeholder3, drawing, -1)` (gocritic)
+	xml = strings.Replace(xml, placeholder3, drawing, -1)
+	      ^
+internal/utils/terbilang/terbilang.go:13:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if n < 12 {
+	^
+internal/domain/record/handler.go:398:5: ifElseChain: rewrite if-else to switch statement (gocritic)
+				if ac.Name == "Extend Tiket" {
+				^
+internal/domain/record/handler.go:719:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if prefix == "Laporan" {
+	^
+internal/domain/record/handler.go:761:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if prefix == "Laporan" {
+	^
+internal/domain/record/handler.go:971:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if userRole == "super_admin" || userRole == "kasubag" {
+	^
+internal/domain/record/import_handler.go:285:5: assignOp: replace `recordPurpose = recordPurpose + " (THR)"` with `recordPurpose += " (THR)"` (gocritic)
+				recordPurpose = recordPurpose + " (THR)"
+				^
+internal/domain/record/repository.go:779:5: ifElseChain: rewrite if-else to switch statement (gocritic)
+				if paymentStatus == "Paid" {
+				^
+internal/domain/record/service.go:351:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if statusFilter != "" && spdFilter != "" {
+	^
+cmd/check_db/main.go:26:3: exitAfterDefer: log.Fatalf will exit, and `defer db.Close()` will not run (gocritic)
+		log.Fatalf("Query failed: %v", err)
+		^
+cmd/clear_perjadin/main.go:25:3: exitAfterDefer: log.Fatalf will exit, and `defer db.Close()` will not run (gocritic)
+		log.Fatalf("Failed to ping database: %v", err)
+		^
+cmd/fix_db/main.go:71:3: exitAfterDefer: log.Fatalf will exit, and `defer db.Close()` will not run (gocritic)
+		log.Fatalf("Failed to update schema_migrations: %v", err)
+		^
+cmd/seeder_huge/main.go:30:3: exitAfterDefer: log.Fatalf will exit, and `defer db.Close()` will not run (gocritic)
+		log.Fatalf("Failed to get a user: %v. Make sure you have run the normal seeder first.", err)
+		^
+internal/config/config.go:7:13: fieldalignment: struct with 272 pointer bytes could be 264 (govet)
+type Config struct {
+            ^
+internal/models/models.go:11:11: fieldalignment: struct with 64 pointer bytes could be 48 (govet)
+type Base struct {
+          ^
+internal/models/models.go:33:19: fieldalignment: struct with 952 pointer bytes could be 888 (govet)
+type TravelRecord struct {
+                  ^
+internal/models/models.go:66:21: fieldalignment: struct with 160 pointer bytes could be 136 (govet)
+type TravelLocation struct {
+                    ^
+internal/models/models.go:75:17: fieldalignment: struct with 304 pointer bytes could be 208 (govet)
+type TravelCost struct {
+                ^
+internal/models/models.go:103:19: fieldalignment: struct with 200 pointer bytes could be 184 (govet)
+type TravelReport struct {
+                  ^
+internal/models/models.go:127:14: fieldalignment: struct with 168 pointer bytes could be 152 (govet)
+type SBMRate struct {
+             ^
+internal/models/models.go:156:23: fieldalignment: struct with 96 pointer bytes could be 32 (govet)
+type DashboardSummary struct {
+                      ^
+internal/models/models.go:178:22: fieldalignment: struct with 128 pointer bytes could be 112 (govet)
+type PaginatedParams struct {
+                     ^
+internal/models/models.go:191:24: fieldalignment: struct with 48 pointer bytes could be 24 (govet)
+type PaginatedResponse struct {
+                       ^
+internal/utils/fonnte.go:17:20: fieldalignment: struct with 64 pointer bytes could be 56 (govet)
+type FonntePayload struct {
+                   ^
+internal/utils/document/generator.go:27:22: fieldalignment: struct with 24 pointer bytes could be 16 (govet)
+type DocumentRequest struct {
+                     ^
+internal/utils/document/generator.go:37:16: fieldalignment: struct with 40 pointer bytes could be 32 (govet)
+type Generator struct {
+               ^
+internal/domain/record/handler.go:354:14: fieldalignment: struct with 64 pointer bytes could be 24 (govet)
+	type Detail struct {
+	            ^
+internal/domain/record/import_handler.go:18:19: fieldalignment: struct with 48 pointer bytes could be 8 (govet)
+type ImportResult struct {
+                  ^
+internal/domain/record/import_handler.go:27:19: fieldalignment: struct with 64 pointer bytes could be 56 (govet)
+type ImportDetail struct {
+                  ^
+cmd/add_vito/main.go:26:5: shadow: declaration of "err" shadows declaration at line 20 (govet)
+	if err := db.Ping(); err != nil {
+	   ^
+internal/domain/user/handler.go:135:5: shadow: declaration of "err" shadows declaration at line 129 (govet)
+	if err := c.Bind(&req); err != nil {
+	   ^
+internal/domain/auth/service.go:84:5: shadow: declaration of "err" shadows declaration at line 79 (govet)
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+	   ^
+internal/domain/auth/service.go:89:5: shadow: declaration of "err" shadows declaration at line 79 (govet)
+	if err := s.userRepo.UpdateUser(u); err != nil {
+	   ^
+internal/domain/record/handler.go:559:7: shadow: declaration of "err" shadows declaration at line 464 (govet)
+			b, err := base64.StdEncoding.DecodeString(raw)
+			   ^
+internal/domain/record/handler.go:569:7: shadow: declaration of "err" shadows declaration at line 464 (govet)
+			if err := json.Unmarshal(r.Report.Files, &files); err == nil {
+			   ^
+internal/domain/record/handler.go:584:7: shadow: declaration of "err" shadows declaration at line 464 (govet)
+			if err := json.Unmarshal(r.Cost.Details, &details); err == nil {
+			   ^
+internal/domain/record/service.go:170:20: shadow: declaration of "err" shadows declaration at line 157 (govet)
+		existingRecords, err := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": record.SPDNumber})
+		                 ^
+internal/domain/record/service.go:177:8: shadow: declaration of "err" shadows declaration at line 157 (govet)
+		spd, err := s.GenerateSpdNumber(ctx)
+		     ^
+internal/domain/record/service.go:193:10: shadow: declaration of "err" shadows declaration at line 157 (govet)
+			user, err := s.repo.GetUserByID(bgCtx, record.EmployeeID)
+			      ^
+internal/domain/record/service.go:466:8: shadow: declaration of "err" shadows declaration at line 451 (govet)
+				if err := s.repo.SyncReportBySpd(ctx, spd, rec); err != nil {
+				   ^
+internal/domain/record/service.go:562:6: shadow: declaration of "err" shadows declaration at line 552 (govet)
+		if err := json.Unmarshal([]byte(cached), &response); err == nil {
+		   ^
+cmd/api/main.go:70:6: shadow: declaration of "err" shadows declaration at line 57 (govet)
+		if err := db.Close(); err != nil {
+		   ^
+cmd/fix_db/main.go:45:6: shadow: declaration of "err" shadows declaration at line 19 (govet)
+		if err := db.Ping(); err != nil {
+		   ^
+internal/utils/fonnte.go:87:29: should rewrite http.NewRequestWithContext or add (*Request).WithContext (noctx)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	                           ^

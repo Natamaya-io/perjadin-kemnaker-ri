@@ -81,13 +81,13 @@ func (s *service) Login(email, password string) (string, *models.User, bool, err
 		return "", nil, false, errors.New("invalid credentials")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+	if compareErr := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); compareErr != nil {
 		return "", nil, false, errors.New("invalid credentials")
 	}
 
 	u.SessionID = uuid.New().String()
-	if err := s.userRepo.UpdateUser(u); err != nil {
-		return "", nil, false, err
+	if updateErr := s.userRepo.UpdateUser(u); updateErr != nil {
+		return "", nil, false, updateErr
 	}
 	s.invalidateCache(context.Background(), "users:*")
 	s.invalidateCache(context.Background(), "demo_users")

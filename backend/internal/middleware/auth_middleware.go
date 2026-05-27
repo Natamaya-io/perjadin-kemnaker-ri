@@ -78,7 +78,11 @@ func JWTMiddleware(cfg *config.Config, repo user.Repository) echo.MiddlewareFunc
 func RoleMiddleware(allowedRoles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			userRole := c.Get("role").(string)
+			roleVal := c.Get("role")
+			userRole, ok := roleVal.(string)
+			if !ok {
+				return echo.NewHTTPError(403, "Forbidden: Invalid Role")
+			}
 			for _, role := range allowedRoles {
 				if role == userRole {
 					return next(c)

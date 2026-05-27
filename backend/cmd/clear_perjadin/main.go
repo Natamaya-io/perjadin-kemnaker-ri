@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func run() error {
 	cfg := config.LoadConfig()
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
@@ -17,12 +23,12 @@ func main() {
 	
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return fmt.Errorf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		return fmt.Errorf("failed to ping database: %v", err)
 	}
 
 	log.Println("Connected to database. Clearing travel data...")
@@ -41,9 +47,14 @@ func main() {
 			log.Printf("Failed to clear table %s: %v", table, err)
 			continue
 		}
-		rows, _ := res.RowsAffected()
+		rows, err := res.RowsAffected()
+		if err != nil {
+			log.Printf("Failed to get rows affected for table %s: %v", table, err)
+			continue
+		}
 		log.Printf("Cleared %d rows from %s", rows, table)
 	}
 
 	log.Println("Travel data cleared successfully.")
+	return nil
 }

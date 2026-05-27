@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -18,8 +19,8 @@ type FonntePayload struct {
 	Target      string `json:"target"`
 	Message     string `json:"message"`
 	Delay       string `json:"delay"`
-	Typing      bool   `json:"typing"`
 	CountryCode string `json:"countryCode"`
+	Typing      bool   `json:"typing"`
 }
 
 var (
@@ -31,7 +32,7 @@ var (
 func cleanPhoneNumber(phone string) string {
 	reg := regexp.MustCompile("[^0-9]+")
 	cleaned := reg.ReplaceAllString(phone, "")
-	
+
 	// Fonnte menggunakan parameter CountryCode: "62", jadi "08" adalah format standar yang baik.
 	if strings.HasPrefix(cleaned, "62") {
 		cleaned = "0" + strings.TrimPrefix(cleaned, "62")
@@ -56,13 +57,13 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 
 	// Menghitung waktu sejak pengiriman pesan terakhir
 	elapsed := time.Since(lastSent)
-	
+
 	// Minimal jeda 3 detik antara SEMUA pesan dari server ini
 	minDelay := 3 * time.Second
 	if elapsed < minDelay {
 		time.Sleep(minDelay - elapsed)
 	}
-	
+
 	// 2. Jitter / Jeda Acak (Human-like behavior)
 	// Menambahkan delay acak 1 sampai 3 detik agar terlihat seperti manusia
 	jitter := time.Duration(rand.Intn(3)+1) * time.Second
@@ -74,9 +75,9 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 	payload := FonntePayload{
 		Target:      target,
 		Message:     message,
-		Delay:       "2-5",   // Fonnte delay internal (2 hingga 5 detik)
-		Typing:      true,    // Menampilkan status "sedang mengetik..."
-		CountryCode: "62",    // Default ke nomor Indonesia
+		Delay:       "2-5", // Fonnte delay internal (2 hingga 5 detik)
+		Typing:      true,  // Menampilkan status "sedang mengetik..."
+		CountryCode: "62",  // Default ke nomor Indonesia
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -84,7 +85,7 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func SendWhatsAppMessage(cfg *config.Config, target string, message string) erro
 		Timeout: 15 * time.Second,
 	}
 	resp, err := client.Do(req)
-	
+
 	// Catat waktu terakhir setelah request dilakukan
 	lastSent = time.Now()
 

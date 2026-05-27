@@ -7,29 +7,30 @@ var (
 )
 
 func Terbilang(n int) string {
-	if n < 0 {
+	switch {
+	case n < 0:
 		return "Minus " + Terbilang(-n)
-	}
-	if n < 12 {
+	case n < 12:
 		return huruf[n]
-	} else if n < 20 {
+	case n < 20:
 		return Terbilang(n-10) + " Belas"
-	} else if n < 100 {
+	case n < 100:
 		return Terbilang(n/10) + " Puluh " + Terbilang(n%10)
-	} else if n < 200 {
+	case n < 200:
 		return "Seratus " + Terbilang(n-100)
-	} else if n < 1000 {
+	case n < 1000:
 		return Terbilang(n/100) + " Ratus " + Terbilang(n%100)
-	} else if n < 2000 {
+	case n < 2000:
 		return "Seribu " + Terbilang(n-1000)
-	} else if n < 1000000 {
+	case n < 1000000:
 		return Terbilang(n/1000) + " Ribu " + Terbilang(n%1000)
-	} else if n < 1000000000 {
+	case n < 1000000000:
 		return Terbilang(n/1000000) + " Juta " + Terbilang(n%1000000)
-	} else if n < 1000000000000 {
+	case n < 1000000000000:
 		return Terbilang(n/1000000000) + " Miliar " + Terbilang(n%1000000000)
+	default:
+		return ""
 	}
-	return ""
 }
 
 func FormatTerbilang(n int) string {

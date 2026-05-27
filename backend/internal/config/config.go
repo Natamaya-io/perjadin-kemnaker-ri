@@ -5,12 +5,12 @@ import (
 )
 
 type Config struct {
-	App       AppConfig
 	Database  DatabaseConfig
-	Redis     RedisConfig
-	JWT       JWTConfig
-	Fonnte    FonnteConfig
 	Signatory SignatoryConfig
+	Redis     RedisConfig
+	App       AppConfig
+	Fonnte    FonnteConfig
+	JWT       JWTConfig
 }
 
 type AppConfig struct {
@@ -60,7 +60,7 @@ func LoadConfig() *Config {
 	viper.SetDefault("REDIS_PORT", "6379")
 	viper.SetDefault("REDIS_PASSWORD", "")
 	viper.SetDefault("JWT_EXPIRY", 24)
-	
+
 	// Production Signatories (Defaults)
 	viper.SetDefault("PPK_NAME", "Arief Hafidiyanto")
 	viper.SetDefault("PPK_NIP", "19720827 200312 1 002")

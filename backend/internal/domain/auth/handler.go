@@ -85,7 +85,11 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	userId := c.Get("user_id").(string) // assuming middleware sets this
+	userIdVal := c.Get("user_id")
+	userId, ok := userIdVal.(string)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid user ID")
+	}
 
 	err := h.svc.ChangePassword(userId, req.NewPassword)
 	if err != nil {
@@ -96,8 +100,15 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 }
 
 func (h *Handler) GetMe(c echo.Context) error {
-	userIDStr := c.Get("user_id").(string)
-	userID, _ := uuid.Parse(userIDStr)
+	userIDVal := c.Get("user_id")
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid user ID")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid user ID format")
+	}
 	
 	user, err := h.svc.GetUserByID(userID)
 	if err != nil {

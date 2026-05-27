@@ -13,11 +13,17 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func run() error {
 	cfg := config.LoadConfig()
 
 	db, err := database.NewPostgresDB(cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.SSLMode)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return fmt.Errorf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
@@ -27,24 +33,27 @@ func main() {
 	var userID uuid.UUID
 	err = db.QueryRow("SELECT id FROM users LIMIT 1").Scan(&userID)
 	if err != nil {
-		log.Fatalf("Failed to get a user: %v. Make sure you have run the normal seeder first.", err)
+		return fmt.Errorf("failed to get a user: %v. Make sure you have run the normal seeder first", err)
 	}
 
 	// Get all provinces
 	rows, err := db.Query("SELECT name FROM provinces")
 	if err != nil {
-		log.Fatalf("Failed to get provinces: %v", err)
+		return fmt.Errorf("failed to get provinces: %v", err)
 	}
 	var provinces []string
 	for rows.Next() {
 		var name string
-		rows.Scan(&name)
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			rows.Close()
+			return fmt.Errorf("failed to scan province: %v", scanErr)
+		}
 		provinces = append(provinces, name)
 	}
 	rows.Close()
 
 	if len(provinces) == 0 {
-		log.Fatal("No provinces found. Run normal seeder first.")
+		return fmt.Errorf("no provinces found. Run normal seeder first")
 	}
 
 	purposes := []string{
@@ -59,7 +68,7 @@ func main() {
 	ctx := context.Background()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to begin transaction: %v", err)
+		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
 
 	for i := 1; i <= 1000; i++ {
@@ -82,8 +91,10 @@ func main() {
 			"Pusat Kota "+province, province, "Luar_Kota", purpose, "Approved", "Pending", "Unpaid",
 		)
 		if err != nil {
-			tx.Rollback()
-			log.Fatalf("Failed to insert record %d: %v", i, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("rollback failed: %v", rbErr)
+			}
+			return fmt.Errorf("failed to insert record %d: %v", i, err)
 		}
 
 		// Insert 1 Location for each record
@@ -94,8 +105,10 @@ func main() {
 			uuid.New(), recordID, "Pusat Kota "+province, province, startDate, endDate,
 		)
 		if err != nil {
-			tx.Rollback()
-			log.Fatalf("Failed to insert location for record %d: %v", i, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("rollback failed: %v", rbErr)
+			}
+			return fmt.Errorf("failed to insert location for record %d: %v", i, err)
 		}
 
 		if i%100 == 0 {
@@ -104,8 +117,9 @@ func main() {
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("Failed to commit transaction: %v", err)
+		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
 	log.Println("Successfully generated 1000 dummy travel records.")
+	return nil
 }

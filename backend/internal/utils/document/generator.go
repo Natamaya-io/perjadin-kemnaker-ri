@@ -25,8 +25,8 @@ import (
 )
 
 type DocumentRequest struct {
-	TemplateName string
 	Variables    map[string]interface{}
+	TemplateName string
 }
 
 type ImageData struct {
@@ -35,9 +35,9 @@ type ImageData struct {
 }
 
 type Generator struct {
+	httpClient   *http.Client
 	gotenbergURL string
 	templateDir  string
-	httpClient   *http.Client
 }
 
 func NewGenerator(gotenbergURL string, templateDir string) *Generator {
@@ -173,7 +173,7 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 		ext := getImageExtension(img.MimeType)
 		rId := fmt.Sprintf("rIdImg%d", rIdCounter)
 		filename := fmt.Sprintf("media/img_%d%s", rIdCounter, ext)
-		
+
 		// Aspect ratio
 		cx, cy := calculateDimensions(imgBytes, key)
 
@@ -187,13 +187,18 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 		if err != nil {
 			return nil, err
 		}
-		content, _ := io.ReadAll(rc)
+		content, err := io.ReadAll(rc)
+		if err != nil {
+			rc.Close()
+			return nil, err
+		}
 		rc.Close()
 
 		name := file.Name
-		if name == "word/document.xml" {
+		switch name {
+		case "word/document.xml":
 			contentStr := string(content)
-			
+
 			var keys []string
 			for k := range imageInfoMap {
 				keys = append(keys, k)
@@ -207,7 +212,7 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 				contentStr = replaceImagePlaceholder(contentStr, key, info.rId, info.cx, info.cy)
 			}
 			content = []byte(contentStr)
-		} else if name == "word/_rels/document.xml.rels" {
+		case "word/_rels/document.xml.rels":
 			contentStr := string(content)
 			var rels []string
 			for _, info := range imageInfoMap {
@@ -215,7 +220,7 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 			}
 			contentStr = strings.Replace(contentStr, "</Relationships>", strings.Join(rels, "")+"</Relationships>", 1)
 			content = []byte(contentStr)
-		} else if name == "[Content_Types].xml" {
+		case "[Content_Types].xml":
 			contentStr := string(content)
 			if !strings.Contains(contentStr, `Extension="jpeg"`) {
 				contentStr = strings.Replace(contentStr, "</Types>", `<Default Extension="jpeg" ContentType="image/jpeg"/>`+"</Types>", 1)
@@ -226,13 +231,23 @@ func injectImages(docxBytes []byte, images map[string]ImageData) ([]byte, error)
 			content = []byte(contentStr)
 		}
 
-		w, _ := writer.Create(name)
-		w.Write(content)
+		w, err := writer.Create(name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write(content); err != nil {
+			return nil, err
+		}
 	}
 
 	for name, data := range imageFiles {
-		w, _ := writer.Create("word/" + name)
-		w.Write(data)
+		w, err := writer.Create("word/" + name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write(data); err != nil {
+			return nil, err
+		}
 	}
 
 	writer.Close()
@@ -250,11 +265,11 @@ func calculateDimensions(imgBytes []byte, key string) (int64, int64) {
 	cx, cy := int64(5400000), int64(3600000)
 	if cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes)); err == nil {
 		w, h := float64(cfg.Width), float64(cfg.Height)
-		
+
 		// Handle EXIF orientation
 		if x, err := exif.Decode(bytes.NewReader(imgBytes)); err == nil {
 			if tag, err := x.Get(exif.Orientation); err == nil {
-				if orientation, _ := tag.Int(0); orientation >= 5 && orientation <= 8 {
+				if orientation, err := tag.Int(0); err == nil && orientation >= 5 && orientation <= 8 {
 					w, h = h, w
 				}
 			}
@@ -277,7 +292,7 @@ func calculateDimensions(imgBytes []byte, key string) (int64, int64) {
 func replaceImagePlaceholder(xml, key, rId string, cx, cy int64) string {
 	docPrId := hash(key)
 	drawing := fmt.Sprintf(`</w:t></w:r><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="%d" cy="%d"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="%d" name="img_%s"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="%d" name="img_%s"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="%s" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr bwMode="auto"><a:xfrm><a:off x="0" y="0"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r><w:r><w:t>`, cx, cy, docPrId, key, docPrId, key, rId, cx, cy)
-	
+
 	if key == "lampiran_1" {
 		drawing = `</w:t></w:r><w:r><w:br w:type="page"/></w:r><w:r><w:t>` + drawing
 	}
@@ -286,9 +301,9 @@ func replaceImagePlaceholder(xml, key, rId string, cx, cy int64) string {
 	placeholder2 := "&lt;&lt;" + key + "&gt;&gt;"
 	placeholder3 := "<<" + key + ">>"
 
-	xml = strings.Replace(xml, placeholder1, drawing, -1)
-	xml = strings.Replace(xml, placeholder2, drawing, -1)
-	xml = strings.Replace(xml, placeholder3, drawing, -1)
+	xml = strings.ReplaceAll(xml, placeholder1, drawing)
+	xml = strings.ReplaceAll(xml, placeholder2, drawing)
+	xml = strings.ReplaceAll(xml, placeholder3, drawing)
 
 	return xml
 }
@@ -296,13 +311,23 @@ func replaceImagePlaceholder(xml, key, rId string, cx, cy int64) string {
 func (g *Generator) convertToPDF(ctx context.Context, docxBytes []byte) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("files", "document.docx")
-	io.Copy(part, bytes.NewReader(docxBytes))
-	writer.Close()
+	part, err := writer.CreateFormFile("files", "document.docx")
+	if err != nil {
+		return nil, err
+	}
+	if _, errCopy := io.Copy(part, bytes.NewReader(docxBytes)); errCopy != nil {
+		return nil, errCopy
+	}
+	if errClose := writer.Close(); errClose != nil {
+		return nil, errClose
+	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/libreoffice/convert", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/libreoffice/convert", body)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -310,31 +335,48 @@ func (g *Generator) convertToPDF(ctx context.Context, docxBytes []byte) ([]byte,
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, errRead := io.ReadAll(resp.Body)
+		if errRead != nil {
+			return nil, fmt.Errorf("gotenberg error (%d): failed to read body", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("gotenberg error (%d): %s", resp.StatusCode, string(b))
 	}
-	return io.ReadAll(resp.Body)
+	
+	b, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return nil, errRead
+	}
+	return b, nil
 }
 
 func (g *Generator) MergePDFs(ctx context.Context, pdfs [][]byte) ([]byte, error) {
 	if len(pdfs) < 2 {
-		if len(pdfs) == 1 { return pdfs[0], nil }
+		if len(pdfs) == 1 {
+			return pdfs[0], nil
+		}
 		return nil, fmt.Errorf("no pdfs")
 	}
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	for i, p := range pdfs {
-		part, _ := writer.CreateFormFile("files", fmt.Sprintf("%d.pdf", i))
-		io.Copy(part, bytes.NewReader(p))
+		part, errPart := writer.CreateFormFile("files", fmt.Sprintf("%d.pdf", i))
+		if errPart != nil {
+			return nil, errPart
+		}
+		if _, errCopy := io.Copy(part, bytes.NewReader(p)); errCopy != nil {
+			return nil, errCopy
+		}
 	}
-	writer.Close()
+	if errClose := writer.Close(); errClose != nil {
+		return nil, errClose
+	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", g.gotenbergURL+"/forms/pdfengines/merge", body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge pdfs: %w", err)
@@ -342,11 +384,18 @@ func (g *Generator) MergePDFs(ctx context.Context, pdfs [][]byte) ([]byte, error
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, errRead := io.ReadAll(resp.Body)
+		if errRead != nil {
+			return nil, fmt.Errorf("gotenberg merge error (%d): failed to read body", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("gotenberg merge error (%d): %s", resp.StatusCode, string(b))
 	}
 
-	return io.ReadAll(resp.Body)
+	b, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return nil, errRead
+	}
+	return b, nil
 }
 
 func fixSplitRuns(xml string) string {
@@ -374,10 +423,10 @@ func removeEmptyTableRows(xml string) string {
 	marker := "__REMOVE_ROW__"
 	for strings.Contains(xml, marker) {
 		idx := strings.Index(xml, marker)
-		
+
 		trStart1 := strings.LastIndex(xml[:idx], "<w:tr>")
 		trStart2 := strings.LastIndex(xml[:idx], "<w:tr ")
-		
+
 		trStart := trStart1
 		if trStart2 > trStart {
 			trStart = trStart2
@@ -397,10 +446,10 @@ func removeEmptyParagraphs(xml string) string {
 	marker := "__REMOVE_P__"
 	for strings.Contains(xml, marker) {
 		idx := strings.Index(xml, marker)
-		
+
 		pStart1 := strings.LastIndex(xml[:idx], "<w:p>")
 		pStart2 := strings.LastIndex(xml[:idx], "<w:p ")
-		
+
 		pStart := pStart1
 		if pStart2 > pStart {
 			pStart = pStart2
@@ -432,7 +481,7 @@ func removeEmptyParagraphs(xml string) string {
 			// If not found forward, check backward
 			if !foundPageBreak {
 				prevPEnd1 := strings.LastIndex(xml[:pStart], "</w:p>")
-				if prevPEnd1 != -1 && (pStart - prevPEnd1) < 20 {
+				if prevPEnd1 != -1 && (pStart-prevPEnd1) < 20 {
 					prevPStart1 := strings.LastIndex(xml[:prevPEnd1], "<w:p>")
 					prevPStart2 := strings.LastIndex(xml[:prevPEnd1], "<w:p ")
 					prevPStart := prevPStart1
@@ -464,17 +513,25 @@ func adjustPetugasTableWidths(xml string) string {
 
 func hash(s string) int {
 	h := 0
-	for _, c := range s { h = 31*h + int(c) }
-	if h < 0 { h = -h }
+	for _, c := range s {
+		h = 31*h + int(c)
+	}
+	if h < 0 {
+		h = -h
+	}
 	return h % 100000
 }
 
 func decodeBase64Image(data string) ([]byte, error) {
-	if i := strings.Index(data, ","); i != -1 { data = data[i+1:] }
+	if i := strings.Index(data, ","); i != -1 {
+		data = data[i+1:]
+	}
 	return base64.StdEncoding.DecodeString(data)
 }
 
 func getImageExtension(mime string) string {
-	if strings.Contains(mime, "png") { return ".png" }
+	if strings.Contains(mime, "png") {
+		return ".png"
+	}
 	return ".jpeg"
 }

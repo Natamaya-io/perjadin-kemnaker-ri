@@ -49,8 +49,13 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// 2. Initialize Logger
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = logger.Sync() //nolint:errcheck
+	}()
 	sugar := logger.Sugar()
 
 	// 3. Connect to Database
@@ -67,8 +72,8 @@ func main() {
 	}
 	defer func() {
 		sugar.Info("Closing database connection...")
-		if err := db.Close(); err != nil {
-			sugar.Errorf("Error closing database connection: %v", err)
+		if closeErr := db.Close(); closeErr != nil {
+			sugar.Errorf("Error closing database connection: %v", closeErr)
 		}
 	}()
 

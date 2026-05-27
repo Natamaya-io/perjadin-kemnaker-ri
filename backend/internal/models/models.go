@@ -9,109 +9,101 @@ import (
 
 // Base model for UUID support
 type Base struct {
-	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	ID        uuid.UUID `json:"id"`
 }
 
 type User struct {
-	Base
-	Email        string `json:"email"`
-	Password     string `json:"-"` // Never return password
-	Name         string `json:"name"`
-	Role         string `json:"role"` // super_admin, kasubag, protokol
-	NIP          string `json:"nip"`
 	NomorHP      string `json:"nomorHp"`
+	Email        string `json:"email"`
+	Password     string `json:"-"`
+	Name         string `json:"name"`
+	Role         string `json:"role"`
+	NIP          string `json:"nip"`
 	Pangkat      string `json:"pangkat"`
 	Golongan     string `json:"golongan"`
 	Jabatan      string `json:"jabatan"`
 	TingkatBiaya string `json:"tingkatBiaya"`
-	SessionID    string `json:"-"` // Tracks the current active session ID
-	DemoPassword string `json:"-"` // Stores plain text password for Demo Banner (INSECURE - DEMO ONLY)
+	SessionID    string `json:"-"`
+	DemoPassword string `json:"-"`
+	Base
 }
 
 type TravelRecord struct {
 	Base
-	SPDNumber   string      `json:"spd"`
-	EmployeeID  uuid.UUID   `json:"employeeId"`
-	EmployeeIDs []uuid.UUID `json:"employeeIds,omitempty"` // For bulk creation
-	Employee    User        `json:"employee"`              // Linked to User now
-	CreatorID   uuid.UUID   `json:"creatorId"`             // User who created this
-	Creator     User        `json:"creator"`
-	StartDate   time.Time   `json:"startDate"`
-	EndDate     time.Time   `json:"endDate"`
-	Location    string      `json:"location"`
-	Province    string      `json:"province"`
-	Locations   []TravelLocation `json:"locations,omitempty"` // Multiple locations support
-	Type        string      `json:"type"` // dalam_kota, luar_kota, luar_negeri
-	Purpose     string      `json:"purpose"`
-	Stakeholder string      `json:"stakeholder"`
-	Agenda      string      `json:"agenda"`
-	Status      string      `json:"status"` // Draft, Submitted, Approved, Rejected
-	IsViewed    bool        `json:"isViewed"`
-	ReportStatus  string    `json:"reportStatus"` // Pending, Completed
-	PaymentStatus string    `json:"paymentStatus"` // Unpaid, Paid
-	TotalCost     float64   `json:"totalCost"`
-
-	// Documents
-	SuratTugasPath   string `json:"suratTugasPath"`
-	SuratTugasNumber string `json:"suratTugasNumber"`
-	SuratTugasDate   time.Time `json:"suratTugasDate"`
-
-	// Relationships
-	Cost   *TravelCost   `json:"costs,omitempty"`
-	Report *TravelReport `json:"reportData,omitempty"`
+	EndDate          time.Time        `json:"endDate"`
+	SuratTugasDate   time.Time        `json:"suratTugasDate"`
+	StartDate        time.Time        `json:"startDate"`
+	Report           *TravelReport    `json:"reportData,omitempty"`
+	Cost             *TravelCost      `json:"costs,omitempty"`
+	Employee         User             `json:"employee"`
+	Creator          User             `json:"creator"`
+	Type             string           `json:"type"`
+	SuratTugasPath   string           `json:"suratTugasPath"`
+	Province         string           `json:"province"`
+	SPDNumber        string           `json:"spd"`
+	SuratTugasNumber string           `json:"suratTugasNumber"`
+	Purpose          string           `json:"purpose"`
+	Stakeholder      string           `json:"stakeholder"`
+	Agenda           string           `json:"agenda"`
+	Status           string           `json:"status"`
+	Location         string           `json:"location"`
+	ReportStatus     string           `json:"reportStatus"`
+	PaymentStatus    string           `json:"paymentStatus"`
+	EmployeeIDs      []uuid.UUID      `json:"employeeIds,omitempty"`
+	Locations        []TravelLocation `json:"locations,omitempty"`
+	TotalCost        float64          `json:"totalCost"`
+	CreatorID        uuid.UUID        `json:"creatorId"`
+	EmployeeID       uuid.UUID        `json:"employeeId"`
+	IsViewed         bool             `json:"isViewed"`
 }
 
 type TravelLocation struct {
+	StartDate time.Time `json:"startDate"`
+	EndDate   time.Time `json:"endDate"`
+	Location  string    `json:"location"`
+	Province  string    `json:"province"`
 	Base
 	TravelRecordID uuid.UUID `json:"travelRecordId"`
-	Location       string    `json:"location"`
-	Province       string    `json:"province"`
-	StartDate      time.Time `json:"startDate"`
-	EndDate        time.Time `json:"endDate"`
 }
 
 type TravelCost struct {
-	TravelRecordID     uuid.UUID `json:"-"`
-	TicketGo           float64   `json:"ticketGo"`
-	TicketBack         float64   `json:"ticketBack"`
-	DailyAllowanceDays int       `json:"dailyAllowanceDays"`
-	DailyAllowanceRate float64   `json:"dailyAllowanceRate"`
-	HotelDays          int       `json:"hotelDays"`
-	HotelRate          float64   `json:"hotelRate"`
-	LocalTransport     float64   `json:"localTransport"`
-	RegionalTransport  float64   `json:"regionalTransport"`
-	TransportMode      string    `json:"transportMode"`
-	TransportAmount    float64   `json:"transportAmount"`
-
-	// Additional Costs
-	OtherCost     float64 `json:"otherCost"`
-	OtherCostDesc string  `json:"otherCostDesc"`
-
-	// Receipts and Documents
-	ReceiptFiles     json.RawMessage `json:"receiptFiles"`
-	TicketGoFile     json.RawMessage `json:"ticketGoFile"`
-	TicketBackFile   json.RawMessage `json:"ticketBackFile"`
-	BoardingPassFile json.RawMessage `json:"boardingPassFile"`
-	HotelFile        json.RawMessage `json:"hotelFile"`
-	TransportFile    json.RawMessage `json:"transportFile"`
-	AdditionalCosts  json.RawMessage `json:"additionalCosts"`
-	Details          json.RawMessage `json:"details"`
+	OtherCostDesc      string          `json:"otherCostDesc"`
+	TransportMode      string          `json:"transportMode"`
+	Details            json.RawMessage `json:"details"`
+	AdditionalCosts    json.RawMessage `json:"additionalCosts"`
+	TransportFile      json.RawMessage `json:"transportFile"`
+	HotelFile          json.RawMessage `json:"hotelFile"`
+	BoardingPassFile   json.RawMessage `json:"boardingPassFile"`
+	TicketBackFile     json.RawMessage `json:"ticketBackFile"`
+	TicketGoFile       json.RawMessage `json:"ticketGoFile"`
+	ReceiptFiles       json.RawMessage `json:"receiptFiles"`
+	HotelDays          int             `json:"hotelDays"`
+	OtherCost          float64         `json:"otherCost"`
+	TransportAmount    float64         `json:"transportAmount"`
+	RegionalTransport  float64         `json:"regionalTransport"`
+	LocalTransport     float64         `json:"localTransport"`
+	HotelRate          float64         `json:"hotelRate"`
+	DailyAllowanceRate float64         `json:"dailyAllowanceRate"`
+	DailyAllowanceDays int             `json:"dailyAllowanceDays"`
+	TicketBack         float64         `json:"ticketBack"`
+	TicketGo           float64         `json:"ticketGo"`
+	TravelRecordID     uuid.UUID       `json:"-"`
 }
 
 type TravelReport struct {
-	TravelRecordID uuid.UUID      `json:"-"`
-	Text           string         `json:"text"`
-	SubmittedAt    time.Time      `json:"submittedAt"`
-	Files          json.RawMessage `json:"files"` // Storing file metadata/links as JSON
+	SubmittedAt    time.Time       `json:"submittedAt"`
+	Text           string          `json:"text"`
+	PPKName        string          `json:"ppkName"`
+	PPKNIP         string          `json:"ppkNip"`
+	BendaharaName  string          `json:"bendaharaName"`
+	BendaharaNIP   string          `json:"bendaharaNip"`
+	Files          json.RawMessage `json:"files"`
 	SppdFile       json.RawMessage `json:"sppdFile"`
 	SuratTugasFile json.RawMessage `json:"suratTugasFile"`
-	PPKName        string         `json:"ppkName"`
-	PPKNIP         string         `json:"ppkNip"`
-	BendaharaName  string         `json:"bendaharaName"`
-	BendaharaNIP   string         `json:"bendaharaNip"`
-	TanggalMerah   json.RawMessage `json:"tanggalMerah"` // Array of dates string
+	TanggalMerah   json.RawMessage `json:"tanggalMerah"`
+	TravelRecordID uuid.UUID       `json:"-"`
 }
 
 // ==========================================
@@ -119,34 +111,27 @@ type TravelReport struct {
 // ==========================================
 
 type Province struct {
-	Base
 	Name string `json:"name"`
-	Code string `json:"code"` // e.g., "31" for DKI Jakarta
+	Code string `json:"code"`
+	Base
 }
 
 type SBMRate struct {
+	Province Province `json:"province"`
 	Base
-	ProvinceID uuid.UUID `json:"provinceId"`
-	Province   Province  `json:"province"`
-
-	Year int `json:"year"` // e.g., 2025
-
-	// Uang Harian (Per diem)
-	FullboardRate   float64 `json:"fullboardRate"`
-	FullhalfRate    float64 `json:"fullhalfRate"`
-	OutsideCityRate float64 `json:"outsideCityRate"` // Luar Kota Biasa
-	InsideCityRate  float64 `json:"insideCityRate"`  // Dalam Kota > 8 Jam
-	DiklatRate      float64 `json:"diklatRate"`
-
-	// Batas Tertinggi Penginapan (Hotel)
-	HotelEchelon1 float64 `json:"hotelEchelon1"` // Menteri/Eselon I
-	HotelEchelon2 float64 `json:"hotelEchelon2"`
-	HotelEchelon3 float64 `json:"hotelEchelon3"`
-	HotelEchelon4 float64 `json:"hotelEchelon4"` // Gol III
-	HotelStaff    float64 `json:"hotelStaff"`    // Gol II/I
-
-	// Transport Taksi (Perjalanan Dinas Dalam Negeri)
-	TaxiRate float64 `json:"taxiRate"`
+	InsideCityRate  float64   `json:"insideCityRate"`
+	Year            int       `json:"year"`
+	FullboardRate   float64   `json:"fullboardRate"`
+	FullhalfRate    float64   `json:"fullhalfRate"`
+	OutsideCityRate float64   `json:"outsideCityRate"`
+	DiklatRate      float64   `json:"diklatRate"`
+	HotelEchelon1   float64   `json:"hotelEchelon1"`
+	HotelEchelon2   float64   `json:"hotelEchelon2"`
+	HotelEchelon3   float64   `json:"hotelEchelon3"`
+	HotelEchelon4   float64   `json:"hotelEchelon4"`
+	HotelStaff      float64   `json:"hotelStaff"`
+	TaxiRate        float64   `json:"taxiRate"`
+	ProvinceID      uuid.UUID `json:"provinceId"`
 }
 
 // ==========================================
@@ -154,19 +139,16 @@ type SBMRate struct {
 // ==========================================
 
 type DashboardSummary struct {
-	TotalTrips     int64 `json:"totalTrips"`
-	ActiveTrips    int64 `json:"activeTrips"`
-	
-	StatusCompleted int64 `json:"statusCompleted"`
-	StatusInProgress int64 `json:"statusInProgress"`
-	StatusAssigned   int64 `json:"statusAssigned"`
-	StatusRejected   int64 `json:"statusRejected"`
-
-	ReportCompleted int64 `json:"reportCompleted"`
-	ReportPending   int64 `json:"reportPending"`
-	
-	RecentRecords []TravelRecord `json:"recentRecords"`
-	Budgets       []DashboardBudget `json:"budgets"`
+	RecentRecords    []TravelRecord    `json:"recentRecords"`
+	Budgets          []DashboardBudget `json:"budgets"`
+	TotalTrips       int64             `json:"totalTrips"`
+	ActiveTrips      int64             `json:"activeTrips"`
+	StatusCompleted  int64             `json:"statusCompleted"`
+	StatusInProgress int64             `json:"statusInProgress"`
+	StatusAssigned   int64             `json:"statusAssigned"`
+	StatusRejected   int64             `json:"statusRejected"`
+	ReportCompleted  int64             `json:"reportCompleted"`
+	ReportPending    int64             `json:"reportPending"`
 }
 
 type DashboardBudget struct {
@@ -176,23 +158,22 @@ type DashboardBudget struct {
 }
 
 type PaginatedParams struct {
+	StartDate     *time.Time `query:"start_date"`
+	EndDate       *time.Time `query:"end_date"`
+	UserID        *uuid.UUID `query:"user_id"`
 	Cursor        string     `query:"cursor"`
-	Limit         int        `query:"limit"`
 	Search        string     `query:"search"`
 	Status        string     `query:"status"`
 	ReportStatus  string     `query:"report_status"`
 	PaymentStatus string     `query:"payment_status"`
 	SortBy        string     `query:"sort_by"`
-	StartDate     *time.Time `query:"start_date"`
-	EndDate       *time.Time `query:"end_date"`
-	UserID        *uuid.UUID `query:"user_id"`
+	Limit         int        `query:"limit"`
 }
 
 type PaginatedResponse struct {
+	NextCursor   string         `json:"nextCursor"`
 	Data         []TravelRecord `json:"data"`
 	TotalItems   int64          `json:"totalItems"`
 	TotalRecords int64          `json:"totalRecords"`
-	NextCursor   string         `json:"nextCursor"`
 	Limit        int            `json:"limit"`
 }
-

@@ -167,16 +167,16 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 
 	// VALIDATION: Prevent duplicate SPD Number assignment manually.
 	if record.SPDNumber != "" {
-		existingRecords, err := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": record.SPDNumber})
-		if err == nil && len(existingRecords) > 0 {
+		existingRecords, errEx := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": record.SPDNumber})
+		if errEx == nil && len(existingRecords) > 0 {
 			return fmt.Errorf("nomor SPJ %s sudah digunakan oleh perjalanan dinas lain", record.SPDNumber)
 		}
 	}
 
 	if record.SPDNumber == "" {
-		spd, err := s.GenerateSpdNumber(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to generate SPD number: %w", err)
+		spd, errGen := s.GenerateSpdNumber(ctx)
+		if errGen != nil {
+			return fmt.Errorf("failed to generate SPD number: %w", errGen)
 		}
 		record.SPDNumber = spd
 	}
@@ -190,8 +190,8 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 			// Using a background context here since the parent request context might be cancelled after response
 			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			user, err := s.repo.GetUserByID(bgCtx, record.EmployeeID)
-			if err == nil && user != nil && user.NomorHP != "" {
+			user, errUsr := s.repo.GetUserByID(bgCtx, record.EmployeeID)
+			if errUsr == nil && user != nil && user.NomorHP != "" {
 				msg := fmt.Sprintf("*PEMBERITAHUAN PERJALANAN DINAS*\n\nHalo %s,\nAnda telah ditugaskan untuk perjalanan dinas baru.\n\n*Detail Penugasan:*\nNo. SPD: %s\nTujuan: %s, %s\nTanggal: %s s/d %s\nKeperluan: %s\n\nSilakan cek aplikasi Perjadin untuk detail selengkapnya dan mengunduh Surat Tugas.",
 					user.Name,
 					record.SPDNumber,
@@ -202,8 +202,8 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 					record.Purpose,
 				)
 				
-				if err := utils.SendWhatsAppMessage(s.cfg, user.NomorHP, msg); err != nil {
-					fmt.Printf("Failed to send WhatsApp message to %s: %v\n", user.NomorHP, err)
+				if waErr := utils.SendWhatsAppMessage(s.cfg, user.NomorHP, msg); waErr != nil {
+					fmt.Printf("Failed to send WhatsApp notification to %s: %v\n", user.NomorHP, waErr)
 				} else {
 					fmt.Printf("WhatsApp notification sent to %s for SPD %s\n", user.NomorHP, record.SPDNumber)
 				}
@@ -340,19 +340,20 @@ func (s *service) GetRecords(ctx context.Context, filters map[string]interface{}
 	var spdFilter string
 	if filters != nil {
 		if status, ok := filters["status"]; ok && status != "" {
-			statusFilter = status.(string)
+			statusFilter, _ = status.(string) //nolint:errcheck
 		}
 		if spd, ok := filters["spd"]; ok && spd != "" {
-			spdFilter = spd.(string)
+			spdFilter, _ = spd.(string) //nolint:errcheck
 		}
 	}
 
 	cacheKey := "records:all"
-	if statusFilter != "" && spdFilter != "" {
+	switch {
+	case statusFilter != "" && spdFilter != "":
 		cacheKey = fmt.Sprintf("records:status:%s:spd:%s", statusFilter, spdFilter)
-	} else if statusFilter != "" {
+	case statusFilter != "":
 		cacheKey = fmt.Sprintf("records:status:%s", statusFilter)
-	} else if spdFilter != "" {
+	case spdFilter != "":
 		cacheKey = fmt.Sprintf("records:spd:%s", spdFilter)
 	}
 
@@ -439,8 +440,8 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 				// The record is trying to change its SPD to an existing one, but it wasn't part of that group originally
 				if er.ID != record.ID {
 					// We must fetch the original state of this record to see if its spd actually changed
-					original, _ := s.repo.GetTravelRecordByID(ctx, record.ID)
-					if original != nil && original.SPDNumber != record.SPDNumber {
+					original, errOrig := s.repo.GetTravelRecordByID(ctx, record.ID)
+					if errOrig == nil && original != nil && original.SPDNumber != record.SPDNumber {
 						return fmt.Errorf("nomor SPD %s sudah digunakan oleh perjalanan dinas lain", record.SPDNumber)
 					}
 				}
@@ -463,8 +464,8 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 		// using an O(1) SQL bulk update. Completely avoids O(N) memory fetching.
 		if record.Report != nil && record.SPDNumber != "" {
 			go func(ctx context.Context, spd string, rec *models.TravelRecord) {
-				if err := s.repo.SyncReportBySpd(ctx, spd, rec); err != nil {
-					fmt.Printf("Error syncing reports for SPD %s: %v\n", spd, err)
+				if syncErr := s.repo.SyncReportBySpd(ctx, spd, rec); syncErr != nil {
+					fmt.Printf("Error syncing reports for SPD %s: %v\n", spd, syncErr)
 				}
 				// After DB sync, clear list caches again just in case.
 				// For the other individual IDs, they will organically expire or be cleared when accessed.
@@ -559,7 +560,7 @@ func (s *service) GetPaginatedRecords(ctx context.Context, params models.Paginat
 	cached, err := s.redisClient.Get(ctx, cacheKey).Result()
 	if err == nil && cached != "" {
 		var response models.PaginatedResponse
-		if err := json.Unmarshal([]byte(cached), &response); err == nil {
+		if umErr := json.Unmarshal([]byte(cached), &response); umErr == nil {
 			return &response, nil
 		}
 	}

@@ -5,8 +5,8 @@ import "testing"
 func TestTerbilang(t *testing.T) {
 	tests := []struct {
 		name     string
-		number   int
 		expected string
+		number   int
 	}{
 		{"Zero", 0, ""}, // Based on the current logic, 0 returns ""
 		{"Single digit", 5, "Lima"},
@@ -36,8 +36,8 @@ func TestTerbilang(t *testing.T) {
 func TestFormatTerbilang(t *testing.T) {
 	tests := []struct {
 		name     string
-		number   int
 		expected string
+		number   int
 	}{
 		{"Tens trim space", 20, "Dua Puluh"},
 		{"Hundreds trim space", 100, "Seratus"},

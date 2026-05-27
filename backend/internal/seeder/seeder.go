@@ -28,7 +28,10 @@ type rawUser struct {
 
 func getOriginalUsers() ([]models.User, []rawUser) {
 	password := "12345678"
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(fmt.Errorf("failed to hash password: %w", err))
+	}
 	hashedPwdStr := string(hashedPassword)
 
 	adminUsers := []models.User{
@@ -282,7 +285,10 @@ func seedProvincesAndRates(db *sql.DB) {
 func seedUsers(userRepo user.Repository, adminUsers []models.User, protokolData []rawUser) {
 	log.Println("Seeding Users...")
 	password := "12345678"
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(fmt.Errorf("failed to hash password: %w", err))
+	}
 	hashedPwdStr := string(hashedPassword)
 
 	for _, u := range adminUsers {
