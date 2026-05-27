@@ -8,19 +8,19 @@ func TestTerbilang(t *testing.T) {
 		expected string
 		number   int
 	}{
-		{"Zero", 0, ""}, // Based on the current logic, 0 returns ""
-		{"Single digit", 5, "Lima"},
-		{"Eleven", 11, "Sebelas"},
-		{"Teens", 15, "Lima Belas"},
-		{"Tens", 20, "Dua Puluh "},
-		{"Tens with units", 45, "Empat Puluh Lima"},
-		{"One Hundred", 100, "Seratus "},
-		{"Hundreds with tens", 150, "Seratus Lima Puluh "},
-		{"Hundreds with units", 505, "Lima Ratus Lima"},
-		{"One Thousand", 1000, "Seribu "},
-		{"Thousands", 2026, "Dua Ribu Dua Puluh Enam"},
-		{"Millions", 1500000, "Satu Juta Lima Ratus  Ribu "}, // Kept double space as this is raw unformatted output
-		{"Negative", -15, "Minus Lima Belas"},
+		{name: "Zero", number: 0, expected: ""}, // Based on the current logic, 0 returns ""
+		{name: "Single digit", number: 5, expected: "Lima"},
+		{name: "Eleven", number: 11, expected: "Sebelas"},
+		{name: "Teens", number: 15, expected: "Lima Belas"},
+		{name: "Tens", number: 20, expected: "Dua Puluh "},
+		{name: "Tens with units", number: 45, expected: "Empat Puluh Lima"},
+		{name: "One Hundred", number: 100, expected: "Seratus "},
+		{name: "Hundreds with tens", number: 150, expected: "Seratus Lima Puluh "},
+		{name: "Hundreds with units", number: 505, expected: "Lima Ratus Lima"},
+		{name: "One Thousand", number: 1000, expected: "Seribu "},
+		{name: "Thousands", number: 2026, expected: "Dua Ribu Dua Puluh Enam"},
+		{name: "Millions", number: 1500000, expected: "Satu Juta Lima Ratus  Ribu "}, // Kept double space as this is raw unformatted output
+		{name: "Negative", number: -15, expected: "Minus Lima Belas"},
 	}
 
 	for _, tc := range tests {
@@ -39,10 +39,10 @@ func TestFormatTerbilang(t *testing.T) {
 		expected string
 		number   int
 	}{
-		{"Tens trim space", 20, "Dua Puluh"},
-		{"Hundreds trim space", 100, "Seratus"},
-		{"Thousands trim space", 1000, "Seribu"},
-		{"Millions trim space", 1500000, "Satu Juta Lima Ratus Ribu"},
+		{name: "Tens trim space", number: 20, expected: "Dua Puluh"},
+		{name: "Hundreds trim space", number: 100, expected: "Seratus"},
+		{name: "Thousands trim space", number: 1000, expected: "Seribu"},
+		{name: "Millions trim space", number: 1500000, expected: "Satu Juta Lima Ratus Ribu"},
 	}
 
 	for _, tc := range tests {

@@ -230,9 +230,19 @@ jobs:
             cp -r ~/perjadin-app/deploy/quadlets/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
             
-            # Reload systemd and restart services
+            # Reload systemd (just in case quadlets changed)
             systemctl --user daemon-reload
-            systemctl --user restart perjadin-backend.service perjadin-frontend.service
-            
+
             # Trigger auto-update
             podman auto-update
+
+            # Just to ensure they are started if auto-update didn't trigger
+            systemctl --user start perjadin-backend.service perjadin-frontend.service
+
+            # Wait a few seconds for services to stabilize or crash
+            sleep 10
+
+            echo "=== BACKEND LOGS ==="
+            journalctl --user -u perjadin-backend.service --no-pager -n 150
+            echo "=== FRONTEND LOGS ==="
+            journalctl --user -u perjadin-frontend.service --no-pager -n 50
