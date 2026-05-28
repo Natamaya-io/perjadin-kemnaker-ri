@@ -672,6 +672,15 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
 		mc := mapDBCost(c)
+		
+		// SECURITY & PERFORMANCE: DO NOT return huge Base64 PDF/Image files in the bulk list response!
+		mc.TransportFile = nil
+		mc.HotelFile = nil
+		mc.BoardingPassFile = nil
+		mc.TicketBackFile = nil
+		mc.TicketGoFile = nil
+		mc.ReceiptFiles = nil
+		
 		costMap[c.TravelRecordID] = &mc
 	}
 
@@ -1387,6 +1396,15 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
 		mc := mapDBCost(c)
+		
+		// SECURITY & PERFORMANCE: DO NOT return huge Base64 PDF/Image files in the bulk list response!
+		mc.TransportFile = nil
+		mc.HotelFile = nil
+		mc.BoardingPassFile = nil
+		mc.TicketBackFile = nil
+		mc.TicketGoFile = nil
+		mc.ReceiptFiles = nil
+		
 		costMap[c.TravelRecordID] = &mc
 	}
 

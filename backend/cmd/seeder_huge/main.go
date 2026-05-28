@@ -27,7 +27,7 @@ func run() error {
 	}
 	defer db.Close()
 
-	log.Println("Generating 1000 travel records...")
+	log.Println("Generating 2000 travel records...")
 
 	// Get a random user for creator_id and employee_id
 	var userID uuid.UUID
@@ -71,7 +71,7 @@ func run() error {
 		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
 
-	for i := 1; i <= 1000; i++ {
+	for i := 1; i <= 2000; i++ {
 		recordID := uuid.New()
 		spdNumber := fmt.Sprintf("ID-SPJ-DUMMY-%04d", i)
 		purpose := purposes[rand.Intn(len(purposes))]
@@ -120,6 +120,6 @@ func run() error {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	log.Println("Successfully generated 1000 dummy travel records.")
+	log.Println("Successfully generated 2000 dummy travel records.")
 	return nil
 }
