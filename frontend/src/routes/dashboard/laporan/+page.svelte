@@ -25,7 +25,7 @@
     // Filter & Sort State
     let searchQuery = '';
     let statusFilter = 'all'; // 'all', 'Completed', 'Pending'
-    let sortOption = 'spj-asc'; // Default to oldest SPJ first
+    let sortOption = 'spj-desc'; // Default to newest SPJ first
     let startDate = '';
     let endDate = '';
     let limit = 50;
