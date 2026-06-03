@@ -25,7 +25,7 @@
     // Filter & Sort State
     let searchQuery = '';
     let statusFilter = 'all'; // 'all', 'Completed', 'Pending'
-    let sortOption = 'spj-desc'; // Default to newest SPJ
+    let sortOption = 'spj-asc'; // Default to oldest SPJ first
     let startDate = '';
     let endDate = '';
     let limit = 50;
@@ -224,8 +224,8 @@
                     {:else}
                         {#each displayRecords as record (record.id)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                <td class="font-mono text-xs text-slate-500 pl-4 py-4 align-top">
-                                    <span class="font-bold text-slate-700">{record.spd}</span>
+                                <td class="pl-4 py-4 align-middle">
+                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
                                     <div class="mt-1">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                             {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
@@ -240,7 +240,7 @@
                                         {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                     </div>
                                     {#if record.agenda}
-                                    <div class="text-[11px] text-slate-600 mt-1.5 font-medium bg-slate-50/80 inline-block px-2 py-1 rounded-md border border-slate-200">
+                                    <div class="text-[11px] text-slate-600 mt-1.5 font-medium">
                                         <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
                                     </div>
                                     {/if}
@@ -390,7 +390,7 @@
     <div class="h-full flex flex-col">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
             <h3 class="font-bold text-slate-800">Pratinjau Dokumen</h3>
-            <button type="button" class="p-2 text-slate-400 hover:text-red-500 transition-colors" on:click={() => isPreviewOpen = false}>
+            <button type="button" class="p-2 text-slate-400 hover:text-red-500 transition-colors" aria-label="Tutup pratinjau" on:click={() => isPreviewOpen = false}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>

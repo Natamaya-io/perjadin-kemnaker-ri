@@ -37,7 +37,7 @@ func decodeCursor(c string) CursorData {
 		data.Offset = offset
 		return data
 	}
-	
+
 	b, err := base64.RawURLEncoding.DecodeString(c)
 	if err == nil {
 		json.Unmarshal(b, &data)
@@ -64,6 +64,8 @@ type Repository interface {
 	SyncSpdSequence(ctx context.Context) error
 	GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error)
 	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
+	GetFactualSequenceNumber(ctx context.Context, id uuid.UUID, createdAt time.Time) (int, error)
+	RecalculateSequenceNumbers(ctx context.Context) ([]uuid.UUID, error)
 }
 
 type repository struct {
@@ -191,6 +193,7 @@ func mapDBRecord(dbr db.TravelRecord) models.TravelRecord {
 		SuratTugasPath:   fromNullString(dbr.SuratTugasPath),
 		SuratTugasNumber: fromNullString(dbr.SuratTugasNumber),
 		SuratTugasDate:   fromNullTime(dbr.SuratTugasDate),
+		SequenceNumber:   fromNullInt32(dbr.SequenceNumber),
 	}
 }
 
@@ -431,7 +434,7 @@ func (r *repository) CreateTravelRecord(ctx context.Context, record *models.Trav
 	if err != nil {
 		return err
 	}
-	
+
 	// Preserve locations before mapping (mapDBRecord might clear them as they aren't in the DB TravelRecord struct)
 	originalLocations := record.Locations
 	*record = mapDBRecord(dbr)
@@ -583,7 +586,7 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	if spd, ok := filters["spd"]; ok && spd != "" {
 		spdFilter, _ = spd.(string) //nolint:errcheck
 	}
-	
+
 	limit := 1000
 	if l, ok := filters["limit"]; ok && l != "" {
 		lStr, _ := l.(string) //nolint:errcheck
@@ -635,7 +638,7 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 
 	for _, rec := range dbrs {
 		recordIDs = append(recordIDs, rec.ID)
-		
+
 		if !userIDMap[rec.EmployeeID] {
 			userIDs = append(userIDs, rec.EmployeeID)
 			userIDMap[rec.EmployeeID] = true
@@ -644,6 +647,20 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 			userIDs = append(userIDs, rec.CreatorID)
 			userIDMap[rec.CreatorID] = true
 		}
+	}
+
+	// Fetch dynamic sequence numbers in bulk
+	var seqNumbers []db.GetSequenceNumbersRow
+	if len(recordIDs) > 0 {
+		var errSeq error
+		seqNumbers, errSeq = r.q.GetSequenceNumbers(ctx, recordIDs)
+		if errSeq != nil {
+			fmt.Printf("GetSequenceNumbers err: %v\n", errSeq)
+		}
+	}
+	seqMap := make(map[uuid.UUID]int)
+	for _, sq := range seqNumbers {
+		seqMap[sq.ID] = int(sq.SequenceNumber)
 	}
 
 	// Fetch Users in Bulk
@@ -672,7 +689,7 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
 		mc := mapDBCost(c)
-		
+
 		// SECURITY & PERFORMANCE: DO NOT return huge Base64 PDF/Image files in the bulk list response!
 		mc.TransportFile = nil
 		mc.HotelFile = nil
@@ -680,7 +697,7 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 		mc.TicketBackFile = nil
 		mc.TicketGoFile = nil
 		mc.ReceiptFiles = nil
-		
+
 		costMap[c.TravelRecordID] = &mc
 	}
 
@@ -733,10 +750,54 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 			tr.Locations = l
 		}
 
+		if seq, ok := seqMap[dbr.ID]; ok {
+			tr.SequenceNumber = seq
+		}
+
 		travelRecords = append(travelRecords, tr)
 	}
 
 	return travelRecords, nil
+}
+
+func (r *repository) RecalculateSequenceNumbers(ctx context.Context) ([]uuid.UUID, error) {
+	query := `
+		WITH group_min_time AS (
+			SELECT spd_number, MIN(created_at) as min_time
+			FROM travel_records
+			WHERE deleted_at IS NULL
+			GROUP BY spd_number
+		),
+		ranked_records AS (
+			SELECT 
+				t.id, 
+				ROW_NUMBER() OVER (
+					ORDER BY g.min_time ASC, t.spd_number ASC, t.created_at ASC, t.id ASC
+				) as dynamic_sequence
+			FROM travel_records t
+			JOIN group_min_time g ON t.spd_number = g.spd_number
+			WHERE t.deleted_at IS NULL
+		)
+		UPDATE travel_records tr
+		SET sequence_number = r.dynamic_sequence
+		FROM ranked_records r
+		WHERE tr.id = r.id AND (tr.sequence_number IS NULL OR tr.sequence_number != r.dynamic_sequence)
+		RETURNING tr.id
+	`
+	rows, err := r.d.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var updatedIDs []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err == nil {
+			updatedIDs = append(updatedIDs, id)
+		}
+	}
+	return updatedIDs, nil
 }
 
 func (r *repository) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (*models.TravelRecord, error) {
@@ -843,7 +904,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context, role string, userI
 			for _, row := range counts {
 				status := fromNullString(row.Status)
 				paymentStatus := fromNullString(row.PaymentStatus)
-				
+
 				switch {
 				case paymentStatus == "Paid":
 					summary.StatusCompleted += row.Count
@@ -978,7 +1039,6 @@ func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.Trav
 
 	qtx := r.q.WithTx(tx)
 
-
 	_, err = qtx.UpdateTravelRecord(ctx, db.UpdateTravelRecordParams{
 		ID:               record.ID,
 		SpdNumber:        toNullString(record.SPDNumber),
@@ -1013,7 +1073,7 @@ func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.Trav
 		// Always generate a new ID to prevent primary key conflict with the soft-deleted row
 		loc.ID = uuid.New()
 		record.Locations[i].ID = loc.ID
-		
+
 		_, err := qtx.CreateTravelLocation(ctx, db.CreateTravelLocationParams{
 			ID:             loc.ID,
 			TravelRecordID: record.ID,
@@ -1026,7 +1086,6 @@ func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.Trav
 			return fmt.Errorf("CreateTravelLocation: %w", err)
 		}
 	}
-
 
 	if record.Cost != nil {
 		_, err := qtx.UpdateTravelCost(ctx, db.UpdateTravelCostParams{
@@ -1359,7 +1418,7 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 
 	for _, rec := range records {
 		recordIDs = append(recordIDs, rec.ID)
-		
+
 		if !userIDMap[rec.EmployeeID] {
 			userIDs = append(userIDs, rec.EmployeeID)
 			userIDMap[rec.EmployeeID] = true
@@ -1368,6 +1427,20 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 			userIDs = append(userIDs, rec.CreatorID)
 			userIDMap[rec.CreatorID] = true
 		}
+	}
+
+	// Fetch dynamic sequence numbers in bulk
+	var seqNumbers []db.GetSequenceNumbersRow
+	if len(recordIDs) > 0 {
+		var errSeq error
+		seqNumbers, errSeq = r.q.GetSequenceNumbers(ctx, recordIDs)
+		if errSeq != nil {
+			fmt.Printf("GetSequenceNumbers err: %v\n", errSeq)
+		}
+	}
+	seqMap := make(map[uuid.UUID]int)
+	for _, sq := range seqNumbers {
+		seqMap[sq.ID] = int(sq.SequenceNumber)
 	}
 
 	// Fetch Users in Bulk
@@ -1396,7 +1469,7 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 	costMap := make(map[uuid.UUID]*models.TravelCost)
 	for _, c := range costs {
 		mc := mapDBCost(c)
-		
+
 		// SECURITY & PERFORMANCE: DO NOT return huge Base64 PDF/Image files in the bulk list response!
 		mc.TransportFile = nil
 		mc.HotelFile = nil
@@ -1404,7 +1477,7 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		mc.TicketBackFile = nil
 		mc.TicketGoFile = nil
 		mc.ReceiptFiles = nil
-		
+
 		costMap[c.TravelRecordID] = &mc
 	}
 
@@ -1426,7 +1499,7 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		mr.SppdFile = nil
 		mr.SuratTugasFile = nil
 		mr.TanggalMerah = nil
-		
+
 		reportMap[rep.TravelRecordID] = &mr
 	}
 
@@ -1446,34 +1519,12 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 
 	// 6. Map to Domain Models in O(1) time
 	var travelRecords []models.TravelRecord
-	
+
 	// Create a map to group records by SPD first
 	recordsBySpd := make(map[string][]models.TravelRecord)
 	for _, rec := range records {
 		spdStr := fromNullString(rec.SpdNumber)
-		tr := models.TravelRecord{
-			Base: models.Base{
-				ID:        rec.ID,
-				CreatedAt: rec.CreatedAt.Time,
-				UpdatedAt: rec.UpdatedAt.Time,
-			},
-			SPDNumber:     spdStr,
-			EmployeeID:    rec.EmployeeID,
-			CreatorID:     rec.CreatorID,
-			StartDate:     rec.StartDate.Time,
-			EndDate:       rec.EndDate.Time,
-			Location:      fromNullString(rec.Location),
-			Province:      fromNullString(rec.Province),
-			Type:          fromNullString(rec.Type),
-			Purpose:       fromNullString(rec.Purpose),
-			Stakeholder:   fromNullString(rec.Stakeholder),
-			Agenda:        fromNullString(rec.Agenda),
-			Status:        fromNullString(rec.Status),
-			IsViewed:      rec.IsViewed.Bool,
-			ReportStatus:  fromNullString(rec.ReportStatus),
-			PaymentStatus: fromNullString(rec.PaymentStatus),
-			TotalCost:     fromNullFloat(rec.TotalCost),
-		}
+		tr := mapDBRecord(rec)
 
 		if u, ok := userMap[rec.EmployeeID]; ok {
 			tr.Employee = u
@@ -1491,6 +1542,10 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 			tr.Locations = l
 		}
 
+		if seq, ok := seqMap[rec.ID]; ok {
+			tr.SequenceNumber = seq
+		}
+
 		recordsBySpd[spdStr] = append(recordsBySpd[spdStr], tr)
 	}
 
@@ -1506,4 +1561,27 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		NextCursor:   nextCursor,
 		Limit:        params.Limit,
 	}, nil
+}
+
+func (r *repository) GetFactualSequenceNumber(ctx context.Context, id uuid.UUID, createdAt time.Time) (int, error) {
+	query := `
+		WITH ordered AS (
+			SELECT id, ROW_NUMBER() OVER (
+				ORDER BY 
+					CAST(SUBSTRING(spd_number FROM '[0-9]+') AS INTEGER) ASC, 
+					sequence_number ASC,
+					created_at ASC
+			) as actual_rank 
+			FROM travel_records 
+			WHERE deleted_at IS NULL AND spd_number IS NOT NULL AND spd_number <> ''
+		)
+		SELECT actual_rank FROM ordered WHERE id = $1
+	`
+	var seq int
+	err := r.d.QueryRowContext(ctx, query, id).Scan(&seq)
+	if err != nil {
+		// Fallback in case of parsing errors or missing
+		return 0, err
+	}
+	return seq, nil
 }

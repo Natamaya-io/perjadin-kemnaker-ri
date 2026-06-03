@@ -8,7 +8,6 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/config"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_MapTravelToDocument_DatePrioritization(t *testing.T) {
@@ -45,9 +44,7 @@ func TestHandler_MapTravelToDocument_DatePrioritization(t *testing.T) {
 		},
 	}
 
-	// Mock GetRecords to return empty or a list to calculate spdSubNumber
-	mockSvc.On("GetRecords", mock.Anything, mock.Anything).Return([]models.TravelRecord{*record}, nil)
-
+	// GetRecords is no longer called in mapTravelToDocument
 	vars := handler.mapTravelToDocument(record, 1)
 
 	// Assertions for ST Date prioritization
@@ -82,8 +79,6 @@ func TestHandler_MapTravelToDocument_FallbackToStartDate(t *testing.T) {
 		StartDate: startDate,
 		// No ST Date
 	}
-
-	mockSvc.On("GetRecords", mock.Anything, mock.Anything).Return([]models.TravelRecord{*record}, nil)
 
 	vars := handler.mapTravelToDocument(record, 1)
 

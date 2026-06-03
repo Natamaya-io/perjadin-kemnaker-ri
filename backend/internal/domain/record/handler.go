@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -102,41 +104,9 @@ func addWorkingDays(t time.Time, days int, holidays []time.Time) time.Time {
 	return t
 }
 
-func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[string]interface{} {
-	localIndex := 1
-	if allRecords, err := h.svc.GetRecords(context.Background(), map[string]interface{}{}); err == nil {
-		sort.Slice(allRecords, func(i, j int) bool {
-			timeI := allRecords[i].CreatedAt.UnixNano()
-			timeJ := allRecords[j].CreatedAt.UnixNano()
-			if timeI != timeJ {
-				return timeI < timeJ
-			}
-			spdI := allRecords[i].SPDNumber
-			spdJ := allRecords[j].SPDNumber
-			if spdI != spdJ {
-				return spdI < spdJ
-			}
-			nameI := ""
-			if allRecords[i].Employee.Name != "" {
-				nameI = allRecords[i].Employee.Name
-			}
-			nameJ := ""
-			if allRecords[j].Employee.Name != "" {
-				nameJ = allRecords[j].Employee.Name
-			}
-			if nameI != nameJ {
-				return nameI < nameJ
-			}
-			return allRecords[i].ID.String() < allRecords[j].ID.String()
-		})
-		for i, r := range allRecords {
-			if r.ID == record.ID {
-				localIndex = i + 1
-				break
-			}
-		}
-	}
-
+func (h *Handler) mapTravelToDocument(record *models.TravelRecord, localIndex int) map[string]interface{} {
+	// spdSubNumber is the sequence number of the employee within the specific ID-SPJ group.
+	// It is formatted as "001", "002", etc.
 	titleCaser := cases.Title(language.Indonesian)
 	days := 0
 	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
@@ -184,6 +154,12 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		transportMode = record.Cost.TransportMode
 	}
 	spdSubNumber := fmt.Sprintf("%03d", localIndex)
+
+	noSurat := strings.TrimSpace(record.SuratTugasNumber)
+	tglSurat := record.SuratTugasDate
+	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0"
+
 	extractNumericID := func(id string) string {
 		if id == "" {
 			return spdSubNumber
@@ -191,7 +167,6 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		parts := strings.Split(id, "-")
 		if len(parts) > 0 {
 			suffix := parts[len(parts)-1]
-			// Ensure it's a numeric suffix, if not return the whole suffix or spdSubNumber
 			if len(suffix) < 3 {
 				return fmt.Sprintf("%03s", suffix)
 			}
@@ -199,11 +174,6 @@ func (h *Handler) mapTravelToDocument(record *models.TravelRecord, _ int) map[st
 		}
 		return id
 	}
-
-	noSurat := strings.TrimSpace(record.SuratTugasNumber)
-	tglSurat := record.SuratTugasDate
-	numberGap := "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
-	dateGap := "\u00A0\u00A0\u00A0\u00A0\u00A0"
 
 	tanggalPerjalananDoc := ""
 	if !record.StartDate.IsZero() && !record.EndDate.IsZero() {
@@ -530,49 +500,16 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	spdGroupRecords, errGet := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
-	if errGet != nil {
-		fmt.Printf("GetRecords error: %v\n", errGet)
+	spdGroupRecords := h.getGroupRecordsSorted(record.SPDNumber)
+
+	seqIndex := 0
+	if noSpdStr := c.QueryParam("no_spd"); noSpdStr != "" {
+		fmt.Sscanf(noSpdStr, "%d", &seqIndex)
 	}
-	sort.Slice(spdGroupRecords, func(i, j int) bool {
-		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
-		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
-
-		getPriority := func(name string) int {
-			if strings.Contains(name, "auditya hermawan") {
-				return 1
-			}
-			if strings.Contains(name, "mochamad gufron") {
-				return 2
-			}
-			if strings.Contains(name, "muhammad isa") {
-				return 3
-			}
-			return 4
-		}
-
-		pI := getPriority(nameI)
-		pJ := getPriority(nameJ)
-
-		if pI != pJ {
-			return pI < pJ
-		}
-
-		nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
-		nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
-
-		hasNIPI := nipI != "" && nipI != "-"
-		hasNIPJ := nipJ != "" && nipJ != "-"
-
-		if hasNIPI && !hasNIPJ {
-			return true
-		} else if !hasNIPI && hasNIPJ {
-			return false
-		}
-		return spdGroupRecords[i].CreatedAt.Unix() < spdGroupRecords[j].CreatedAt.Unix()
-	})
-
-	vars := h.mapTravelToDocument(record, 1)
+	if seqIndex == 0 {
+		seqIndex, _ = h.svc.GetFactualSequenceNumber(c.Request().Context(), record.ID, record.CreatedAt)
+	}
+	vars := h.mapTravelToDocument(record, seqIndex)
 	vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
 	vars["tgl_cetak"] = vars["tanggal_laporan"]
 	ordinals := []string{"satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"}
@@ -736,48 +673,16 @@ func (h *Handler) ExportLaporanDocx(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	spdGroupRecords, errGet := h.svc.GetRecords(context.Background(), map[string]interface{}{"spd": record.SPDNumber})
-	if errGet != nil {
-		fmt.Printf("GetRecords error: %v\n", errGet)
+	spdGroupRecords := h.getGroupRecordsSorted(record.SPDNumber)
+
+	seqIndex := 0
+	if noSpdStr := c.QueryParam("no_spd"); noSpdStr != "" {
+		fmt.Sscanf(noSpdStr, "%d", &seqIndex)
 	}
-	sort.Slice(spdGroupRecords, func(i, j int) bool {
-		nameI := strings.ToLower(strings.TrimSpace(spdGroupRecords[i].Employee.Name))
-		nameJ := strings.ToLower(strings.TrimSpace(spdGroupRecords[j].Employee.Name))
-
-		getPriority := func(name string) int {
-			if strings.Contains(name, "auditya hermawan") {
-				return 1
-			}
-			if strings.Contains(name, "mochamad gufron") {
-				return 2
-			}
-			if strings.Contains(name, "muhammad isa") {
-				return 3
-			}
-			return 4
-		}
-
-		pI := getPriority(nameI)
-		pJ := getPriority(nameJ)
-		if pI != pJ {
-			return pI < pJ
-		}
-
-		nipI := strings.TrimSpace(spdGroupRecords[i].Employee.NIP)
-		nipJ := strings.TrimSpace(spdGroupRecords[j].Employee.NIP)
-
-		hasNIPI := nipI != "" && nipI != "-"
-		hasNIPJ := nipJ != "" && nipJ != "-"
-
-		if hasNIPI && !hasNIPJ {
-			return true
-		} else if !hasNIPI && hasNIPJ {
-			return false
-		}
-		return spdGroupRecords[i].CreatedAt.Unix() < spdGroupRecords[j].CreatedAt.Unix()
-	})
-
-	vars := h.mapTravelToDocument(record, 1)
+	if seqIndex == 0 {
+		seqIndex, _ = h.svc.GetFactualSequenceNumber(c.Request().Context(), record.ID, record.CreatedAt)
+	}
+	vars := h.mapTravelToDocument(record, seqIndex)
 	vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
 	vars["tgl_cetak"] = vars["tanggal_laporan"]
 
@@ -828,7 +733,14 @@ func (h *Handler) exportDocument(c echo.Context, templateName, prefix string) (e
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	vars := h.mapTravelToDocument(record, 1)
+	seqIndex := 0
+	if noSpdStr := c.QueryParam("no_spd"); noSpdStr != "" {
+		fmt.Sscanf(noSpdStr, "%d", &seqIndex)
+	}
+	if seqIndex == 0 {
+		seqIndex, _ = h.svc.GetFactualSequenceNumber(c.Request().Context(), record.ID, record.CreatedAt)
+	}
+	vars := h.mapTravelToDocument(record, seqIndex)
 	switch prefix {
 	case "Laporan":
 		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
@@ -873,7 +785,14 @@ func (h *Handler) exportDocumentDocx(c echo.Context, templateName string, prefix
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	vars := h.mapTravelToDocument(record, 1)
+	seqIndex := 0
+	if noSpdStr := c.QueryParam("no_spd"); noSpdStr != "" {
+		fmt.Sscanf(noSpdStr, "%d", &seqIndex)
+	}
+	if seqIndex == 0 {
+		seqIndex, _ = h.svc.GetFactualSequenceNumber(c.Request().Context(), record.ID, record.CreatedAt)
+	}
+	vars := h.mapTravelToDocument(record, seqIndex)
 	switch prefix {
 	case "Laporan":
 		vars["tanggal_dikeluarkan"] = vars["tanggal_laporan"]
@@ -929,6 +848,24 @@ func (h *Handler) UploadFile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal membuat file")
 	}
 	defer dst.Close()
+
+	// BACKEND COMPRESSION: If it's an image, decode and re-encode it with high compression
+	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" {
+		img, _, errImg := image.Decode(src)
+		if errImg == nil {
+			// Save it explicitly as a highly compressed JPEG regardless of original
+			errEncode := jpeg.Encode(dst, img, &jpeg.Options{Quality: 60}) // 60 is a good balance for documents/proofs
+			if errEncode == nil {
+				return c.JSON(http.StatusOK, map[string]string{"path": filename})
+			}
+			// If encoding fails, fallback to direct copy below
+		}
+		// Reset the reader pointer for fallback
+		if seeker, ok := src.(io.Seeker); ok {
+			seeker.Seek(0, io.SeekStart)
+		}
+	}
+
 	if _, errC := io.Copy(dst, src); errC != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal menyimpan file")
 	}

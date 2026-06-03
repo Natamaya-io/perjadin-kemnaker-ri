@@ -33,6 +33,7 @@ type Service interface {
 	DeleteRecordsBySpd(ctx context.Context, spd string) error
 	GetDashboardSummary(ctx context.Context, role string, userIDStr string) (*models.DashboardSummary, error)
 	GetPaginatedRecords(ctx context.Context, params models.PaginatedParams) (*models.PaginatedResponse, error)
+	GetFactualSequenceNumber(ctx context.Context, id uuid.UUID, createdAt time.Time) (int, error)
 }
 
 type service struct {
@@ -64,6 +65,9 @@ func (s *service) GenerateSpdNumber(ctx context.Context) (string, error) {
 // invalidateRecordCaches uses O(1) direct key deletion instead of the nuclear
 // 'KEYS records:*' which wipes all unrelated individual record caches and blocks Redis.
 func (s *service) invalidateRecordCaches(ctx context.Context, ids ...uuid.UUID) {
+	updatedIDs, _ := s.repo.RecalculateSequenceNumbers(ctx)
+	ids = append(ids, updatedIDs...)
+
 	if s.redisClient == nil {
 		return
 	}
@@ -442,6 +446,11 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 					// We must fetch the original state of this record to see if its spd actually changed
 					original, errOrig := s.repo.GetTravelRecordByID(ctx, record.ID)
 					if errOrig == nil && original != nil && original.SPDNumber != record.SPDNumber {
+						// Allow if the existing record is actually a sibling from the same trip 
+						// (happens when the frontend loops and updates a group sequentially)
+						if er.Purpose == record.Purpose && er.Location == record.Location {
+							continue
+						}
 						return fmt.Errorf("nomor SPD %s sudah digunakan oleh perjalanan dinas lain", record.SPDNumber)
 					}
 				}
@@ -458,6 +467,8 @@ func (s *service) UpdateRecord(ctx context.Context, record *models.TravelRecord)
 			if syncErr := s.repo.SyncSpdSequence(bgCtx); syncErr != nil {
 				fmt.Printf("Warning: failed to sync SPD sequence after UpdateRecord: %v\n", syncErr)
 			}
+			// Invalidate cache again after sequence is updated so the frontend gets the new sorted order
+			s.invalidateRecordCaches(bgCtx)
 		}(context.Background())
 
 		// NEW: If a report was updated, sync it to all other records in the same SPD group
@@ -484,6 +495,7 @@ func (s *service) DeleteRecord(ctx context.Context, id uuid.UUID) error {
 			if syncErr := s.repo.SyncSpdSequence(context.Background()); syncErr != nil {
 				fmt.Printf("Warning: failed to sync SPD sequence after DeleteRecord: %v\n", syncErr)
 			}
+			s.invalidateRecordCaches(context.Background(), id)
 		}()
 	}
 	return err
@@ -497,6 +509,7 @@ func (s *service) DeleteRecordsBySpd(ctx context.Context, spd string) error {
 			if syncErr := s.repo.SyncSpdSequence(context.Background()); syncErr != nil {
 				fmt.Printf("Warning: failed to sync SPD sequence after DeleteRecordsBySpd: %v\n", syncErr)
 			}
+			s.invalidateRecordCaches(context.Background())
 		}()
 	}
 	return err
@@ -575,4 +588,8 @@ func (s *service) GetPaginatedRecords(ctx context.Context, params models.Paginat
 	}
 
 	return response, nil
+}
+
+func (s *service) GetFactualSequenceNumber(ctx context.Context, id uuid.UUID, createdAt time.Time) (int, error) {
+	return s.repo.GetFactualSequenceNumber(ctx, id, createdAt)
 }

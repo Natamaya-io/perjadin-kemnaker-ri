@@ -16,7 +16,7 @@
     <TableCell class="pl-4 py-3 align-top">
         <div class="flex flex-col gap-0.5">
             <span class="font-mono text-[10px] text-slate-400 leading-none">#{record.id}</span>
-            <span class="font-medium text-xs text-slate-700">{record.spd}</span>
+            <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
         </div>
     </TableCell>
     <TableCell class="py-3 align-top">

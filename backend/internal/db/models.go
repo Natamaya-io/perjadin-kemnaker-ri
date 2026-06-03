@@ -107,6 +107,7 @@ type TravelRecord struct {
 	SuratTugasPath   sql.NullString  `json:"surat_tugas_path"`
 	SuratTugasNumber sql.NullString  `json:"surat_tugas_number"`
 	SuratTugasDate   sql.NullTime    `json:"surat_tugas_date"`
+	SequenceNumber   sql.NullInt32   `json:"sequence_number"`
 }
 
 type TravelReport struct {

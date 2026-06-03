@@ -144,7 +144,7 @@ INSERT INTO travel_records (
   id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-) RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
+) RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number
 `
 
 type CreateTravelRecordParams struct {
@@ -218,6 +218,7 @@ func (q *Queries) CreateTravelRecord(ctx context.Context, arg CreateTravelRecord
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
 		&i.SuratTugasDate,
+		&i.SequenceNumber,
 	)
 	return i, err
 }
@@ -285,7 +286,7 @@ func (q *Queries) DeleteTravelCost(ctx context.Context, travelRecordID uuid.UUID
 }
 
 const deleteTravelLocationsByRecordID = `-- name: DeleteTravelLocationsByRecordID :exec
-UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1
+DELETE FROM travel_locations WHERE travel_record_id = $1
 `
 
 func (q *Queries) DeleteTravelLocationsByRecordID(ctx context.Context, travelRecordID uuid.UUID) error {
@@ -294,7 +295,7 @@ func (q *Queries) DeleteTravelLocationsByRecordID(ctx context.Context, travelRec
 }
 
 const deleteTravelLocationsBySpd = `-- name: DeleteTravelLocationsBySpd :exec
-UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP 
+DELETE FROM travel_locations
 WHERE travel_record_id IN (SELECT id FROM travel_records WHERE spd_number = $1)
 `
 
@@ -304,7 +305,7 @@ func (q *Queries) DeleteTravelLocationsBySpd(ctx context.Context, spdNumber sql.
 }
 
 const deleteTravelRecord = `-- name: DeleteTravelRecord :exec
-UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1
+DELETE FROM travel_records WHERE id = $1
 `
 
 func (q *Queries) DeleteTravelRecord(ctx context.Context, id uuid.UUID) error {
@@ -313,7 +314,7 @@ func (q *Queries) DeleteTravelRecord(ctx context.Context, id uuid.UUID) error {
 }
 
 const deleteTravelRecordBySpd = `-- name: DeleteTravelRecordBySpd :exec
-UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE spd_number = $1
+DELETE FROM travel_records WHERE spd_number = $1
 `
 
 func (q *Queries) DeleteTravelRecordBySpd(ctx context.Context, spdNumber sql.NullString) error {
@@ -462,7 +463,7 @@ func (q *Queries) GetDashboardStatusCounts(ctx context.Context, userID uuid.Null
 }
 
 const getOverlappingRecords = `-- name: GetOverlappingRecords :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records 
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number FROM travel_records 
 WHERE employee_id = $1 
   AND start_date <= $2
   AND end_date >= $3
@@ -509,6 +510,7 @@ func (q *Queries) GetOverlappingRecords(ctx context.Context, arg GetOverlappingR
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
 			&i.SuratTugasDate,
+			&i.SequenceNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -592,10 +594,10 @@ func (q *Queries) GetPaginatedSPDs(ctx context.Context, arg GetPaginatedSPDsPara
 }
 
 const getRecentRecords = `-- name: GetRecentRecords :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records 
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number FROM travel_records 
 WHERE deleted_at IS NULL 
   AND (NULLIF($1::uuid, NULL) IS NULL OR employee_id = $1 OR creator_id = $1)
-ORDER BY start_date DESC 
+ORDER BY created_at DESC, id ASC 
 LIMIT 5
 `
 
@@ -632,6 +634,7 @@ func (q *Queries) GetRecentRecords(ctx context.Context, userID uuid.NullUUID) ([
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
 			&i.SuratTugasDate,
+			&i.SequenceNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -647,7 +650,7 @@ func (q *Queries) GetRecentRecords(ctx context.Context, userID uuid.NullUUID) ([
 }
 
 const getRecordsBySPDs = `-- name: GetRecordsBySPDs :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number FROM travel_records
 WHERE deleted_at IS NULL
   AND spd_number = ANY($1::text[])
 ORDER BY created_at DESC, id ASC
@@ -686,7 +689,49 @@ func (q *Queries) GetRecordsBySPDs(ctx context.Context, spds []string) ([]Travel
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
 			&i.SuratTugasDate,
+			&i.SequenceNumber,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSequenceNumbers = `-- name: GetSequenceNumbers :many
+WITH ordered AS (
+    SELECT id, ROW_NUMBER() OVER (
+        ORDER BY CAST(SUBSTRING(spd_number FROM '[0-9]+') AS INTEGER) ASC, sequence_number ASC, created_at ASC
+    ) as actual_rank 
+    FROM travel_records 
+    WHERE deleted_at IS NULL AND spd_number IS NOT NULL AND spd_number <> ''
+)
+SELECT id, actual_rank::int AS sequence_number 
+FROM ordered 
+WHERE id = ANY($1::uuid[])
+`
+
+type GetSequenceNumbersRow struct {
+	ID             uuid.UUID `json:"id"`
+	SequenceNumber int32     `json:"sequence_number"`
+}
+
+func (q *Queries) GetSequenceNumbers(ctx context.Context, recordIds []uuid.UUID) ([]GetSequenceNumbersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSequenceNumbers, pq.Array(recordIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetSequenceNumbersRow{}
+	for rows.Next() {
+		var i GetSequenceNumbersRow
+		if err := rows.Scan(&i.ID, &i.SequenceNumber); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -881,8 +926,7 @@ func (q *Queries) GetTravelLocationsByRecordID(ctx context.Context, travelRecord
 const getTravelLocationsByRecordIDs = `-- name: GetTravelLocationsByRecordIDs :many
 SELECT id, created_at, updated_at, deleted_at, travel_record_id, location, province, start_date, end_date FROM travel_locations 
 WHERE travel_record_id = ANY($1::uuid[]) 
-  AND deleted_at IS NULL 
-ORDER BY start_date ASC, created_at ASC
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) GetTravelLocationsByRecordIDs(ctx context.Context, recordIds []uuid.UUID) ([]TravelLocation, error) {
@@ -919,7 +963,7 @@ func (q *Queries) GetTravelLocationsByRecordIDs(ctx context.Context, recordIds [
 }
 
 const getTravelRecordByID = `-- name: GetTravelRecordByID :one
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number FROM travel_records WHERE id = $1 AND deleted_at IS NULL LIMIT 1
 `
 
 func (q *Queries) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (TravelRecord, error) {
@@ -949,12 +993,13 @@ func (q *Queries) GetTravelRecordByID(ctx context.Context, id uuid.UUID) (Travel
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
 		&i.SuratTugasDate,
+		&i.SequenceNumber,
 	)
 	return i, err
 }
 
 const getTravelRecords = `-- name: GetTravelRecords :many
-SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date FROM travel_records
+SELECT id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number FROM travel_records
 WHERE deleted_at IS NULL
   AND (NULLIF($1::text, '') IS NULL OR status = $1)
 ORDER BY created_at DESC
@@ -994,6 +1039,7 @@ func (q *Queries) GetTravelRecords(ctx context.Context, dollar_1 string) ([]Trav
 			&i.SuratTugasPath,
 			&i.SuratTugasNumber,
 			&i.SuratTugasDate,
+			&i.SequenceNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -1211,7 +1257,7 @@ UPDATE travel_records SET
   surat_tugas_date = $20,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
+RETURNING id, created_at, updated_at, deleted_at, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date, sequence_number
 `
 
 type UpdateTravelRecordParams struct {
@@ -1285,6 +1331,7 @@ func (q *Queries) UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecord
 		&i.SuratTugasPath,
 		&i.SuratTugasNumber,
 		&i.SuratTugasDate,
+		&i.SequenceNumber,
 	)
 	return i, err
 }

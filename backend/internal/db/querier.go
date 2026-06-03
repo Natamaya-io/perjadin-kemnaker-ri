@@ -38,6 +38,7 @@ type Querier interface {
 	GetRecordsBySPDs(ctx context.Context, spds []string) ([]TravelRecord, error)
 	GetSBMRateByProvinceAndYear(ctx context.Context, arg GetSBMRateByProvinceAndYearParams) (SbmRate, error)
 	GetSBMRates(ctx context.Context) ([]SbmRate, error)
+	GetSequenceNumbers(ctx context.Context, recordIds []uuid.UUID) ([]GetSequenceNumbersRow, error)
 	GetSettingByKey(ctx context.Context, key string) (Setting, error)
 	GetSettings(ctx context.Context) ([]Setting, error)
 	GetTotalPaginatedSPDsCount(ctx context.Context, arg GetTotalPaginatedSPDsCountParams) (int64, error)

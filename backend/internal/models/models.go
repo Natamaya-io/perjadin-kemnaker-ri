@@ -57,6 +57,7 @@ type TravelRecord struct {
 	CreatorID        uuid.UUID        `json:"creatorId"`
 	EmployeeID       uuid.UUID        `json:"employeeId"`
 	IsViewed         bool             `json:"isViewed"`
+	SequenceNumber   int              `json:"sequenceNumber"`
 }
 
 type TravelLocation struct {

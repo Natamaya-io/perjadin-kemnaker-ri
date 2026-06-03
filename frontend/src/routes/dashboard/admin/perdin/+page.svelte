@@ -168,6 +168,7 @@
             acc[record.spd] = { ...record, employeesList: [record] };
         } else {
             acc[record.spd].employeesList.push(record);
+            acc[record.spd].employeesList.sort((a,b) => (b.sequenceNumber || 0) - (a.sequenceNumber || 0));
         }
         return acc;
     }, {});
@@ -499,7 +500,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
-                                        <span class="font-mono text-xs text-slate-700 font-bold">{record.spd}</span>
+                                        <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-3">
@@ -545,7 +546,7 @@
                                                         <td class="px-6 py-4 align-middle">
                                                             <div class="flex items-center gap-3 pl-2">
                                                                 <div class="w-2 h-2 rounded-full bg-slate-300 shrink-0"></div>
-                                                                <div class="font-mono font-bold text-slate-700">{String(sortOption.includes('desc') ? $paginatedMetadataStore.totalRecords - $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) : $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</div>
+                                                                <div class="font-mono font-bold text-slate-700">{String(empRecord.sequenceNumber || 0).padStart(3, '0')}</div>
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle">
@@ -623,10 +624,10 @@
                 {#each uniqueRecords as record (record.spd)}
                     <div class="flex flex-col">
                         <!-- Group Header (Mobile) -->
-                        <div class="p-4 bg-slate-100/80 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors select-none" on:click={() => toggleGroup(record.spd)}>
+                        <div role="button" tabindex="0" class="p-4 bg-slate-100/80 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors select-none" on:click={() => toggleGroup(record.spd)} on:keydown={(e) => e.key === 'Enter' && toggleGroup(record.spd)}>
                             <div class="flex justify-between items-start mb-2 gap-2">
                                 <div class="flex items-center flex-wrap gap-2">
-                                    <span class="font-mono text-xs text-slate-600 font-semibold bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm">{record.spd}</span>
+                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                         {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
                                     </span>
@@ -664,7 +665,7 @@
                                 {#each record.employeesList as empRecord}
                                     <div class="p-4 flex flex-col gap-3">
                                         <div class="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                            <span>NO. SPD: {String(sortOption.includes('desc') ? $paginatedMetadataStore.totalRecords - $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) : $paginatedRecordsStore.findIndex(e => e.id === empRecord.id) + 1).padStart(3, '0')}</span>
+                                            <span>NO. SPD: {String(empRecord.sequenceNumber || 0).padStart(3, '0')}</span>
                                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
                                                 {getStatusBadge(empRecord).label}
                                             </span>

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/config"
+	"github.com/kemnaker/perjadin-backend/pkg/cache"
 	"github.com/kemnaker/perjadin-backend/pkg/database"
 )
 
@@ -121,5 +122,16 @@ func run() error {
 	}
 
 	log.Println("Successfully generated 2000 dummy travel records.")
+
+	// Flush Redis Cache
+	rdb, err := cache.NewRedisClient(cfg)
+	if err == nil && rdb != nil {
+		defer rdb.Close()
+		rdb.FlushDB(ctx)
+		log.Println("Redis cache cleared after massive seeding.")
+	} else {
+		log.Printf("Could not connect to Redis to flush cache: %v", err)
+	}
+
 	return nil
 }

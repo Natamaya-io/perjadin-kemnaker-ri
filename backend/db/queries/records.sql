@@ -54,13 +54,13 @@ WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
 -- name: DeleteTravelRecord :exec
-UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1;
+DELETE FROM travel_records WHERE id = $1;
 
 -- name: DeleteTravelRecordBySpd :exec
-UPDATE travel_records SET deleted_at = CURRENT_TIMESTAMP WHERE spd_number = $1;
+DELETE FROM travel_records WHERE spd_number = $1;
 
 -- name: DeleteTravelLocationsBySpd :exec
-UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP 
+DELETE FROM travel_locations
 WHERE travel_record_id IN (SELECT id FROM travel_records WHERE spd_number = $1);
 
 -- name: CreateTravelCost :one
@@ -112,7 +112,7 @@ INSERT INTO travel_locations (
 SELECT * FROM travel_locations WHERE travel_record_id = $1 AND deleted_at IS NULL ORDER BY start_date ASC, created_at ASC;
 
 -- name: DeleteTravelLocationsByRecordID :exec
-UPDATE travel_locations SET deleted_at = CURRENT_TIMESTAMP WHERE travel_record_id = $1;
+DELETE FROM travel_locations WHERE travel_record_id = $1;
 
 -- name: SyncSpdSequence :exec
 DO $$
@@ -163,7 +163,7 @@ WHERE deleted_at IS NULL
 SELECT * FROM travel_records 
 WHERE deleted_at IS NULL 
   AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
-ORDER BY start_date DESC 
+ORDER BY created_at DESC, id ASC 
 LIMIT 5;
 
 -- name: GetDashboardBudgets :many
@@ -234,4 +234,16 @@ WHERE travel_record_id = ANY(sqlc.arg('record_ids')::uuid[]);
 SELECT * FROM travel_locations 
 WHERE travel_record_id = ANY(sqlc.arg('record_ids')::uuid[]) 
   AND deleted_at IS NULL 
-ORDER BY start_date ASC, created_at ASC;
+;
+
+-- name: GetSequenceNumbers :many
+WITH ordered AS (
+    SELECT id, ROW_NUMBER() OVER (
+        ORDER BY CAST(SUBSTRING(spd_number FROM '[0-9]+') AS INTEGER) ASC, sequence_number ASC, created_at ASC
+    ) as actual_rank 
+    FROM travel_records 
+    WHERE deleted_at IS NULL AND spd_number IS NOT NULL AND spd_number <> ''
+)
+SELECT id, actual_rank::int AS sequence_number 
+FROM ordered 
+WHERE id = ANY(sqlc.arg('record_ids')::uuid[]);

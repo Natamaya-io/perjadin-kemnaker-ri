@@ -3,7 +3,7 @@
     import { toast } from '$lib/shared/stores/toast';
     import { userStore } from '$lib/features/auth/store';
     import { provincesStore } from '$lib/shared/stores/master-data';
-    import { formatCurrency } from '$lib/shared/utils/utils';
+    import { formatCurrency, compressImage } from '$lib/shared/utils/utils';
     import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
     import DialogHeader from '$lib/shared/ui/dialog/DialogHeader.svelte';
     import DialogTitle from '$lib/shared/ui/dialog/DialogTitle.svelte';
@@ -283,8 +283,8 @@
         editingCosts = editingCosts;
     }
 
-    function handleSpecificFileSelect(e, field) {
-        const file = e.target.files[0];
+    async function handleSpecificFileSelect(e, field) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -301,12 +301,13 @@
             };
             editingCosts = editingCosts;
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
 
-    function handleBoardingPassFileSelect(e) {
-        const file = e.target.files[0];
+    async function handleBoardingPassFileSelect(e) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -331,6 +332,7 @@
             ];
             editingCosts = editingCosts;
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -384,8 +386,8 @@
         editingCosts = editingCosts;
     }
 
-    function handleAdditionalExtendSpecificFileSelect(e, index, field) {
-        const file = e.target.files[0];
+    async function handleAdditionalExtendSpecificFileSelect(e, index, field) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -402,6 +404,7 @@
             };
             editingCosts = editingCosts;
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -411,8 +414,8 @@
         editingCosts = editingCosts;
     }
 
-    function handleAdditionalExtendBoardingPassSelect(e, index) {
-        const file = e.target.files[0];
+    async function handleAdditionalExtendBoardingPassSelect(e, index) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -437,6 +440,7 @@
             ];
             editingCosts = editingCosts;
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -448,8 +452,8 @@
         }
     }
 
-    function handleAdditionalFileSelect(e, index) {
-        const file = e.target.files[0];
+    async function handleAdditionalFileSelect(e, index) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -466,6 +470,7 @@
             };
             editingCosts = editingCosts;
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }

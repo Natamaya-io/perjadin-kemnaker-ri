@@ -19,7 +19,7 @@
     import { toast } from '$lib/shared/stores/toast';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { getInitials, toTitleCase, formatCurrency } from '$lib/shared/utils/utils';
+    import { getInitials, toTitleCase, formatCurrency, compressImage } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
     
@@ -35,7 +35,7 @@
     let spd = $page.params.spd || ''; 
     $: currentTab = $page.url.searchParams.get('tab') || 'laporan';
     
-    $: allRecordsForSpd = spd ? $recordsStore.filter(r => r.spd === decodeURIComponent(spd)) : [];
+    $: allRecordsForSpd = spd ? $recordsStore.filter(r => r.spd === decodeURIComponent(spd)).sort((a,b) => (b.sequenceNumber || 0) - (a.sequenceNumber || 0)) : [];
     $: record = allRecordsForSpd.find(r => r.email === $userStore.email || (r.employee && r.employee.email === $userStore.email)) || allRecordsForSpd[0];
     
     // Check if the current user is part of this SPD group
@@ -47,22 +47,7 @@
     $: recordsList = allRecordsForSpd;
     
     // Use the same deterministic sort as admin/perdin page for consistent SPD sub-numbers
-    $: allRecordsSorted = [...$recordsStore].sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        if (timeA !== timeB) return timeA - timeB;
-        const spdA = a.spd || '';
-        const spdB = b.spd || '';
-        if (spdA !== spdB) return spdA.localeCompare(spdB);
-        const nameA = a.employee?.name || '';
-        const nameB = b.employee?.name || '';
-        if (nameA !== nameB) return nameA.localeCompare(nameB);
-        return (a.id || '').localeCompare(b.id || '');
-    });
-    $: recordToIndexMap = new Map(allRecordsSorted.map((r, i) => [r.id, i + 1]));
-
-    $: officerIndex = record ? allRecordsForSpd.findIndex(r => r.id === record.id) : 0;
-    $: nomorSpdPetugas = record ? String(recordToIndexMap.get(record.id) || 0).padStart(3, '0') : '000';
+    $: nomorSpdPetugas = record ? String(record.sequenceNumber || 0).padStart(3, '0') : '000';
 
     let reportText = '';
     let manualSuratTugasNumber = '';
@@ -495,8 +480,8 @@
         localCosts = { ...localCosts };
     }
 
-    function handleSpecificFileSelect(empId, e, field, locationIndex) {
-        const file = e.target.files[0];
+    async function handleSpecificFileSelect(empId, e, field, locationIndex) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -513,12 +498,13 @@
             };
             localCosts = { ...localCosts };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
 
-    function handleBoardingPassFileSelect(empId, e, locationIndex) {
-        const file = e.target.files[0];
+    async function handleBoardingPassFileSelect(empId, e, locationIndex) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -545,6 +531,7 @@
             });
             localCosts = { ...localCosts };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -580,8 +567,8 @@
     }
 
 
-    function handleAdditionalExtendSpecificFileSelect(empId, e, field, index, locationIndex) {
-        const file = e.target.files[0];
+    async function handleAdditionalExtendSpecificFileSelect(empId, e, field, index, locationIndex) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -598,6 +585,7 @@
             };
             localCosts = { ...localCosts };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -607,8 +595,8 @@
         localCosts = { ...localCosts };
     }
 
-    function handleAdditionalExtendBoardingPassSelect(empId, e, index, locationIndex) {
-        const file = e.target.files[0];
+    async function handleAdditionalExtendBoardingPassSelect(empId, e, index, locationIndex) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -631,6 +619,7 @@
             });
             localCosts = { ...localCosts };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -642,8 +631,8 @@
         localCosts = { ...localCosts };
     }
 
-    function handleAdditionalFileSelect(empId, e, index, locationIndex) {
-        const file = e.target.files[0];
+    async function handleAdditionalFileSelect(empId, e, index, locationIndex) {
+        let file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error(`Ukuran file melebihi 10MB.`);
@@ -660,6 +649,7 @@
             };
             localCosts = { ...localCosts };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         e.target.value = '';
     }
@@ -762,35 +752,41 @@
         }
     });
 
-    /** @param {File[]} selectedFiles */
-    function processFiles(selectedFiles) {
-        if (uploadedFiles.length + selectedFiles.length > 6) {
+    /** @param {File[]} files */
+    async function processFiles(files) {
+        if (uploadedFiles.length + files.length > 6) {
             toast.error('Maksimal 6 file yang diperbolehkan.');
             return;
         }
-
-        selectedFiles.forEach(file => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        for (let file of files) {
             if (file.size > 10 * 1024 * 1024) {
                 toast.error(`File ${file.name} terlalu besar. Maksimal 10MB.`);
-                return;
+                continue;
             }
 
             if (!file.type.startsWith('image/')) {
                 toast.error(`File ${file.name} tidak didukung. Hanya file gambar yang diperbolehkan untuk dokumentasi.`);
-                return;
+                continue;
             }
 
+            file = await compressImage(file);
             const reader = new FileReader();
-            reader.onload = (e) => {
-                uploadedFiles = [...uploadedFiles, {
-                    name: file.name,
-                    type: file.type,
-                    data: /** @type {string} */ (e.target?.result || ''),
-                    timestamp: new Date(file.lastModified).toISOString()
-                }];
-            };
-            reader.readAsDataURL(file);
-        });
+            
+            // Wrap reader in a promise to maintain order
+            await new Promise(resolve => {
+                reader.onload = (e) => {
+                    uploadedFiles = [...uploadedFiles, {
+                        name: file.name,
+                        type: file.type,
+                        data: /** @type {string} */ (e.target?.result || ''),
+                        timestamp: new Date(file.lastModified).toISOString()
+                    }];
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
     }
     /** @param {Event} event */
     function handleFileChange(event) {
@@ -802,9 +798,9 @@
     }
 
     /** @param {Event} event */
-    function handleSppdFileChange(event) {
+    async function handleSppdFileChange(event) {
         // @ts-ignore
-        const file = event.target.files[0];
+        let file = event.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error('File SPPD terlalu besar. Maksimal 10MB.');
@@ -821,15 +817,16 @@
                 timestamp: new Date(file.lastModified).toISOString()
             };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         // @ts-ignore
         event.target.value = '';
     }
 
     /** @param {Event} event */
-    function handleSuratTugasFileChange(event) {
+    async function handleSuratTugasFileChange(event) {
         // @ts-ignore
-        const file = event.target.files[0];
+        let file = event.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             toast.error('File Surat Tugas terlalu besar. Maksimal 10MB.');
@@ -846,6 +843,7 @@
                 timestamp: new Date(file.lastModified).toISOString()
             };
         };
+        file = await compressImage(file);
         reader.readAsDataURL(file);
         // @ts-ignore
         event.target.value = '';
@@ -1136,7 +1134,7 @@
                                  </div>
                                  <div>
                                      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ID SPJ</h3>
-                                     <div class="text-xl font-bold text-slate-900 tracking-tight">{record.spd}</div>
+                                     <div class="text-xl font-mono font-bold tracking-widest text-slate-800">{record.spd}</div>
                                  </div>
                              </div>
 
@@ -1237,7 +1235,7 @@
                                      <div class="flex-1 min-w-0">
                                          <div class="text-sm font-bold text-slate-800 truncate leading-tight mb-1">{emp.employee?.name || '-'}</div>
                                          <div class="text-xs text-slate-500 flex items-center gap-1.5">
-                                             <span class="bg-slate-50 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-slate-500 border border-slate-200 group-hover:border-blue-200 group-hover:text-blue-600 transition-colors">SPD {String(recordToIndexMap.get(emp.id) || 0).padStart(3, '0')}</span>
+                                             <span class="bg-slate-50 px-2 py-0.5 rounded text-[10px] font-mono font-medium text-slate-500 border border-slate-200 group-hover:border-blue-200 group-hover:text-blue-600 transition-colors">SPD {String(emp.sequenceNumber || 0).padStart(3, '0')}</span>
                                          </div>
                                      </div>
                                 </div>

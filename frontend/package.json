@@ -43,6 +43,7 @@
 	},
 	"dependencies": {
 		"@tanstack/svelte-virtual": "3.13.24",
+		"browser-image-compression": "^2.0.2",
 		"clsx": "2.1.1",
 		"devalue": "^5.8.1",
 		"formsnap": "2.0.1",

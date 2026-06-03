@@ -18,7 +18,7 @@
                     {record.type ? record.type.split('_').join(' ') : 'Dalam Kota'}
                 </span>
             </div>
-            <span class="text-xs font-mono text-slate-400">{record.spd}</span>
+            <span class="inline-flex items-center font-mono text-[11px] font-bold tracking-widest text-slate-500">{record.spd}</span>
         </div>
         
         <div>

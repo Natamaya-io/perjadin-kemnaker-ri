@@ -103,3 +103,23 @@ export function getStatusBadge(record: any) {
 
     return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
 }
+import imageCompression from 'browser-image-compression';
+
+export async function compressImage(file: File): Promise<File> {
+    if (!file.type.startsWith('image/')) {
+        return file;
+    }
+    const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        initialQuality: 0.8
+    };
+    try {
+        return await imageCompression(file, options);
+    } catch (error) {
+        console.error('Error compressing image:', error);
+        return file;
+    }
+}
+

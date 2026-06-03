@@ -210,6 +210,11 @@
             class="overflow-auto max-h-[calc(100vh-[280px])] min-h-[400px] w-full relative table-scrollbar table-scroll-shadows"
             style="max-height: calc(100vh - 280px);"
         >            
+            {#if $isFetchingRecords && displayRecords.length > 0}
+                <div class="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-30 flex items-center justify-center min-h-[200px]">
+                    <LottieLoader size="60px" />
+                </div>
+            {/if}
             <table class="w-full text-sm text-left relative border-collapse">
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
@@ -239,9 +244,9 @@
                     {:else}
                         {#each displayRecords as record (record.id)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                <td class="font-mono text-xs text-slate-500 pl-4 py-4 align-middle">
-                                    <span class="font-bold text-slate-700">{record.spd}</span>
-                                    <div class="mt-1">
+                                <td class="pl-4 py-4 align-middle">
+                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
+                                    <div class="mt-1.5">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                             {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
                                         </span>
