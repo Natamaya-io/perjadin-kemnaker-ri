@@ -156,23 +156,38 @@ func (h *Handler) ImportExcel(c echo.Context) error {
 		if !userFound {
 			// Auto create alumni user
 			username := strings.ReplaceAll(normalizedName, " ", "") + "_alumni"
-			// Just ensure it's a valid string for the Email/Username field
-			newUser := models.User{
-				Base:  models.Base{ID: uuid.New()},
-				Name:  name,
-				Email: username, // The system uses Email field as Username
-				Role:  "alumni_staff",
-			}
-			if err := h.userRepo.CreateUser(&newUser); err == nil {
-				employeeID = newUser.ID
+			
+			// Cek apakah email/username ini sudah ada di database
+			if existingUser, err := h.userRepo.GetUserByEmail(username); err == nil && existingUser != nil {
+				employeeID = existingUser.ID
 				userMap[normalizedName] = employeeID
 			} else {
-				result.Failed++
-				result.Details = append(result.Details, ImportDetail{
-					Row: rowNum, SPJID: idSPJ, Name: name,
-					Status: "failed", Message: "Gagal membuat user alumni otomatis: " + err.Error(),
-				})
-				continue
+				// Just ensure it's a valid string for the Email/Username field
+				newUser := models.User{
+					Base:  models.Base{ID: uuid.New()},
+					Name:  name,
+					Email: username, // The system uses Email field as Username
+					Role:  "alumni_staff",
+				}
+				
+				if err := h.userRepo.CreateUser(&newUser); err == nil {
+					employeeID = newUser.ID
+					userMap[normalizedName] = employeeID
+				} else {
+					// Fallback mutlak: Jika masih bentrok (mungkin karena race condition atau keunikan tersembunyi)
+					newUser.Email = username + "_" + strings.ReplaceAll(uuid.New().String()[:8], "-", "")
+					if errFallback := h.userRepo.CreateUser(&newUser); errFallback == nil {
+						employeeID = newUser.ID
+						userMap[normalizedName] = employeeID
+					} else {
+						result.Failed++
+						result.Details = append(result.Details, ImportDetail{
+							Row: rowNum, SPJID: idSPJ, Name: name,
+							Status: "failed", Message: "Gagal membuat user alumni otomatis: " + errFallback.Error(),
+						})
+						continue
+					}
+				}
 			}
 		}
 

@@ -1,0 +1,454 @@
+2026-05-27T04:22:46.282960000Z 
+2026-05-27T04:22:46.283739000Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-05-27T04:22:46.283918000Z 
+2026-05-27T04:22:46.385320000Z 2026-05-27 04:22:46.385 UTC [1] LOG:  starting PostgreSQL 16.14 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-05-27T04:22:46.385716000Z 2026-05-27 04:22:46.385 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-05-27T04:22:46.385877000Z 2026-05-27 04:22:46.385 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-05-27T04:22:46.493373000Z 2026-05-27 04:22:46.493 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-05-27T04:22:46.703801000Z 2026-05-27 04:22:46.703 UTC [24] LOG:  database system was shut down at 2026-05-27 04:21:07 UTC
+2026-05-27T04:22:46.947355000Z 2026-05-27 04:22:46.947 UTC [1] LOG:  database system is ready to accept connections
+2026-05-27T04:27:46.714998000Z 2026-05-27 04:27:46.714 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T04:27:47.671073000Z 2026-05-27 04:27:47.670 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.324 s, sync=0.040 s, total=0.957 s; sync files=2, longest=0.028 s, average=0.020 s; distance=0 kB, estimate=0 kB; lsn=0/DCAC8300, redo lsn=0/DCAC82C8
+2026-05-27T04:57:04.919832000Z 2026-05-27 04:57:04.919 UTC [1325] FATAL:  role "postgres" does not exist
+2026-05-27T04:57:47.087890000Z 2026-05-27 04:57:47.087 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T04:57:47.888056000Z 2026-05-27 04:57:47.887 UTC [1354] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T04:57:47.888680000Z 2026-05-27 04:57:47.887 UTC [1354] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T04:57:47.888828000Z 2026-05-27 04:57:47.887 UTC [1354] STATEMENT:  -- name: CreateUser :one
+2026-05-27T04:57:47.888958000Z 	INSERT INTO users (
+2026-05-27T04:57:47.889113000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T04:57:47.889247000Z 	) VALUES (
+2026-05-27T04:57:47.889378000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T04:57:47.889520000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T04:57:47.889636000Z 	
+2026-05-27T04:57:48.065111000Z 2026-05-27 04:57:48.064 UTC [1354] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T04:57:48.065603000Z 2026-05-27 04:57:48.064 UTC [1354] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T04:57:48.065802000Z 2026-05-27 04:57:48.064 UTC [1354] STATEMENT:  -- name: CreateUser :one
+2026-05-27T04:57:48.065965000Z 	INSERT INTO users (
+2026-05-27T04:57:48.066108000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T04:57:48.066231000Z 	) VALUES (
+2026-05-27T04:57:48.066383000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T04:57:48.066526000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T04:57:48.066630000Z 	
+2026-05-27T04:57:49.919080000Z 2026-05-27 04:57:49.918 UTC [22] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.167 s, sync=0.279 s, total=2.832 s; sync files=7, longest=0.239 s, average=0.040 s; distance=39 kB, estimate=39 kB; lsn=0/DCADD558, redo lsn=0/DCAD1F50
+2026-05-27T05:01:05.914684000Z 2026-05-27 05:01:05.914 UTC [1395] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T05:01:05.917255000Z 2026-05-27 05:01:05.914 UTC [1395] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T05:01:05.917463000Z 2026-05-27 05:01:05.914 UTC [1395] STATEMENT:  -- name: CreateUser :one
+2026-05-27T05:01:05.917630000Z 	INSERT INTO users (
+2026-05-27T05:01:05.917718000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:01:05.917785000Z 	) VALUES (
+2026-05-27T05:01:05.917885000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T05:01:05.919141000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:01:05.919322000Z 	
+2026-05-27T05:01:06.151406000Z 2026-05-27 05:01:06.151 UTC [1395] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T05:01:06.151875000Z 2026-05-27 05:01:06.151 UTC [1395] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T05:01:06.152079000Z 2026-05-27 05:01:06.151 UTC [1395] STATEMENT:  -- name: CreateUser :one
+2026-05-27T05:01:06.152303000Z 	INSERT INTO users (
+2026-05-27T05:01:06.152487000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:01:06.152617000Z 	) VALUES (
+2026-05-27T05:01:06.152692000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T05:01:06.152756000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:01:06.152824000Z 	
+2026-05-27T05:02:47.987170000Z 2026-05-27 05:02:47.986 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T05:02:50.216710000Z 2026-05-27 05:02:50.216 UTC [22] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.846 s, sync=0.185 s, total=2.230 s; sync files=6, longest=0.166 s, average=0.031 s; distance=147 kB, estimate=147 kB; lsn=0/DCAF6BA8, redo lsn=0/DCAF6B70
+2026-05-27T05:06:39.685479000Z 2026-05-27 05:06:39.685 UTC [1472] ERROR:  CREATE INDEX CONCURRENTLY cannot run inside a transaction block
+2026-05-27T05:06:39.686274000Z 2026-05-27 05:06:39.685 UTC [1472] STATEMENT:  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_travel_records_spd_number ON                          
+2026-05-27T05:06:39.686385000Z 	  travel_records(spd_number); CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_travel_records_deleted_at ON travel_records(deleted_at);
+2026-05-27T05:13:10.576316000Z 2026-05-27 05:13:10.576 UTC [1565] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T05:13:10.577148000Z 2026-05-27 05:13:10.576 UTC [1565] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T05:13:10.577280000Z 2026-05-27 05:13:10.576 UTC [1565] STATEMENT:  -- name: CreateUser :one
+2026-05-27T05:13:10.577359000Z 	INSERT INTO users (
+2026-05-27T05:13:10.577534000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:13:10.577617000Z 	) VALUES (
+2026-05-27T05:13:10.577697000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T05:13:10.577764000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:13:10.577832000Z 	
+2026-05-27T05:13:10.696874000Z 2026-05-27 05:13:10.696 UTC [1565] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T05:13:10.697186000Z 2026-05-27 05:13:10.696 UTC [1565] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T05:13:10.697309000Z 2026-05-27 05:13:10.696 UTC [1565] STATEMENT:  -- name: CreateUser :one
+2026-05-27T05:13:10.697395000Z 	INSERT INTO users (
+2026-05-27T05:13:10.697649000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:13:10.697742000Z 	) VALUES (
+2026-05-27T05:13:10.697847000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T05:13:10.697924000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T05:13:10.698008000Z 	
+2026-05-27T05:17:47.500946000Z 2026-05-27 05:17:47.500 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T05:17:50.205992000Z 2026-05-27 05:17:50.205 UTC [22] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.228 s, sync=0.317 s, total=2.706 s; sync files=9, longest=0.297 s, average=0.036 s; distance=74 kB, estimate=139 kB; lsn=0/DCB09720, redo lsn=0/DCB096E8
+2026-05-27T05:37:47.523210000Z 2026-05-27 05:37:47.522 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T05:37:47.916562000Z 2026-05-27 05:37:47.916 UTC [22] LOG:  checkpoint complete: wrote 1 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.060 s, sync=0.048 s, total=0.394 s; sync files=2, longest=0.047 s, average=0.024 s; distance=7 kB, estimate=126 kB; lsn=0/DCB0B4B0, redo lsn=0/DCB0B478
+2026-05-27T05:42:47.979742000Z 2026-05-27 05:42:47.979 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T05:42:48.421953000Z 2026-05-27 05:42:48.421 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.150 s, sync=0.072 s, total=0.443 s; sync files=2, longest=0.057 s, average=0.036 s; distance=7 kB, estimate=114 kB; lsn=0/DCB0D320, redo lsn=0/DCB0D2E8
+2026-05-27T05:47:47.474943000Z 2026-05-27 05:47:47.474 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T05:47:47.976580000Z 2026-05-27 05:47:47.976 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.151 s, sync=0.116 s, total=0.502 s; sync files=2, longest=0.074 s, average=0.058 s; distance=8 kB, estimate=104 kB; lsn=0/DCB0F370, redo lsn=0/DCB0F338
+2026-05-27T06:47:48.787150000Z 2026-05-27 06:47:48.786 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T06:47:49.109778000Z 2026-05-27 06:47:49.109 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.117 s, sync=0.057 s, total=0.323 s; sync files=2, longest=0.035 s, average=0.029 s; distance=7 kB, estimate=94 kB; lsn=0/DCB11348, redo lsn=0/DCB11310
+2026-05-27T06:54:03.407140000Z 2026-05-27 06:54:03.406 UTC [2938] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T06:54:03.408886000Z 2026-05-27 06:54:03.406 UTC [2938] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T06:54:03.409048000Z 2026-05-27 06:54:03.406 UTC [2938] STATEMENT:  -- name: CreateUser :one
+2026-05-27T06:54:03.409204000Z 	INSERT INTO users (
+2026-05-27T06:54:03.409332000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T06:54:03.409479000Z 	) VALUES (
+2026-05-27T06:54:03.409604000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T06:54:03.409737000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T06:54:03.409876000Z 	
+2026-05-27T06:54:03.499738000Z 2026-05-27 06:54:03.499 UTC [2938] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T06:54:03.500081000Z 2026-05-27 06:54:03.499 UTC [2938] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T06:54:03.500236000Z 2026-05-27 06:54:03.499 UTC [2938] STATEMENT:  -- name: CreateUser :one
+2026-05-27T06:54:03.500461000Z 	INSERT INTO users (
+2026-05-27T06:54:03.500605000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T06:54:03.500743000Z 	) VALUES (
+2026-05-27T06:54:03.500862000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T06:54:03.500995000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T06:54:03.501126000Z 	
+2026-05-27T06:57:48.282109000Z 2026-05-27 06:57:48.281 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T06:57:50.557669000Z 2026-05-27 06:57:50.557 UTC [22] LOG:  checkpoint complete: wrote 21 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.103 s, sync=0.063 s, total=2.276 s; sync files=8, longest=0.039 s, average=0.008 s; distance=133 kB, estimate=133 kB; lsn=0/DCB327F8, redo lsn=0/DCB327C0
+2026-05-27T07:02:48.612643000Z 2026-05-27 07:02:48.603 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T07:02:49.014309000Z 2026-05-27 07:02:49.013 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.221 s, sync=0.059 s, total=0.411 s; sync files=2, longest=0.042 s, average=0.030 s; distance=15 kB, estimate=121 kB; lsn=0/DCB36668, redo lsn=0/DCB36630
+2026-05-27T07:17:03.828029000Z 2026-05-27 07:17:03.827 UTC [3257] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:17:03.829024000Z 2026-05-27 07:17:03.827 UTC [3257] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T07:17:03.829124000Z 2026-05-27 07:17:03.827 UTC [3257] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:17:03.829219000Z 	INSERT INTO users (
+2026-05-27T07:17:03.829301000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:17:03.829367000Z 	) VALUES (
+2026-05-27T07:17:03.829464000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:17:03.829548000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:17:03.829612000Z 	
+2026-05-27T07:17:03.934770000Z 2026-05-27 07:17:03.934 UTC [3257] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:17:03.935073000Z 2026-05-27 07:17:03.934 UTC [3257] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T07:17:03.935235000Z 2026-05-27 07:17:03.934 UTC [3257] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:17:03.935357000Z 	INSERT INTO users (
+2026-05-27T07:17:03.935457000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:17:03.935530000Z 	) VALUES (
+2026-05-27T07:17:03.935703000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:17:03.935774000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:17:03.935842000Z 	
+2026-05-27T07:17:48.082932000Z 2026-05-27 07:17:48.082 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T07:17:49.188342000Z 2026-05-27 07:17:49.188 UTC [22] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.822 s, sync=0.077 s, total=1.106 s; sync files=6, longest=0.047 s, average=0.013 s; distance=55 kB, estimate=114 kB; lsn=0/DCB44480, redo lsn=0/DCB44448
+2026-05-27T07:33:15.680904000Z 2026-05-27 07:33:15.680 UTC [3483] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:33:15.681970000Z 2026-05-27 07:33:15.680 UTC [3483] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T07:33:15.682151000Z 2026-05-27 07:33:15.680 UTC [3483] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:33:15.682325000Z 	INSERT INTO users (
+2026-05-27T07:33:15.682768000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:33:15.683028000Z 	) VALUES (
+2026-05-27T07:33:15.683276000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:33:15.683549000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:33:15.683780000Z 	
+2026-05-27T07:33:15.757134000Z 2026-05-27 07:33:15.756 UTC [3483] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:33:15.757584000Z 2026-05-27 07:33:15.756 UTC [3483] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T07:33:15.757672000Z 2026-05-27 07:33:15.756 UTC [3483] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:33:15.757744000Z 	INSERT INTO users (
+2026-05-27T07:33:15.757802000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:33:15.757868000Z 	) VALUES (
+2026-05-27T07:33:15.757955000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:33:15.758104000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:33:15.758166000Z 	
+2026-05-27T07:37:48.514063000Z 2026-05-27 07:37:48.513 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T07:37:50.881245000Z 2026-05-27 07:37:50.880 UTC [22] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.859 s, sync=0.179 s, total=2.368 s; sync files=6, longest=0.157 s, average=0.030 s; distance=134 kB, estimate=134 kB; lsn=0/DCB65D00, redo lsn=0/DCB65CC8
+2026-05-27T07:45:13.740517000Z 2026-05-27 07:45:13.740 UTC [3651] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:45:13.741847000Z 2026-05-27 07:45:13.740 UTC [3651] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-27T07:45:13.741940000Z 2026-05-27 07:45:13.740 UTC [3651] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:45:13.742036000Z 	INSERT INTO users (
+2026-05-27T07:45:13.742129000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:45:13.742218000Z 	) VALUES (
+2026-05-27T07:45:13.742351000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:45:13.742497000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:45:13.742701000Z 	
+2026-05-27T07:45:14.084373000Z 2026-05-27 07:45:14.084 UTC [3651] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-27T07:45:14.084863000Z 2026-05-27 07:45:14.084 UTC [3651] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-27T07:45:14.085010000Z 2026-05-27 07:45:14.084 UTC [3651] STATEMENT:  -- name: CreateUser :one
+2026-05-27T07:45:14.085186000Z 	INSERT INTO users (
+2026-05-27T07:45:14.085326000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:45:14.085469000Z 	) VALUES (
+2026-05-27T07:45:14.085651000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-27T07:45:14.085786000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-27T07:45:14.085925000Z 	
+2026-05-27T07:47:49.045665000Z 2026-05-27 07:47:49.045 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T07:47:50.347912000Z 2026-05-27 07:47:50.347 UTC [22] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.896 s, sync=0.092 s, total=1.303 s; sync files=6, longest=0.061 s, average=0.016 s; distance=52 kB, estimate=125 kB; lsn=0/DCB72ED8, redo lsn=0/DCB72EA0
+2026-05-27T07:52:49.425095000Z 2026-05-27 07:52:49.424 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T07:52:49.944782000Z 2026-05-27 07:52:49.944 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.162 s, sync=0.087 s, total=0.520 s; sync files=2, longest=0.074 s, average=0.044 s; distance=7 kB, estimate=114 kB; lsn=0/DCB76828, redo lsn=0/DCB74E10
+2026-05-27T08:42:50.601894000Z 2026-05-27 08:42:50.601 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T08:42:50.953118000Z 2026-05-27 08:42:50.952 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.117 s, sync=0.076 s, total=0.352 s; sync files=2, longest=0.047 s, average=0.038 s; distance=7 kB, estimate=103 kB; lsn=0/DCB76A58, redo lsn=0/DCB76A20
+2026-05-27T08:47:51.053799000Z 2026-05-27 08:47:51.053 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T08:47:51.785637000Z 2026-05-27 08:47:51.785 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.180 s, sync=0.099 s, total=0.733 s; sync files=2, longest=0.080 s, average=0.050 s; distance=8 kB, estimate=93 kB; lsn=0/DCB78BA0, redo lsn=0/DCB78B68
+2026-05-27T14:12:56.347662000Z 2026-05-27 14:12:56.347 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:12:57.866379000Z 2026-05-27 14:12:57.866 UTC [22] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.744 s, sync=0.113 s, total=1.519 s; sync files=11, longest=0.065 s, average=0.011 s; distance=83 kB, estimate=92 kB; lsn=0/DCB8DB50, redo lsn=0/DCB8DB18
+2026-05-27T14:27:57.114409000Z 2026-05-27 14:27:57.113 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:28:00.883001000Z 2026-05-27 14:28:00.882 UTC [22] LOG:  checkpoint complete: wrote 36 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.534 s, sync=0.087 s, total=3.769 s; sync files=19, longest=0.064 s, average=0.005 s; distance=219 kB, estimate=219 kB; lsn=0/DCBC4B10, redo lsn=0/DCBC4AD8
+2026-05-27T14:32:57.974118000Z 2026-05-27 14:32:57.973 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:33:05.201312000Z 2026-05-27 14:33:05.200 UTC [22] LOG:  checkpoint complete: wrote 58 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.088 s, sync=0.645 s, total=7.228 s; sync files=29, longest=0.578 s, average=0.023 s; distance=312 kB, estimate=312 kB; lsn=0/DCC12D20, redo lsn=0/DCC12CE8
+2026-05-27T14:37:57.275061000Z 2026-05-27 14:37:57.274 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:37:58.902248000Z 2026-05-27 14:37:58.902 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.230 s, sync=0.074 s, total=1.628 s; sync files=3, longest=0.043 s, average=0.025 s; distance=3 kB, estimate=281 kB; lsn=0/DCC13A78, redo lsn=0/DCC13A40
+2026-05-27T14:42:58.002897000Z 2026-05-27 14:42:58.002 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:42:58.416075000Z 2026-05-27 14:42:58.415 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.146 s, sync=0.067 s, total=0.414 s; sync files=2, longest=0.046 s, average=0.034 s; distance=7 kB, estimate=254 kB; lsn=0/DCC15970, redo lsn=0/DCC15938
+2026-05-27T14:47:58.491029000Z 2026-05-27 14:47:58.490 UTC [22] LOG:  checkpoint starting: time
+2026-05-27T14:48:00.041916000Z 2026-05-27 14:48:00.041 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.660 s, sync=0.066 s, total=1.552 s; sync files=2, longest=0.041 s, average=0.033 s; distance=7 kB, estimate=229 kB; lsn=0/DCC17580, redo lsn=0/DCC17548
+2026-05-28T05:18:09.488041000Z 2026-05-28 05:18:09.487 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T05:18:10.024371000Z 2026-05-28 05:18:10.023 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.210 s, sync=0.063 s, total=0.537 s; sync files=2, longest=0.047 s, average=0.032 s; distance=7 kB, estimate=207 kB; lsn=0/DCC19270, redo lsn=0/DCC19238
+2026-05-28T13:51:08.986409000Z 2026-05-28 13:51:08.985 UTC [27946] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T13:51:08.987469000Z 2026-05-28 13:51:08.985 UTC [27946] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T13:51:08.987618000Z 2026-05-28 13:51:08.985 UTC [27946] STATEMENT:  -- name: CreateUser :one
+2026-05-28T13:51:08.987743000Z 	INSERT INTO users (
+2026-05-28T13:51:08.987875000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T13:51:08.987997000Z 	) VALUES (
+2026-05-28T13:51:08.988138000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T13:51:08.988262000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T13:51:08.988371000Z 	
+2026-05-28T13:51:09.061791000Z 2026-05-28 13:51:09.061 UTC [27946] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T13:51:09.062159000Z 2026-05-28 13:51:09.061 UTC [27946] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T13:51:09.062270000Z 2026-05-28 13:51:09.061 UTC [27946] STATEMENT:  -- name: CreateUser :one
+2026-05-28T13:51:09.062369000Z 	INSERT INTO users (
+2026-05-28T13:51:09.062620000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T13:51:09.062781000Z 	) VALUES (
+2026-05-28T13:51:09.062893000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T13:51:09.063030000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T13:51:09.063136000Z 	
+2026-05-28T13:53:15.846356000Z 2026-05-28 13:53:15.845 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T13:53:18.098287000Z 2026-05-28 13:53:18.098 UTC [22] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.920 s, sync=0.077 s, total=2.253 s; sync files=6, longest=0.062 s, average=0.013 s; distance=127 kB, estimate=199 kB; lsn=0/DCC391D8, redo lsn=0/DCC391A0
+2026-05-28T13:58:15.198810000Z 2026-05-28 13:58:15.198 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T13:58:17.206533000Z 2026-05-28 13:58:17.206 UTC [22] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.235 s, sync=0.210 s, total=2.008 s; sync files=3, longest=0.192 s, average=0.070 s; distance=25 kB, estimate=181 kB; lsn=0/DCC3F840, redo lsn=0/DCC3F808
+2026-05-28T14:08:15.584322000Z 2026-05-28 14:08:15.339 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T14:08:16.445508000Z 2026-05-28 14:08:16.443 UTC [28184] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T14:08:16.445953000Z 2026-05-28 14:08:16.443 UTC [28184] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T14:08:16.446254000Z 2026-05-28 14:08:16.443 UTC [28184] STATEMENT:  -- name: CreateUser :one
+2026-05-28T14:08:16.446418000Z 	INSERT INTO users (
+2026-05-28T14:08:16.446682000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:08:16.446812000Z 	) VALUES (
+2026-05-28T14:08:16.447722000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T14:08:16.447864000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:08:16.447997000Z 	
+2026-05-28T14:08:16.592721000Z 2026-05-28 14:08:16.592 UTC [28184] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T14:08:16.593291000Z 2026-05-28 14:08:16.592 UTC [28184] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T14:08:16.593394000Z 2026-05-28 14:08:16.592 UTC [28184] STATEMENT:  -- name: CreateUser :one
+2026-05-28T14:08:16.593519000Z 	INSERT INTO users (
+2026-05-28T14:08:16.593594000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:08:16.593662000Z 	) VALUES (
+2026-05-28T14:08:16.593732000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T14:08:16.593810000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:08:16.593879000Z 	
+2026-05-28T14:08:16.859640000Z 2026-05-28 14:08:16.859 UTC [22] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.874 s, sync=0.099 s, total=1.520 s; sync files=5, longest=0.040 s, average=0.020 s; distance=31 kB, estimate=166 kB; lsn=0/DCC51C70, redo lsn=0/DCC47448
+2026-05-28T14:13:15.959736000Z 2026-05-28 14:13:15.959 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T14:13:16.827926000Z 2026-05-28 14:13:16.827 UTC [22] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.545 s, sync=0.085 s, total=0.869 s; sync files=5, longest=0.065 s, average=0.017 s; distance=48 kB, estimate=155 kB; lsn=0/DCC536C8, redo lsn=0/DCC53690
+2026-05-28T14:23:15.959353000Z 2026-05-28 14:23:15.958 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T14:23:16.798141000Z 2026-05-28 14:23:16.797 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.374 s, sync=0.080 s, total=0.840 s; sync files=2, longest=0.055 s, average=0.040 s; distance=8 kB, estimate=140 kB; lsn=0/DCC557E8, redo lsn=0/DCC557B0
+2026-05-28T14:29:48.309483000Z 2026-05-28 14:29:48.271 UTC [28479] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T14:29:48.310134000Z 2026-05-28 14:29:48.271 UTC [28479] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T14:29:48.310246000Z 2026-05-28 14:29:48.271 UTC [28479] STATEMENT:  -- name: CreateUser :one
+2026-05-28T14:29:48.310334000Z 	INSERT INTO users (
+2026-05-28T14:29:48.310469000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:29:48.310584000Z 	) VALUES (
+2026-05-28T14:29:48.310680000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T14:29:48.310763000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:29:48.310845000Z 	
+2026-05-28T14:29:48.532820000Z 2026-05-28 14:29:48.532 UTC [28479] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T14:29:48.533198000Z 2026-05-28 14:29:48.532 UTC [28479] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T14:29:48.533347000Z 2026-05-28 14:29:48.532 UTC [28479] STATEMENT:  -- name: CreateUser :one
+2026-05-28T14:29:48.533561000Z 	INSERT INTO users (
+2026-05-28T14:29:48.533708000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:29:48.534293000Z 	) VALUES (
+2026-05-28T14:29:48.534472000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T14:29:48.534628000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T14:29:48.534782000Z 	
+2026-05-28T14:33:15.811704000Z 2026-05-28 14:33:15.811 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T14:33:18.146833000Z 2026-05-28 14:33:18.146 UTC [22] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.891 s, sync=0.151 s, total=2.336 s; sync files=6, longest=0.132 s, average=0.026 s; distance=126 kB, estimate=138 kB; lsn=0/DCC750F8, redo lsn=0/DCC750C0
+2026-05-28T15:20:18.658647000Z 2026-05-28 15:20:18.658 UTC [29171] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:20:18.659479000Z 2026-05-28 15:20:18.658 UTC [29171] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T15:20:18.659598000Z 2026-05-28 15:20:18.658 UTC [29171] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:20:18.659704000Z 	INSERT INTO users (
+2026-05-28T15:20:18.659818000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:20:18.659916000Z 	) VALUES (
+2026-05-28T15:20:18.659993000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:20:18.660104000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:20:18.660191000Z 	
+2026-05-28T15:20:18.734653000Z 2026-05-28 15:20:18.734 UTC [29171] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:20:18.735720000Z 2026-05-28 15:20:18.734 UTC [29171] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T15:20:18.735991000Z 2026-05-28 15:20:18.734 UTC [29171] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:20:18.736224000Z 	INSERT INTO users (
+2026-05-28T15:20:18.736431000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:20:18.736765000Z 	) VALUES (
+2026-05-28T15:20:18.737011000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:20:18.737214000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:20:18.737375000Z 	
+2026-05-28T15:23:15.699079000Z 2026-05-28 15:23:15.698 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T15:23:17.862431000Z 2026-05-28 15:23:17.862 UTC [22] LOG:  checkpoint complete: wrote 18 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.804 s, sync=0.117 s, total=2.164 s; sync files=6, longest=0.081 s, average=0.020 s; distance=60 kB, estimate=131 kB; lsn=0/DCC841F8, redo lsn=0/DCC841C0
+2026-05-28T15:28:35.614614000Z 2026-05-28 15:28:35.614 UTC [29290] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:28:35.615249000Z 2026-05-28 15:28:35.614 UTC [29290] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T15:28:35.615354000Z 2026-05-28 15:28:35.614 UTC [29290] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:28:35.615487000Z 	INSERT INTO users (
+2026-05-28T15:28:35.615609000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:28:35.615684000Z 	) VALUES (
+2026-05-28T15:28:35.615769000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:28:35.615849000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:28:35.615960000Z 	
+2026-05-28T15:28:36.079760000Z 2026-05-28 15:28:36.079 UTC [29290] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:28:36.080041000Z 2026-05-28 15:28:36.079 UTC [29290] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T15:28:36.080167000Z 2026-05-28 15:28:36.079 UTC [29290] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:28:36.080253000Z 	INSERT INTO users (
+2026-05-28T15:28:36.080326000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:28:36.080508000Z 	) VALUES (
+2026-05-28T15:28:36.080718000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:28:36.080836000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:28:36.080955000Z 	
+2026-05-28T15:29:25.442404000Z 2026-05-28 15:29:25.442 UTC [29303] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:29:25.443587000Z 2026-05-28 15:29:25.442 UTC [29303] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-05-28T15:29:25.443857000Z 2026-05-28 15:29:25.442 UTC [29303] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:29:25.443964000Z 	INSERT INTO users (
+2026-05-28T15:29:25.444068000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:29:25.444196000Z 	) VALUES (
+2026-05-28T15:29:25.444325000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:29:25.444413000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:29:25.444547000Z 	
+2026-05-28T15:29:25.846033000Z 2026-05-28 15:29:25.845 UTC [29303] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-05-28T15:29:25.846507000Z 2026-05-28 15:29:25.845 UTC [29303] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-05-28T15:29:25.846906000Z 2026-05-28 15:29:25.845 UTC [29303] STATEMENT:  -- name: CreateUser :one
+2026-05-28T15:29:25.847189000Z 	INSERT INTO users (
+2026-05-28T15:29:25.847421000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:29:25.847841000Z 	) VALUES (
+2026-05-28T15:29:25.848218000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-05-28T15:29:25.848484000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-05-28T15:29:25.848683000Z 	
+2026-05-28T15:33:16.019063000Z 2026-05-28 15:33:16.018 UTC [22] LOG:  checkpoint starting: time
+2026-05-28T15:33:19.091242000Z 2026-05-28 15:33:19.091 UTC [22] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.875 s, sync=0.870 s, total=3.073 s; sync files=6, longest=0.848 s, average=0.145 s; distance=156 kB, estimate=156 kB; lsn=0/DCCAB268, redo lsn=0/DCCAB230
+2026-05-29T01:08:23.742144000Z 2026-05-29 01:08:23.741 UTC [22] LOG:  checkpoint starting: time
+2026-05-29T01:08:24.189120000Z 2026-05-29 01:08:24.188 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.225 s, sync=0.058 s, total=0.448 s; sync files=2, longest=0.038 s, average=0.029 s; distance=7 kB, estimate=141 kB; lsn=0/DCCAD0D8, redo lsn=0/DCCAD0A0
+2026-05-29T01:58:23.830613000Z 2026-05-29 01:58:23.830 UTC [22] LOG:  checkpoint starting: time
+2026-05-29T01:58:24.405359000Z 2026-05-29 01:58:24.405 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.151 s, sync=0.154 s, total=0.575 s; sync files=2, longest=0.125 s, average=0.077 s; distance=7 kB, estimate=127 kB; lsn=0/DCCAF080, redo lsn=0/DCCAF048
+2026-05-31T13:59:11.044142000Z 2026-05-31 13:59:11.043 UTC [22] LOG:  checkpoint starting: time
+2026-05-31T13:59:12.003866000Z 2026-05-31 13:59:12.003 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.269 s, sync=0.127 s, total=0.960 s; sync files=3, longest=0.103 s, average=0.043 s; distance=7 kB, estimate=115 kB; lsn=0/DCCB0CA0, redo lsn=0/DCCB0C68
+2026-05-31T14:19:11.254333000Z 2026-05-31 14:19:11.253 UTC [22] LOG:  checkpoint starting: time
+2026-05-31T14:19:16.791304000Z 2026-05-31 14:19:16.790 UTC [22] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.406 s, sync=2.094 s, total=5.538 s; sync files=12, longest=2.093 s, average=0.175 s; distance=20 kB, estimate=106 kB; lsn=0/DCCB5EB0, redo lsn=0/DCCB5E78
+2026-06-01T02:54:21.792036000Z 2026-06-01 02:54:21.791 UTC [22] LOG:  checkpoint starting: time
+2026-06-01T02:54:22.511976000Z 2026-06-01 02:54:22.511 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.132 s, sync=0.437 s, total=0.721 s; sync files=3, longest=0.437 s, average=0.146 s; distance=7 kB, estimate=96 kB; lsn=0/DCCB7BB0, redo lsn=0/DCCB7B78
+2026-06-01T05:29:23.644212000Z 2026-06-01 05:29:23.643 UTC [22] LOG:  checkpoint starting: time
+2026-06-01T05:29:24.090078000Z 2026-06-01 05:29:24.089 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.132 s, sync=0.080 s, total=0.447 s; sync files=2, longest=0.058 s, average=0.040 s; distance=7 kB, estimate=87 kB; lsn=0/DCCB9990, redo lsn=0/DCCB9958
+2026-06-02T01:09:38.620779000Z 2026-06-02 01:09:38.620 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T01:09:39.490168000Z 2026-06-02 01:09:39.489 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.198 s, sync=0.146 s, total=0.870 s; sync files=2, longest=0.115 s, average=0.073 s; distance=7 kB, estimate=79 kB; lsn=0/DCCBB8F8, redo lsn=0/DCCBB8C0
+2026-06-02T02:49:39.959799000Z 2026-06-02 02:49:39.959 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T02:54:09.878412000Z 2026-06-02 02:54:09.878 UTC [22] LOG:  checkpoint complete: wrote 2603 buffers (15.9%); 0 WAL file(s) added, 0 removed, 3 recycled; write=268.854 s, sync=0.116 s, total=269.919 s; sync files=38, longest=0.079 s, average=0.004 s; distance=43504 kB, estimate=43504 kB; lsn=0/E2190670, redo lsn=0/DF737AE8
+2026-06-02T02:59:39.944077000Z 2026-06-02 02:59:39.943 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T03:04:10.418739000Z 2026-06-02 03:04:10.418 UTC [22] LOG:  checkpoint complete: wrote 3763 buffers (23.0%); 0 WAL file(s) added, 0 removed, 3 recycled; write=268.227 s, sync=1.098 s, total=270.475 s; sync files=23, longest=1.096 s, average=0.048 s; distance=43378 kB, estimate=43491 kB; lsn=0/E2194418, redo lsn=0/E21943E0
+2026-06-02T03:09:39.530879000Z 2026-06-02 03:09:39.530 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T03:09:40.148650000Z 2026-06-02 03:09:40.148 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.204 s, sync=0.097 s, total=0.618 s; sync files=3, longest=0.053 s, average=0.033 s; distance=3 kB, estimate=39143 kB; lsn=0/E2195298, redo lsn=0/E2195260
+2026-06-02T03:24:39.304782000Z 2026-06-02 03:24:39.304 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T03:24:40.581831000Z 2026-06-02 03:24:40.581 UTC [22] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.044 s, sync=0.081 s, total=1.278 s; sync files=8, longest=0.055 s, average=0.011 s; distance=57 kB, estimate=35234 kB; lsn=0/E21A3960, redo lsn=0/E21A3928
+2026-06-02T03:34:39.753938000Z 2026-06-02 03:34:39.753 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T03:34:40.317291000Z 2026-06-02 03:34:40.317 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.202 s, sync=0.065 s, total=0.564 s; sync files=1, longest=0.065 s, average=0.065 s; distance=7 kB, estimate=31711 kB; lsn=0/E21A5798, redo lsn=0/E21A5760
+2026-06-02T04:44:40.307072000Z 2026-06-02 04:44:40.306 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T04:44:41.341197000Z 2026-06-02 04:44:41.340 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.217 s, sync=0.183 s, total=1.035 s; sync files=2, longest=0.157 s, average=0.092 s; distance=8 kB, estimate=28541 kB; lsn=0/E21A78E8, redo lsn=0/E21A78B0
+2026-06-02T04:49:40.370938000Z 2026-06-02 04:49:40.370 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T04:54:11.272345000Z 2026-06-02 04:54:11.272 UTC [22] LOG:  checkpoint complete: wrote 5047 buffers (30.8%); 0 WAL file(s) added, 0 removed, 2 recycled; write=269.552 s, sync=0.804 s, total=270.902 s; sync files=34, longest=0.726 s, average=0.024 s; distance=41910 kB, estimate=41910 kB; lsn=0/E4A951B0, redo lsn=0/E4A95178
+2026-06-02T05:29:40.876413000Z 2026-06-02 05:29:40.850 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T05:29:41.287206000Z 2026-06-02 05:29:41.286 UTC [22] LOG:  checkpoint complete: wrote 1 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.102 s, sync=0.068 s, total=0.437 s; sync files=1, longest=0.068 s, average=0.068 s; distance=6 kB, estimate=37719 kB; lsn=0/E4A96B20, redo lsn=0/E4A96AE8
+2026-06-02T07:54:42.291416000Z 2026-06-02 07:54:42.290 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T07:54:43.238050000Z 2026-06-02 07:54:43.237 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.138 s, sync=0.086 s, total=0.947 s; sync files=3, longest=0.050 s, average=0.029 s; distance=9 kB, estimate=33948 kB; lsn=0/E4A991D8, redo lsn=0/E4A991A0
+2026-06-02T08:59:43.411186000Z 2026-06-02 08:59:43.410 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T08:59:45.867003000Z 2026-06-02 08:59:45.866 UTC [22] LOG:  checkpoint complete: wrote 21 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.056 s, sync=0.174 s, total=2.457 s; sync files=19, longest=0.083 s, average=0.010 s; distance=205 kB, estimate=30574 kB; lsn=0/E4ACC610, redo lsn=0/E4ACC5D8
+2026-06-02T10:09:44.542932000Z 2026-06-02 10:09:44.542 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T10:10:53.524089000Z 2026-06-02 10:10:53.523 UTC [22] LOG:  checkpoint complete: wrote 686 buffers (4.2%); 0 WAL file(s) added, 1 removed, 0 recycled; write=68.737 s, sync=0.080 s, total=68.982 s; sync files=28, longest=0.054 s, average=0.003 s; distance=5514 kB, estimate=28068 kB; lsn=0/E502EFB8, redo lsn=0/E502EF80
+2026-06-02T10:39:44.947207000Z 2026-06-02 10:39:44.946 UTC [22] LOG:  checkpoint starting: time
+2026-06-02T10:39:46.202240000Z 2026-06-02 10:39:46.201 UTC [22] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.021 s, sync=0.073 s, total=1.256 s; sync files=7, longest=0.052 s, average=0.011 s; distance=30 kB, estimate=25264 kB; lsn=0/E5036A40, redo lsn=0/E5036A08
+2026-06-03T02:49:56.967902000Z 2026-06-03 02:49:56.967 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T02:49:57.523216000Z 2026-06-03 02:49:57.523 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.246 s, sync=0.088 s, total=0.556 s; sync files=3, longest=0.064 s, average=0.030 s; distance=7 kB, estimate=22738 kB; lsn=0/E5038890, redo lsn=0/E5038858
+2026-06-03T03:09:56.723198000Z 2026-06-03 03:09:56.722 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T03:09:57.544126000Z 2026-06-03 03:09:57.543 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.267 s, sync=0.112 s, total=0.822 s; sync files=2, longest=0.101 s, average=0.056 s; distance=7 kB, estimate=20465 kB; lsn=0/E503A808, redo lsn=0/E503A7D0
+2026-06-03T03:14:56.603196000Z 2026-06-03 03:14:56.602 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T03:19:26.364942000Z 2026-06-03 03:19:26.364 UTC [22] LOG:  checkpoint complete: wrote 5508 buffers (33.6%); 0 WAL file(s) added, 0 removed, 2 recycled; write=269.207 s, sync=0.097 s, total=269.762 s; sync files=35, longest=0.051 s, average=0.003 s; distance=45332 kB, estimate=45332 kB; lsn=0/E7E12BA0, redo lsn=0/E7C7FAC0
+2026-06-03T03:59:56.915314000Z 2026-06-03 03:59:56.914 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T04:04:26.193519000Z 2026-06-03 04:04:26.193 UTC [22] LOG:  checkpoint complete: wrote 3148 buffers (19.2%); 0 WAL file(s) added, 0 removed, 2 recycled; write=268.940 s, sync=0.063 s, total=269.279 s; sync files=23, longest=0.060 s, average=0.003 s; distance=34285 kB, estimate=44228 kB; lsn=0/E9DFB250, redo lsn=0/E9DFB218
+2026-06-03T06:19:58.103776000Z 2026-06-03 06:19:58.103 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T06:19:58.584099000Z 2026-06-03 06:19:58.583 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.220 s, sync=0.056 s, total=0.481 s; sync files=3, longest=0.029 s, average=0.019 s; distance=7 kB, estimate=39805 kB; lsn=0/E9DFCEF0, redo lsn=0/E9DFCEB8
+2026-06-03T07:19:59.542915000Z 2026-06-03 07:19:59.542 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T07:20:00.190805000Z 2026-06-03 07:20:00.190 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.143 s, sync=0.069 s, total=0.649 s; sync files=2, longest=0.052 s, average=0.035 s; distance=7 kB, estimate=35826 kB; lsn=0/E9DFECA8, redo lsn=0/E9DFEC70
+2026-06-03T09:30:00.828034000Z 2026-06-03 09:30:00.827 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T09:30:01.410200000Z 2026-06-03 09:30:01.409 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.143 s, sync=0.109 s, total=0.583 s; sync files=2, longest=0.086 s, average=0.055 s; distance=7 kB, estimate=32244 kB; lsn=0/E9E00B90, redo lsn=0/E9E00B58
+2026-06-03T09:40:00.571019000Z 2026-06-03 09:40:00.570 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T09:40:01.135690000Z 2026-06-03 09:40:01.135 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.158 s, sync=0.111 s, total=0.565 s; sync files=2, longest=0.094 s, average=0.056 s; distance=3 kB, estimate=29020 kB; lsn=0/E9E01B38, redo lsn=0/E9E01B00
+2026-06-03T11:15:01.592844000Z 2026-06-03 11:15:01.592 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T11:15:02.109249000Z 2026-06-03 11:15:02.108 UTC [22] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.138 s, sync=0.128 s, total=0.517 s; sync files=2, longest=0.082 s, average=0.064 s; distance=7 kB, estimate=26118 kB; lsn=0/E9E037C8, redo lsn=0/E9E03790
+2026-06-03T13:20:02.821110000Z 2026-06-03 13:20:02.820 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T13:24:32.990574000Z 2026-06-03 13:24:32.990 UTC [22] LOG:  checkpoint complete: wrote 13702 buffers (83.6%); 0 WAL file(s) added, 0 removed, 14 recycled; write=269.090 s, sync=0.068 s, total=270.170 s; sync files=116, longest=0.043 s, average=0.001 s; distance=218219 kB, estimate=218219 kB; lsn=0/F731FD40, redo lsn=0/F731E508
+2026-06-03T13:30:14.225815000Z 2026-06-03 13:30:14.225 UTC [143998] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:30:14.226896000Z 2026-06-03 13:30:14.225 UTC [143998] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-06-03T13:30:14.227062000Z 2026-06-03 13:30:14.225 UTC [143998] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:30:14.227218000Z 	INSERT INTO users (
+2026-06-03T13:30:14.227350000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:30:14.227543000Z 	) VALUES (
+2026-06-03T13:30:14.227671000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:30:14.227836000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:30:14.227987000Z 	
+2026-06-03T13:30:14.455302000Z 2026-06-03 13:30:14.455 UTC [143998] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:30:14.455922000Z 2026-06-03 13:30:14.455 UTC [143998] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-06-03T13:30:14.456165000Z 2026-06-03 13:30:14.455 UTC [143998] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:30:14.456297000Z 	INSERT INTO users (
+2026-06-03T13:30:14.456473000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:30:14.456601000Z 	) VALUES (
+2026-06-03T13:30:14.456758000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:30:14.456842000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:30:14.456911000Z 	
+2026-06-03T13:35:03.155020000Z 2026-06-03 13:35:03.154 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T13:35:05.465115000Z 2026-06-03 13:35:05.464 UTC [22] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.492 s, sync=0.233 s, total=2.311 s; sync files=11, longest=0.140 s, average=0.022 s; distance=141 kB, estimate=196411 kB; lsn=0/F7341B30, redo lsn=0/F7341AF8
+2026-06-03T13:40:08.452150000Z 2026-06-03 13:40:08.451 UTC [144135] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:40:08.452789000Z 2026-06-03 13:40:08.451 UTC [144135] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-06-03T13:40:08.452875000Z 2026-06-03 13:40:08.451 UTC [144135] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:40:08.452957000Z 	INSERT INTO users (
+2026-06-03T13:40:08.453030000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:40:08.453124000Z 	) VALUES (
+2026-06-03T13:40:08.453211000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:40:08.453335000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:40:08.453438000Z 	
+2026-06-03T13:40:08.613157000Z 2026-06-03 13:40:08.612 UTC [144135] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:40:08.613566000Z 2026-06-03 13:40:08.612 UTC [144135] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-06-03T13:40:08.613681000Z 2026-06-03 13:40:08.612 UTC [144135] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:40:08.613791000Z 	INSERT INTO users (
+2026-06-03T13:40:08.613904000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:40:08.613991000Z 	) VALUES (
+2026-06-03T13:40:08.614076000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:40:08.614165000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:40:08.614282000Z 	
+2026-06-03T13:45:03.593042000Z 2026-06-03 13:45:03.592 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T13:45:06.170987000Z 2026-06-03 13:45:06.170 UTC [22] LOG:  checkpoint complete: wrote 22 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.164 s, sync=0.169 s, total=2.579 s; sync files=9, longest=0.103 s, average=0.019 s; distance=103 kB, estimate=176780 kB; lsn=0/F735B950, redo lsn=0/F735B918
+2026-06-03T13:49:49.508604000Z 2026-06-03 13:49:49.508 UTC [144269] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:49:49.509487000Z 2026-06-03 13:49:49.508 UTC [144269] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-06-03T13:49:49.509625000Z 2026-06-03 13:49:49.508 UTC [144269] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:49:49.509712000Z 	INSERT INTO users (
+2026-06-03T13:49:49.509782000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:49:49.509862000Z 	) VALUES (
+2026-06-03T13:49:49.509934000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:49:49.510008000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:49:49.510145000Z 	
+2026-06-03T13:49:49.811063000Z 2026-06-03 13:49:49.810 UTC [144269] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T13:49:49.811382000Z 2026-06-03 13:49:49.810 UTC [144269] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-06-03T13:49:49.811561000Z 2026-06-03 13:49:49.810 UTC [144269] STATEMENT:  -- name: CreateUser :one
+2026-06-03T13:49:49.811800000Z 	INSERT INTO users (
+2026-06-03T13:49:49.811933000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:49:49.812048000Z 	) VALUES (
+2026-06-03T13:49:49.812187000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T13:49:49.812317000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T13:49:49.812441000Z 	
+2026-06-03T13:50:03.269869000Z 2026-06-03 13:50:03.269 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T13:50:06.214208000Z 2026-06-03 13:50:06.214 UTC [22] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.922 s, sync=0.101 s, total=2.945 s; sync files=6, longest=0.058 s, average=0.017 s; distance=69 kB, estimate=159109 kB; lsn=0/F736CF70, redo lsn=0/F736CF38
+2026-06-03T13:55:03.273545000Z 2026-06-03 13:55:03.273 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T13:55:05.821465000Z 2026-06-03 13:55:05.821 UTC [22] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.557 s, sync=0.723 s, total=2.549 s; sync files=6, longest=0.703 s, average=0.121 s; distance=69 kB, estimate=143205 kB; lsn=0/F737E418, redo lsn=0/F737E3E0
+2026-06-03T14:17:45.092997000Z 2026-06-03 14:17:45.091 UTC [144649] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T14:17:45.093411000Z 2026-06-03 14:17:45.091 UTC [144649] DETAIL:  Key (email)=(muhammadafendrianto) already exists.
+2026-06-03T14:17:45.093541000Z 2026-06-03 14:17:45.091 UTC [144649] STATEMENT:  -- name: CreateUser :one
+2026-06-03T14:17:45.093646000Z 	INSERT INTO users (
+2026-06-03T14:17:45.093739000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T14:17:45.093826000Z 	) VALUES (
+2026-06-03T14:17:45.093904000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T14:17:45.093972000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T14:17:45.094046000Z 	
+2026-06-03T14:17:45.282674000Z 2026-06-03 14:17:45.282 UTC [144649] ERROR:  duplicate key value violates unique constraint "users_email_key"
+2026-06-03T14:17:45.283048000Z 2026-06-03 14:17:45.282 UTC [144649] DETAIL:  Key (email)=(syamazkazakirni) already exists.
+2026-06-03T14:17:45.283186000Z 2026-06-03 14:17:45.282 UTC [144649] STATEMENT:  -- name: CreateUser :one
+2026-06-03T14:17:45.283300000Z 	INSERT INTO users (
+2026-06-03T14:17:45.283423000Z 	  id, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T14:17:45.283592000Z 	) VALUES (
+2026-06-03T14:17:45.283716000Z 	  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+2026-06-03T14:17:45.283856000Z 	) RETURNING id, created_at, updated_at, deleted_at, email, password, name, role, nip, nomor_hp, pangkat, golongan, jabatan, tingkat_biaya, session_id, demo_password
+2026-06-03T14:17:45.283997000Z 	
+2026-06-03T14:20:04.181925000Z 2026-06-03 14:20:04.181 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T14:20:09.526682000Z 2026-06-03 14:20:09.526 UTC [22] LOG:  checkpoint complete: wrote 21 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.089 s, sync=2.952 s, total=5.345 s; sync files=7, longest=1.804 s, average=0.422 s; distance=138 kB, estimate=128898 kB; lsn=0/F73A0E20, redo lsn=0/F73A0DE8
+2026-06-03T14:25:04.593303000Z 2026-06-03 14:25:04.593 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T14:25:06.163373000Z 2026-06-03 14:25:06.163 UTC [22] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.079 s, total=1.571 s; sync files=3, longest=0.079 s, average=0.027 s; distance=28 kB, estimate=116011 kB; lsn=0/F73A81A8, redo lsn=0/F73A8170
+2026-06-03T14:50:04.592911000Z 2026-06-03 14:50:04.592 UTC [22] LOG:  checkpoint starting: time
+2026-06-03T14:50:05.774534000Z 2026-06-03 14:50:05.774 UTC [22] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.241 s, sync=0.078 s, total=1.182 s; sync files=2, longest=0.052 s, average=0.039 s; distance=16 kB, estimate=104412 kB; lsn=0/F73AC1A8, redo lsn=0/F73AC170
+2026-06-03T15:47:41.755270000Z 2026-06-03 15:47:41.754 UTC [145865] FATAL:  role "postgres" does not exist

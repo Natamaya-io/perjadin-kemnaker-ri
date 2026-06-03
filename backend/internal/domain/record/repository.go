@@ -697,6 +697,8 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 		mc.TicketBackFile = nil
 		mc.TicketGoFile = nil
 		mc.ReceiptFiles = nil
+		mc.AdditionalCosts = nil // Also contains base64 files!
+		mc.Details = nil // Also contains base64 files!
 
 		costMap[c.TravelRecordID] = &mc
 	}
@@ -1477,6 +1479,8 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		mc.TicketBackFile = nil
 		mc.TicketGoFile = nil
 		mc.ReceiptFiles = nil
+		mc.AdditionalCosts = nil // Also contains base64 files!
+		mc.Details = nil // Also contains base64 files!
 
 		costMap[c.TravelRecordID] = &mc
 	}
