@@ -27,3 +27,5 @@ query
 .cursorrules
 clean_local_db.ps1
 *.exe
+*.dump
+*.dump.gz
