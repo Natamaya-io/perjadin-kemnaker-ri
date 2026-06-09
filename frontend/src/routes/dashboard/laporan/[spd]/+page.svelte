@@ -1471,8 +1471,8 @@
 
                         {#if $userStore.role !== 'kasubag'}
                             <div class="bg-slate-50 border-t border-slate-100 p-4 sm:p-6 -mx-4 sm:-mx-6 md:-mx-8 -mb-4 sm:-mb-6 md:-mb-8 flex flex-col sm:flex-row justify-end gap-3 rounded-b-xl mt-8">
-                                <Button variant="outline" size="lg" class="border-blue-200 text-blue-700 hover:bg-blue-50 px-6 w-full sm:w-auto" on:click={saveDraftLaporan}>Simpan Draft</Button>
-                                <Button size="lg" class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8 w-full sm:w-auto" on:click={submitLaporan}>Submit Laporan Kegiatan</Button>
+                                <Button variant="outline" size="lg" disabled={$loadingStore} class="border-blue-200 text-blue-700 hover:bg-blue-50 px-6 w-full sm:w-auto" on:click={saveDraftLaporan}>Simpan Draft</Button>
+                                <Button size="lg" disabled={$loadingStore} class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8 w-full sm:w-auto" on:click={submitLaporan}>Submit Laporan Kegiatan</Button>
                             </div>
                         {/if}
                     </div>
@@ -2094,8 +2094,8 @@
                             
                             {#if $userStore.role !== 'kasubag'}
                                 <div class="bg-slate-50 border-t border-slate-100 p-4 sm:p-6 mt-8 -mx-4 sm:-mx-6 md:-mx-8 -mb-4 sm:-mb-6 md:-mb-8 flex flex-col sm:flex-row justify-end gap-3 rounded-b-xl">
-                                    <Button variant="outline" size="lg" class="border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-6 w-full sm:w-auto" on:click={saveDraftRincian}>Simpan Draft</Button>
-                                    <Button size="lg" class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8 w-full sm:w-auto" on:click={submitRincian}>Simpan Rincian Biaya</Button>
+                                    <Button variant="outline" size="lg" disabled={$loadingStore} class="border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-6 w-full sm:w-auto" on:click={saveDraftRincian}>Simpan Draft</Button>
+                                    <Button size="lg" disabled={$loadingStore} class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8 w-full sm:w-auto" on:click={submitRincian}>Simpan Rincian Biaya</Button>
                                 </div>
                             {/if}
                         </div>

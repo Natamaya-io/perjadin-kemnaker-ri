@@ -1115,6 +1115,10 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Gagal menyimpan ke database: %v", err))
 	}
 
+	// PERFORMANCE: Jangan serialize dan kirim ulang payload base64 yang masif (hingga belasan MB)
+	r.Report = nil
+	r.Cost = nil
+
 	return c.JSON(http.StatusOK, r)
 }
 
