@@ -1,24 +1,24 @@
 # Perjadin Protokol Kemnaker RI
 
-This repository contains the official **Perjadin Protokol** system for **Kementerian Ketenagakerjaan Republik Indonesia**. It is an enterprise-grade web application designed to manage official travel records, expense reporting, and protocol activities.
+This repository contains the official Perjadin Protokol system for Kementerian Ketenagakerjaan Republik Indonesia. It is an enterprise-grade web application designed to manage official travel records, expense reporting, and protocol activities.
 
-## 🧱 Architecture & Tech Stack
+## Architecture & Tech Stack
 
-The project follows a **Monorepo** structure separating the frontend and backend, orchestrated via containerization.
+The project follows a Monorepo structure separating the frontend and backend, orchestrated via containerization.
 
 | Component | Technology | Description |
 | :--- | :--- | :--- |
 | **Frontend** | [SvelteKit](https://kit.svelte.dev/) | SSR/CSR hybrid web application using Node.js adapter. |
 | **Backend** | [Go (Golang)](https://go.dev/) | RESTful API using [Echo](https://echo.labstack.com/) framework. |
-| **Database** | [PostgreSQL](https://www.postgresql.org/) | Primary relational database. |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | Primary relational database with keyset pagination indexing. |
 | **Cache** | [Redis](https://redis.io/) | Session storage and caching layer. |
 | **PDF Engine** | [Gotenberg](https://gotenberg.dev/) | Microservice for converting documents to PDF. |
-| **Secrets** | [Doppler](https://www.doppler.com/) | Centralized secrets management (Zero-trust). |
-| **Infra** | [Podman](https://podman.io/) / Docker | Container runtime and orchestration. |
+| **Infra & Deployment** | [Podman](https://podman.io/) / Systemd | Container runtime, orchestrated using user-level systemd services. |
+| **CI/CD Security** | [Trivy](https://aquasecurity.github.io/trivy/) | Automated vulnerability scanning for Go modules and npm packages. |
 
 ---
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 To contribute to this project, you must have the following tools installed on your local machine:
 
@@ -26,74 +26,56 @@ To contribute to this project, you must have the following tools installed on yo
 2.  **[Go](https://go.dev/dl/)** - Version 1.24+.
 3.  **[Node.js](https://nodejs.org/)** - LTS Version (v20+).
 4.  **[Podman Desktop](https://podman-desktop.io/)** (or Docker Desktop) - Container runtime.
-5.  **[Doppler CLI](https://docs.doppler.com/docs/install-cli)** - Required for injecting environment variables.
-6.  **SQL Tools** (Install via Go):
-    ```bash
-    # Type-safe SQL generator
-    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-    # Database migration tool
-    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-    ```
 
 ---
 
-## 🚀 Quick Start (Fast-Track Onboarding)
+## Quick Start
 
-Follow these steps to get your development environment running in **under 5 minutes**.
+Follow these steps to set up your local development environment.
 
-### 1. Setup Project & Secrets
+### 1. Setup Project
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd perjadin-protokol-kemnaker-ri/DEVELOPMENT/perjadin-kemnaker-ri
-
-# Login to Doppler and select the 'dev' config
-doppler login
-doppler setup
-# Select Project: perjadin-kemnaker-ri
-# Select Config: dev (or dev_local)
+cd perjadin-kemnaker-ri
 ```
 
-### 2. Start Infrastructure (Redis Only)
-Since PostgreSQL runs on **Baremetal (Host Machine)**, we only need to start the Redis container for caching/session management.
-
+### 2. Start Infrastructure
+Start the necessary infrastructure containers in the background using Compose.
 ```bash
-# Start Redis in the background
-podman-compose up -d redis
-# Ensure your local PostgreSQL service is running on port 5432
+podman-compose up -d redis db
 ```
 
 ### 3. Initialize Database
-Apply the database migrations to your local Postgres instance.
+Apply the database migrations to your local Postgres instance. Ensure you have `golang-migrate` installed.
 ```bash
 cd backend
-# Run migrations (assuming default local credentials)
 migrate -path db/migrations -database "postgresql://postgres:postgres@localhost:5432/perjadin_db?sslmode=disable" up
 ```
 
-### 4. Run Backend (Native Mode)
-Open a new terminal. Run the Go backend locally with secrets injected.
+### 4. Run Backend
+Open a new terminal. Run the Go backend locally. Ensure your `.env` file is properly configured.
 ```bash
 cd backend
-doppler run -- go run cmd/api/main.go
+go run cmd/api/main.go
 # Server starts at http://localhost:8081
 ```
 
-### 5. Run Frontend (Native Mode)
+### 5. Run Frontend
 Open another terminal. Install dependencies and start the SvelteKit dev server.
 ```bash
 cd frontend
 npm install
-doppler run -- npm run dev
+npm run dev
 # App starts at http://localhost:3000
 ```
 
 ---
 
-## 💻 Development Workflow
+## Development Workflow
 
 ### Database Changes
-We use a **Schema-First** approach. Do not modify Go structs manually for DB tables.
+We use a Schema-First approach. Do not modify Go structs manually for DB tables.
 
 1.  **Create Migration:**
     ```bash
@@ -111,25 +93,25 @@ We use a **Schema-First** approach. Do not modify Go structs manually for DB tab
     sqlc generate
     ```
 
-### Running Tests
+### Running Tests and Linting
 ```bash
 cd backend
-doppler run -- go test -v ./...
+go test -v ./...
+golangci-lint run
 ```
 
 ### Full Stack Simulation
-To test the production build locally (including multi-stage Docker builds):
+To test the production build locally (including multi-stage container builds):
 ```bash
-# From the project root
-doppler run -- podman-compose up --build
+podman-compose up --build
 ```
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
-├── .github/            # CI/CD Workflows
+├── .github/            # CI/CD Workflows (Trivy Security Scans, etc.)
 ├── backend/            # Go Backend
 │   ├── cmd/            # Entry points (api, seeder, etc.)
 │   ├── db/             # Migrations and SQL queries
@@ -144,21 +126,13 @@ doppler run -- podman-compose up --build
 └── README.md           # You are here
 ```
 
-## ⚠️ Troubleshooting
+## Troubleshooting
 
 **Q: Connection refused to Database?**
-A: Ensure your **local Postgres service** is running and port 5432 is available. Check your Doppler secrets for `DB_HOST` (should be `localhost` when running native Go, or `host.docker.internal` when running inside Docker).
-
-   **If using Docker/Podman on Windows**, you might need to run this once in PowerShell (Admin) to allow connection:
-   ```powershell
-   New-NetFirewallRule -DisplayName "Allow Postgres Port 5432" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5432
-   ```
-
-**Q: `PieChart is not defined` error?**
-A: This was a known issue in the dashboard. Ensure you have pulled the latest changes where the import was fixed.
+A: Ensure your local Postgres container/service is running and port 5432 is available. Check your `.env` secrets for `DB_HOST` (should be `localhost` when running native Go, or `host.docker.internal` when running inside Docker/Podman).
 
 **Q: Permission denied on `go install`?**
 A: Check your `$GOPATH` and `$PATH`. Ensure `Go/bin` is in your system PATH.
 
 ---
-**Maintained by Application Development Team**
+Maintained by Application Development Team
