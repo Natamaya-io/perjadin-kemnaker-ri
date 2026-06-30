@@ -1286,12 +1286,12 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		mainArgId := argId
 
 		if cursorData.SPD != "" && (params.SortBy == "spj-desc" || params.SortBy == "") {
-			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) < CAST(SUBSTRING($%d FROM '[0-9]+') AS INTEGER)", mainArgId)
+			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) < CAST(SUBSTRING($%d FROM 'ID-SPJ-([0-9]+)') AS NUMERIC)", mainArgId)
 			mainArgs = append(mainArgs, cursorData.SPD)
 			mainArgId++
 			offset = 0 // Keyset Pagination: No offset needed
 		} else if cursorData.SPD != "" && params.SortBy == "spj-asc" {
-			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) > CAST(SUBSTRING($%d FROM '[0-9]+') AS INTEGER)", mainArgId)
+			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) > CAST(SUBSTRING($%d FROM 'ID-SPJ-([0-9]+)') AS NUMERIC)", mainArgId)
 			mainArgs = append(mainArgs, cursorData.SPD)
 			mainArgId++
 			offset = 0 // Keyset Pagination: No offset needed
@@ -1308,19 +1308,19 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		// Sorting
 		switch params.SortBy {
 		case "spj-asc":
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) ASC"
+			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
 		case "spj-desc":
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) DESC"
+			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
 		case "date-asc":
-			mainQuery += " ORDER BY MAX(travel_records.start_date) ASC, CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) ASC"
+			mainQuery += " ORDER BY MAX(travel_records.start_date) ASC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
 		case "date-desc":
-			mainQuery += " ORDER BY MAX(travel_records.start_date) DESC, CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) DESC"
+			mainQuery += " ORDER BY MAX(travel_records.start_date) DESC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
 		case "cost-asc":
-			mainQuery += " ORDER BY SUM(travel_records.total_cost) ASC, CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) ASC"
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) ASC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
 		case "cost-desc":
-			mainQuery += " ORDER BY SUM(travel_records.total_cost) DESC, CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) DESC"
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) DESC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
 		default:
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM '[0-9]+') AS INTEGER) DESC"
+			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
 		}
 
 		mainQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", mainArgId, mainArgId+1)
@@ -1572,7 +1572,7 @@ func (r *repository) GetFactualSequenceNumber(ctx context.Context, id uuid.UUID,
 		WITH ordered AS (
 			SELECT id, ROW_NUMBER() OVER (
 				ORDER BY 
-					CAST(SUBSTRING(spd_number FROM '[0-9]+') AS INTEGER) ASC, 
+					CAST(SUBSTRING(spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC, 
 					sequence_number ASC,
 					created_at ASC
 			) as actual_rank 
