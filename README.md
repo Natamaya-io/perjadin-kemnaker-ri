@@ -126,6 +126,18 @@ podman-compose up --build
 └── README.md           # You are here
 ```
 
+## Project Metrics (Lines of Code)
+
+The codebase consists of approximately **29,800 lines of pure code** (excluding comments, blanks, and external dependencies) distributed across **235 unique files**. 
+
+- **Frontend (Svelte, TypeScript, etc):** ~11,600 LoC
+- **Backend (Go, SQL):** ~10,500 LoC 
+- **Configuration (JSON, YAML, etc):** ~7,700 LoC
+
+The architecture maintains a very healthy and balanced distribution between the frontend user interface and backend business logic.
+
+---
+
 ## Troubleshooting
 
 **Q: Connection refused to Database?**
