@@ -1,5 +1,0 @@
-NAME                CPU %       MEM USAGE / LIMIT  NET IO             BLOCK IO
-perjadin-db         0.28%       6.054MB / 4.105GB  139.1MB / 15.22GB  0B / 0B
-perjadin-gotenberg  0.14%       33.18MB / 4.105GB  35.35MB / 33.1MB   0B / 0B
-perjadin-backend    1.02%       7.451MB / 4.105GB  2.63GB / 90.59MB   0B / 0B
-perjadin-frontend   0.02%       14.56MB / 4.105GB  13.72kB / 1.216kB  0B / 0B
