@@ -33,6 +33,10 @@ COPY db/migrations ./db/migrations
 # Copy DOCX templates folder
 COPY templates ./templates
 
+# Go runtime memory optimization (Zero-Trust & Anti-OOM)
+ENV GOMEMLIMIT="2500MiB"
+ENV GOGC=50
+
 # Expose the application port
 EXPOSE 8081
 

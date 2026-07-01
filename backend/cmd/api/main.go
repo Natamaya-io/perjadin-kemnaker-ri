@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	_ "net/http/pprof" // Zero-Trust memory profiler
 	"os"
 	"os/signal"
 	"strings"
@@ -193,6 +194,14 @@ func main() {
 	go func() {
 		if err := e.Start(":" + cfg.App.Port); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+	
+	// Start pprof on hidden port 6060 (Bind ke 0.0.0.0 agar bisa diakses host Docker)
+	go func() {
+		sugar.Info("Starting pprof on port 6060 for internal memory telemetry")
+		if err := http.ListenAndServe("0.0.0.0:6060", nil); err != nil {
+			sugar.Warnf("pprof server failed: %v", err)
 		}
 	}()
 
