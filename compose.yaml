@@ -63,8 +63,8 @@ services:
       - FONNTE_API=${FONNTE_API}
       - GOTENBERG_URL=http://${COMPOSE_PROJECT_NAME}_gotenberg:3000
     ports:
-      - "127.0.0.1:${APP_PORT}:${APP_PORT}"
-      - "127.0.0.1:6060:6060" # Port Pprof Telemetry (Strict local binding)
+      - "${APP_PORT}:${APP_PORT}"
+      - "6060:6060" # Port Pprof Telemetry
     depends_on:
       db:
         condition: service_healthy
