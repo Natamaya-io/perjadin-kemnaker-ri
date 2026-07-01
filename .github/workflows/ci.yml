@@ -198,6 +198,12 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Connect to Tailscale (Zero-Trust Mesh VPN)
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: latest
+
       - name: Copy Quadlets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
