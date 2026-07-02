@@ -10,8 +10,8 @@ EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 PublishPort=3000:3000
 
-# Bypass Podman internal DNS (aardvark-dns) which is failing with os error 99 due to IPv6
-Environment=INTERNAL_API_URL=https://api-protokol.gatsu51.com
+# Hardcoded non-secret internal routing via container name DNS
+Environment=INTERNAL_API_URL=http://perjadin-backend:8081
 Environment=HOST=0.0.0.0
 Environment=PORT=3000
 Environment=BODY_SIZE_LIMIT=52428800
