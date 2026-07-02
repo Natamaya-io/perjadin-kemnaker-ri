@@ -1070,24 +1070,21 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	}
 	c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	var rawMap map[string]interface{}
-	if errUm := json.Unmarshal(bodyBytes, &rawMap); errUm != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid JSON")
+	var partialMap struct {
+		ReportData struct {
+			TanggalMerah json.RawMessage `json:"tanggalMerah"`
+		} `json:"reportData"`
 	}
-
 	var explicitTanggalMerah []byte
 	var hasExplicitTanggalMerah bool
-	if rd, ok := rawMap["reportData"].(map[string]interface{}); ok {
-		if tm, exists := rd["tanggalMerah"]; exists {
+
+	if errUm := json.Unmarshal(bodyBytes, &partialMap); errUm == nil {
+		if partialMap.ReportData.TanggalMerah != nil {
 			hasExplicitTanggalMerah = true
-			if tm != nil {
-				if b, errM := json.Marshal(tm); errM == nil {
-					explicitTanggalMerah = b
-				} else {
-					explicitTanggalMerah = []byte("[]")
-				}
-			} else {
+			if string(partialMap.ReportData.TanggalMerah) == "null" {
 				explicitTanggalMerah = []byte("[]")
+			} else {
+				explicitTanggalMerah = partialMap.ReportData.TanggalMerah
 			}
 		}
 	}
