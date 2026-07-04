@@ -1032,6 +1032,7 @@
                 });
             });
             await Promise.all(updatePromises);
+            await loadRecords(spd);
 
             toast.success('Rincian Biaya berhasil disubmit!');
         } catch (error) {

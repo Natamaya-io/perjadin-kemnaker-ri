@@ -77,12 +77,18 @@ export async function addRecord(tripData: any) {
 export async function updateRecord(id: string, data: Partial<TravelRecord>) {
     try {
         const updated = await api.updateRecord(id, data);
-        recordsStore.update(current => 
-            current.map(r => r.id === id ? { ...r, ...updated, employee: updated.employee?.id ? updated.employee : r.employee } : r)
-        );
-        paginatedRecordsStore.update(current => 
-            current.map(r => r.id === id ? { ...r, ...updated, employee: updated.employee?.id ? updated.employee : r.employee } : r)
-        );
+        // Backend strips costs/reportData from response for performance (to avoid serializing large base64 files).
+        // Preserve existing store values when backend returns null for these fields.
+        const mergeRecord = (existing: TravelRecord) => {
+            if (existing.id !== id) return existing;
+            const merged = { ...existing, ...updated };
+            if (updated.costs === undefined || updated.costs === null) merged.costs = existing.costs;
+            if (updated.reportData === undefined || updated.reportData === null) merged.reportData = existing.reportData;
+            if (!updated.employee?.id) merged.employee = existing.employee;
+            return merged;
+        };
+        recordsStore.update(current => current.map(mergeRecord));
+        paginatedRecordsStore.update(current => current.map(mergeRecord));
         return updated;
     } catch (e) {
         console.error("Failed to update record", e);
