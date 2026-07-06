@@ -426,16 +426,17 @@ func (q *Queries) GetDashboardReportCounts(ctx context.Context, userID uuid.Null
 }
 
 const getDashboardStatusCounts = `-- name: GetDashboardStatusCounts :many
-SELECT status, payment_status, COUNT(*) as count 
+SELECT status, payment_status, report_status, COUNT(*) as count 
 FROM travel_records 
 WHERE deleted_at IS NULL
   AND (NULLIF($1::uuid, NULL) IS NULL OR employee_id = $1 OR creator_id = $1)
-GROUP BY status, payment_status
+GROUP BY status, payment_status, report_status
 `
 
 type GetDashboardStatusCountsRow struct {
 	Status        sql.NullString `json:"status"`
 	PaymentStatus sql.NullString `json:"payment_status"`
+	ReportStatus  sql.NullString `json:"report_status"`
 	Count         int64          `json:"count"`
 }
 
@@ -448,7 +449,12 @@ func (q *Queries) GetDashboardStatusCounts(ctx context.Context, userID uuid.Null
 	items := []GetDashboardStatusCountsRow{}
 	for rows.Next() {
 		var i GetDashboardStatusCountsRow
-		if err := rows.Scan(&i.Status, &i.PaymentStatus, &i.Count); err != nil {
+		if err := rows.Scan(
+			&i.Status,
+			&i.PaymentStatus,
+			&i.ReportStatus,
+			&i.Count,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

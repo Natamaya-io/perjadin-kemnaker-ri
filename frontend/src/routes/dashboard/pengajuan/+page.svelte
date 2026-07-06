@@ -99,25 +99,47 @@
         loadPaginatedRecords(params, append);
     }
 
-    // Grouping only for Review Modal data integrity
-    $: groupedRecordsMap = $paginatedRecordsStore.reduce((/** @type {Record<string, any[]>} */ acc, record) => {
-        if (!acc[record.spd]) {
-            acc[record.spd] = [];
+    let groupedRecordsMap = {};
+    let uniqueSPDs = [];
+    let displayRecords = [];
+
+    // Single-pass O(N) grouping and deduplication for strict 60fps performance
+    $: {
+        const userEmail = $userStore?.email;
+        const userId = $userStore?.id;
+        const newGrouped = {};
+        const newUnique = [];
+        const newDisplay = [];
+        const spdToIndex = {};
+
+        for (const record of $paginatedRecordsStore) {
+            const spd = record.spd;
+            if (!newGrouped[spd]) {
+                newGrouped[spd] = [];
+                newUnique.push(spd);
+                spdToIndex[spd] = newDisplay.length;
+                newDisplay.push(record); // initial representative
+            }
+            newGrouped[spd].push(record);
+            
+            // Update representative if this record belongs to the user
+            if (record.email === userEmail || (record.employee && record.employee.email === userEmail) || record.employeeId === userId) {
+                const idx = spdToIndex[spd];
+                newDisplay[idx] = record;
+            }
         }
-        acc[record.spd].push(record);
-        return acc;
-    }, {});
-    
-    // Flat display - Deduplicate by SPD to display only one row per SPJ, preserving order
-    $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
-    $: displayRecords = /** @type {any[]} */ (uniqueSPDs.map(spd => $paginatedRecordsStore.find(r => r.spd === spd)).filter(Boolean));
+        
+        groupedRecordsMap = newGrouped;
+        uniqueSPDs = newUnique;
+        displayRecords = newDisplay;
+    }
 
-    let scrollContainer;
-
-    function handleScroll() {
-        if (!scrollContainer || $isFetchingRecords) return;
-        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-        if (scrollHeight - scrollTop - clientHeight < 200) {
+    function handleWindowScroll() {
+        if (typeof window === 'undefined' || $isFetchingRecords) return;
+        const scrollY = window.scrollY;
+        const innerHeight = window.innerHeight;
+        const scrollHeight = document.body.scrollHeight;
+        if (scrollHeight - scrollY - innerHeight < 400) {
             if ($paginatedMetadataStore.nextCursor) {
                 currentCursor = $paginatedMetadataStore.nextCursor;
                 fetchRecords(true);
@@ -169,6 +191,8 @@
     });
 </script>
 
+<svelte:window on:scroll|passive={handleWindowScroll} />
+
 <div class="space-y-6 pb-20 max-w-7xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
@@ -203,18 +227,8 @@
     </div>
 
     <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative flex flex-col">
-        <!-- VIRTUAL SCROLL CONTAINER -->
-        <div
-            bind:this={scrollContainer}
-            on:scroll={handleScroll}
-            class="overflow-auto max-h-[calc(100vh-[280px])] min-h-[400px] w-full relative table-scrollbar table-scroll-shadows"
-            style="max-height: calc(100vh - 280px);"
-        >            
-            {#if $isFetchingRecords && displayRecords.length > 0}
-                <div class="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-30 flex items-center justify-center min-h-[200px]">
-                    <LottieLoader size="60px" />
-                </div>
-            {/if}
+        <!-- NATIVE SCROLL CONTAINER -->
+        <div class="overflow-x-auto w-full relative min-h-[400px]">
             <table class="w-full text-sm text-left relative border-collapse">
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
@@ -242,74 +256,74 @@
                             </td>
                         </tr>
                     {:else}
-                        {#each displayRecords as record (record.id)}
-                            <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                <td class="pl-4 py-4 align-middle">
-                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
-                                    <div class="mt-1.5">
-                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 text-[10px] text-slate-400">
-                                        {groupedRecordsMap[record.spd]?.length || 1} Petugas
-                                    </div>
-                                </td>
-                                <td class="py-4 align-middle">
-                                    <div class="font-medium text-slate-800 text-sm line-clamp-2">
-                                        {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
-                                    </div>
-                                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span class="line-clamp-2 leading-relaxed">{formatLocations(record)}</span>
-                                    </div>
-                                </td>
-                                <td class="py-4 align-middle text-xs text-slate-600">
-                                    <div class="whitespace-nowrap">
-                                        {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
-                                    </div>
-                                    <div class="text-slate-400 my-0.5 text-[10px]">s/d</div>
-                                    <div class="whitespace-nowrap">
-                                        {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
-                                    </div>
-                                </td>
-                                <td class="py-4 align-middle text-center">
-                                    <div class="flex flex-col gap-1.5 items-center justify-center">
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
-                                            {getStatusBadge(record).label}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td class="text-center pr-4 py-4 align-middle">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button 
-                                            class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
-                                            title="Review"
-                                            on:click={() => handleReview(record.spd)}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        {#each displayRecords as record (record.spd)}
+                                <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
+                                    <td class="pl-4 py-4 align-middle">
+                                        <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
+                                        <div class="mt-1.5">
+                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 text-[10px] text-slate-400">
+                                            {groupedRecordsMap[record.spd]?.length || 1} Petugas
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle">
+                                        <div class="font-medium text-slate-800 text-sm line-clamp-2">
+                                            {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
+                                        </div>
+                                        <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                        </button>
-                                        {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.creator?.email || record.email) === $userStore?.email}
+                                            <span class="line-clamp-2 leading-relaxed">{formatLocations(record)}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle text-xs text-slate-600">
+                                        <div class="whitespace-nowrap">
+                                            {new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </div>
+                                        <div class="text-slate-400 my-0.5 text-[10px]">s/d</div>
+                                        <div class="whitespace-nowrap">
+                                            {new Date(record.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </div>
+                                    </td>
+                                    <td class="py-4 align-middle text-center">
+                                        <div class="flex flex-col gap-1.5 items-center justify-center">
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(record).class}">
+                                                {getStatusBadge(record).label}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center pr-4 py-4 align-middle">
+                                        <div class="flex items-center justify-center gap-2">
                                             <button 
-                                                class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
-                                                title="Hapus"
-                                                on:click={() => handleDelete(record.spd)}
+                                                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
+                                                title="Review"
+                                                on:click={() => handleReview(record.spd)}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
-                                        {/if}
-                                    </div>
-                                </td>
-                            </tr>
-                        {/each}
+                                            {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.creator?.email || record.email) === $userStore?.email}
+                                                <button 
+                                                    class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
+                                                    title="Hapus"
+                                                    on:click={() => handleDelete(record.spd)}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            {/if}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {/each}
 
                         {#if $isFetchingRecords && currentCursor}
                             <tr>
@@ -318,7 +332,6 @@
                                         <LottieLoader size="32px" />
                                         <span class="text-sm text-slate-500">Memuat data selanjutnya...</span>
                                     </div>
-
                                 </td>
                             </tr>
                         {/if}

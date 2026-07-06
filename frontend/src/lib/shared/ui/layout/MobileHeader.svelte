@@ -5,7 +5,7 @@
     const dispatch = createEventDispatcher();
 </script>
 
-<header class="md:hidden sticky top-0 z-50 w-full bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm flex-none print:hidden">
+<header class="md:hidden sticky top-0 z-50 w-full bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm flex-none print:hidden">
     <div class="flex items-center gap-3">
         <button 
             class="text-slate-500 hover:text-slate-700 focus:outline-none" 

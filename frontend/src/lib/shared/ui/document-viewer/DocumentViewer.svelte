@@ -221,6 +221,12 @@
         cssScale = 1.0;
         panX = 0;
         panY = 0;
+        if (scale !== 1.5) {
+            scale = 1.5;
+            if (type === 'pdf') {
+                renderPage(pageNum);
+            }
+        }
     }
 
     function panzoom(node) {
@@ -442,8 +448,8 @@
         {#if loading}
             <div class="absolute inset-0 flex items-center justify-center bg-white/80 z-20 backdrop-blur-[2px]">
                 <div class="flex flex-col items-center gap-1">
-                    <LottieLoader size="160px" />
-                    <span class="text-sm font-semibold text-slate-600 animate-pulse tracking-wide -mt-4">Memproses Dokumen...</span>
+                    <LottieLoader size="60px" />
+                    <span class="text-sm font-semibold text-slate-600 animate-pulse tracking-wide mt-4">Memproses Dokumen...</span>
                 </div>
             </div>
         {/if}
@@ -462,7 +468,7 @@
                 {:else if type === 'docx'}
                     <div bind:this={container} class="bg-white shadow-2xl p-8 min-h-[800px] w-full max-w-[800px] docx-wrapper"></div>
                 {:else if type === 'image'}
-                    <img src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg" />
+                    <img loading="lazy" src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg" />
                 {/if}
             </div>
         {/if}

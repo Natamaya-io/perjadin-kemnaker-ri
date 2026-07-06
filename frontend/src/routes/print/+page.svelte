@@ -158,8 +158,8 @@
     <div class="flex-1 overflow-hidden relative">
         {#if isGeneratingPdf && !pdfUrl}
             <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                <LottieLoader size="200px" className="-mt-6" />
-                <p class="text-slate-600 font-medium -mt-6">Sedang menyiapkan pratinjau PDF...</p>
+                <LottieLoader size="64px" />
+                <p class="text-slate-600 font-medium mt-6">Sedang menyiapkan pratinjau PDF...</p>
                 <p class="text-slate-400 text-sm mt-2">Ini mungkin memakan waktu beberapa detik karena merender via LibreOffice.</p>
             </div>
         {/if}

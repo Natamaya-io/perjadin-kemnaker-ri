@@ -59,6 +59,13 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
 // Export a reset function
 export function clearStores() {
     recordsStore.set([]);
+    paginatedRecordsStore.set([]);
+    paginatedMetadataStore.set({
+        totalItems: 0,
+        totalRecords: 0,
+        nextCursor: null,
+        limit: 50
+    });
 }
 
 export async function addRecord(tripData: any) {

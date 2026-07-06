@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  frontend:
+    # Gunakan image node murni untuk dev agar ada npm
+    image: public.ecr.aws/docker/library/node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    # Menggunakan bind mount agar SvelteKit Vite dapat memonitor perubahan file secara real-time (HMR)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Penting untuk docker di OS tertentu agar file watching jalan
+      - NODE_ENV=development
+      - BACKEND_URL=http://backend:8081
+

@@ -147,7 +147,7 @@
 	</div>
 {:else}
 	<div
-		class="h-[100dvh] w-screen flex font-sans antialiased text-slate-900 overflow-hidden {activeRoute.startsWith(
+		class="min-h-screen w-full flex font-sans antialiased text-slate-900 {activeRoute.startsWith(
 			'/login'
 		)
 			? 'bg-slate-900'
@@ -156,8 +156,7 @@
 		{#if $userStore.loggedIn && !isBlankPage}
 			{#if mobileSidebarOpen}
 				<div
-					class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
-					transition:fade={{ duration: 200 }}
+					class="fixed inset-0 z-40 bg-slate-900/80 md:hidden"
 					on:click={closeMobileSidebar}
 					role="button"
 					tabindex="0"
@@ -167,27 +166,21 @@
 			<Sidebar mobileOpen={mobileSidebarOpen} on:close={closeMobileSidebar} />
 		{/if}
 
-		<div class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+		<div class="flex flex-col flex-1 relative w-full {($userStore.loggedIn && !isBlankPage) ? 'md:w-[calc(100vw-80px)] md:ml-[80px]' : ''}">
 			{#if $userStore.loggedIn && !isBlankPage}
 				<MobileHeader on:toggleSidebar={toggleMobileSidebar} />
 			{/if}
 
-			<!-- Main Content Area (Scrollable) -->
-			<main class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar w-full relative">
+			<!-- Main Content Area (Native Browser Hardware-Accelerated Scroll) -->
+			<main class="flex-1 w-full relative">
 				<div
 					class="{$userStore.loggedIn && !isBlankPage
 						? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'
 						: ''} min-h-full"
 				>
-					{#key activeRoute}
-						<div
-							in:fly={{ y: 10, duration: 300, delay: 150 }}
-							out:fly={{ y: -10, duration: 150 }}
-							class="min-h-full"
-						>
+						<div class="min-h-full">
 							<slot />
 						</div>
-					{/key}
 				</div>
 			</main>
 		</div>

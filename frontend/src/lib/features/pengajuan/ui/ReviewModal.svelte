@@ -345,11 +345,11 @@
 
 {#if open && records.length > 0}
   <div use:portal>
-    <!-- Backdrop -->
-    <div transition:fade={{duration: 200}} class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm" role="button" tabindex="0" aria-label="Close modal" on:click={close} on:keydown={(e) => e.key === 'Escape' && close()}></div>
+    <!-- Background Overlay -->
+    <div class="fixed inset-0 z-[100] bg-slate-900/90" role="button" tabindex="0" aria-label="Close modal" on:click={close} on:keydown={(e) => e.key === 'Escape' && close()}></div>
     
     <!-- Modal Dialog -->
-    <div transition:fly={{y: 20, duration: 300}} class="fixed left-[50%] top-[50%] z-[100] w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="fixed left-[50%] top-[50%] z-[100] w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-white">
             <div class="flex-1 min-w-0 pr-4">

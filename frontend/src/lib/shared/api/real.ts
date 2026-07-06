@@ -18,13 +18,14 @@ export class RealApiClient implements ApiClient {
         this.unauthorizedHandler = handler;
     }
 
-    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    private async request<T>(endpoint: string, options: RequestInit = {}, customFetch?: typeof fetch): Promise<T> {
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
         };
 
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        const fetcher = customFetch || (typeof window !== 'undefined' ? window.fetch : fetch);
+        const response = await fetcher(`${BASE_URL}${endpoint}`, {
             ...options,
             headers: {
                 ...headers,
@@ -47,10 +48,10 @@ export class RealApiClient implements ApiClient {
             }
 
             if (response.status === 401) {
-                if (this.unauthorizedHandler) {
+                if (this.unauthorizedHandler && endpoint !== '/auth/login') {
                     this.unauthorizedHandler(errorMessage);
                 }
-                throw new Error("Unauthorized");
+                throw new Error(errorMessage);
             }
             
             throw new Error(errorMessage);
@@ -102,6 +103,7 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- User Management ---
+
     async getUsers(filters?: { role?: string; search?: string }): Promise<User[]> {
         let query = '';
         if (filters) {
@@ -136,7 +138,8 @@ export class RealApiClient implements ApiClient {
     // --- Files ---
     async uploadFile(file: File): Promise<{path: string}> {
         const formData = new FormData();
-        formData.append('file', file);
+        const filename = file.name || 'uploaded_file.pdf';
+        formData.append('file', file, filename);
 
         const headers: HeadersInit = {
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
@@ -159,8 +162,8 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- Records ---
-    async getDashboardSummary(): Promise<import('./types').DashboardSummary> {
-        return this.request<import('./types').DashboardSummary>('/dashboard/summary');
+    async getDashboardSummary(customFetch?: typeof fetch): Promise<import('./types').DashboardSummary> {
+        return this.request<import('./types').DashboardSummary>('/dashboard/summary', {}, customFetch);
     }
 
     async getRecords(filters?: Record<string, any>): Promise<TravelRecord[]> {
@@ -168,11 +171,11 @@ export class RealApiClient implements ApiClient {
         return this.request<TravelRecord[]>(`/records${query}`);
     }
 
-    async getPaginatedRecords(params: import('./types').PaginatedParams): Promise<import('./types').PaginatedResponse> {
+    async getPaginatedRecords(params: import('./types').PaginatedParams, customFetch?: typeof fetch): Promise<import('./types').PaginatedResponse> {
         // Remove undefined values
         const cleanParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined && v !== ''));
         const query = new URLSearchParams(cleanParams as any).toString();
-        return this.request<import('./types').PaginatedResponse>(`/records/paginated?${query}`);
+        return this.request<import('./types').PaginatedResponse>(`/records/paginated?${query}`, {}, customFetch);
     }
 
     async getRecordById(id: string): Promise<TravelRecord | null> {

@@ -3,6 +3,7 @@ import { api } from '$lib/shared/api';
 import type { User } from '$lib/shared/api/types';
 import { browser } from '$app/environment';
 import { loadRecords, clearStores } from '$lib/features/pengajuan/store';
+import { dashboardSummaryStore } from '$lib/features/dashboard/store';
 import { loadMasterData } from '$lib/shared/stores/master-data';
 
 const isBrowser = typeof window !== 'undefined';
@@ -80,6 +81,8 @@ export const logout = async () => {
     await api.logout();
     userStore.set({ email: null, role: null, loggedIn: false });
     clearStores();
+    dashboardSummaryStore.set(null);
+    usersStore.set([]);
 };
 
 // Auto-logout on 401 Unauthorized from any API call
@@ -91,6 +94,8 @@ api.setUnauthorizedHandler((reason) => {
     // The user will be redirected to /login when they click the button in the modal.
     userStore.set({ email: null, role: null, loggedIn: false });
     clearStores();
+    dashboardSummaryStore.set(null);
+    usersStore.set([]);
     if (isBrowser) {
         localStorage.removeItem('auth_token');
     }

@@ -1,15 +1,13 @@
 import { api } from '$lib/shared/api';
 
-export async function load() {
+export async function load({ fetch }) {
     try {
         if (typeof window !== 'undefined' && localStorage.getItem('auth_token')) {
-            // Because we don't know the exact user_id easily outside of the Svelte store,
-            // we let the backend handle the user scoping if we don't pass user_id.
-            // Wait, the API automatically scopes to the logged-in user if they are not super_admin/kasubag.
-            // So we just call it normally!
-            const response = await api.getPaginatedRecords({ limit: 50, sort_by: 'spj-desc' });
+            // 🔥 NON-BLOCKING ROUTING
+            // We do not await the API here. We let the page render instantly (0ms)
+            // and allow the component's reactive filters to fetch data in the background.
             return {
-                recordsResponse: response
+                recordsResponse: null
             };
         }
     } catch (e) {

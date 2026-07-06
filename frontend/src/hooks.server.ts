@@ -3,6 +3,11 @@ import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	console.log(`[CSRF Debug] Request path: ${event.url.pathname}`);
+	console.log(`[CSRF Debug] URL Origin: ${event.url.origin}`);
+	console.log(`[CSRF Debug] Request Origin: ${event.request.headers.get('origin')}`);
+	console.log(`[CSRF Debug] Headers: ${JSON.stringify(Object.fromEntries(event.request.headers))}`);
+	
 	// Proxy request ke backend untuk path /api dan /uploads
 	if (event.url.pathname.startsWith('/api') || event.url.pathname.startsWith('/uploads')) {
 		const target = env.INTERNAL_API_URL || 'http://backend:8081';
@@ -12,6 +17,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const headers = new Headers(event.request.headers);
 		headers.delete('host');
 		headers.delete('connection');
+		headers.delete('content-length');
+		headers.delete('transfer-encoding');
+		headers.delete('expect');
 
 		try {
 			// Gunakan clone() agar request asli tetap tersedia jika dibutuhkan SvelteKit
@@ -19,17 +27,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 			
 			const fetchOptions: RequestInit = {
 				method: event.request.method,
-				headers: headers,
-				// duplex: 'half' wajib ada untuk mem-proxy body stream di Node.js
-				// @ts-ignore
-				duplex: 'half'
+				headers: headers
 			};
 
 			if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
-				fetchOptions.body = requestClone.body;
+				console.log("[Proxy Debug] Converting to arrayBuffer...");
+				fetchOptions.body = await requestClone.arrayBuffer();
+				console.log("[Proxy Debug] Successfully converted to arrayBuffer, size:", fetchOptions.body.byteLength);
 			}
 
+			console.log("[Proxy Debug] Calling fetch to", url);
 			const response = await fetch(url, fetchOptions);
+			console.log("[Proxy Debug] Fetch success with status", response.status);
 
 			// Ambil body sebagai Buffer (Node.js native) agar lebih stabil saat dikirim balik
 			const responseData = await response.arrayBuffer();

@@ -697,43 +697,7 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 		mc.TicketBackFile = nil
 		mc.TicketGoFile = nil
 		mc.ReceiptFiles = nil
-		if mc.AdditionalCosts != nil {
-			var addlCosts []map[string]interface{}
-			if err := json.Unmarshal(mc.AdditionalCosts, &addlCosts); err == nil {
-				for i := range addlCosts {
-					delete(addlCosts[i], "file")
-				}
-				if cleanedAddl, err := json.Marshal(addlCosts); err == nil {
-					mc.AdditionalCosts = cleanedAddl
-				}
-			}
-		}
 
-		if mc.Details != nil {
-			var details []map[string]interface{}
-			if err := json.Unmarshal(mc.Details, &details); err == nil {
-				for i := range details {
-					delete(details[i], "boardingPassFiles")
-					delete(details[i], "ticketGoFile")
-					delete(details[i], "ticketBackFile")
-					delete(details[i], "hotelFile")
-					delete(details[i], "transportFile")
-					delete(details[i], "receiptFiles")
-					
-					// Also clean nested additionalCosts inside details
-					if nestedAddl, ok := details[i]["additionalCosts"].([]interface{}); ok {
-						for j := range nestedAddl {
-							if acMap, ok2 := nestedAddl[j].(map[string]interface{}); ok2 {
-								delete(acMap, "file")
-							}
-						}
-					}
-				}
-				if cleanedDetails, err := json.Marshal(details); err == nil {
-					mc.Details = cleanedDetails
-				}
-			}
-		}
 
 		costMap[c.TravelRecordID] = &mc
 	}
@@ -750,6 +714,12 @@ func (r *repository) GetTravelRecords(ctx context.Context, filters map[string]in
 	reportMap := make(map[uuid.UUID]*models.TravelReport)
 	for _, rep := range reports {
 		mr := mapDBReport(rep)
+		
+		// SECURITY & PERFORMANCE: Strip huge Base64 files from Report bulk response
+		mr.Files = nil
+		mr.SppdFile = nil
+		mr.SuratTugasFile = nil
+		
 		reportMap[rep.TravelRecordID] = &mr
 	}
 
@@ -941,10 +911,13 @@ func (r *repository) GetDashboardSummary(ctx context.Context, role string, userI
 			for _, row := range counts {
 				status := fromNullString(row.Status)
 				paymentStatus := fromNullString(row.PaymentStatus)
+				reportStatus := fromNullString(row.ReportStatus)
 
 				switch {
 				case paymentStatus == "Paid":
 					summary.StatusCompleted += row.Count
+				case reportStatus == "Completed":
+					summary.StatusInProgress += row.Count
 				case status == "Submitted" || status == "Approved":
 					summary.StatusInProgress += row.Count
 				case status == "Draft" || status == "Assigned":

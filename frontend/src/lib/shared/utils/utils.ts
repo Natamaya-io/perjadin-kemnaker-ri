@@ -116,7 +116,11 @@ export async function compressImage(file: File): Promise<File> {
         initialQuality: 0.8
     };
     try {
-        return await imageCompression(file, options);
+        const compressedBlob = await imageCompression(file, options);
+        return new File([compressedBlob], file.name, {
+            type: compressedBlob.type,
+            lastModified: Date.now(),
+        });
     } catch (error) {
         console.error('Error compressing image:', error);
         return file;

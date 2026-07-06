@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import { toast } from '$lib/shared/stores/toast';
+    import { api } from '$lib/shared/api';
     import { userStore } from '$lib/features/auth/store';
     import { provincesStore } from '$lib/shared/stores/master-data';
     import { formatCurrency, compressImage } from '$lib/shared/utils/utils';
@@ -367,6 +368,68 @@
         editingCosts = editingCosts;
     }
 
+    async function handleExtendTicketBackFileSelect(e, index) {
+        let file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 10MB.`);
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            editingCosts.details[selectedLocationIndex].additionalCosts[index].ticketBackFile = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: ev.target.result
+            };
+            editingCosts = editingCosts;
+        };
+        file = await compressImage(file);
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }
+
+    async function handleExtendBoardingPassFileSelect(e, index) {
+        let file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error(`Ukuran file melebihi 10MB.`);
+            e.target.value = '';
+            return;
+        }
+
+        if (!editingCosts.details[selectedLocationIndex].additionalCosts[index].boardingPassFiles) {
+            editingCosts.details[selectedLocationIndex].additionalCosts[index].boardingPassFiles = [];
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            editingCosts.details[selectedLocationIndex].additionalCosts[index].boardingPassFiles = [
+                ...editingCosts.details[selectedLocationIndex].additionalCosts[index].boardingPassFiles, 
+                {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    data: ev.target.result
+                }
+            ];
+            editingCosts = editingCosts;
+        };
+        file = await compressImage(file);
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }
+
+    function removeExtendBoardingPassFile(costIdx, bpIdx) {
+        if (editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].boardingPassFiles) {
+            editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].boardingPassFiles = editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].boardingPassFiles.filter((_, i) => i !== bpIdx);
+            editingCosts = editingCosts;
+        }
+    }
+
     function removeAdditionalCost(index) {
         editingCosts.details[selectedLocationIndex].additionalCosts = editingCosts.details[selectedLocationIndex].additionalCosts.filter((_, i) => i !== index);
         editingCosts = editingCosts;
@@ -528,7 +591,7 @@
 </script>
 
 <Dialog bind:open={open} class="w-[calc(100vw-2rem)] md:w-full max-w-[95vw] md:max-w-2xl lg:max-w-4xl overflow-hidden flex flex-col p-0 h-[calc(100vh-2rem)] max-h-[90vh] md:max-h-[85vh] mx-auto my-auto rounded-2xl shadow-2xl border-0" on:close={() => dispatch('close')}>
-    <DialogHeader class="border-b border-slate-100 p-4 md:p-6 shrink-0 bg-white/95 backdrop-blur z-10 sticky top-0">
+    <DialogHeader class="border-b border-slate-100 p-4 md:p-6 shrink-0 bg-white z-10">
         <DialogTitle class="text-lg md:text-xl font-bold text-slate-800">
             {$userStore.role === 'protokol' 
                 ? (record?.status === 'Draft' ? 'Input Rincian Biaya' : 'Edit Rincian Biaya') 
@@ -704,6 +767,149 @@
                     Tambah Boarding Pass
                     <input type="file" multiple accept="image/*,application/pdf" class="hidden" on:change={handleBoardingPassFileSelect} />
                 </label>
+            {/if}
+
+            <!-- Extend Tiket Items -->
+            {#if detail.additionalCosts && detail.additionalCosts.length > 0}
+                {#each detail.additionalCosts as cost, costIdx}
+                    {#if cost.name === 'Extend Tiket'}
+                        <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200 w-full">
+                            <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
+                                {#if !isReadOnly}
+                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                    </button>
+                                {/if}
+                                <h4 class="text-[10px] md:text-xs font-bold uppercase text-blue-600 tracking-wider flex items-center gap-1.5 md:gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                                    Extend Tiket
+                                </h4>
+                                <div class="flex items-center gap-2">
+                                    {#if !isReadOnly}
+                                        <button type="button" class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 px-2 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1" on:click={() => openSplitHotelModal(true, costIdx)}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                            Bagi Biaya
+                                        </button>
+                                    {/if}
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 p-3 border border-slate-100 bg-slate-50 rounded-lg">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Extend Tiket Berangkat -->
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center min-h-[32px]">
+                                            <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Berangkat</Label>
+                                            {#if !cost.file && !isReadOnly}
+                                                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                    Kwitansi
+                                                    <input type="file" class="hidden" on:change={(e) => handleAdditionalFileSelect(e, costIdx)} />
+                                                </label>
+                                            {/if}
+                                        </div>
+                                        <div class="relative">
+                                            <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                                            <Input type="text" value={formatInputNumber(cost.amount)} on:input={(e) => {
+                                                const val = e.detail ? e.detail.value : e.target.value;
+                                                editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].amount = val.replace(/[^0-9]/g, '');
+                                                editingCosts = editingCosts;
+                                            }} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
+                                        </div>
+                                        {#if cost.file}
+                                            <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                                                <div class="flex items-center gap-2 min-w-0 flex-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{cost.file.name}</span>
+                                                </div>
+                                                <div class="flex gap-1.5 shrink-0">
+                                                    <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(cost.file)}>Lihat</button>
+                                                    {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => { editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].file = null; editingCosts = editingCosts; }}>Hapus</button>{/if}
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+                                    
+                                    <!-- Extend Tiket Kembali -->
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center min-h-[32px]">
+                                            <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Tiket Kembali</Label>
+                                            {#if !cost.ticketBackFile && !isReadOnly}
+                                                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                    Kwitansi
+                                                    <input type="file" class="hidden" on:change={(e) => handleExtendTicketBackFileSelect(e, costIdx)} />
+                                                </label>
+                                            {/if}
+                                        </div>
+                                        <div class="relative">
+                                            <span class="absolute left-2.5 top-2 md:top-2.5 text-slate-400 text-xs md:text-sm">Rp</span>
+                                            <Input type="text" value={formatInputNumber(cost.ticketBack)} on:input={(e) => {
+                                                const val = e.detail ? e.detail.value : e.target.value;
+                                                editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].ticketBack = val.replace(/[^0-9]/g, '');
+                                                editingCosts = editingCosts;
+                                            }} disabled={isReadOnly} class="pl-8 md:pl-9 h-9 md:h-10 text-sm bg-white border-slate-200 focus:bg-white {isReadOnly ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" />
+                                        </div>
+                                        {#if cost.ticketBackFile}
+                                            <div class="flex items-center justify-between p-2 mt-2 bg-white border border-slate-200 rounded-md shadow-sm">
+                                                <div class="flex items-center gap-2 min-w-0 flex-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                                    <span class="text-[10px] md:text-xs text-slate-700 truncate mr-2 flex-1">{cost.ticketBackFile.name}</span>
+                                                </div>
+                                                <div class="flex gap-1.5 shrink-0">
+                                                    <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors" on:click={() => openPreview(cost.ticketBackFile)}>Lihat</button>
+                                                    {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => { editingCosts.details[selectedLocationIndex].additionalCosts[costIdx].ticketBackFile = null; editingCosts = editingCosts; }}>Hapus</button>{/if}
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+                                    
+                                    <!-- Extend Boarding Pass -->
+                                    <div class="space-y-2 md:col-span-2 pt-2 border-t border-slate-100">
+                                        <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                                            Extend Boarding Pass ({cost.boardingPassFiles ? cost.boardingPassFiles.length : 0} file)
+                                        </Label>
+                                        
+                                        {#if cost.boardingPassFiles && cost.boardingPassFiles.length > 0}
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                                                {#each cost.boardingPassFiles as bpFile, bpIdx}
+                                                    <div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-md shadow-sm w-full">
+                                                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                                                            <span class="text-[10px] md:text-xs text-blue-800 truncate">{bpFile.name || 'Boarding Pass ' + (bpIdx + 1)}</span>
+                                                        </div>
+                                                        <div class="flex gap-1.5 shrink-0 ml-2">
+                                                            <button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-100 hover:bg-blue-200 text-blue-700 rounded border border-blue-300 transition-colors" on:click={() => openPreview(bpFile)}>Lihat</button>
+                                                            {#if !isReadOnly}<button type="button" class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 transition-colors" on:click={() => removeExtendBoardingPassFile(costIdx, bpIdx)}>Hapus</button>{/if}
+                                                        </div>
+                                                    </div>
+                                                {/each}
+                                            </div>
+                                        {/if}
+
+                                        {#if !isReadOnly}
+                                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                Tambah Boarding Pass
+                                                <input type="file" multiple accept="image/*,application/pdf" class="hidden" on:change={(e) => handleExtendBoardingPassFileSelect(e, costIdx)} />
+                                            </label>
+                                        {/if}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
+                {/each}
+            {/if}
+
+            {#if !isReadOnly}
+                <div class="w-full pt-2">
+                    <button type="button" class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm" on:click={addExtendTicket}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        Extend Tiket
+                    </button>
+                </div>
             {/if}
         </div>
 
@@ -1029,7 +1235,7 @@
                 </div>
                 <div class="flex-1 overflow-hidden bg-slate-100 relative">
                     <DocumentViewer 
-                        url={previewFile.data} 
+                        url={previewFile.data || (previewFile.path ? '/uploads/' + previewFile.path.replace(/^\/?uploads\//, '') : '')} 
                         type={previewFile.type && previewFile.type.startsWith('image/') ? 'image' : (previewFile.type === 'application/pdf' ? 'pdf' : 'docx')} 
                         filename={previewFile.name} 
                     />

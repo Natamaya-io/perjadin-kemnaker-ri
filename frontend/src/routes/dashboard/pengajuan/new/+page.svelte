@@ -6,7 +6,7 @@
     import { recordsStore, addRecord, loadRecords } from '$lib/features/pengajuan/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { toast } from '$lib/shared/stores/toast';
-    import { goto } from '$app/navigation';
+    import { goto, invalidateAll } from '$app/navigation';
     import { page } from '$app/stores';
     import { browser } from '$app/environment';
     
@@ -244,6 +244,8 @@
             toast.success('Pengajuan Berhasil Disimpan!');
             
             // WA Notification is now handled automatically by the backend via Fonnte API.
+            
+            await invalidateAll();
             
             if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') {
                 goto('/dashboard/pengajuan');

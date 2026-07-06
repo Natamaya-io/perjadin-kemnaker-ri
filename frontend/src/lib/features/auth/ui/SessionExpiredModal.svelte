@@ -26,7 +26,7 @@
 
 <!-- Backdrop Blur Overlay -->
 <div 
-    class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-4"
     in:fade={{ duration: 300 }}
     out:fade={{ duration: 200 }}
 >
@@ -43,7 +43,7 @@
             <div class="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
             
             <!-- Icon -->
-            <div class="bg-white/20 p-4 rounded-full backdrop-blur-sm border border-white/20 shadow-inner z-10">
+            <div class="bg-white/20 p-4 rounded-full border border-white/20 shadow-inner z-10">
                 <LogOut class="w-10 h-10 text-white" strokeWidth={2.5} />
             </div>
         </div>

@@ -131,11 +131,11 @@ BEGIN
 END $$;
 
 -- name: GetDashboardStatusCounts :many
-SELECT status, payment_status, COUNT(*) as count 
+SELECT status, payment_status, report_status, COUNT(*) as count 
 FROM travel_records 
 WHERE deleted_at IS NULL
   AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
-GROUP BY status, payment_status;
+GROUP BY status, payment_status, report_status;
 
 -- name: GetDashboardReportCounts :many
 SELECT report_status, COUNT(*) as count 

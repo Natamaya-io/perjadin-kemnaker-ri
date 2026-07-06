@@ -45,11 +45,8 @@
         return formatCurrency(amount);
     }
 
-    // Reactively inject pre-fetched data into store
-    $: if (data?.summary) {
-        dashboardSummaryStore.set(data.summary);
-        isFetchingStats = false;
-    }
+    // Reactive loader visibility based on store state
+    $: isFetchingStats = !$dashboardSummaryStore;
 
     $: stats = $dashboardSummaryStore || {
         totalTrips: 0,
@@ -65,16 +62,9 @@
     };
 
     onMount(() => {
-        // If data wasn't prefetched (e.g. hard reload and load failed), fallback fetch
-        if (!$dashboardSummaryStore && !data?.summary) {
-            isFetchingStats = true;
-            api.getDashboardSummary()
-                .then(res => {
-                    if (res) dashboardSummaryStore.set(res);
-                })
-                .catch(e => console.error("Failed to load dashboard summary:", e))
-                .finally(() => isFetchingStats = false);
-        } else {
+        // Let the non-blocking +page.ts handle the data fetching (Stale-While-Revalidate).
+        // If the store is populated, we hide the loader instantly.
+        if ($dashboardSummaryStore) {
             isFetchingStats = false;
         }
     });
@@ -177,7 +167,7 @@
 
 <div class="space-y-8 pb-20 relative">
     {#if isFetchingStats}
-        <div class="absolute inset-0 z-50 bg-slate-50/50 backdrop-blur-[2px] flex items-start justify-center pt-32 rounded-2xl">
+        <div class="absolute inset-0 z-50 bg-slate-100/80 flex items-start justify-center pt-32 rounded-2xl">
             <div class="flex flex-col items-center justify-center gap-1 bg-white p-4 rounded-xl shadow-lg border border-slate-200">
                 <LottieLoader size="80px" />
                 <span class="text-sm font-semibold text-slate-600 animate-pulse -mt-2">Menghitung Statistik...</span>
@@ -198,7 +188,7 @@
             {/if}
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
-                    <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl backdrop-blur-sm transition-transform active:scale-95 whitespace-nowrap">
+                    <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl transition-transform active:scale-95 whitespace-nowrap">
                        Kelola Biaya
                     </Button>
                  </a>            {/if}
@@ -213,7 +203,7 @@
             <div class="absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
             
             <div class="relative z-10 flex flex-col sm:flex-row items-center text-center sm:text-left gap-5 w-full md:w-auto">
-                <div class="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shrink-0 border border-white/20 shadow-inner">
+                <div class="h-14 w-14 rounded-full bg-white/30 flex items-center justify-center shrink-0 border border-white/20 shadow-inner">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
@@ -449,9 +439,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.25);
         border-radius: 2rem;
         padding: 0.25rem 0.6rem;
@@ -482,9 +470,7 @@
         left: 0;
         z-index: 50;
         min-width: 190px;
-        background: rgba(15, 23, 42, 0.92);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: rgba(15, 23, 42, 0.98);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 0.75rem;
         padding: 0.4rem;

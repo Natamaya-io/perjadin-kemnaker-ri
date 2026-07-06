@@ -95,12 +95,10 @@
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div 
         use:portal
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-        transition:fade={{ duration: 200 }}
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/90"
     >
         <div 
-            class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative border border-slate-200/50"
-            transition:scale={{ duration: 300, start: 0.95, opacity: 0 }}
+            class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden ring-1 ring-slate-900/5 relative"
         >
             <!-- Header with gradient -->
             <div class="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-5 text-white relative overflow-hidden">

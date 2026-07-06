@@ -118,9 +118,8 @@
   }
   html, body {
     @apply bg-background text-foreground;
-    height: 100%;
     width: 100%;
-    overflow: hidden; /* Prevent page scrolling */
+    min-height: 100vh;
     overscroll-behavior: none; /* Prevent rubber-banding on mobile */
   }
   button:hover,
@@ -191,20 +190,7 @@
     background: transparent;
   }
 
-  /* Horizontal Scroll Shadows for Tables */
-  .table-scroll-shadows {
-    background:
-      /* Shadow covers */
-      linear-gradient(to right, white 30%, rgba(255,255,255,0)),
-      linear-gradient(to right, rgba(255,255,255,0), white 70%) 100% 0,
-      /* Shadows */
-      radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.15), rgba(0,0,0,0)),
-      radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.15), rgba(0,0,0,0)) 100% 0;
-    background-repeat: no-repeat;
-    background-color: white;
-    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
-    background-attachment: local, local, scroll, scroll;
-  }
+  /* CSS Shadows removed permanently for SOTA 60FPS Performance */
 
   /* High Performance Modern Scrollbar */
   .high-perf-scrollbar {
@@ -229,18 +215,7 @@
     background-color: rgba(148, 163, 184, 0.9); /* slate-400 */
   }
 
-  /* Scroll Shadows for better UX indicating more content */
-  .scroll-shadows {
-    background:
-      linear-gradient(white 30%, rgba(255,255,255,0)),
-      linear-gradient(rgba(255,255,255,0), white 70%) 0 100%,
-      radial-gradient(farthest-side at 50% 0, rgba(15, 23, 42, 0.1), rgba(0,0,0,0)),
-      radial-gradient(farthest-side at 50% 100%, rgba(15, 23, 42, 0.1), rgba(0,0,0,0)) 0 100%;
-    background-repeat: no-repeat;
-    background-color: white;
-    background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
-    background-attachment: local, local, scroll, scroll;
-  }
+  /* CSS Shadows removed permanently for SOTA 60FPS Performance */
 }
 
 /* PAGED.JS GLOBAL FRAGMENTATION FIX */

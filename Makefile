@@ -1,7 +1,8 @@
 .PHONY: dev down logs build stop watch
 
 dev:
-	doppler run -- podman compose up -d --build
+	@echo "Starting development environment (SOTA: Bind Mounts & Native HMR)..."
+	doppler run -- podman compose up -d
 
 build:
 	podman compose build backend
@@ -11,19 +12,14 @@ stop:
 	podman compose stop
 
 down:
-	podman compose down
+	doppler run -- podman compose down -v
 
 logs:
 	podman compose logs -f
 
 watch:
-	@echo "Starting services initially..."
-	$(MAKE) down
+	@echo "⚠️ TARGET 'watch' KINI USANG (DEPRECATED) ⚠️"
+	@echo "Sistem menggunakan arsitektur SOTA (Vite HMR & Go Air)."
+	@echo "Anda tidak perlu melakukan restart manual. Kode akan ter-update otomatis dalam hitungan milidetik saat Anda melakukan Save."
+	@echo "Menjalankan target 'dev'..."
 	$(MAKE) dev
-	@echo "Watching for changes to trigger restart..."
-	@while true; do \
-		inotifywait -q -r -e modify,create,delete,move --exclude '(\.git|node_modules|__pycache__|\.svelte-kit)' . ; \
-		echo "Changes detected, restarting services..."; \
-		$(MAKE) down; \
-		$(MAKE) dev; \
-	done

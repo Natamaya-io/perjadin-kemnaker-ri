@@ -1,5 +1,4 @@
 <script>
-    import { createVirtualizer } from '@tanstack/svelte-virtual';
     import { paginatedRecordsStore, paginatedMetadataStore, loadPaginatedRecords, updateRecord, isFetchingRecords } from '$lib/features/pengajuan/store';
     import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import { userStore } from '$lib/features/auth/store';
@@ -9,7 +8,7 @@
     import { goto } from '$app/navigation';
     import { toast } from '$lib/shared/stores/toast';
     import { getStatusBadge, toTitleCase, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
-    
+    import { api } from '$lib/shared/api';
     
     // Components
     import AdminHeader from '$lib/features/admin/ui/AdminHeader.svelte';
@@ -80,39 +79,6 @@
     let limit = 50;
     let currentCursor = '';
 
-    
-    let scrollContainer;
-    let virtualizer;
-
-    $: if (typeof window !== 'undefined' && scrollContainer) {
-        const vOptions = {
-            count: uniqueRecords.length,
-            getScrollElement: () => scrollContainer,
-            estimateSize: (index) => {
-                const record = uniqueRecords[index];
-                // Base header row: ~48px
-                let h = 48;
-                if (expandedGroups[record.spd]) {
-                    // Employee header: ~40px
-                    h += 40;
-                    // Employee row: ~60px
-                    h += (record.employeesList.length * 60);
-                }
-                return h;
-            },
-            overscan: 5
-        };
-
-        if (!virtualizer) {
-            virtualizer = createVirtualizer(vOptions);
-        } else {
-            $virtualizer.setOptions(vOptions);
-        }
-    }
-
-    $: virtualItems = $virtualizer ? $virtualizer.getVirtualItems() : [];
-    $: totalSize = $virtualizer ? $virtualizer.getTotalSize() : 0;
-
     // Reactively refetch when filters change (Resetting)
     function handleFiltersChanged() {
         if (typeof window !== 'undefined') {
@@ -177,10 +143,12 @@
     $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
     $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
 
-    function handleScroll() {
-        if (!scrollContainer || $isFetchingRecords) return;
-        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-        if (scrollHeight - scrollTop - clientHeight < 200) {
+    function handleWindowScroll() {
+        if (typeof window === 'undefined' || $isFetchingRecords) return;
+        const scrollY = window.scrollY;
+        const innerHeight = window.innerHeight;
+        const scrollHeight = document.body.scrollHeight;
+        if (scrollHeight - scrollY - innerHeight < 400) {
             if ($paginatedMetadataStore.nextCursor) {
                 currentCursor = $paginatedMetadataStore.nextCursor;
                 fetchRecords(true);
@@ -188,11 +156,26 @@
         }
     }
 
-    function openEditModal(record) {
+    async function openEditModal(record) {
         selectedRecord = record;
-        editingCosts = { ...record.costs }; // Clone costs
+        editingCosts = { ...record.costs }; // Clone costs as fallback
+        
+        startLoading('Memuat detail...');
+        try {
+            const fullRecord = await api.getRecordById(record.id);
+            if (fullRecord) {
+                selectedRecord = fullRecord;
+                editingCosts = { ...fullRecord.costs };
+            }
+        } catch (e) {
+            console.error("Gagal memuat detail record:", e);
+            toast.error("Gagal memuat detail secara penuh. Beberapa foto mungkin tidak tampil.");
+        } finally {
+            stopLoading();
+        }
+
         pendingOtherUpdatesToSave = []; // Reset
-        pendingSpdToSave = record.spd || ''; // Reset pending SPD
+        pendingSpdToSave = selectedRecord.spd || ''; // Reset pending SPD
         isModalOpen = true;
     }
 
@@ -238,7 +221,16 @@
                     const targetRecord = $paginatedRecordsStore.find(r => r.id === updateInfo.empId);
                     if (!targetRecord) continue;
 
-                    let newTargetCosts = JSON.parse(JSON.stringify(targetRecord.costs || {}));
+                    let fullTargetRecord = null;
+                    try {
+                        fullTargetRecord = await api.getRecordById(updateInfo.empId);
+                    } catch (err) {
+                        console.error("Gagal load fullTargetRecord", err);
+                    }
+                    
+                    if (!fullTargetRecord) fullTargetRecord = targetRecord;
+
+                    let newTargetCosts = JSON.parse(JSON.stringify(fullTargetRecord.costs || {}));
                     if (!newTargetCosts.details) newTargetCosts.details = [];
                     
                     // === FIX: inisialisasi detail locations sesuai jumlah lokasi targetRecord
@@ -422,6 +414,8 @@
     });
 </script>
 
+<svelte:window on:scroll|passive={handleWindowScroll} />
+
 <div class="space-y-6 pb-20">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
@@ -443,11 +437,7 @@
     {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div 
-                bind:this={scrollContainer} 
-                on:scroll={handleScroll}
-                class="hidden lg:block overflow-x-auto overflow-y-auto max-h-[70vh] w-full relative table-scrollbar table-scroll-shadows"
-            >
+            <div class="hidden lg:block overflow-x-auto w-full relative">
                 <table class="w-full text-left text-sm border-collapse min-w-[900px] relative">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500 sticky top-0 z-10 shadow-sm">
                         <tr>
@@ -481,16 +471,7 @@
                                 </tr>
                             {/if}
                         {:else}
-                            {#if virtualItems.length > 0}
-                                {@const paddingTop = virtualItems[0].start}
-                                {@const paddingBottom = totalSize - virtualItems[virtualItems.length - 1].end}
-                                
-                                {#if paddingTop > 0}
-                                    <tr><td colspan="5" style="height: {paddingTop}px; padding: 0; border: none;"></td></tr>
-                                {/if}
-
-                                {#each virtualItems as virtualRow (virtualRow.index)}
-                                    {@const record = uniqueRecords[virtualRow.index]}
+                            {#each uniqueRecords as record (record.spd)}
                                 <!-- Group Header Row -->
                             <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd)}>
                                 <td class="px-6 py-3 whitespace-nowrap">
@@ -597,12 +578,7 @@
                                     </td>
                                 </tr>
                             {/if}
-                                {/each}
-
-                                {#if paddingBottom > 0}
-                                    <tr><td colspan="5" style="height: {paddingBottom}px; padding: 0; border: none;"></td></tr>
-                                {/if}
-                            {/if}
+                            {/each}
                         
                         {#if $isFetchingRecords && currentCursor}
                             <tr>

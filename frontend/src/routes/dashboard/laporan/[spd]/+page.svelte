@@ -12,13 +12,14 @@
         return cleanName;
     }
     import { page } from '$app/stores';
-    import { recordsStore, updateRecord, loadRecords, updateMultipleRecords, isFetchingRecords } from '$lib/features/pengajuan/store';
+    import { recordsStore, updateRecord, loadRecords, updateMultipleRecords, isFetchingRecords, clearStores } from '$lib/features/pengajuan/store';
     import { userStore } from '$lib/features/auth/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { provincesStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
+    import { api } from '$lib/shared/api';
     import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
+    import { goto, invalidateAll } from '$app/navigation';
     import { getInitials, toTitleCase, formatCurrency, compressImage } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
@@ -31,6 +32,20 @@
     import Select from '$lib/shared/ui/select/Select.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
     import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
+
+    async function uploadAndGetPath(file) {
+        if (!file) return null;
+        startLoading('Mengupload file...');
+        try {
+            const res = await api.uploadFile(file);
+            return res.path;
+        } catch(err) {
+            toast.error("Gagal mengupload file");
+            return null;
+        } finally {
+            stopLoading();
+        }
+    }
 
     let spd = $page.params.spd || ''; 
     $: currentTab = $page.url.searchParams.get('tab') || 'laporan';
@@ -379,9 +394,14 @@
 	}
 
 	function getLocations(empRecord) {
-	     return empRecord?.locations && empRecord.locations.length > 0
-	        ? empRecord.locations
-	        : [{ startDate: empRecord?.startDate, endDate: empRecord?.endDate, province: empRecord?.province, location: empRecord?.location }];
+	     if (empRecord?.locations && empRecord.locations.length > 0) {
+             return empRecord.locations;
+         }
+         // SOTA: Cache fallback array onto the record object to prevent breaking Svelte {#each} reference equality
+         if (!empRecord._fallbackLocations) {
+             empRecord._fallbackLocations = [{ startDate: empRecord?.startDate, endDate: empRecord?.endDate, province: empRecord?.province, location: empRecord?.location }];
+         }
+         return empRecord._fallbackLocations;
 	}
 	function getDaysForLocation(loc) {
 	    if (!loc?.startDate || !loc?.endDate) return 0;
@@ -441,20 +461,35 @@
         }, 0);
     }
 
+    let typingTimer;
+
     function updateCost(empId, field, event, locationIndex) {
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex][field] = isNaN(num) ? undefined : num;
-        recalculateTotal(empId);
-        localCosts = { ...localCosts };
+        
+        // SOTA: Update input visually instantly via DOM, bypassing Svelte's heavy component diffing
+        event.target.value = formatInputNumber(num);
+        
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            recalculateTotal(empId);
+            localCosts = { ...localCosts };
+        }, 300);
     }
 
     function updateAdditionalCostAmount(empId, index, event, locationIndex) {
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex].additionalCosts[index].amount = isNaN(num) ? undefined : num;
-        recalculateTotal(empId);
-        localCosts = { ...localCosts };
+        
+        event.target.value = formatInputNumber(num);
+        
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            recalculateTotal(empId);
+            localCosts = { ...localCosts };
+        }, 300);
     }
 
     function addAdditionalCost(empId, locationIndex) {
@@ -488,18 +523,18 @@
             e.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             localCosts[empId].costs.details[locationIndex][field] = {
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                data: ev.target.result
+                path: path
             };
+            localCosts[empId].costsChanged = true;
             localCosts = { ...localCosts };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         e.target.value = '';
     }
 
@@ -521,18 +556,18 @@
             }
         }
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             localCosts[empId].costs.details[locationIndex].boardingPassFiles.push({
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                data: ev.target.result
+                path: path
             });
+            localCosts[empId].costsChanged = true;
             localCosts = { ...localCosts };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         e.target.value = '';
     }
 
@@ -540,11 +575,13 @@
         if (localCosts[empId].costs.details[locationIndex].boardingPassFiles) {
             localCosts[empId].costs.details[locationIndex].boardingPassFiles = localCosts[empId].costs.details[locationIndex].boardingPassFiles.filter((_, i) => i !== index);
         }
+        localCosts[empId].costsChanged = true;
         localCosts = { ...localCosts };
     }
 
     function removeSpecificFile(empId, field, locationIndex) {
         localCosts[empId].costs.details[locationIndex][field] = null;
+        localCosts[empId].costsChanged = true;
         localCosts = { ...localCosts };
     }
 
@@ -552,8 +589,15 @@
         const raw = event.target.value.replace(/[^0-9]/g, '');
         const num = parseInt(raw, 10);
         localCosts[empId].costs.details[locationIndex].additionalCosts[index][field] = isNaN(num) ? undefined : num;
-        recalculateTotal(empId);
-        localCosts = { ...localCosts };
+        
+        event.target.value = formatInputNumber(num);
+        
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            recalculateTotal(empId);
+            localCosts[empId].costsChanged = true;
+            localCosts = { ...localCosts };
+        }, 300);
     }
 
     function updateExtendPenginapanCost(empId, index, field, event, locationIndex) {
@@ -562,8 +606,15 @@
         const cost = localCosts[empId].costs.details[locationIndex].additionalCosts[index];
         cost[field] = isNaN(num) ? undefined : num;
         cost.amount = (cost.hotelDays || 0) * (cost.hotelRate || 0);
-        recalculateTotal(empId);
-        localCosts = { ...localCosts };
+        
+        event.target.value = formatInputNumber(num);
+        
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            recalculateTotal(empId);
+            localCosts[empId].costsChanged = true;
+            localCosts = { ...localCosts };
+        }, 300);
     }
 
 
@@ -575,23 +626,24 @@
             e.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             localCosts[empId].costs.details[locationIndex].additionalCosts[index][field] = {
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                data: ev.target.result
+                path: path
             };
+            localCosts[empId].costsChanged = true;
             localCosts = { ...localCosts };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         e.target.value = '';
     }
 
     function removeAdditionalExtendSpecificFile(empId, field, index, locationIndex) {
         localCosts[empId].costs.details[locationIndex].additionalCosts[index][field] = null;
+        localCosts[empId].costsChanged = true;
         localCosts = { ...localCosts };
     }
 
@@ -609,18 +661,18 @@
             detail.boardingPassFiles = [];
         }
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             localCosts[empId].costs.details[locationIndex].additionalCosts[index].boardingPassFiles.push({
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                data: ev.target.result
+                path: path
             });
+            localCosts[empId].costsChanged = true;
             localCosts = { ...localCosts };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         e.target.value = '';
     }
 
@@ -628,6 +680,7 @@
         if (localCosts[empId].costs.details[locationIndex].additionalCosts[index].boardingPassFiles) {
             localCosts[empId].costs.details[locationIndex].additionalCosts[index].boardingPassFiles = localCosts[empId].costs.details[locationIndex].additionalCosts[index].boardingPassFiles.filter((_, i) => i !== bpIndex);
         }
+        localCosts[empId].costsChanged = true;
         localCosts = { ...localCosts };
     }
 
@@ -639,23 +692,24 @@
             e.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             localCosts[empId].costs.details[locationIndex].additionalCosts[index].file = {
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                data: ev.target.result
+                path: path
             };
+            localCosts[empId].costsChanged = true;
             localCosts = { ...localCosts };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         e.target.value = '';
     }
 
     function removeAdditionalFile(empId, index, locationIndex) {
         localCosts[empId].costs.details[locationIndex].additionalCosts[index].file = null;
+        localCosts[empId].costsChanged = true;
         localCosts = { ...localCosts };
     }
 
@@ -771,21 +825,15 @@
             }
 
             file = await compressImage(file);
-            const reader = new FileReader();
-            
-            // Wrap reader in a promise to maintain order
-            await new Promise(resolve => {
-                reader.onload = (e) => {
-                    uploadedFiles = [...uploadedFiles, {
-                        name: file.name,
-                        type: file.type,
-                        data: /** @type {string} */ (e.target?.result || ''),
-                        timestamp: new Date(file.lastModified).toISOString()
-                    }];
-                    resolve();
-                };
-                reader.readAsDataURL(file);
-            });
+            const path = await uploadAndGetPath(file);
+            if (path) {
+                uploadedFiles = [...uploadedFiles, {
+                    name: file.name,
+                    type: file.type,
+                    path: path,
+                    timestamp: new Date(file.lastModified).toISOString()
+                }];
+            }
         }
     }
     /** @param {Event} event */
@@ -808,17 +856,16 @@
             event.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             sppdFile = { 
                 name: file.name, 
                 type: file.type, 
-                data: /** @type {string} */ (e.target?.result || ''), 
+                path: path, 
                 timestamp: new Date(file.lastModified).toISOString()
             };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         // @ts-ignore
         event.target.value = '';
     }
@@ -834,17 +881,16 @@
             event.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        file = await compressImage(file);
+        const path = await uploadAndGetPath(file);
+        if (path) {
             suratTugasFile = { 
                 name: file.name, 
                 type: file.type, 
-                data: /** @type {string} */ (e.target?.result || ''), 
+                path: path, 
                 timestamp: new Date(file.lastModified).toISOString()
             };
-        };
-        file = await compressImage(file);
-        reader.readAsDataURL(file);
+        }
         // @ts-ignore
         event.target.value = '';
     }
@@ -958,23 +1004,29 @@
         const tmSnapshot = [...finalTanggalMerahList];
         startLoading();
         try {
-            await updateRecord(record.id, {
-                reportStatus: 'Completed',
-                suratTugasNumber: manualSuratTugasNumber,
-                suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
-                reportData: {
-                    ...(record.reportData || {}),
-                    text: reportText,
-                    files: uploadedFiles,
-                    sppdFile: sppdFile,
-                    suratTugasFile: suratTugasFile,
-                    tanggalMerah: tmSnapshot,
-                    submittedAt: new Date().toISOString()
+            const updates = recordsList.map(r => ({
+                id: r.id,
+                data: {
+                    reportStatus: 'Completed',
+                    suratTugasNumber: manualSuratTugasNumber,
+                    suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
+                    reportData: {
+                        ...(r.reportData || {}),
+                        text: reportText,
+                        files: uploadedFiles,
+                        sppdFile: sppdFile,
+                        suratTugasFile: suratTugasFile,
+                        tanggalMerah: tmSnapshot,
+                        submittedAt: new Date().toISOString()
+                    }
                 }
-            });
+            }));
+            await updateMultipleRecords(updates);
             await loadRecords(spd);
             tanggalMerahList = tmSnapshot;
+            clearStores();
             toast.success('Laporan Kegiatan berhasil disubmit!');
+            await invalidateAll();
             goto('/dashboard/laporan');
         } catch (error) {
             toast.error('Gagal mensubmit laporan. Silakan coba lagi.');
@@ -1033,8 +1085,9 @@
             });
             await Promise.all(updatePromises);
             await loadRecords(spd);
-
+            clearStores();
             toast.success('Rincian Biaya berhasil disubmit!');
+            goto('/dashboard/laporan');
         } catch (error) {
             toast.error('Gagal menyimpan rincian biaya. Silakan coba lagi.');
             console.error('Submit costs error:', error);
@@ -1309,7 +1362,7 @@
                 </div>
                         <div class="p-4 sm:p-6 md:p-8 space-y-8">
                             <!-- Tanggal Merah Section -->
-                            <div class="space-y-4" transition:fade={{ duration: 200 }}>
+                            <div class="space-y-4">
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                     <Label class="text-lg font-bold text-slate-800">Hari Libur / Tanggal Merah</Label>
                                     <span class="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-full border border-slate-200">
@@ -1349,7 +1402,7 @@
                             </div>
 
                             <!-- Report Text Section -->
-                            <div class="space-y-4" transition:fade={{ duration: 200 }}>
+                            <div class="space-y-4">
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                     <Label class="text-lg font-bold text-slate-800">Isi Laporan Kegiatan</Label>
                                     <span class="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-full border border-slate-200">
@@ -1367,7 +1420,7 @@
                             </div>
 
                             <!-- File Upload Section -->
-                            <div class="space-y-4 pt-4 border-t border-slate-100" transition:fade={{ duration: 200 }}>
+                            <div class="space-y-4 pt-4 border-t border-slate-100">
                                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                     <Label class="text-lg font-bold text-slate-800">Dokumentasi Kegiatan</Label>
                                     
@@ -1408,9 +1461,9 @@
                                 {#if uploadedFiles.length > 0}
                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
                                         {#each uploadedFiles as file, i}
-                                            <div transition:fade class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" on:click={() => openPreview(file)}>
+                                            <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" on:click={() => openPreview(file)}>
                                                 {#if file.type.startsWith('image/')}
-                                                    <img src={file.data} alt="Preview" class="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110" />
+                                                    <img loading="lazy" src={file.data || (file.path ? '/uploads/' + file.path.replace(/^\/?uploads\//, '') : '')} alt="Preview" class="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110" />
                                                 {:else if file.type === 'application/pdf'}
                                                     <div class="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 p-4 text-center group-hover:bg-red-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1482,7 +1535,7 @@
 
                 {#if currentTab === 'rincian'}
                     <!-- Form Input Rincian Biaya (Integrated from CostModal) -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8" transition:fade={{ duration: 200 }}>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
                         <div class="p-4 sm:p-6 md:p-8 space-y-4">
                             {#each recordsList as empRecord, index}
                                 {@const empId = empRecord.id}
@@ -1502,7 +1555,7 @@
                                         </button>
 
                                         {#if localCosts[empId]._expanded}
-                                            <div class="p-4 md:p-6 bg-slate-50/30 grid gap-4 md:gap-6 border-t border-slate-200" transition:fade={{ duration: 150 }}>
+                                            <div class="p-4 md:p-6 bg-slate-50/30 grid gap-4 md:gap-6 border-t border-slate-200">
                                             
                                             <!-- Location Tabs -->
                                             <div class="col-span-1 md:col-span-2 -mb-2">
@@ -1532,7 +1585,7 @@
                                                 {@const sbmTotal = sbmDays * sbmRate}
 
                                                 <!-- Mode Transportasi -->
-                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full space-y-1.5">
                                                     <Label class="text-[10px] md:text-xs font-semibold uppercase text-slate-500 tracking-wider">Mode Transportasi</Label>
                                                     <Select disabled={$userStore.role === 'kasubag'} bind:value={detail.transportMode} class="bg-slate-50 border-slate-200 h-9 md:h-10 text-sm">
                                                         <option value="Pesawat/Kendaraan Umum">Pesawat/Kendaraan Umum</option>
@@ -1541,7 +1594,7 @@
                                                 </div>
 
                                                 <!-- Uang Harian SBM (Specific to Location) -->
-                                                <div class="p-3 md:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2.5 md:space-y-3 w-full" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2.5 md:space-y-3 w-full">
                                                     <div class="flex flex-wrap justify-between items-center gap-2 border-b border-blue-200 pb-2 mb-2">
                                                         <h4 class="text-xs md:text-sm font-semibold text-blue-800 flex items-center gap-1.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1567,7 +1620,7 @@
                                                 </div>
 
                                                 <!-- Tiket & Boarding Pass -->
-                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
                                                     <div class="flex justify-between items-center">
                                                         <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1798,7 +1851,7 @@
                                                 </div>
 
                                                 <!-- Hotel -->
-                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
                                                     <div class="flex justify-between items-center mb-1">
                                                         <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5 md:gap-2">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1942,7 +1995,7 @@
                                                 </div>
 
                                                 <!-- Bukti Transportasi atau Rental -->
-                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3 w-full">
                                                     <div class="flex justify-between items-center mb-1">
                                                         <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1986,7 +2039,7 @@
                                                 </div>
 
                                                 <!-- Transport Lokal -->
-                                                <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full" transition:fade={{ duration: 150 }}>
+                                                <div class="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4 w-full">
                                                     <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                                                         <h4 class="text-xs md:text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2208,7 +2261,7 @@
             <div class="flex-1 overflow-hidden bg-slate-100 relative p-0">
                 {#if previewFile}
                     <DocumentViewer 
-                        url={previewFile.data} 
+                        url={previewFile.data || (previewFile.path ? '/uploads/' + previewFile.path.replace(/^\/?uploads\//, '') : '')} 
                         type={previewFile.type.startsWith('image/') ? 'image' : (previewFile.type === 'application/pdf' ? 'pdf' : 'docx')} 
                         filename={previewFile.name} 
                     />

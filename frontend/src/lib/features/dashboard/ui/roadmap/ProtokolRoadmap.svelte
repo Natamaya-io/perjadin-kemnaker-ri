@@ -1,7 +1,7 @@
 <script>
     import { userStore } from '$lib/features/auth/store';
     import { toTitleCase } from '$lib/shared/utils/utils';
-    import { fade, slide } from 'svelte/transition';
+    import { fade, fly } from 'svelte/transition';
     export let records = [];
 
     // Tampilkan hanya yang belum sepenuhnya selesai (belum dibayar) atau batasi 5 terbaru jika sudah banyak
@@ -83,7 +83,7 @@
                 {@const steps = getSteps(record)}
                 {@const isFullyDone = record.paymentStatus === 'Paid'}
                 {@const isExpanded = expandedCards[record.id]}
-                <div class="bg-white rounded-2xl border {isFullyDone ? 'border-emerald-200/60 bg-emerald-50/10' : 'border-slate-200'} shadow-sm hover:shadow-md transition-shadow relative overflow-hidden" transition:fade>
+                <div class="bg-white rounded-2xl border {isFullyDone ? 'border-emerald-200/60 bg-emerald-50/10' : 'border-slate-200'} shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
                     {#if isFullyDone}
                         <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider z-10">
                             Selesai
@@ -134,7 +134,7 @@
 
                     <!-- Roadmap Content (Collapsible) -->
                     {#if isExpanded}
-                        <div class="px-5 md:px-6 pb-6 pt-2 border-t border-slate-100 bg-slate-50/30" transition:slide={{ duration: 300 }}>
+                        <div class="px-5 md:px-6 pb-6 pt-2 border-t border-slate-100 bg-slate-50/30">
                             <!-- Stepper Desktop (Horizontal) -->
                             <div class="hidden md:block relative mt-6">
                                 <div class="absolute left-6 top-5 w-[calc(100%-3rem)] h-1 bg-slate-100 rounded-full"></div>

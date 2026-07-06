@@ -532,7 +532,13 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 	lampiranIndex := 1
 	fotoIndex := 0
 
-	addLamp := func(data, mime string, isFoto bool) {
+	addLamp := func(data, path, mime string, isFoto bool) {
+		if data == "" && path != "" {
+			content, err := os.ReadFile(filepath.Join("uploads", path))
+			if err == nil {
+				data = base64.StdEncoding.EncodeToString(content)
+			}
+		}
 		if data == "" {
 			return
 		}
@@ -563,6 +569,7 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 	type FileObj struct {
 		Data string `json:"data"`
 		Type string `json:"type"`
+		Path string `json:"path"`
 	}
 	processedFoto := false
 	for _, r := range spdGroupRecords {
@@ -570,7 +577,7 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 			var files []FileObj
 			if umErr := json.Unmarshal(r.Report.Files, &files); umErr == nil {
 				for _, f := range files {
-					addLamp(f.Data, f.Type, true)
+					addLamp(f.Data, f.Path, f.Type, true)
 				}
 				processedFoto = true
 			}
@@ -592,32 +599,32 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 			if umErr := json.Unmarshal(r.Cost.Details, &details); umErr == nil {
 				for _, d := range details {
 					if d.TicketGoFile != nil {
-						addLamp(d.TicketGoFile.Data, d.TicketGoFile.Type, false)
+						addLamp(d.TicketGoFile.Data, d.TicketGoFile.Path, d.TicketGoFile.Type, false)
 					}
 					if d.TicketBackFile != nil {
-						addLamp(d.TicketBackFile.Data, d.TicketBackFile.Type, false)
+						addLamp(d.TicketBackFile.Data, d.TicketBackFile.Path, d.TicketBackFile.Type, false)
 					}
 					for _, bp := range d.BoardingPassFiles {
-						addLamp(bp.Data, bp.Type, false)
+						addLamp(bp.Data, bp.Path, bp.Type, false)
 					}
 					if d.HotelFile != nil {
-						addLamp(d.HotelFile.Data, d.HotelFile.Type, false)
+						addLamp(d.HotelFile.Data, d.HotelFile.Path, d.HotelFile.Type, false)
 					}
 					if d.TransportFile != nil {
-						addLamp(d.TransportFile.Data, d.TransportFile.Type, false)
+						addLamp(d.TransportFile.Data, d.TransportFile.Path, d.TransportFile.Type, false)
 					}
 					for _, ac := range d.AdditionalCosts {
 						if ac.File != nil {
-							addLamp(ac.File.Data, ac.File.Type, false)
+							addLamp(ac.File.Data, ac.File.Path, ac.File.Type, false)
 						}
 						if ac.TicketGoFile != nil {
-							addLamp(ac.TicketGoFile.Data, ac.TicketGoFile.Type, false)
+							addLamp(ac.TicketGoFile.Data, ac.TicketGoFile.Path, ac.TicketGoFile.Type, false)
 						}
 						if ac.TicketBackFile != nil {
-							addLamp(ac.TicketBackFile.Data, ac.TicketBackFile.Type, false)
+							addLamp(ac.TicketBackFile.Data, ac.TicketBackFile.Path, ac.TicketBackFile.Type, false)
 						}
 						for _, abp := range ac.BoardingPassFiles {
-							addLamp(abp.Data, abp.Type, false)
+							addLamp(abp.Data, abp.Path, abp.Type, false)
 						}
 					}
 				}
@@ -834,7 +841,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 		".pdf": true, ".docx": true, ".xlsx": true, ".xls": true, ".doc": true,
 	}
 	if !allowed[ext] {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid file extension")
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid file extension: '%s' (Filename: %s)", ext, file.Filename))
 	}
 
 	src, errS := file.Open()
@@ -1068,6 +1075,7 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	if errB != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Gagal membaca body")
 	}
+	fmt.Printf("PUT PAYLOAD: %s\n", string(bodyBytes))
 	c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	var partialMap struct {

@@ -9,7 +9,7 @@
 
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
     <!-- Header -->
-    <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm">
+    <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/95">
         <div class="flex items-center gap-2">
             <div class="h-4 w-1 bg-blue-500 rounded-full"></div>
             <h3 class="font-bold text-slate-800 text-lg tracking-tight">{title}</h3>
