@@ -1532,9 +1532,9 @@
                                 {#if uploadedFiles.length > 0}
                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6">
                                         {#each uploadedFiles as file, i}
-                                            <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" style="content-visibility: auto; contain-intrinsic-size: 200px;" on:click={() => openPreview(file)}>
+                                            <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" on:click={() => openPreview(file)}>
                                                 {#if file.type.startsWith('image/')}
-                                                    <img decoding="async" loading="lazy" src={file.thumbnailUrl || file.blobUrl} alt="Preview" class="object-cover w-full h-full transition-transform duration-300 transform-gpu backface-hidden md:group-hover:scale-110" />
+                                                    <img decoding="async" loading="lazy" src={file.thumbnailUrl || file.blobUrl} alt="Preview" class="object-cover w-full h-full" />
                                                 {:else if file.type === 'application/pdf'}
                                                     <div class="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 p-4 text-center group-hover:bg-red-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
