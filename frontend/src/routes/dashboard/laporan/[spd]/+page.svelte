@@ -20,7 +20,7 @@
     import { api } from '$lib/shared/api';
     import { onMount } from 'svelte';
     import { goto, invalidateAll } from '$app/navigation';
-    import { getInitials, toTitleCase, formatCurrency, compressImage, getBlobUrl } from '$lib/shared/utils/utils';
+    import { getInitials, toTitleCase, formatCurrency, compressImage, getBlobUrl, generateThumbnailUrl } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
     
@@ -811,7 +811,15 @@
                 if (record && record.id === id) {
                     const rawFiles = res.reportData?.files;
                     if (rawFiles && Array.isArray(rawFiles) && rawFiles.length > 0) {
-                        uploadedFiles = rawFiles.map(f => ({ ...f, blobUrl: getBlobUrl(f) }));
+                        const processedFiles = [];
+                        for (let f of rawFiles) {
+                            processedFiles.push({
+                                ...f,
+                                blobUrl: getBlobUrl(f),
+                                thumbnailUrl: await generateThumbnailUrl(f)
+                            });
+                        }
+                        uploadedFiles = processedFiles;
                     }
                     const _rawSppd = res.reportData?.sppdFile;
                     if (_rawSppd && typeof _rawSppd === 'object' && !Array.isArray(_rawSppd) && Object.keys(_rawSppd).length > 0) {
@@ -886,11 +894,14 @@
             file = await compressImage(file);
             const path = await uploadAndGetPath(file);
             if (path) {
+                const bUrl = getBlobUrl({ path: path });
+                const thumbUrl = await generateThumbnailUrl({ path: path, type: file.type });
                 uploadedFiles = [...uploadedFiles, {
                     name: file.name,
                     type: file.type,
                     path: path,
-                    blobUrl: getBlobUrl({ path: path }),
+                    blobUrl: bUrl,
+                    thumbnailUrl: thumbUrl,
                     timestamp: new Date(file.lastModified).toISOString()
                 }];
             }
@@ -1523,7 +1534,7 @@
                                         {#each uploadedFiles as file, i}
                                             <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" style="content-visibility: auto; contain-intrinsic-size: 200px;" on:click={() => openPreview(file)}>
                                                 {#if file.type.startsWith('image/')}
-                                                    <img decoding="async" loading="lazy" src={file.blobUrl} alt="Preview" class="object-cover w-full h-full transition-transform duration-300 transform-gpu backface-hidden md:group-hover:scale-110" />
+                                                    <img decoding="async" loading="lazy" src={file.thumbnailUrl || file.blobUrl} alt="Preview" class="object-cover w-full h-full transition-transform duration-300 transform-gpu backface-hidden md:group-hover:scale-110" />
                                                 {:else if file.type === 'application/pdf'}
                                                     <div class="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 p-4 text-center group-hover:bg-red-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

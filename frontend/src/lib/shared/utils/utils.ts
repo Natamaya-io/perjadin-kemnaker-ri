@@ -35,6 +35,62 @@ export function getBlobUrl(fileOrBase64: any): string {
     }
 }
 
+// [ANTI-VRAM EXHAUSTION]: Client-Side Canvas Thumbnail Engine (Downsampling to 250px)
+export async function generateThumbnailUrl(fileOrBase64: any): Promise<string> {
+    return new Promise((resolve) => {
+        const fullUrl = getBlobUrl(fileOrBase64);
+        if (!fullUrl) return resolve('');
+        
+        // Skip non-images
+        const type = typeof fileOrBase64 === 'object' ? (fileOrBase64.type || fileOrBase64.name || '') : '';
+        if (type && !type.toLowerCase().match(/image|jpg|jpeg|png/i)) {
+             return resolve(fullUrl);
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // Avoid canvas tainting
+        
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(fullUrl);
+
+            const MAX_SIZE = 250;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width <= MAX_SIZE && height <= MAX_SIZE) {
+                return resolve(fullUrl);
+            }
+
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Fast nearest-neighbor-like downsampling by default on canvas
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+                if (blob) resolve(URL.createObjectURL(blob));
+                else resolve(fullUrl);
+            }, 'image/jpeg', 0.6); // 60% quality is perfect for 250px thumb
+        };
+        img.onerror = () => resolve(fullUrl);
+        img.src = fullUrl;
+    });
+}
+
 export function getInitials(name: string) {
     if (!name) return '';
     const parts = name.split(' ').filter(Boolean);
