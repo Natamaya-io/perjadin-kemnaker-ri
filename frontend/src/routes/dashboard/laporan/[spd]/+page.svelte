@@ -1534,7 +1534,7 @@
                                         {#each uploadedFiles as file, i}
                                             <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" on:click={() => openPreview(file)}>
                                                 {#if file.type.startsWith('image/')}
-                                                    <img decoding="async" loading="lazy" src={file.thumbnailUrl || file.blobUrl} alt="Preview" class="object-cover w-full h-full" />
+                                                    <img decoding="async" src={file.thumbnailUrl || file.blobUrl} alt="Preview" class="object-cover w-full h-full" />
                                                 {:else if file.type === 'application/pdf'}
                                                     <div class="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 p-4 text-center group-hover:bg-red-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
