@@ -3,6 +3,7 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import LottieLoader from '../loader/LottieLoader.svelte';
     import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+    import { getBlobUrl } from '$lib/shared/utils/utils';
 
     // Manual polyfill for PDF.js v5 / Svelte 5 conflict
     // PDF.js v5 uses getOrInsertComputed (Stage 3 proposal) which Svelte 5's Proxy might not have
@@ -63,7 +64,8 @@
     let scale = $state(1.5); // Default scale for better readability
     let totalPages = $state(0);
     
-    let finalUrl = $derived((typeof url === 'string' && url.startsWith('/uploads')) ? window.location.origin + url + '?t=' + new Date().getTime() : url);
+    let _rawUrl = $derived((typeof url === 'string' && url.startsWith('/uploads')) ? window.location.origin + url + '?t=' + new Date().getTime() : url);
+    let finalUrl = $derived(getBlobUrl(_rawUrl));
 
     // Pan & Zoom CSS state
     let cssScale = $state(1.0);
@@ -468,7 +470,7 @@
                 {:else if type === 'docx'}
                     <div bind:this={container} class="bg-white shadow-2xl p-8 min-h-[800px] w-full max-w-[800px] docx-wrapper"></div>
                 {:else if type === 'image'}
-                    <img loading="lazy" src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg" />
+                    <img decoding="async" loading="lazy" src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg" />
                 {/if}
             </div>
         {/if}

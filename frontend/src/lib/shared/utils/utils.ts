@@ -5,6 +5,36 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+// [ANTI-OOM & SOTA 60FPS]: Blob Virtualization Engine untuk mendinginkan Main Thread DOM dari lag rendering Base64
+const blobUrlCache = new Map<string, string>();
+export function getBlobUrl(fileOrBase64: any): string {
+    if (!fileOrBase64) return '';
+    if (typeof fileOrBase64 === 'object' && fileOrBase64.path) {
+        return '/uploads/' + fileOrBase64.path.replace(/^\/?uploads\//, '');
+    }
+    const dataStr = typeof fileOrBase64 === 'string' ? fileOrBase64 : fileOrBase64.data;
+    if (!dataStr) return '';
+    if (!dataStr.startsWith('data:') || dataStr.length < 500) return dataStr;
+    
+    if (blobUrlCache.has(dataStr)) return blobUrlCache.get(dataStr)!;
+    
+    try {
+        const parts = dataStr.split(',');
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        
+        const blob = new Blob([u8arr], { type: mime });
+        const url = URL.createObjectURL(blob);
+        blobUrlCache.set(dataStr, url);
+        return url;
+    } catch(e) {
+        return dataStr;
+    }
+}
+
 export function getInitials(name: string) {
     if (!name) return '';
     const parts = name.split(' ').filter(Boolean);

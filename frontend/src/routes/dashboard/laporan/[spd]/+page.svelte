@@ -20,7 +20,7 @@
     import { api } from '$lib/shared/api';
     import { onMount } from 'svelte';
     import { goto, invalidateAll } from '$app/navigation';
-    import { getInitials, toTitleCase, formatCurrency, compressImage } from '$lib/shared/utils/utils';
+    import { getInitials, toTitleCase, formatCurrency, compressImage, getBlobUrl } from '$lib/shared/utils/utils';
     import { fade } from 'svelte/transition';
     import { cn } from '$lib/shared/utils/utils';
     
@@ -811,15 +811,15 @@
                 if (record && record.id === id) {
                     const rawFiles = res.reportData?.files;
                     if (rawFiles && Array.isArray(rawFiles) && rawFiles.length > 0) {
-                        uploadedFiles = rawFiles;
+                        uploadedFiles = rawFiles.map(f => ({ ...f, blobUrl: getBlobUrl(f) }));
                     }
                     const _rawSppd = res.reportData?.sppdFile;
                     if (_rawSppd && typeof _rawSppd === 'object' && !Array.isArray(_rawSppd) && Object.keys(_rawSppd).length > 0) {
-                        sppdFile = _rawSppd;
+                        sppdFile = { ..._rawSppd, blobUrl: getBlobUrl(_rawSppd) };
                     }
                     const _rawST = res.reportData?.suratTugasFile;
                     if (_rawST && typeof _rawST === 'object' && !Array.isArray(_rawST) && Object.keys(_rawST).length > 0) {
-                        suratTugasFile = _rawST;
+                        suratTugasFile = { ..._rawST, blobUrl: getBlobUrl(_rawST) };
                     }
                 }
 
@@ -890,6 +890,7 @@
                     name: file.name,
                     type: file.type,
                     path: path,
+                    blobUrl: getBlobUrl({ path: path }),
                     timestamp: new Date(file.lastModified).toISOString()
                 }];
             }
@@ -1522,7 +1523,7 @@
                                         {#each uploadedFiles as file, i}
                                             <div class="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer" on:click={() => openPreview(file)}>
                                                 {#if file.type.startsWith('image/')}
-                                                    <img loading="lazy" src={file.data || (file.path ? '/uploads/' + file.path.replace(/^\/?uploads\//, '') : '')} alt="Preview" class="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110" />
+                                                    <img decoding="async" loading="lazy" src={file.blobUrl} alt="Preview" class="object-cover w-full h-full transition-transform duration-500 will-change-transform group-hover:scale-110" />
                                                 {:else if file.type === 'application/pdf'}
                                                     <div class="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 p-4 text-center group-hover:bg-red-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
