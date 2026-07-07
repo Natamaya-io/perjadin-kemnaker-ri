@@ -795,6 +795,65 @@
         isDataLoaded = false;
     }
 
+    // [ANTI-OOM FIX]: Single Fetcher reaktif untuk mengambil utuh Base64 yang dipotong oleh Bulk API
+    let fullRecordFetchedFor = new Set();
+    $: if (record && record.id && !fullRecordFetchedFor.has(record.id)) {
+        fullRecordFetchedFor.add(record.id);
+        fullRecordFetchedFor = fullRecordFetchedFor; // Svelte reactivity trigger
+        fetchFullRecordData(record.id);
+    }
+
+    async function fetchFullRecordData(id) {
+        try {
+            const res = await api.getRecordById(id);
+            if (res) {
+                // 1. Pulihkan Dokumentasi Kegiatan (Files Base64/Uploads)
+                if (record && record.id === id) {
+                    const rawFiles = res.reportData?.files;
+                    if (rawFiles && Array.isArray(rawFiles) && rawFiles.length > 0) {
+                        uploadedFiles = rawFiles;
+                    }
+                    const _rawSppd = res.reportData?.sppdFile;
+                    if (_rawSppd && typeof _rawSppd === 'object' && !Array.isArray(_rawSppd) && Object.keys(_rawSppd).length > 0) {
+                        sppdFile = _rawSppd;
+                    }
+                    const _rawST = res.reportData?.suratTugasFile;
+                    if (_rawST && typeof _rawST === 'object' && !Array.isArray(_rawST) && Object.keys(_rawST).length > 0) {
+                        suratTugasFile = _rawST;
+                    }
+                }
+
+                // 2. Pulihkan Kwitansi Rincian Biaya (Files Base64/Uploads)
+                if (localCosts[id] && res.costs) {
+                    const lCost = localCosts[id].costs;
+                    lCost.receiptFiles = res.costs.receiptFiles;
+                    lCost.ticketGoFile = res.costs.ticketGoFile;
+                    lCost.ticketBackFile = res.costs.ticketBackFile;
+                    lCost.boardingPassFile = res.costs.boardingPassFile;
+                    lCost.hotelFile = res.costs.hotelFile;
+                    lCost.transportFile = res.costs.transportFile;
+                    lCost.additionalCosts = res.costs.additionalCosts;
+                    
+                    if (res.costs.details && lCost.details) {
+                        res.costs.details.forEach((d, idx) => {
+                            if (lCost.details[idx]) {
+                                lCost.details[idx].boardingPassFiles = d.boardingPassFiles;
+                                lCost.details[idx].ticketGoFile = d.ticketGoFile;
+                                lCost.details[idx].ticketBackFile = d.ticketBackFile;
+                                lCost.details[idx].hotelFile = d.hotelFile;
+                                lCost.details[idx].transportFile = d.transportFile;
+                                lCost.details[idx].additionalCosts = d.additionalCosts;
+                            }
+                        });
+                    }
+                    localCosts = { ...localCosts }; // Picu reaktivitas Svelte
+                }
+            }
+        } catch(e) {
+            console.warn("[AntiGravity] Gagal mengambil data tunggal Base64", e);
+        }
+    }
+
     onMount(async () => {
         try {
             const hasSpd = $recordsStore.some(r => r.spd === decodeURIComponent(spd));

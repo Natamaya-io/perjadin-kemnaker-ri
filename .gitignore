@@ -30,3 +30,7 @@ clean_local_db.ps1
 *.dump
 *.dump.gz
 MODUL_LANJUTAN_PERJADIN.docx
+
+# AI Documentation & Blueprints
+MASTER_BLUEPRINT_*.docx
+*.docx
