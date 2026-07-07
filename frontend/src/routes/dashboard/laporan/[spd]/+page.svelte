@@ -1562,7 +1562,7 @@
                                                 
                                                 <div class="absolute top-2 right-2 flex flex-col gap-2 z-10">
                                                     <button 
-                                                        class="bg-white/80 backdrop-blur-sm text-slate-700 p-2 rounded-full hover:bg-white hover:text-blue-600 shadow-sm transition-all"
+                                                        class="bg-white/95 text-slate-700 p-2 rounded-full hover:bg-white hover:text-blue-600 shadow-sm transition-all"
                                                         on:click|stopPropagation={() => openPreview(file)}
                                                         title="Lihat"
                                                     >
@@ -1574,7 +1574,7 @@
                                                     
                                                     {#if $userStore.role !== 'kasubag'}
                                                     <button 
-                                                        class="bg-white/80 backdrop-blur-sm text-slate-700 p-2 rounded-full hover:bg-red-500 hover:text-white shadow-sm transition-all"
+                                                        class="bg-white/95 text-slate-700 p-2 rounded-full hover:bg-red-500 hover:text-white shadow-sm transition-all"
                                                         on:click|stopPropagation={() => removeFile(i)}
                                                         title="Hapus file"
                                                     >
@@ -1584,7 +1584,7 @@
                                                     {/if}
                                                 </div>
 
-                                                <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-[2px] text-white text-[9px] px-1.5 py-0.5 rounded pointer-events-none z-0">
+                                                <div class="absolute bottom-2 right-2 bg-black/75 text-white text-[9px] px-1.5 py-0.5 rounded pointer-events-none z-0">
                                                     {new Date(file.timestamp).toLocaleDateString()}
                                                 </div>
                                             </div>
