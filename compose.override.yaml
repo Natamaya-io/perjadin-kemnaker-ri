@@ -3,9 +3,9 @@ version: '3.8'
 services:
   frontend:
     # Gunakan image node murni untuk dev agar ada npm
-    image: public.ecr.aws/docker/library/node:20-alpine
+    image: public.ecr.aws/docker/library/node:22-alpine
     working_dir: /app
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
     # Menggunakan bind mount agar SvelteKit Vite dapat memonitor perubahan file secara real-time (HMR)
     volumes:
       - ./frontend:/app
@@ -15,3 +15,7 @@ services:
       - NODE_ENV=development
       - BACKEND_URL=http://backend:8081
 
+  backend:
+    # Mengizinkan file template MS Word (.docx) diedit dan dibaca secara live oleh kontainer
+    volumes:
+      - ./backend/templates:/app/templates

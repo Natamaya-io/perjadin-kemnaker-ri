@@ -34,3 +34,5 @@ MODUL_LANJUTAN_PERJADIN.docx
 # AI Documentation & Blueprints
 MASTER_BLUEPRINT_*.docx
 *.docx
+prod_dump.sql
+backend/uploads/
