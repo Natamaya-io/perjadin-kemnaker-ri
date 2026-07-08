@@ -534,7 +534,12 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) (err error) {
 
 	addLamp := func(data, path, mime string, isFoto bool) {
 		if data == "" && path != "" {
-			content, err := os.ReadFile(filepath.Join("uploads", path))
+			// [ANTI-PATH MISMATCH]: Bersihkan string path dari awalan / atau uploads/ ganda dari Database
+			cleanPath := strings.TrimPrefix(path, "/")
+			cleanPath = strings.TrimPrefix(cleanPath, "uploads/")
+			cleanPath = strings.TrimPrefix(cleanPath, "/")
+
+			content, err := os.ReadFile(filepath.Join("uploads", cleanPath))
 			if err == nil {
 				data = base64.StdEncoding.EncodeToString(content)
 			}

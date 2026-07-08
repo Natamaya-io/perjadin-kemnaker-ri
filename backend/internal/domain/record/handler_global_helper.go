@@ -18,6 +18,14 @@ func (h *Handler) getGroupRecordsSorted(spdNumber string) []models.TravelRecord 
 		return []models.TravelRecord{}
 	}
 
+	// [ANTI-OOM BYPASS]: Fetch full data for each record to recover stripped documentation images (Files/Base64)
+	for i := range records {
+		fullRec, err := h.svc.GetRecordByID(context.Background(), records[i].ID)
+		if err == nil && fullRec != nil {
+			records[i] = *fullRec
+		}
+	}
+
 	sort.Slice(records, func(i, j int) bool {
 		nameI := strings.ToLower(strings.TrimSpace(records[i].Employee.Name))
 		nameJ := strings.ToLower(strings.TrimSpace(records[j].Employee.Name))
