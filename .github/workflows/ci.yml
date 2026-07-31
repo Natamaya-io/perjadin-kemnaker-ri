@@ -206,12 +206,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REGISTRY: ${{ env.REGISTRY }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          envs: GH_TOKEN,REGISTRY
+          envs: GH_TOKEN,REGISTRY,DOPPLER_TOKEN
           script: |
+            echo "DOPPLER_TOKEN=$DOPPLER_TOKEN" > ~/.doppler_stg_token
+            chmod 600 ~/.doppler_stg_token
             echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
             mkdir -p ~/.config/containers/systemd/
             mkdir -p ~/.config/systemd/user/
