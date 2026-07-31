@@ -29,16 +29,6 @@ podman exec -e PGPASSWORD="$STG_DB_PASS" perjadin-stg-db psql -U "$STG_DB_USER" 
 echo "Restoring Database to Staging..."
 podman exec -e PGPASSWORD="$STG_DB_PASS" perjadin-stg-db pg_restore -U "$STG_DB_USER" -d "$STG_DB_NAME" --no-owner -1 /tmp/prod_dump.backup
 
-echo "Running Sanitization (Anonymization)..."
-# Use a valid bcrypt hash for "12345678"
-podman exec -e PGPASSWORD="$STG_DB_PASS" perjadin-stg-db psql -U "$STG_DB_USER" -d "$STG_DB_NAME" -c "
-UPDATE users 
-SET password = '\$2a\$10\$w09ZlOqC8a6pXlHkG8K/Q.27Jt.O/2Lz2.6gZq0qM/G6I0N/X0UeC', 
-    email = id || '@demo.local', 
-    name = 'Demo User ' || substr(id::text, 1, 8), 
-    nip = substr(md5(random()::text), 1, 18)
-WHERE role != 'super_admin';
-"
 
 echo "Restarting Staging Backend & Redis..."
 systemctl --user restart perjadin-stg-backend.service perjadin-stg-redis.service
