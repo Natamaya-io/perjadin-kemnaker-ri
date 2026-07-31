@@ -34,7 +34,7 @@ func runMigrations(db *sql.DB, sugar *zap.SugaredLogger) {
 		sugar.Fatalf("Could not create postgres driver: %v", err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///app/db/migrations",
+		"file://db/migrations",
 		"postgres", driver)
 	if err != nil {
 		sugar.Fatalf("Migration init failed: %v", err)
@@ -175,7 +175,6 @@ func main() {
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 		protected.DELETE("/records/spd/:spd", recordHandler.DeleteRecordsBySpd)
-		protected.POST("/records/import", recordHandler.ImportExcel, middleware.RoleMiddleware("super_admin", "kasubag"))
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

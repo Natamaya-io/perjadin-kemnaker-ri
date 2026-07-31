@@ -20,6 +20,8 @@
     import StakeholderCard from '$lib/features/pengajuan/ui/StakeholderCard.svelte';
     import EmployeeSelectorCard from '$lib/features/pengajuan/ui/EmployeeSelectorCard.svelte';
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
+    import DalkotInfoCard from '$lib/features/pengajuan/ui/DalkotInfoCard.svelte';
+    import DalkotSidebar from '$lib/features/pengajuan/ui/DalkotSidebar.svelte';
     
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
 
@@ -62,8 +64,20 @@
         spdNumberInput: '',
         purpose: 'persiapan', // Default
         stakeholder: '',
-        agenda: '',
-        selectedEmployees: []
+        // Dalkot specific
+        executionDate: '',
+        category: 'Hari Libur',
+        official: '',
+        suratTugasDate: '',
+        dalkotType: 'SPJ RIIL',
+        spjCostPerPerson: 170000,
+        actualCostPerPerson: 250000,
+        selectedSpjEmployees: [],
+        selectedRiilEmployees: [],
+        activityName: '',
+        locationDalkot: '',
+        reportContent: '',
+        documentationFile: null
     };
 
     function addLocation() {
@@ -179,17 +193,32 @@
             return;
         }
 
-        if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province) || formData.selectedEmployees.length === 0) {
-            toast.error('Harap lengkapi semua field wajib di setiap lokasi dan pilih minimal satu pegawai.');
-            return;
-        }
-        if (formData.locations.some(loc => {
-            const start = Date.parse(loc.startDate);
-            const end = Date.parse(loc.endDate);
-            return end < start;
-        })) {
-            toast.error('Ada tanggal selesai yang mendahului tanggal mulai.');
-            return;
+        if (selectedType === 'luar_kota') {
+            if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province) || formData.selectedEmployees.length === 0) {
+                toast.error('Harap lengkapi semua field wajib di setiap lokasi dan pilih minimal satu pegawai.');
+                return;
+            }
+            if (formData.locations.some(loc => {
+                const start = Date.parse(loc.startDate);
+                const end = Date.parse(loc.endDate);
+                return end < start;
+            })) {
+                toast.error('Ada tanggal selesai yang mendahului tanggal mulai.');
+                return;
+            }
+        } else if (selectedType === 'dalam_kota') {
+            if (!formData.executionDate || !formData.official || !formData.activityName || !formData.locationDalkot || !formData.reportContent) {
+                toast.error('Harap lengkapi semua field wajib Dalkot (termasuk Laporan).');
+                return;
+            }
+            if (!formData.documentationFile) {
+                toast.error('Dokumentasi wajib diunggah.');
+                return;
+            }
+            if (formData.selectedSpjEmployees.length === 0 && formData.selectedRiilEmployees.length === 0) {
+                toast.error('Pilih setidaknya satu petugas (SPJ atau Riil).');
+                return;
+            }
         }
 
         isConfirmOpen = true;
@@ -222,20 +251,36 @@
         const tripData = {
             spd: finalSpd, // Use the manually crafted SPD if provided, else empty
             email: $userStore.email,
-            startDate: minStartDate,
-            endDate: maxEndDate,
             suratTugasPath: uploadedSuratTugasPath,
             suratTugasNumber: formData.suratTugasNumber,
+            employees: selectedUsers,
+            type: selectedType, // Save the type as well
+            
+            // Luar Kota Data
+            startDate: minStartDate,
+            endDate: maxEndDate,
             locations: formData.locations, // New structure
-            // Backward compatibility for summary
             location: formData.locations[0].location,
             province: formData.locations[0].province,
             purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
             stakeholder: formData.stakeholder,
             agenda: formData.agenda,
-            employees: selectedUsers,
-            type: selectedType, // Save the type as well
-            totalCost: totalCost // Set calculated cost
+            totalCost: totalCost, // Set calculated cost
+            
+            // Dalam Kota Data
+            executionDate: formData.executionDate,
+            category: formData.category,
+            official: formData.official,
+            dalkotType: formData.dalkotType,
+            activityName: formData.activityName,
+            locationDalkot: formData.locationDalkot,
+            suratTugasDate: formData.suratTugasDate,
+            spjCostPerPerson: formData.spjCostPerPerson,
+            actualCostPerPerson: formData.actualCostPerPerson,
+            selectedSpjEmployees: formData.selectedSpjEmployees,
+            selectedRiilEmployees: formData.selectedRiilEmployees,
+            reportContent: formData.reportContent
+            // documentationFile will be uploaded similar to suratTugasPath if we implement the backend for it
         };
         
         try {
@@ -313,23 +358,27 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full px-0 md:px-4">
-                <!-- Card Dalam Kota (Under Construction) -->
-                <button type="button" on:click={() => toast.info('Halaman ini sedang dalam tahap pengembangan dan akan segera tersedia.')} class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-50/50 rounded-2xl shadow-sm border border-slate-200 cursor-not-allowed opacity-80">
-                    <div class="h-16 w-16 md:h-24 md:w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 md:mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <!-- Card Dalam Kota -->
+                <a href="?type=dalam_kota" class="group relative flex flex-col items-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 ring-2 ring-transparent active:ring-emerald-200">
+                    <div class="h-16 w-16 md:h-24 md:w-24 bg-emerald-50 rounded-full flex items-center justify-center mb-4 md:mb-6 group-hover:bg-emerald-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <h3 class="text-lg md:text-xl font-bold text-slate-700 mb-2">Dalam Kota</h3>
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-2 group-hover:text-emerald-700">Dalam Kota</h3>
                     <p class="text-xs md:text-sm text-slate-500 text-center leading-relaxed">
                         Perjalanan dinas ke instansi atau lokasi di dalam wilayah kota/kabupaten yang sama atau jarak dekat.
                     </p>
-                    <div class="absolute inset-x-0 bottom-0 top-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-200 shadow-sm text-center mx-4">
-                            Segera Hadir
+                    <div class="absolute bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hidden md:block">
+                        <span class="text-emerald-600 font-medium text-sm flex items-center">
+                            Pilih
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
                         </span>
                     </div>
-                </button>
+                    <div class="h-0 md:h-8"></div>
+                </a>
 
                 <!-- Card Luar Kota -->
                 <a href="?type=luar_kota" class="group relative flex flex-col items-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 ring-2 ring-transparent active:ring-indigo-200">
@@ -391,47 +440,79 @@
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <ProposalForm>
-                <BasicInfoCard 
-                    email={$userStore.email} 
-                    bind:suratTugas={formData.suratTugas}
-                    bind:suratTugasNumber={formData.suratTugasNumber}
-                    bind:spdNumberInput={formData.spdNumberInput}
-                    readonly={isReadOnly}
-                />
-                
-                <LocationCard 
-                    bind:locations={formData.locations}
-                    bind:purpose={formData.purpose}
-                    bind:agenda={formData.agenda}
-                    provinces={$provincesStore}
-                    readonly={isReadOnly}
-                    on:add={addLocation}
-                    on:remove={(e) => removeLocation(e.detail)}
-                />
+                {#if selectedType === 'dalam_kota'}
+                    <DalkotInfoCard 
+                        bind:category={formData.category}
+                        bind:official={formData.official}
+                        bind:dalkotType={formData.dalkotType}
+                        bind:activityName={formData.activityName}
+                        bind:location={formData.locationDalkot}
+                        bind:executionDate={formData.executionDate}
+                        bind:suratTugasNumber={formData.suratTugasNumber}
+                        bind:suratTugasDate={formData.suratTugasDate}
+                        bind:spjCostPerPerson={formData.spjCostPerPerson}
+                        bind:actualCostPerPerson={formData.actualCostPerPerson}
+                        bind:reportContent={formData.reportContent}
+                        bind:documentationFile={formData.documentationFile}
+                        readonly={isReadOnly}
+                    />
+                {:else}
+                    <BasicInfoCard 
+                        email={$userStore.email} 
+                        bind:suratTugas={formData.suratTugas}
+                        bind:suratTugasNumber={formData.suratTugasNumber}
+                        bind:spdNumberInput={formData.spdNumberInput}
+                        readonly={isReadOnly}
+                    />
+                    
+                    <LocationCard 
+                        bind:locations={formData.locations}
+                        bind:purpose={formData.purpose}
+                        bind:agenda={formData.agenda}
+                        provinces={$provincesStore}
+                        readonly={isReadOnly}
+                        on:add={addLocation}
+                        on:remove={(e) => removeLocation(e.detail)}
+                    />
+                {/if}
             </ProposalForm>
 
             <ProposalSidebar>
-                <StakeholderCard 
-                    stakeholders={$stakeholdersStore}
-                    bind:selectedStakeholder={formData.stakeholder}
-                    readonly={isReadOnly}
-                />
-                
-                <EmployeeSelectorCard disabledIds={disabledEmployeeIds}
-                    employees={protokolOfficers}
-                    selectedEmployees={formData.selectedEmployees}
-                    isLoading={isFetchingOfficers}
-                    readonly={isReadOnly}
-                    on:toggle={toggleEmployee}
-                    on:submit={handleSubmit}
-                />
-                {#if days > 0 && formData.selectedEmployees.length > 0}
-                    <CostEstimateCard
-                        breakdown={costBreakdown}
-                        employeeCount={formData.selectedEmployees.length}
-                        totalCost={totalCost * formData.selectedEmployees.length}
+                {#if selectedType === 'dalam_kota'}
+                    <DalkotSidebar 
+                        employees={protokolOfficers}
+                        bind:selectedSpjEmployees={formData.selectedSpjEmployees}
+                        bind:selectedRiilEmployees={formData.selectedRiilEmployees}
+                        dalkotType={formData.dalkotType}
+                        spjCostPerPerson={formData.spjCostPerPerson}
+                        actualCostPerPerson={formData.actualCostPerPerson}
+                        isLoading={isFetchingOfficers}
+                        readonly={isReadOnly}
+                        on:submit={handleSubmit}
+                    />
+                {:else}
+                    <StakeholderCard 
+                        stakeholders={$stakeholdersStore}
+                        bind:selectedStakeholder={formData.stakeholder}
                         readonly={isReadOnly}
                     />
+                    
+                    <EmployeeSelectorCard disabledIds={disabledEmployeeIds}
+                        employees={protokolOfficers}
+                        selectedEmployees={formData.selectedEmployees}
+                        isLoading={isFetchingOfficers}
+                        readonly={isReadOnly}
+                        on:toggle={toggleEmployee}
+                        on:submit={handleSubmit}
+                    />
+                    {#if selectedType === 'luar_kota' && days > 0 && formData.selectedEmployees.length > 0}
+                        <CostEstimateCard
+                            breakdown={costBreakdown}
+                            employeeCount={formData.selectedEmployees.length}
+                            totalCost={totalCost * formData.selectedEmployees.length}
+                            readonly={isReadOnly}
+                        />
+                    {/if}
                 {/if}
             </ProposalSidebar>
         </div>
