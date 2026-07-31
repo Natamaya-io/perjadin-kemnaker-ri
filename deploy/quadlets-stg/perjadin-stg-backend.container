@@ -10,7 +10,7 @@ Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:staging
 EnvironmentFile=/dev/shm/perjadin_stg.env
 Network=perjadin-stg.network
 Volume=perjadin-stg-uploads.volume:/app/uploads
-PublishPort=37211:8081
+PublishPort=37211:37211
 
 # Hardcoded non-secret envs specific to infrastructure routing
 Environment=DB_HOST=perjadin-stg-db
