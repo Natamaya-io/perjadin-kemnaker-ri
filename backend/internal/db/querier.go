@@ -12,6 +12,8 @@ import (
 )
 
 type Querier interface {
+	CreateDalkotAssignment(ctx context.Context, arg CreateDalkotAssignmentParams) (DalkotAssignment, error)
+	CreateDalkotRecord(ctx context.Context, arg CreateDalkotRecordParams) (DalkotRecord, error)
 	CreateProvince(ctx context.Context, arg CreateProvinceParams) (Province, error)
 	CreateSBMRate(ctx context.Context, arg CreateSBMRateParams) (SbmRate, error)
 	CreateTravelCost(ctx context.Context, arg CreateTravelCostParams) (TravelCost, error)
@@ -19,6 +21,8 @@ type Querier interface {
 	CreateTravelRecord(ctx context.Context, arg CreateTravelRecordParams) (TravelRecord, error)
 	CreateTravelReport(ctx context.Context, arg CreateTravelReportParams) (TravelReport, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteDalkotAssignment(ctx context.Context, id uuid.UUID) error
+	DeleteDalkotRecord(ctx context.Context, id uuid.UUID) error
 	DeleteTravelCost(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteTravelLocationsByRecordID(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteTravelLocationsBySpd(ctx context.Context, spdNumber sql.NullString) error
@@ -27,6 +31,10 @@ type Querier interface {
 	DeleteTravelReport(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetActiveTripsCount(ctx context.Context, userID uuid.NullUUID) (int64, error)
+	GetDalkotAssignmentsByRecordID(ctx context.Context, dalkotRecordID uuid.UUID) ([]DalkotAssignment, error)
+	GetDalkotLocations(ctx context.Context) ([]DalkotLocation, error)
+	GetDalkotRecordByID(ctx context.Context, id uuid.UUID) (DalkotRecord, error)
+	GetDalkotRecords(ctx context.Context) ([]DalkotRecord, error)
 	GetDashboardBudgets(ctx context.Context, userID uuid.NullUUID) ([]GetDashboardBudgetsRow, error)
 	GetDashboardReportCounts(ctx context.Context, userID uuid.NullUUID) ([]GetDashboardReportCountsRow, error)
 	GetDashboardStatusCounts(ctx context.Context, userID uuid.NullUUID) ([]GetDashboardStatusCountsRow, error)
@@ -59,6 +67,8 @@ type Querier interface {
 	// nextval() is atomic and safe under concurrent load.
 	NextSpdNumber(ctx context.Context) (int64, error)
 	SyncSpdSequence(ctx context.Context) error
+	UpdateDalkotAssignment(ctx context.Context, arg UpdateDalkotAssignmentParams) (DalkotAssignment, error)
+	UpdateDalkotRecord(ctx context.Context, arg UpdateDalkotRecordParams) (DalkotRecord, error)
 	UpdateSetting(ctx context.Context, arg UpdateSettingParams) (Setting, error)
 	UpdateTravelCost(ctx context.Context, arg UpdateTravelCostParams) (TravelCost, error)
 	UpdateTravelRecord(ctx context.Context, arg UpdateTravelRecordParams) (TravelRecord, error)

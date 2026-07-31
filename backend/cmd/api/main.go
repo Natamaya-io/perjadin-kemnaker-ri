@@ -18,6 +18,7 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/domain/master"
 	"github.com/kemnaker/perjadin-backend/internal/domain/record"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
+	"github.com/kemnaker/perjadin-backend/internal/domain/dalkot"
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
 	"github.com/kemnaker/perjadin-backend/pkg/cache"
@@ -129,6 +130,10 @@ func main() {
 	authSvc := auth.NewService(userRepo, cfg, rdb)
 	authHandler := auth.NewHandler(authSvc)
 
+	dalkotRepo := dalkot.NewRepository(db)
+	dalkotSvc := dalkot.NewService(dalkotRepo, userRepo)
+	dalkotHandler := dalkot.NewHandler(dalkotSvc)
+
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
 		sugar.Warnf("Failed to create uploads directory: %v", err)
@@ -175,6 +180,16 @@ func main() {
 		protected.PUT("/records/:id", recordHandler.UpdateRecord)
 		protected.DELETE("/records/:id", recordHandler.DeleteRecord)
 		protected.DELETE("/records/spd/:spd", recordHandler.DeleteRecordsBySpd)
+
+		// Dalkot Routes
+		protected.POST("/dalkot", dalkotHandler.CreateRecord)
+		protected.GET("/dalkot", dalkotHandler.GetRecords)
+		protected.GET("/dalkot/:id", dalkotHandler.GetRecordByID)
+		protected.PUT("/dalkot/:id", dalkotHandler.UpdateRecord)
+		protected.DELETE("/dalkot/:id", dalkotHandler.DeleteRecord)
+		protected.GET("/dalkot/locations/all", dalkotHandler.GetLocations)
+		protected.POST("/dalkot/assignments", dalkotHandler.AddAssignment)
+		protected.DELETE("/dalkot/assignments/:assignmentId", dalkotHandler.RemoveAssignment)
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

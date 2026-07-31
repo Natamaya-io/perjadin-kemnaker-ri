@@ -12,6 +12,47 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type DalkotAssignment struct {
+	ID             uuid.UUID       `json:"id"`
+	CreatedAt      sql.NullTime    `json:"created_at"`
+	UpdatedAt      sql.NullTime    `json:"updated_at"`
+	DeletedAt      sql.NullTime    `json:"deleted_at"`
+	DalkotRecordID uuid.UUID       `json:"dalkot_record_id"`
+	UserID         uuid.UUID       `json:"user_id"`
+	AssignmentType string          `json:"assignment_type"`
+	SpjCost        sql.NullFloat64 `json:"spj_cost"`
+	ActualCost     sql.NullFloat64 `json:"actual_cost"`
+	Status         sql.NullString  `json:"status"`
+}
+
+type DalkotLocation struct {
+	ID        int32        `json:"id"`
+	Name      string       `json:"name"`
+	IsActive  sql.NullBool `json:"is_active"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+type DalkotRecord struct {
+	ID                uuid.UUID             `json:"id"`
+	CreatedAt         sql.NullTime          `json:"created_at"`
+	UpdatedAt         sql.NullTime          `json:"updated_at"`
+	DeletedAt         sql.NullTime          `json:"deleted_at"`
+	SpdNumber         sql.NullString        `json:"spd_number"`
+	ExecutionDate     time.Time             `json:"execution_date"`
+	Category          string                `json:"category"`
+	Official          string                `json:"official"`
+	DalkotType        string                `json:"dalkot_type"`
+	ActivityName      string                `json:"activity_name"`
+	Location          string                `json:"location"`
+	SuratTugasNumber  sql.NullString        `json:"surat_tugas_number"`
+	SuratTugasDate    sql.NullTime          `json:"surat_tugas_date"`
+	ReportContent     sql.NullString        `json:"report_content"`
+	TotalSpjCost      sql.NullFloat64       `json:"total_spj_cost"`
+	TotalActualCost   sql.NullFloat64       `json:"total_actual_cost"`
+	Status            sql.NullString        `json:"status"`
+	DocumentationFile pqtype.NullRawMessage `json:"documentation_file"`
+}
+
 type Province struct {
 	ID        uuid.UUID      `json:"id"`
 	CreatedAt sql.NullTime   `json:"created_at"`
