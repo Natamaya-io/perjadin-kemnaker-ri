@@ -1,2 +1,2 @@
 [Volume]
-VolumeName=perjadin_prod_postgres_data
+VolumeName=perjadin_stg_postgres_data
