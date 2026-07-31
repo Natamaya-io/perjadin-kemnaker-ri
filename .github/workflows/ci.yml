@@ -176,17 +176,50 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-staging:
-    name: Deploy to Staging (Webhook)
+    name: Deploy to Staging
     needs: [build-push-backend, build-push-frontend]
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - name: Execute Webhook via Cloudflare Access
-        run: |
-          curl -s -o /dev/null -w "%{http_code}" -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}" \
-          -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-          -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Connect to Tailscale (Zero-Trust Mesh VPN)
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: latest
+
+      - name: Copy Quadlets to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          source: "deploy/quadlets-stg/*"
+          target: "perjadin-app/deploy/quadlets-stg"
+          strip_components: 2
+
+      - name: Execute Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY: ${{ env.REGISTRY }}
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          envs: GH_TOKEN,REGISTRY
+          script: |
+            echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            mkdir -p ~/.config/containers/systemd/
+            mkdir -p ~/.config/systemd/user/
+            cp -r ~/perjadin-app/deploy/quadlets-stg/* ~/.config/containers/systemd/ || true
+            cp ~/perjadin-app/deploy/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
+            systemctl --user daemon-reload
+            podman auto-update
+            systemctl --user start perjadin-stg-backend.service perjadin-stg-frontend.service
 
   deploy-production:
     name: Deploy to Production

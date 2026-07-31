@@ -1,0 +1,22 @@
+[Unit]
+Description=PostgreSQL Database Container
+Requires=perjadin-stg-secrets.service
+After=perjadin-stg-secrets.service
+
+[Container]
+ContainerName=perjadin-stg-db
+Image=public.ecr.aws/docker/library/postgres:16-alpine
+EnvironmentFile=/dev/shm/perjadin_stg.env
+Network=perjadin-stg.network
+Volume=perjadin-stg-postgres.volume:/var/lib/postgresql/data
+PublishPort=37212:5432
+HealthCmd=pg_isready -U perjadin_stg_user -d perjadin_stg_db
+HealthInterval=10s
+HealthRetries=5
+HealthTimeout=5s
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
