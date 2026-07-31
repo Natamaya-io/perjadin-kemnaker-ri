@@ -71,13 +71,22 @@
 
         <div class="space-y-2">
             <Label class="text-slate-600 text-sm">Pejabat yang Didampingi *</Label>
-            <Input 
-                type="text" 
+            <Select 
                 bind:value={official}
-                placeholder="Cth: Sekretaris Jenderal"
                 disabled={readonly}
                 class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
-            />
+            >
+                <option value="" disabled selected>Pilih Pejabat</option>
+                <option value="Menteri">Menteri</option>
+                <option value="Wakil Menteri">Wakil Menteri</option>
+                <option value="Sekretaris Jenderal">Sekretaris Jenderal</option>
+                <option value="Inspektur Jenderal">Inspektur Jenderal</option>
+                <option value="Direktur Jenderal">Direktur Jenderal</option>
+                <option value="Kepala Badan">Kepala Badan</option>
+                <option value="Staf Khusus">Staf Khusus</option>
+                <option value="Staf Ahli">Staf Ahli</option>
+                <option value="Pejabat Eselon II">Pejabat Eselon II</option>
+            </Select>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
