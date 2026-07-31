@@ -122,13 +122,20 @@ func (s *service) GetDemoUsers() ([]map[string]string, error) {
 	}
 
 	var demoUsers []map[string]string
+	roleCount := make(map[string]int)
+
 	for _, u := range users {
-		demoUsers = append(demoUsers, map[string]string{
-			"name":     u.Name,
-			"email":    u.Email,
-			"role":     u.Role,
-			"password": "12345678", // Default password for all users
-		})
+		if roleCount[u.Role] < 2 || u.Role == "super_admin" {
+			demoUsers = append(demoUsers, map[string]string{
+				"name":     u.Name,
+				"email":    u.Email,
+				"role":     u.Role,
+				"password": "12345678", // Default password for all users
+			})
+			if u.Role != "super_admin" {
+				roleCount[u.Role]++
+			}
+		}
 	}
 
 	if s.redisClient != nil {

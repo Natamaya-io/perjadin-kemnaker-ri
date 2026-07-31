@@ -15,7 +15,7 @@
     onMount(async () => {
         if (typeof window !== 'undefined') {
             // Try loading from localStorage first for immediate results
-            const stored = localStorage.getItem('demo_users_v2');
+            const stored = localStorage.getItem('demo_users_v3');
             if (stored) {
                 try {
                     demoUsers = JSON.parse(stored);
@@ -33,7 +33,7 @@
                             password: u.password // From backend
                         }));
                         // Update cache
-                        localStorage.setItem('demo_users_v2', JSON.stringify(demoUsers));
+                        localStorage.setItem('demo_users_v3', JSON.stringify(demoUsers));
                     }
                 }
             } catch (e) {
