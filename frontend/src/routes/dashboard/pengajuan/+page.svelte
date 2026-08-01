@@ -11,6 +11,8 @@
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
     import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
     import SkeletonTable from '$lib/shared/ui/loader/SkeletonTable.svelte';
+    import Button from '$lib/shared/ui/button/Button.svelte';
+    import { goto } from '$app/navigation';
 
     // Filter & Sort State
     let searchQuery = '';
@@ -200,12 +202,12 @@
             <p class="text-sm text-slate-500 mt-1">Pantau status dan riwayat perjalanan dinas yang telah Anda ajukan.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="/dashboard/pengajuan/new" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm shadow-blue-500/30 transition-all duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto('/dashboard/pengajuan/new')}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Buat Pengajuan Baru
-            </a>
+            </Button>
         </div>
     </div>
 
