@@ -24,7 +24,7 @@
     import DalkotSidebar from '$lib/features/pengajuan/ui/DalkotSidebar.svelte';
     
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
-    import { Button } from '$lib/shared/ui/button';
+    import Button from '$lib/shared/ui/button/Button.svelte';
 
     $: selectedType = $page.url.searchParams.get('type');
 
