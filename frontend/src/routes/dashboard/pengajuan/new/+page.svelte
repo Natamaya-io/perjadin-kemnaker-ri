@@ -24,6 +24,7 @@
     import DalkotSidebar from '$lib/features/pengajuan/ui/DalkotSidebar.svelte';
     
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
+    import { Button } from '$lib/shared/ui/button';
 
     $: selectedType = $page.url.searchParams.get('type');
 
@@ -342,12 +343,12 @@
     {#if !selectedType}
         <!-- Back Button -->
         <div class="w-full mb-4">
-            <a href="/dashboard/pengajuan" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm">
+            <Button variant="outline" class="border-slate-200 text-slate-600 hover:text-slate-900" on:click={() => goto('/dashboard/pengajuan')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Kembali
-            </a>
+            </Button>
         </div>
 
         <!-- Selection Screen -->
@@ -424,12 +425,12 @@
     {:else}
         <!-- Back Button & Form -->
         <div class="flex items-center mb-6 gap-3">
-            <a href="/dashboard/pengajuan/new" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm">
+            <Button variant="outline" class="border-slate-200 text-slate-600 hover:text-slate-900" on:click={() => goto('/dashboard/pengajuan/new')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Kembali ke Pilihan
-            </a>
+            </Button>
             <div class="h-8 w-px bg-slate-200"></div>
             <span class="text-sm font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
                 {getLabel(selectedType)}
