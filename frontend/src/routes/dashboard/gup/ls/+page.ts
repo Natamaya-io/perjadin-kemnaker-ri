@@ -1,4 +1,4 @@
-import { api } from '$lib/api';
+import { api } from '$lib/shared/api';
 
 export async function load({ fetch }) {
     try {
