@@ -49,7 +49,10 @@
     async function handleSave() {
         startLoading();
         try {
-            await api.updateSettings(settings);
+            const payload = { ...settings };
+            delete payload.isLoaded;
+            
+            await api.updateSettings(payload);
             toast.success('Pengaturan global berhasil diperbarui!');
         } catch (error) {
             toast.error('Gagal memperbarui pengaturan.');
