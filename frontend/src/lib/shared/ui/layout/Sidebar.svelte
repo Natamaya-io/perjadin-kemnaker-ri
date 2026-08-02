@@ -55,10 +55,7 @@
         {
             header: "Keuangan & Umum",
             items: [
-                { label: "VIP Bandara Halim", href: "/dashboard/vip-bandara", icon: icons.star, role: ['super_admin', 'kasubag'] },
-                { label: "Total Penarikan", href: "/dashboard/total-penarikan", icon: icons.cash, role: ['super_admin', 'kasubag'] },
-                { label: "Sewa Kendaraan", href: "/dashboard/sewa-kendaraan", icon: icons.car, role: ['super_admin', 'kasubag'] },
-                { label: "Pemeliharaan", href: "/dashboard/pemeliharaan", icon: icons.wrench, role: ['super_admin', 'kasubag'] }
+                { label: "GUP", href: "/dashboard/gup", icon: icons.cash, role: ['super_admin', 'kasubag'] }
             ]
         },
         {
