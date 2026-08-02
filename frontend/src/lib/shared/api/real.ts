@@ -381,8 +381,20 @@ export class RealApiClient implements ApiClient {
     }
 
     // --- GUP ---
+    async getGupMasterData(year?: number, customFetch?: typeof fetch): Promise<any> {
+        const query = year ? `?year=${year}` : '';
+        return this.request<any>(`/gup/master-data${query}`, {}, customFetch);
+    }
+
     async getGupPengajuan(customFetch?: typeof fetch): Promise<any[]> {
         return this.request<any[]>('/gup/pengajuan', {}, customFetch);
+    }
+
+    async createGupPengajuan(data: any): Promise<any> {
+        return this.request<any>('/gup/pengajuan', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     }
 
     async getGupLaporan(customFetch?: typeof fetch): Promise<any[]> {

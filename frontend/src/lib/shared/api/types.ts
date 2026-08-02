@@ -180,7 +180,9 @@ export interface ApiClient {
     updateSettings(settings: any): Promise<void>;
 
     // GUP
+    getGupMasterData(year?: number, customFetch?: typeof fetch): Promise<any>;
     getGupPengajuan(customFetch?: typeof fetch): Promise<any[]>;
+    createGupPengajuan(data: any): Promise<any>;
     getGupLaporan(customFetch?: typeof fetch): Promise<any[]>;
     getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
     getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;

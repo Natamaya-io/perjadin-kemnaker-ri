@@ -408,27 +408,28 @@
         
         <div class="flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-700/50 rounded-lg p-1 border border-slate-600/50 w-full sm:w-auto overflow-x-auto">
             {#if type === 'pdf'}
-                <button class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors disabled:opacity-30 shrink-0" onclick={onPrevPage} disabled={pageNum <= 1}>
+                <button aria-label="Halaman sebelumnya" class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors disabled:opacity-30 shrink-0" onclick={onPrevPage} disabled={pageNum <= 1}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                 </button>
                 <span class="text-[10px] sm:text-xs font-mono text-slate-200 min-w-[3.5rem] sm:min-w-[4rem] text-center font-semibold select-none shrink-0">{pageNum} / {totalPages}</span>
-                <button class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors disabled:opacity-30 shrink-0" onclick={onNextPage} disabled={pageNum >= totalPages}>
+                <button aria-label="Halaman selanjutnya" class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors disabled:opacity-30 shrink-0" onclick={onNextPage} disabled={pageNum >= totalPages}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
                 </button>
                 <div class="h-3 sm:h-4 w-px bg-slate-600 mx-1 shrink-0"></div>
-                <button class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors shrink-0" onclick={onZoomOut}>
+                <button aria-label="Perkecil" class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors shrink-0" onclick={onZoomOut}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
                 </button>
-                <button class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors shrink-0" onclick={onZoomIn}>
+                <button aria-label="Perbesar" class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors shrink-0" onclick={onZoomIn}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                 </button>
             {/if}
             <div class="h-3 sm:h-4 w-px bg-slate-600 mx-1 shrink-0"></div>
-            <button class="flex items-center gap-1 p-1.5 sm:p-2 hover:bg-slate-600 rounded text-amber-400 hover:text-amber-300 transition-colors shrink-0" onclick={resetCssZoom}>
+            <button aria-label="Reset ukuran" class="flex items-center gap-1 p-1.5 sm:p-2 hover:bg-slate-600 rounded text-amber-400 hover:text-amber-300 transition-colors shrink-0" onclick={resetCssZoom}>
                 <span class="text-[10px] font-bold">Reset</span>
             </button>
             <div class="h-3 sm:h-4 w-px bg-slate-600 mx-1 shrink-0"></div>
             <button
+                aria-label="Unduh dokumen"
                 class="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-emerald-600 bg-emerald-500/20 border border-emerald-500/40 rounded-md text-emerald-300 hover:text-white transition-all shrink-0"
                 onclick={downloadFile}
                 title="Unduh file ini"
