@@ -178,4 +178,10 @@ export interface ApiClient {
     getSBMRates(): Promise<any[]>;
     getSettings(): Promise<any>;
     updateSettings(settings: any): Promise<void>;
+
+    // GUP
+    getGupPengajuan(customFetch?: typeof fetch): Promise<any[]>;
+    getGupLaporan(customFetch?: typeof fetch): Promise<any[]>;
+    getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
+    getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;
 }

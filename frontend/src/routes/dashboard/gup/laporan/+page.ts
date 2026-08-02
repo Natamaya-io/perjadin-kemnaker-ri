@@ -2,7 +2,7 @@ import { api } from '$lib/shared/api';
 
 export async function load({ fetch }) {
     try {
-        const response = await api.get('/gup/laporan', { fetch });
+        const response = await api.getGupLaporan(fetch);
         return {
             reports: response || []
         };

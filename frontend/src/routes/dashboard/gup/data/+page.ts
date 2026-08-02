@@ -2,7 +2,7 @@ import { api } from '$lib/shared/api';
 
 export async function load({ fetch }) {
     try {
-        const response = await api.get('/gup/data?year=2024', { fetch });
+        const response = await api.getGupData(2024, fetch);
         return {
             budgets: response || []
         };
