@@ -44,7 +44,11 @@
         try {
             const payload = {
                 ...form,
-                fundingSourceId: form.fundingSourceId || undefined
+                fundingSourceId: form.fundingSourceId || undefined,
+                receiptDate: form.receiptDate ? new Date(form.receiptDate).toISOString() : undefined,
+                valueAmount: Number(form.valueAmount),
+                paidAmount: Number(form.paidAmount),
+                taxAmount: Number(form.taxAmount)
             };
 
             await api.createGupPengajuan(payload);
