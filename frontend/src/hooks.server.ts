@@ -1,5 +1,4 @@
 import { Buffer } from 'buffer';
-import { error } from '@sveltejs/kit';
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
@@ -82,19 +81,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 			console.error(`[Proxy Error] ${event.request.method} ${url} ->`, err.message);
 			return new Response(`Proxy Error: ${err.message}`, { status: 502 });
 		}
-	}
-
-	// Blokir rute yang masih dalam pengembangan
-	const path = event.url.pathname;
-	const isBlocked = 
-		path.startsWith('/dashboard/gup/pengajuan') || 
-		path.startsWith('/dashboard/gup/laporan') || 
-		path.startsWith('/dashboard/gup/ls') || 
-		path.startsWith('/dashboard/gup/data') ||
-		(path.startsWith('/dashboard/pengajuan/new') && event.url.searchParams.get('type') === 'dalam_kota');
-
-	if (isBlocked) {
-		error(403, 'Fitur ini masih dalam tahap pengembangan.');
 	}
 
 	return resolve(event);
