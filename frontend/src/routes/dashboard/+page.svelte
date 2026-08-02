@@ -188,7 +188,7 @@
             {/if}
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
-                    <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl whitespace-nowrap">
+                    <Button variant="glass" class="w-full md:w-auto h-12 px-6 rounded-xl whitespace-nowrap">
                        Kelola Biaya
                     </Button>
                  </a>            {/if}

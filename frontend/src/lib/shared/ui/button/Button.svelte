@@ -13,6 +13,7 @@
         outline: 'clay-outline border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900',
         secondary: 'clay-secondary bg-slate-100 text-slate-800 hover:bg-slate-200',
         ghost: 'clay-ghost bg-slate-50/50 hover:bg-slate-100 text-slate-700',
+        glass: 'clay-glass bg-white/10 hover:bg-white/20 border border-white/20 text-white',
         link: 'text-primary underline-offset-4 hover:underline'
     };
     
@@ -71,5 +72,12 @@
     }
     .clay-ghost:active {
         box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.08), inset 2px 2px 5px rgba(255, 255, 255, 0.6);
+    }
+
+    .clay-glass {
+        box-shadow: inset -4px -4px 10px rgba(0, 0, 0, 0.2), inset 4px 4px 10px rgba(255, 255, 255, 0.15), inset 1px 1px 2px rgba(255, 255, 255, 0.25);
+    }
+    .clay-glass:active {
+        box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.3), inset 2px 2px 5px rgba(255, 255, 255, 0.1);
     }
 </style>
