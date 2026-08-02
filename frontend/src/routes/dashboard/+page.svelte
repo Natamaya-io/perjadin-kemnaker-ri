@@ -181,14 +181,14 @@
         <WelcomeActions>
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <a href="/dashboard/pengajuan/new" class="w-full md:w-auto">
-                <Button class="w-full md:w-auto bg-white text-blue-600 hover:bg-blue-50 border-0 shadow-lg font-semibold h-12 px-6 rounded-xl transition-transform active:scale-95 whitespace-nowrap">
+                <Button variant="secondary" class="w-full md:w-auto bg-white text-blue-600 hover:bg-blue-50 border-0 font-semibold h-12 px-6 rounded-xl whitespace-nowrap">
                     + Pengajuan Perjalanan
                 </Button>
             </a>
             {/if}
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
-                    <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl transition-transform active:scale-95 whitespace-nowrap">
+                    <Button variant="outline" class="w-full md:w-auto bg-blue-600/30 border-white/20 text-white hover:bg-blue-600/50 hover:text-white h-12 px-6 rounded-xl whitespace-nowrap">
                        Kelola Biaya
                     </Button>
                  </a>            {/if}
@@ -215,11 +215,13 @@
             </div>
             
             <div class="relative z-10 w-full md:w-auto shrink-0 mt-2 md:mt-0">
-                <a href="/dashboard/laporan?from=notif" class="inline-flex w-full md:w-auto items-center justify-center px-6 py-3 text-sm font-bold tracking-wide text-rose-600 bg-white hover:bg-rose-50 rounded-xl shadow-md shadow-black/10 transition-all hover:scale-105 active:scale-95">
-                    Lihat Detail Penugasan
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+                <a href="/dashboard/laporan?from=notif" class="w-full md:w-auto">
+                    <Button variant="secondary" class="w-full md:w-auto px-6 py-3 text-sm font-bold tracking-wide text-rose-600 bg-white hover:bg-rose-50 border-0 rounded-xl">
+                        Lihat Detail Penugasan
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </Button>
                 </a>
             </div>
         </div>
