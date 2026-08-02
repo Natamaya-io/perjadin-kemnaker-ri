@@ -205,6 +205,7 @@ func main() {
 		protected.GET("/gup/laporan", gupHandler.GetTransactions) // For now returns same struct, usually mapped to a report logic
 		protected.GET("/gup/ls", gupHandler.GetMonthlyLS)
 		protected.GET("/gup/data", gupHandler.GetBudgets)
+		protected.GET("/gup/master-data", gupHandler.GetMasterData)
 
 
 		// User Management

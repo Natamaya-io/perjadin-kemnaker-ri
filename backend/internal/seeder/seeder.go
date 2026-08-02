@@ -150,6 +150,12 @@ func Seed(db *sql.DB, rdb *redis.Client) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		seedGupMasterData(db)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		seedUsers(userRepo, adminUsers, protokolData)
 	}()
 
@@ -277,6 +283,73 @@ func seedProvincesAndRates(db *sql.DB) {
 			)
 			if err != nil {
 				log.Printf("Failed to update SBM rate for %s: %v", p.Name, err)
+			}
+		}
+	}
+}
+
+func seedGupMasterData(db *sql.DB) {
+	log.Println("Seeding GUP Master Data...")
+
+	// 1. Account Codes
+	accountCodes := []struct {
+		Code        string
+		Mak         string
+		Description string
+	}{
+		{"521111", "2158.01.WA.2158.EBA.994.002.521111", "Belanja Keperluan Perkantoran"},
+		{"521119", "2158.01.WA.2158.EBA.994.002.521119", "Belanja Barang Operasional Lainnya"},
+		{"524111", "2158.01.WA.2158.EBA.994.002.524111", "Belanja Perjalanan Dinas Biasa"},
+	}
+
+	for _, ac := range accountCodes {
+		_, err := db.Exec("INSERT INTO account_codes (code, mak, description) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING", ac.Code, ac.Mak, ac.Description)
+		if err != nil {
+			log.Printf("Failed to insert account code %s: %v", ac.Code, err)
+		}
+	}
+
+	// 2. Procurement Types
+	procurementTypes := []struct {
+		AccountCode string
+		Name        string
+	}{
+		{"521119", "VIP Halim Perdanakusuma"},
+		{"521119", "VIP Soekarno Hatta"},
+		{"521119", "Pass Bandara"},
+		{"521111", "Sewa Kendaraan"},
+		{"521111", "Pembelian ATK"},
+		{"524111", "Tiket Pesawat"},
+	}
+
+	for _, pt := range procurementTypes {
+		var acID uuid.UUID
+		err := db.QueryRow("SELECT id FROM account_codes WHERE code = $1", pt.AccountCode).Scan(&acID)
+		if err != nil {
+			log.Printf("Failed to find account code %s for procurement type %s: %v", pt.AccountCode, pt.Name, err)
+			continue
+		}
+
+		_, err = db.Exec("INSERT INTO procurement_types (account_code_id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING", acID, pt.Name)
+		if err != nil {
+			log.Printf("Failed to insert procurement type %s: %v", pt.Name, err)
+		}
+	}
+
+	// 3. Funding Sources (For year 2024, 2025, 2026)
+	years := []int{2024, 2025, 2026}
+	months := []string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+
+	for _, y := range years {
+		for i, m := range months {
+			gupLabel := fmt.Sprintf("GUP %d", i+1)
+			_, err := db.Exec(`
+				INSERT INTO funding_sources (year, month_number, month_name, gup_label) 
+				VALUES ($1, $2, $3, $4) 
+				ON CONFLICT (year, month_number) DO NOTHING
+			`, y, i+1, m, gupLabel)
+			if err != nil {
+				log.Printf("Failed to insert funding source %s %d: %v", m, y, err)
 			}
 		}
 	}

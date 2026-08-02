@@ -16,6 +16,7 @@ type Repository interface {
 	
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
+	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 }
 
 type repository struct {
@@ -193,4 +194,52 @@ func (r *repository) GetMonthlyLS(ctx context.Context, year int16) ([]models.Mon
 		results = append(results, m)
 	}
 	return results, nil
+}
+
+func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {
+	// 1. Get FundingSources
+	fsQuery := `SELECT id, year, month_number, month_name, gup_label, created_at, updated_at FROM funding_sources WHERE year = $1 ORDER BY month_number ASC`
+	fsRows, err := r.d.QueryContext(ctx, fsQuery, year)
+	if err != nil {
+		return nil, err
+	}
+	defer fsRows.Close()
+
+	var fundingSources []models.FundingSource
+	for fsRows.Next() {
+		var fs models.FundingSource
+		if err := fsRows.Scan(&fs.ID, &fs.Year, &fs.MonthNumber, &fs.MonthName, &fs.GupLabel, &fs.CreatedAt, &fs.UpdatedAt); err != nil {
+			return nil, err
+		}
+		fundingSources = append(fundingSources, fs)
+	}
+
+	// 2. Get ProcurementTypes with AccountCodes
+	ptQuery := `
+		SELECT pt.id, pt.account_code_id, pt.name, pt.is_active, pt.created_at, pt.updated_at,
+		       ac.code, ac.mak
+		FROM procurement_types pt
+		JOIN account_codes ac ON pt.account_code_id = ac.id
+		WHERE pt.is_active = true
+		ORDER BY pt.name ASC
+	`
+	ptRows, err := r.d.QueryContext(ctx, ptQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer ptRows.Close()
+
+	var procurementTypes []models.ProcurementType
+	for ptRows.Next() {
+		var pt models.ProcurementType
+		if err := ptRows.Scan(&pt.ID, &pt.AccountCodeID, &pt.Name, &pt.IsActive, &pt.CreatedAt, &pt.UpdatedAt, &pt.AccountCode, &pt.AccountMak); err != nil {
+			return nil, err
+		}
+		procurementTypes = append(procurementTypes, pt)
+	}
+
+	return map[string]interface{}{
+		"fundingSources":   fundingSources,
+		"procurementTypes": procurementTypes,
+	}, nil
 }

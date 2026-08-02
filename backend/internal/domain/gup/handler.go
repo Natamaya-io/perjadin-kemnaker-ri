@@ -92,3 +92,22 @@ func (h *Handler) GetMonthlyLS(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ls)
 }
+
+func (h *Handler) GetMasterData(c echo.Context) error {
+	yearStr := c.QueryParam("year")
+	if yearStr == "" {
+		yearStr = "2024" // default
+	}
+	year, err := strconv.ParseInt(yearStr, 10, 16)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid year"})
+	}
+
+	ctx := c.Request().Context()
+	masterData, err := h.svc.GetMasterData(ctx, int16(year))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, masterData)
+}

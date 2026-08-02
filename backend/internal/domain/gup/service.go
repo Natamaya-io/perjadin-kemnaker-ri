@@ -14,6 +14,7 @@ type Service interface {
 	
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
+	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 }
 
 type service struct {
@@ -42,4 +43,8 @@ func (s *service) GetBudgets(ctx context.Context, year int16) ([]models.Budget, 
 
 func (s *service) GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error) {
 	return s.repo.GetMonthlyLS(ctx, year)
+}
+
+func (s *service) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {
+	return s.repo.GetMasterData(ctx, year)
 }
