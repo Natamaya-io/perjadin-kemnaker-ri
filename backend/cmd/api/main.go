@@ -19,6 +19,8 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/domain/record"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/domain/dalkot"
+	"github.com/kemnaker/perjadin-backend/internal/domain/gup"
+
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
 	"github.com/kemnaker/perjadin-backend/pkg/cache"
@@ -134,6 +136,10 @@ func main() {
 	dalkotSvc := dalkot.NewService(dalkotRepo, userRepo)
 	dalkotHandler := dalkot.NewHandler(dalkotSvc)
 
+	gupRepo := gup.NewRepository(db)
+	gupSvc := gup.NewService(gupRepo)
+	gupHandler := gup.NewHandler(gupSvc)
+
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
 		sugar.Warnf("Failed to create uploads directory: %v", err)
@@ -190,6 +196,16 @@ func main() {
 		protected.GET("/dalkot/locations/all", dalkotHandler.GetLocations)
 		protected.POST("/dalkot/assignments", dalkotHandler.AddAssignment)
 		protected.DELETE("/dalkot/assignments/:assignmentId", dalkotHandler.RemoveAssignment)
+
+		// GUP Routes
+		protected.GET("/gup/pengajuan", gupHandler.GetTransactions)
+		protected.GET("/gup/pengajuan/:id", gupHandler.GetTransactionByID)
+		protected.POST("/gup/pengajuan", gupHandler.CreateTransaction)
+		
+		protected.GET("/gup/laporan", gupHandler.GetTransactions) // For now returns same struct, usually mapped to a report logic
+		protected.GET("/gup/ls", gupHandler.GetMonthlyLS)
+		protected.GET("/gup/data", gupHandler.GetBudgets)
+
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

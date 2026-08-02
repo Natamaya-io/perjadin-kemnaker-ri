@@ -12,6 +12,24 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type AccountCode struct {
+	ID          uuid.UUID      `json:"id"`
+	Code        string         `json:"code"`
+	Mak         string         `json:"mak"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+type Budget struct {
+	ID                uuid.UUID `json:"id"`
+	Year              int16     `json:"year"`
+	ProcurementTypeID uuid.UUID `json:"procurement_type_id"`
+	Amount            string    `json:"amount"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
 type DalkotAssignment struct {
 	ID             uuid.UUID       `json:"id"`
 	CreatedAt      sql.NullTime    `json:"created_at"`
@@ -51,6 +69,50 @@ type DalkotRecord struct {
 	TotalActualCost   sql.NullFloat64       `json:"total_actual_cost"`
 	Status            sql.NullString        `json:"status"`
 	DocumentationFile pqtype.NullRawMessage `json:"documentation_file"`
+}
+
+type FundingSource struct {
+	ID          uuid.UUID `json:"id"`
+	Year        int16     `json:"year"`
+	MonthNumber int16     `json:"month_number"`
+	MonthName   string    `json:"month_name"`
+	GupLabel    string    `json:"gup_label"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type GupTransaction struct {
+	ID                 uuid.UUID             `json:"id"`
+	BusinessID         string                `json:"business_id"`
+	PaymentDescription string                `json:"payment_description"`
+	ProcurementTypeID  uuid.UUID             `json:"procurement_type_id"`
+	FundingSourceID    uuid.NullUUID         `json:"funding_source_id"`
+	ValueAmount        string                `json:"value_amount"`
+	PaidAmount         string                `json:"paid_amount"`
+	TaxAmount          string                `json:"tax_amount"`
+	ReceiptDate        sql.NullTime          `json:"receipt_date"`
+	Recipient          sql.NullString        `json:"recipient"`
+	Pum                sql.NullString        `json:"pum"`
+	DocumentFile       pqtype.NullRawMessage `json:"document_file"`
+	CreatedAt          time.Time             `json:"created_at"`
+	UpdatedAt          time.Time             `json:"updated_at"`
+}
+
+type MonthlyL struct {
+	ID              uuid.UUID `json:"id"`
+	FundingSourceID uuid.UUID `json:"funding_source_id"`
+	Amount          string    `json:"amount"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+type ProcurementType struct {
+	ID            uuid.UUID `json:"id"`
+	AccountCodeID uuid.UUID `json:"account_code_id"`
+	Name          string    `json:"name"`
+	IsActive      bool      `json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type Province struct {

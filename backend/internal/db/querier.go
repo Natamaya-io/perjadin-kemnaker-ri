@@ -30,6 +30,7 @@ type Querier interface {
 	DeleteTravelRecordBySpd(ctx context.Context, spdNumber sql.NullString) error
 	DeleteTravelReport(ctx context.Context, travelRecordID uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	GetAccountCodes(ctx context.Context) ([]AccountCode, error)
 	GetActiveTripsCount(ctx context.Context, userID uuid.NullUUID) (int64, error)
 	GetDalkotAssignmentsByRecordID(ctx context.Context, dalkotRecordID uuid.UUID) ([]DalkotAssignment, error)
 	GetDalkotLocations(ctx context.Context) ([]DalkotLocation, error)

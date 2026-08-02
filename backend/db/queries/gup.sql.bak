@@ -1,0 +1,98 @@
+-- name: CreateAccountCode :one
+INSERT INTO account_codes (
+    code, mak, description
+) VALUES (
+    $1, $2, $3
+) RETURNING id, code, mak, description, created_at, updated_at;
+
+-- name: GetAccountCodes :many
+SELECT id, code, mak, description, created_at, updated_at FROM account_codes ORDER BY code;
+
+-- name: CreateProcurementType :one
+INSERT INTO procurement_types (
+    account_code_id, name, is_active
+) VALUES (
+    $1, $2, $3
+) RETURNING id, account_code_id, name, is_active, created_at, updated_at;
+
+-- name: GetProcurementTypes :many
+SELECT pt.id, pt.account_code_id, pt.name, pt.is_active, pt.created_at, pt.updated_at, ac.code AS account_code, ac.mak AS account_mak 
+FROM procurement_types pt
+JOIN account_codes ac ON ac.id = pt.account_code_id
+ORDER BY pt.name;
+
+-- name: CreateFundingSource :one
+INSERT INTO funding_sources (
+    year, month_number, month_name, gup_label
+) VALUES (
+    $1, $2, $3, $4
+) RETURNING id, year, month_number, month_name, gup_label, created_at, updated_at;
+
+-- name: GetFundingSourcesByYear :many
+SELECT id, year, month_number, month_name, gup_label, created_at, updated_at FROM funding_sources WHERE year = $1 ORDER BY month_number;
+
+-- name: UpsertBudget :one
+INSERT INTO budgets (
+    year, procurement_type_id, amount
+) VALUES (
+    $1, $2, $3
+) ON CONFLICT (year, procurement_type_id) 
+DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
+RETURNING id, year, procurement_type_id, amount, created_at, updated_at;
+
+-- name: GetBudgetsByYear :many
+SELECT b.id, b.year, b.procurement_type_id, b.amount, b.created_at, b.updated_at, pt.name AS procurement_type_name
+FROM budgets b
+JOIN procurement_types pt ON pt.id = b.procurement_type_id
+WHERE b.year = $1;
+
+-- name: UpsertMonthlyLS :one
+INSERT INTO monthly_ls (
+    funding_source_id, amount
+) VALUES (
+    $1, $2
+) ON CONFLICT (funding_source_id) 
+DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
+RETURNING id, funding_source_id, amount, created_at, updated_at;
+
+-- name: GetMonthlyLSByYear :many
+SELECT ml.id, ml.funding_source_id, ml.amount, ml.created_at, ml.updated_at, fs.month_name, fs.gup_label 
+FROM monthly_ls ml
+JOIN funding_sources fs ON fs.id = ml.funding_source_id
+WHERE fs.year = $1
+ORDER BY fs.month_number;
+
+-- name: CreateGUPTransaction :one
+INSERT INTO gup_transactions (
+    business_id, payment_description, procurement_type_id, funding_source_id,
+    value_amount, paid_amount, tax_amount, receipt_date, recipient, pum, document_file
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+) RETURNING id, business_id, payment_description, procurement_type_id, funding_source_id, value_amount, paid_amount, tax_amount, receipt_date, recipient, pum, document_file, created_at, updated_at;
+
+-- name: GetGUPTransactions :many
+SELECT gt.id, gt.business_id, gt.payment_description, gt.procurement_type_id, gt.funding_source_id, gt.value_amount, gt.paid_amount, gt.tax_amount, gt.receipt_date, gt.recipient, gt.pum, gt.document_file, gt.created_at, gt.updated_at, pt.name AS procurement_type_name, fs.gup_label AS funding_source_label
+FROM gup_transactions gt
+JOIN procurement_types pt ON pt.id = gt.procurement_type_id
+LEFT JOIN funding_sources fs ON fs.id = gt.funding_source_id
+ORDER BY gt.created_at DESC;
+
+-- name: UpdateGUPTransaction :one
+UPDATE gup_transactions
+SET 
+    payment_description = $2,
+    procurement_type_id = $3,
+    funding_source_id = $4,
+    value_amount = $5,
+    paid_amount = $6,
+    tax_amount = $7,
+    receipt_date = $8,
+    recipient = $9,
+    pum = $10,
+    document_file = COALESCE($11, document_file),
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, business_id, payment_description, procurement_type_id, funding_source_id, value_amount, paid_amount, tax_amount, receipt_date, recipient, pum, document_file, created_at, updated_at;
+
+-- name: DeleteGUPTransaction :exec
+DELETE FROM gup_transactions WHERE id = $1;
