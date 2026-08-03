@@ -132,8 +132,8 @@
             <p class="text-sm text-slate-500 mt-1">Kelola referensi kode akun dan format MAK untuk pengadaan GUP.</p>
         </div>
         <div class="flex items-center gap-3">
-            <Button variant="primary" on:click={openAddModal} class="w-full sm:w-auto gap-2 shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.25),inset_4px_4px_10px_rgba(255,255,255,0.45),inset_1px_1px_2px_rgba(255,255,255,0.6)]">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <Button variant="default" on:click={openAddModal} class="w-full sm:w-auto flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Tambah Integrasi
@@ -238,7 +238,7 @@
                 <Button variant="default" on:click={() => showModal = false} disabled={isSubmitting}>
                     Batal
                 </Button>
-                <Button variant="primary" on:click={saveIntegration} disabled={isSubmitting} class="shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.25),inset_4px_4px_10px_rgba(255,255,255,0.45),inset_1px_1px_2px_rgba(255,255,255,0.6)]">
+                <Button variant="default" on:click={saveIntegration} disabled={isSubmitting}>
                     {isSubmitting ? 'Menyimpan...' : 'Simpan Integrasi'}
                 </Button>
             </div>
