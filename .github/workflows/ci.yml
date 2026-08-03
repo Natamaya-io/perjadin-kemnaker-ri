@@ -224,9 +224,8 @@ jobs:
             cp -r ~/perjadin-app/deploy/quadlets-stg/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
             systemctl --user daemon-reload
-            podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:staging || true
-            podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:staging || true
-            systemctl --user restart perjadin-stg-backend.service perjadin-stg-frontend.service
+            podman auto-update || true
+            systemctl --user start perjadin-stg-backend.service perjadin-stg-frontend.service
   deploy-production:
     name: Deploy to Production
     needs: [build-push-backend, build-push-frontend]
