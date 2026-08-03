@@ -19,7 +19,9 @@ jobs:
         with:
           fetch-depth: 0 # fetch all history for gitleaks
       - name: Run Gitleaks
-        run: docker run --rm -v ${{ github.workspace }}:/path zricethezav/gitleaks:latest detect --source="/path" -v
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
   golangci-lint:
     name: Golangci-lint (Strict Idiomatic Enforcer)
