@@ -232,17 +232,17 @@
                 <table class="w-full text-sm">
                     <thead class="bg-slate-50 text-slate-600">
                         <tr>
-                            <th class="px-4 py-3 text-left font-semibold">Jenis Pengadaan</th>
-                            <th class="px-4 py-3 text-left font-semibold">Kode Akun</th>
-                            <th class="px-4 py-3 text-left font-semibold">Format MAK</th>
+                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Jenis Pengadaan</th>
+                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Kode Akun</th>
+                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Format MAK</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         {#each masterData.procurementTypes as type}
                             <tr>
-                                <td class="px-4 py-3 text-slate-700">{type.name}</td>
+                                <td class="px-4 py-3 text-slate-700 whitespace-nowrap">{type.name}</td>
                                 <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{type.accountCode || '-'}</td>
-                                <td class="px-4 py-3 text-slate-600 min-w-[320px]">{type.accountMak || '-'}</td>
+                                <td class="px-4 py-3 text-slate-600 font-mono text-[13px] whitespace-nowrap">{type.accountMak || '-'}</td>
                             </tr>
                         {/each}
                     </tbody>
