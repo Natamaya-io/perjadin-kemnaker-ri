@@ -181,7 +181,7 @@
         <WelcomeActions>
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <a href="/dashboard/pengajuan/new" class="w-full md:w-auto">
-                <button class="w-full md:w-auto flex items-center justify-center h-12 px-6 rounded-2xl font-bold text-slate-700 bg-slate-100 border-2 border-white"
+                <button class="w-full md:w-auto flex items-center justify-center h-12 px-6 rounded-2xl font-bold text-slate-700 bg-slate-100 border-2 border-white transition-all hover:bg-white hover:-translate-y-0.5 hover:shadow-[4px_4px_10px_rgba(0,0,0,0.05),-4px_-4px_10px_rgba(255,255,255,1)] active:scale-95"
                         style="box-shadow: inset 4px 4px 10px rgba(0,0,0,0.05), inset -4px -4px 10px rgba(255,255,255,0.8);">
                     + Pengajuan Perjalanan
                 </button>
@@ -189,7 +189,7 @@
             {/if}
             {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
                  <a href="/dashboard/admin/perdin" class="w-full md:w-auto">
-                    <button class="w-full md:w-auto flex items-center justify-center h-12 px-6 rounded-2xl font-bold text-white bg-slate-400/20 border-2 border-white/20"
+                    <button class="w-full md:w-auto flex items-center justify-center h-12 px-6 rounded-2xl font-bold text-white bg-slate-400/20 border-2 border-white/20 transition-all hover:bg-slate-300/30 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                             style="backdrop-filter: blur(8px); box-shadow: inset 2px 2px 6px rgba(255,255,255,0.1), inset -2px -2px 6px rgba(0,0,0,0.1);">
                        Kelola Biaya
                     </button>
