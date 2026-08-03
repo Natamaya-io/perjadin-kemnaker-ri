@@ -14,7 +14,7 @@
             <p class="text-sm text-slate-500 mt-1">Monitoring pengajuan LS Bulanan beserta nilai dan sumber dananya.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white bg-indigo-600 border border-indigo-600 shadow-sm hover:bg-indigo-700 transition-colors">
+            <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-indigo-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 w-full sm:w-auto" style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
