@@ -1,5 +1,6 @@
 <script>
     import { formatCurrency } from '$lib/shared/utils/utils';
+    import Button from '$lib/shared/ui/button/Button.svelte';
     
     export let data;
     
@@ -21,12 +22,12 @@
             <p class="text-sm text-slate-500 mt-1">Rekapitulasi transaksi GUP untuk keperluan laporan.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-emerald-400 transition-colors w-full sm:w-auto" style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);">
+            <Button variant="success" class="w-full sm:w-auto gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Export Excel
-            </button>
+            </Button>
         </div>
     </div>
 

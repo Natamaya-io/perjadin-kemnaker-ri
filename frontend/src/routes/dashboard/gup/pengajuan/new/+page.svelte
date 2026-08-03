@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { api } from '$lib/shared/api';
     import { formatCurrency } from '$lib/shared/utils/utils';
+    import Button from '$lib/shared/ui/button/Button.svelte';
 
     export let data: any;
 
@@ -244,11 +245,10 @@
             </div>
 
             <div class="pt-4 flex justify-end border-t border-slate-200">
-                <button 
+                <Button 
                     type="submit" 
                     disabled={isSubmitting}
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-8 py-3 text-sm font-bold text-white border-2 border-indigo-400 transition-colors disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto"
-                    style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);"
+                    class="w-full sm:w-auto px-8 gap-2"
                 >
                     {#if isSubmitting}
                         <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -262,7 +262,7 @@
                         </svg>
                         Simpan Pengajuan
                     {/if}
-                </button>
+                </Button>
             </div>
 
         </form>
