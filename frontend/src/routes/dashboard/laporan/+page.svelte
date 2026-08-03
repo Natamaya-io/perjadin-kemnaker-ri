@@ -260,7 +260,7 @@
                                             {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                         </div>
                                         {#if record.agenda}
-                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium">
+                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium max-w-[220px] line-clamp-2">
                                             <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
                                         </div>
                                         {/if}
