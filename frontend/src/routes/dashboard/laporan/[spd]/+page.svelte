@@ -1340,6 +1340,24 @@
                          </div>
                     </div>
 
+                    <!-- Maksud dan Agenda Section -->
+                    <div class="bg-indigo-50/40 rounded-2xl p-5 border border-indigo-100/60 flex flex-col gap-3 mb-8">
+                        <div>
+                            <span class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Maksud / Tujuan</span>
+                            <div class="font-medium text-slate-800 text-sm leading-relaxed">
+                                {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
+                            </div>
+                        </div>
+                        {#if record.agenda}
+                        <div class="pt-3 border-t border-indigo-100/60">
+                            <span class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Agenda Kegiatan</span>
+                            <div class="font-medium text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                {record.agenda}
+                            </div>
+                        </div>
+                        {/if}
+                    </div>
+
                     <!-- Divider -->
                     <div class="border-t border-slate-100 mb-8"></div>
 
