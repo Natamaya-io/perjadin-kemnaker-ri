@@ -165,14 +165,14 @@
             <table class="w-full text-sm text-left relative border-collapse">
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
-                        <th class="font-semibold text-slate-700 pl-4 py-3 bg-slate-50 w-12 text-center">No</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 min-w-[250px]">Pembayaran</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 text-right">Nilai</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 text-right">Dibayarkan</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 text-right">Pajak</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 text-right">Selisih</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 min-w-[140px]">Kwitansi</th>
-                        <th class="font-semibold text-slate-700 py-3 bg-slate-50 text-center pr-4 w-[160px] no-print">Aksi</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-12 text-center">No</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 min-w-[280px]">Pembayaran</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right min-w-[130px]">Nilai</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right min-w-[130px]">Dibayarkan</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right min-w-[120px]">Pajak</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right min-w-[130px]">Selisih</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 min-w-[160px]">Kwitansi</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-center w-[140px] no-print">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -188,26 +188,26 @@
                     {:else}
                         {#each filteredTransactions as trx, index (trx.id)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                <td class="pl-4 py-4 align-middle text-center font-medium text-slate-500">{index + 1}</td>
-                                <td class="py-4 align-middle">
+                                <td class="px-4 py-4 align-middle text-center font-medium text-slate-500">{index + 1}</td>
+                                <td class="px-4 py-4 align-middle">
                                     <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700 mb-1">{trx.businessId}</span>
                                     <div class="font-medium text-slate-800 text-sm line-clamp-2">{trx.paymentDescription}</div>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200 mt-1.5">
                                         {getProcurementTypeName(trx.procurementTypeId)}
                                     </span>
                                 </td>
-                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
-                                <td class="py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
-                                <td class="py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount || 0)}</td>
-                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
-                                <td class="py-4 align-middle text-xs text-slate-600">
+                                <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
+                                <td class="px-4 py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
+                                <td class="px-4 py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount || 0)}</td>
+                                <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
+                                <td class="px-4 py-4 align-middle text-xs text-slate-600">
                                     <div class="font-medium text-slate-800">{formatDate(trx.receiptDate)}</div>
                                     <div class="text-[10px] text-slate-500 mt-0.5 max-w-[140px] truncate" title={trx.recipient}>Penerima: {trx.recipient || '-'}</div>
                                     {#if trx.pum}
                                         <div class="text-[10px] text-slate-400 max-w-[140px] truncate" title={trx.pum}>PUM: {trx.pum}</div>
                                     {/if}
                                 </td>
-                                <td class="pr-4 py-4 align-middle text-center no-print">
+                                <td class="px-4 py-4 align-middle text-center no-print">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" title="View Detail" on:click={() => handleReview(trx.id)}>
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
