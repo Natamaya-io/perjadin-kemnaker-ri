@@ -390,6 +390,10 @@ export class RealApiClient implements ApiClient {
         return this.request<any[]>('/gup/pengajuan', {}, customFetch);
     }
 
+    async getGupPengajuanById(id: string, customFetch?: typeof fetch): Promise<any> {
+        return this.request<any>(`/gup/pengajuan/${id}`, {}, customFetch);
+    }
+
     async createGupPengajuan(data: any): Promise<any> {
         return this.request<any>('/gup/pengajuan', {
             method: 'POST',
