@@ -166,7 +166,7 @@
 			<Sidebar mobileOpen={mobileSidebarOpen} on:close={closeMobileSidebar} />
 		{/if}
 
-		<div class="flex flex-col flex-1 relative w-full {($userStore.loggedIn && !isBlankPage) ? 'md:w-[calc(100vw-80px)] md:ml-[80px]' : ''}">
+		<div class="flex flex-col flex-1 relative w-full {($userStore.loggedIn && !isBlankPage) ? 'md:w-[calc(100vw-88px)] md:ml-[88px]' : ''}">
 			{#if $userStore.loggedIn && !isBlankPage}
 				<MobileHeader on:toggleSidebar={toggleMobileSidebar} />
 			{/if}
@@ -175,7 +175,7 @@
 			<main class="flex-1 w-full relative">
 				<div
 					class="{$userStore.loggedIn && !isBlankPage
-						? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'
+						? 'max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-10 xl:px-12 py-8 lg:py-10'
 						: ''} min-h-full"
 				>
 						<div class="min-h-full">

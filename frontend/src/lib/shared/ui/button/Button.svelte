@@ -21,10 +21,10 @@
     
     /** @type {Record<string, string>} */
     const sizes = {
-        default: 'h-11 px-6 py-2.5 rounded-2xl',
-        sm: 'h-9 rounded-xl px-4',
-        lg: 'h-12 rounded-[1.25rem] px-10 text-base',
-        icon: 'h-11 w-11 rounded-2xl'
+        default: 'h-11 md:h-12 px-6 md:px-7 py-2.5 rounded-2xl',
+        sm: 'h-9 md:h-10 rounded-xl px-4 md:px-5',
+        lg: 'h-12 md:h-14 rounded-[1.25rem] px-10 md:px-12 text-base md:text-lg',
+        icon: 'h-11 md:h-12 w-11 md:w-12 rounded-2xl'
     };
     
     $: classes = cn(

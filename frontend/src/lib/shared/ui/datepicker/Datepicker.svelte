@@ -115,7 +115,7 @@
     $: selectedDate = value ? new Date(value) : null;
     
     $: triggerClass = cn(
-        'flex w-full items-center justify-start rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors',
+        'flex w-full items-center justify-start rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 md:py-3 text-sm md:text-[0.9375rem] text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors',
         disabled && 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100',
         className
     );
