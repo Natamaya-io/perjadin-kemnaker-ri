@@ -32,15 +32,6 @@
         }
     }
 
-    const validMaks = {
-        'S.521119': '2158.01.WA.2158.EBA.994.002.S.521119',
-        'S.523121': '2158.01.WA.2158.EBA.994.002.S.523121',
-        'S.522141': '2158.01.WA.2158.EBA.994.002.S.522141',
-        'S.524111': '2158.01.WA.2158.EBA.994.002.S.524111',
-        'S.524113': '2158.01.WA.2158.EBA.994.002.S.524113',
-        'S.524211': '2158.01.WA.2158.EBA.994.002.S.524211'
-    };
-
     function getMakFormat(code) {
         if (!code) return '-';
         
@@ -50,11 +41,8 @@
             return accountCode.mak;
         }
 
-        // 2. Jika di database ternyata kosong/salah, fallback ke hardcoded reference
-        if (validMaks[code]) return validMaks[code];
-        
-        // 3. Fallback terakhir
-        return accountCode && accountCode.mak ? accountCode.mak : '-';
+        // 2. Jika di database ternyata kosong/salah, hasilkan format baku secara dinamis
+        return `2158.01.WA.2158.EBA.994.002.${code}`;
     }
 
     function openAddModal() {
