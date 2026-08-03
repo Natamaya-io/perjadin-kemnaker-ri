@@ -271,9 +271,11 @@
                                             {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                         </div>
                                         {#if record.agenda}
-                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium {expandedAgendas.has(record.spd) ? '' : 'line-clamp-2'}">
+                                        {#if expandedAgendas.has(record.spd)}
+                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium">
                                             <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
                                         </div>
+                                        {/if}
                                         <button
                                             type="button"
                                             on:click|stopPropagation={() => toggleAgenda(record.spd)}
@@ -281,7 +283,7 @@
                                         >
                                             {#if expandedAgendas.has(record.spd)}
                                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
-                                                Sembunyikan
+                                                Sembunyikan agenda
                                             {:else}
                                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                                                 Lihat agenda
