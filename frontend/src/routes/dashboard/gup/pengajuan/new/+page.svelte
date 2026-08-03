@@ -64,15 +64,16 @@
 
 <div class="max-w-4xl mx-auto space-y-6 pb-20 p-4 sm:p-6 lg:p-8">
     <div class="flex items-center gap-4 mb-6">
-        <button 
-            class="p-2 rounded-xl text-slate-500 bg-white hover:bg-slate-50 transition-colors shadow-sm border border-slate-200"
+        <Button 
+            variant="outline"
+            size="icon"
             on:click={() => goto('/dashboard/gup/pengajuan')}
             aria-label="Kembali"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-        </button>
+        </Button>
         <div>
             <h1 class="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
             <p class="text-sm text-slate-500 mt-1">Isi formulir di bawah ini untuk mencatat transaksi GUP.</p>
