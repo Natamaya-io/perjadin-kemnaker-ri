@@ -297,13 +297,17 @@ func seedGupMasterData(db *sql.DB) {
 		Mak         string
 		Description string
 	}{
-		{"521111", "2158.01.WA.2158.EBA.994.002.521111", "Belanja Keperluan Perkantoran"},
-		{"521119", "2158.01.WA.2158.EBA.994.002.521119", "Belanja Barang Operasional Lainnya"},
-		{"524111", "2158.01.WA.2158.EBA.994.002.524111", "Belanja Perjalanan Dinas Biasa"},
+		{"S.521119", "2158.01.WA.2158.EBA.994.002.S.521119", "Belanja Barang Operasional Lainnya"},
+		{"S.523121", "2158.01.WA.2158.EBA.994.002.S.523121", "Belanja Pemeliharaan Peralatan dan Mesin"},
+		{"S.522141", "2158.01.WA.2158.EBA.994.002.S.522141", "Belanja Sewa"},
+		{"S.524111", "2158.01.WA.2158.EBA.994.002.S.524111", "Belanja Perjalanan Dinas Dalam Negeri"},
+		{"S.524113", "2158.01.WA.2158.EBA.994.002.S.524113", "Belanja Perjalanan Dinas Dalam Kota"},
+		{"S.524211", "2158.01.WA.2158.EBA.994.002.S.524211", "Belanja Perjalanan Dinas Luar Negeri"},
 	}
 
 	for _, ac := range accountCodes {
-		_, err := db.Exec("INSERT INTO account_codes (code, mak, description) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING", ac.Code, ac.Mak, ac.Description)
+		// Update if exists (since we changed 521119 to S.521119, we should insert the new ones, the conflict is on code)
+		_, err := db.Exec("INSERT INTO account_codes (code, mak, description) VALUES ($1, $2, $3) ON CONFLICT (code) DO UPDATE SET mak = EXCLUDED.mak, description = EXCLUDED.description", ac.Code, ac.Mak, ac.Description)
 		if err != nil {
 			log.Printf("Failed to insert account code %s: %v", ac.Code, err)
 		}
@@ -314,12 +318,18 @@ func seedGupMasterData(db *sql.DB) {
 		AccountCode string
 		Name        string
 	}{
-		{"521119", "VIP Halim Perdanakusuma"},
-		{"521119", "VIP Soekarno Hatta"},
-		{"521119", "Pass Bandara"},
-		{"521111", "Sewa Kendaraan"},
-		{"521111", "Pembelian ATK"},
-		{"524111", "Tiket Pesawat"},
+		{"S.521119", "VIP Halim"},
+		{"S.521119", "Pass Bandara"},
+		{"S.521119", "Langganan AI"},
+		{"S.523121", "Pemeliharaan PC"},
+		{"S.523121", "Pemeliharaan Printer"},
+		{"S.523121", "Pemeliharaan Notebook"},
+		{"S.523121", "Pemeliharaan Mobil Operasional Protokol"},
+		{"S.522141", "Sewa Mobil Menaker"},
+		{"S.522141", "Sewa Kendaraan Protokol"},
+		{"S.524111", "Perjalanan Dinas Dalam Negeri"},
+		{"S.524113", "Perjalanan Dinas Dalam Kota"},
+		{"S.524211", "Luar Negeri"},
 	}
 
 	for _, pt := range procurementTypes {
