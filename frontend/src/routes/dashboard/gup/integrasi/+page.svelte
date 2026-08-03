@@ -43,9 +43,17 @@
 
     function getMakFormat(code) {
         if (!code) return '-';
+        
+        // 1. Prioritaskan data aktual dari database (hasil CRUD) jika formatnya panjang & valid
+        const accountCode = data.masterData?.accountCodes?.find(ac => ac.code === code);
+        if (accountCode && accountCode.mak && accountCode.mak.length > 10) {
+            return accountCode.mak;
+        }
+
+        // 2. Jika di database ternyata kosong/salah, fallback ke hardcoded reference
         if (validMaks[code]) return validMaks[code];
         
-        const accountCode = data.masterData?.accountCodes?.find(ac => ac.code === code);
+        // 3. Fallback terakhir
         return accountCode && accountCode.mak ? accountCode.mak : '-';
     }
 
