@@ -1803,7 +1803,7 @@
                                                                     {#if cost.name === 'Extend Tiket'}
                                                                         <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200">
                                                                             {#if $userStore.role !== 'kasubag'}
-                                                                                <button type="button" class="absolute top-2 right-0 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
+                                                                                <button type="button" title="Hapus Biaya Tambahan" aria-label="Hapus Biaya Tambahan" class="absolute top-2 right-0 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
                                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                                                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                                                     </svg>
@@ -1987,7 +1987,7 @@
                                                                 <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200 w-full">
                                                                     <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
                                                                         {#if $userStore.role !== 'kasubag'}
-                                                                            <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
+                                                                            <button type="button" title="Hapus Biaya Tambahan" aria-label="Hapus Biaya Tambahan" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
                                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                                                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                                                 </svg>
@@ -2131,7 +2131,7 @@
                                                                 {#if cost.name !== 'Extend Tiket' && cost.name !== 'Extend Penginapan'}
                                                                     <div class="bg-white p-3 border border-slate-200 rounded-lg relative group">
                                                                         {#if $userStore.role !== 'kasubag'}
-                                                                        <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
+                                                                        <button type="button" title="Hapus Biaya Tambahan" aria-label="Hapus Biaya Tambahan" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm" on:click={() => removeAdditionalCost(empId, costIdx, idx)}>
                                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                                                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                                             </svg>
@@ -2322,7 +2322,7 @@
                         <p class="text-[10px] md:text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs md:max-w-md" title={getDisplayName(previewFile.name)}>{getDisplayName(previewFile.name)}</p>
                     {/if}
                 </div>
-                <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>
+                <button type="button" title="Tutup Preview" aria-label="Tutup Preview" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={() => isPreviewOpen = false}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
