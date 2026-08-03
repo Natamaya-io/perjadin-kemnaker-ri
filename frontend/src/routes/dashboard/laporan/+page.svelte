@@ -28,6 +28,17 @@
     let sortOption = 'spj-desc'; // Default to newest SPJ first
     let startDate = '';
     let endDate = '';
+
+    // Expanded agenda state
+    let expandedAgendas = new Set();
+    function toggleAgenda(spd) {
+        if (expandedAgendas.has(spd)) {
+            expandedAgendas.delete(spd);
+        } else {
+            expandedAgendas.add(spd);
+        }
+        expandedAgendas = expandedAgendas; // trigger reactivity
+    }
     let limit = 50;
     
     let statusOptions = [
@@ -260,9 +271,22 @@
                                             {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                         </div>
                                         {#if record.agenda}
-                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium line-clamp-2">
+                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium {expandedAgendas.has(record.spd) ? '' : 'line-clamp-2'}">
                                             <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
                                         </div>
+                                        <button
+                                            type="button"
+                                            on:click|stopPropagation={() => toggleAgenda(record.spd)}
+                                            class="mt-1 text-[10px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors flex items-center gap-0.5"
+                                        >
+                                            {#if expandedAgendas.has(record.spd)}
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                                                Sembunyikan
+                                            {:else}
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                                Lihat agenda
+                                            {/if}
+                                        </button>
                                         {/if}
                                         <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
