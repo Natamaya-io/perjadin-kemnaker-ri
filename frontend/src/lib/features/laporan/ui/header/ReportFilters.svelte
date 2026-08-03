@@ -19,17 +19,19 @@
     
     <div class="flex gap-2 w-full sm:w-auto">
         <div class="w-1/2 sm:w-32">
-            <Select bind:value={statusFilter} class="h-10 text-xs w-full bg-white border-slate-200">
-                <option value="all">Semua Status</option>
-                <option value="Completed">Selesai</option>
-                <option value="Pending">Pending</option>
-            </Select>
+            <Select bind:value={statusFilter} class="h-10 text-xs w-full bg-white border-slate-200" options={[
+				{value: 'all', label: 'Semua Status'},
+				{value: 'Completed', label: 'Selesai'},
+				{value: 'Pending', label: 'Pending'}
+			]} />
         </div>
         <div class="w-1/2 sm:w-36">
-            <Select bind:value={sortOption} class="h-10 text-xs w-full bg-white border-slate-200">
-                <option value="date-desc">Terbaru</option>
-                <option value="date-asc">Terlama</option>
-            </Select>
+            <Select bind:value={sortOption} class="h-10 text-xs w-full bg-white border-slate-200" options={[
+				{value: 'date-desc', label: 'Terbaru Pertama'},
+				{value: 'date-asc', label: 'Terlama Pertama'},
+				{value: 'spj-asc', label: 'ID SPJ (A-Z)'},
+				{value: 'spj-desc', label: 'ID SPJ (Z-A)'}
+			]} />
         </div>
     </div>
 </div>

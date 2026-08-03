@@ -46,22 +46,18 @@
 		<!-- Status & Sort -->
 		<div class="flex gap-2 w-full sm:w-auto">
 			<div class="flex-1 sm:flex-none sm:w-32">
-				<Select bind:value={statusFilter} class="h-9 text-xs w-full bg-white border-slate-200">
-					{#each statusOptions as option}
-						<option value={option.value}>{option.label}</option>
-					{/each}
-				</Select>
+				<Select bind:value={statusFilter} class="h-9 text-xs w-full bg-white border-slate-200" options={statusOptions} />
 			</div>
 
 			<div class="flex-1 sm:flex-none sm:w-40">
-				<Select bind:value={sortOption} class="h-9 text-xs w-full bg-white border-slate-200">
-					<option value="spj-desc">ID SPJ Terbaru</option>
-					<option value="spj-asc">ID SPJ Terlama</option>
-					<option value="date-desc">Tanggal Terbaru</option>
-					<option value="date-asc">Tanggal Terlama</option>
-					<option value="cost-desc">Biaya Tertinggi</option>
-					<option value="cost-asc">Biaya Terendah</option>
-				</Select>
+				<Select bind:value={sortOption} class="h-9 text-xs w-full bg-white border-slate-200" options={[
+					{value: 'spj-desc', label: 'ID SPJ Terbaru'},
+					{value: 'spj-asc', label: 'ID SPJ Terlama'},
+					{value: 'date-desc', label: 'Tanggal Terbaru'},
+					{value: 'date-asc', label: 'Tanggal Terlama'},
+					{value: 'cost-desc', label: 'Biaya Tertinggi'},
+					{value: 'cost-asc', label: 'Biaya Terendah'},
+				]} />
 			</div>
 		</div>
 

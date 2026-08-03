@@ -65,22 +65,18 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label class="text-slate-600 text-sm">Provinsi *</Label>
-                            <Select bind:value={loc.province} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} on:change={() => loc.location = ''}>
-                                <option value="" disabled selected>Pilih Provinsi</option>
-                                {#each provinces as prov}
-                                    <option value={toTitleCase(prov.name)}>{toTitleCase(prov.name)}</option>
-                                {/each}
-                            </Select>
+                            <Select bind:value={loc.province} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} on:change={() => loc.location = ''} options={[
+                                {value: '', label: 'Pilih Provinsi'},
+                                ...provinces.map(prov => ({value: toTitleCase(prov.name), label: toTitleCase(prov.name)}))
+                            ]} />
                         </div>
                         <div class="space-y-2">
                             <Label class="text-slate-600 text-sm">Lokasi Dinas (Kab/Kota)</Label>
                             {#if loc.province && getRegencies(loc.province).length > 0}
-                                <Select bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly}>
-                                    <option value="" disabled selected>Pilih Kab/Kota</option>
-                                    {#each getRegencies(loc.province) as regency}
-                                        <option value={toTitleCase(regency)}>{toTitleCase(regency)}</option>
-                                    {/each}
-                                </Select>
+                                <Select bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly} options={[
+                                    {value: '', label: 'Pilih Kab/Kota'},
+                                    ...getRegencies(loc.province).map(r => ({value: toTitleCase(r), label: toTitleCase(r)}))
+                                ]} />
                             {:else}
                                 <Input placeholder="Pilih provinsi terlebih dahulu" bind:value={loc.location} class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}" disabled={readonly || !loc.province} />
                             {/if}

@@ -396,11 +396,11 @@
             <div class="space-y-2">
                 <Label>Role (Hak Akses) <span class="text-red-500">*</span></Label>
                 <div class="relative w-full">
-                    <Select bind:value={formData.role} class="bg-white border-slate-200">
-                        <option value="protokol">Protokol (Staf Pengaju)</option>
-                        <option value="super_admin">Super Admin</option>
-                        <option value="kasubag">Kasubag (Approval)</option>
-                    </Select>
+                    <Select bind:value={formData.role} class="bg-white border-slate-200" options={[
+                        {value: 'protokol', label: 'Protokol (Staf Pengaju)'},
+                        {value: 'super_admin', label: 'Super Admin'},
+                        {value: 'kasubag', label: 'Kasubag (Approval)'}
+                    ]} />
                 </div>
             </div>
         </div>

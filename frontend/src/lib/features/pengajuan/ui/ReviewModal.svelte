@@ -403,22 +403,18 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Provinsi *</Label>
-                                            <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''}>
-                                                <option value="" disabled>Pilih Provinsi</option>
-                                                {#each provinces as prov}
-                                                    <option value={toTitleCase(prov.name)}>{toTitleCase(prov.name)}</option>
-                                                {/each}
-                                            </Select>
+                                            <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''} options={[
+                                                {value: '', label: 'Pilih Provinsi'},
+                                                ...provinces.map(prov => ({value: toTitleCase(prov.name), label: toTitleCase(prov.name)}))
+                                            ]} />
                                         </div>
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Lokasi Dinas (Kab/Kota)</Label>
                                             {#if isEditing && loc.province && getRegencies(loc.province).length > 0}
-                                                <Select bind:value={loc.location} class="h-10 text-sm bg-white border-blue-200 focus:border-blue-500" disabled={!isEditing}>
-                                                    <option value="" disabled selected>Pilih Kab/Kota</option>
-                                                    {#each getRegencies(loc.province) as regency}
-                                                        <option value={toTitleCase(regency)}>{toTitleCase(regency)}</option>
-                                                    {/each}
-                                                </Select>
+                                                <Select bind:value={loc.location} class="h-10 text-sm bg-white border-blue-200 focus:border-blue-500" disabled={!isEditing} options={[
+                                                    {value: '', label: 'Pilih Kab/Kota'},
+                                                    ...getRegencies(loc.province).map(r => ({value: toTitleCase(r), label: toTitleCase(r)}))
+                                                ]} />
                                             {:else}
                                                 <Input value={toTitleCase(loc.location)} on:input={(e) => loc.location = e.target.value} disabled={!isEditing || !loc.province} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder={!loc.province ? 'Pilih provinsi terlebih dahulu' : 'Contoh: Surabaya'} />
                                             {/if}
@@ -592,12 +588,10 @@
                             
                             <div class="space-y-1.5">
                                 <Label class="text-slate-600 text-xs">Stakeholder / Pejabat (Pendampingan)</Label>
-                                <Select bind:value={formData.stakeholder} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-amber-200 focus:border-amber-500'}>
-                                    <option value="">Tidak ada/Lainnya</option>
-                                    {#each stakeholders as st}
-                                        <option value={st}>{st}</option>
-                                    {/each}
-                                </Select>
+                                <Select bind:value={formData.stakeholder} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-amber-200 focus:border-amber-500'} options={[
+                                    {value: '', label: 'Tidak ada/Lainnya'},
+                                    ...stakeholders.map(st => ({value: st, label: st}))
+                                ]} />
                             </div>
                             
                             <div class="space-y-1.5">

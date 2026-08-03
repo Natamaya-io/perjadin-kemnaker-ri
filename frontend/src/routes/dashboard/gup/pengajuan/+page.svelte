@@ -3,6 +3,7 @@
     import { goto } from '$app/navigation';
     import { api } from '$lib/shared/api';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import Select from '$lib/shared/ui/select/Select.svelte';
     
     export let data: any;
     
@@ -110,30 +111,28 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <div>
                 <label for="filterJenisPengadaan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Jenis Pengadaan</label>
-                <select id="filterJenisPengadaan" bind:value={filterJenis} class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                    <option value="">Semua Jenis</option>
-                    {#each masterData.procurementTypes as type}
-                        <option value={type.id}>{type.name}</option>
-                    {/each}
-                </select>
+                <Select id="filterJenisPengadaan" bind:value={filterJenis} class="h-[42px] border-slate-200" options={[
+                    {value: '', label: 'Semua Jenis'},
+                    ...masterData.procurementTypes.map(t => ({value: t.id, label: t.name}))
+                ]} />
             </div>
             <div>
                 <label for="filterBulan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Bulan Transaksi</label>
-                <select id="filterBulan" bind:value={filterBulan} class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                    <option value="">Semua Bulan</option>
-                    <option value="01">Januari</option>
-                    <option value="02">Februari</option>
-                    <option value="03">Maret</option>
-                    <option value="04">April</option>
-                    <option value="05">Mei</option>
-                    <option value="06">Juni</option>
-                    <option value="07">Juli</option>
-                    <option value="08">Agustus</option>
-                    <option value="09">September</option>
-                    <option value="10">Oktober</option>
-                    <option value="11">November</option>
-                    <option value="12">Desember</option>
-                </select>
+                <Select id="filterBulan" bind:value={filterBulan} class="h-[42px] border-slate-200" options={[
+                    {value: '', label: 'Semua Bulan'},
+                    {value: '01', label: 'Januari'},
+                    {value: '02', label: 'Februari'},
+                    {value: '03', label: 'Maret'},
+                    {value: '04', label: 'April'},
+                    {value: '05', label: 'Mei'},
+                    {value: '06', label: 'Juni'},
+                    {value: '07', label: 'Juli'},
+                    {value: '08', label: 'Agustus'},
+                    {value: '09', label: 'September'},
+                    {value: '10', label: 'Oktober'},
+                    {value: '11', label: 'November'},
+                    {value: '12', label: 'Desember'}
+                ]} />
             </div>
             <div>
                 <label for="searchQuery" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Pencarian</label>

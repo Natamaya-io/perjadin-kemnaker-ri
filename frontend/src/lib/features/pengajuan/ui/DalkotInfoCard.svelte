@@ -61,11 +61,12 @@
                     bind:value={category}
                     disabled={readonly}
                     class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
-                >
-                    <option value="Jam Kerja">Jam Kerja</option>
-                    <option value="Overtime">Overtime (Luar Jam Kerja)</option>
-                    <option value="Hari Libur">Hari Libur</option>
-                </Select>
+                    options={[
+                        {value: 'Jam Kerja', label: 'Jam Kerja'},
+                        {value: 'Overtime', label: 'Overtime (Luar Jam Kerja)'},
+                        {value: 'Hari Libur', label: 'Hari Libur'}
+                    ]}
+                />
             </div>
         </div>
 
@@ -75,18 +76,19 @@
                 bind:value={official}
                 disabled={readonly}
                 class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
-            >
-                <option value="" disabled selected>Pilih Pejabat</option>
-                <option value="Menteri">Menteri</option>
-                <option value="Wakil Menteri">Wakil Menteri</option>
-                <option value="Sekretaris Jenderal">Sekretaris Jenderal</option>
-                <option value="Inspektur Jenderal">Inspektur Jenderal</option>
-                <option value="Direktur Jenderal">Direktur Jenderal</option>
-                <option value="Kepala Badan">Kepala Badan</option>
-                <option value="Staf Khusus">Staf Khusus</option>
-                <option value="Staf Ahli">Staf Ahli</option>
-                <option value="Pejabat Eselon II">Pejabat Eselon II</option>
-            </Select>
+                options={[
+                    {value: '', label: 'Pilih Pejabat'},
+                    {value: 'Menteri', label: 'Menteri'},
+                    {value: 'Wakil Menteri', label: 'Wakil Menteri'},
+                    {value: 'Sekretaris Jenderal', label: 'Sekretaris Jenderal'},
+                    {value: 'Inspektur Jenderal', label: 'Inspektur Jenderal'},
+                    {value: 'Direktur Jenderal', label: 'Direktur Jenderal'},
+                    {value: 'Kepala Badan', label: 'Kepala Badan'},
+                    {value: 'Staf Khusus', label: 'Staf Khusus'},
+                    {value: 'Staf Ahli', label: 'Staf Ahli'},
+                    {value: 'Pejabat Eselon II', label: 'Pejabat Eselon II'}
+                ]}
+            />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -189,14 +191,15 @@
                 bind:value={location}
                 disabled={readonly}
                 class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
-            >
-                <option value="" disabled selected>Pilih Lokasi</option>
-                <option value="Jakarta Pusat">Jakarta Pusat</option>
-                <option value="Jakarta Selatan">Jakarta Selatan</option>
-                <option value="Jakarta Barat">Jakarta Barat</option>
-                <option value="Jakarta Utara">Jakarta Utara</option>
-                <option value="Jakarta Timur">Jakarta Timur</option>
-            </Select>
+                options={[
+                    {value: '', label: 'Pilih Lokasi'},
+                    {value: 'Jakarta Pusat', label: 'Jakarta Pusat'},
+                    {value: 'Jakarta Selatan', label: 'Jakarta Selatan'},
+                    {value: 'Jakarta Barat', label: 'Jakarta Barat'},
+                    {value: 'Jakarta Utara', label: 'Jakarta Utara'},
+                    {value: 'Jakarta Timur', label: 'Jakarta Timur'}
+                ]}
+            />
         </div>
 
         <div class="space-y-2">

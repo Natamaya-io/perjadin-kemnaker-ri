@@ -3,6 +3,7 @@
     import { api } from '$lib/shared/api';
     import { formatCurrency } from '$lib/shared/utils/utils';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import Select from '$lib/shared/ui/select/Select.svelte';
 
     export let data: any;
 
@@ -137,32 +138,30 @@
                 <!-- Jenis Pengadaan -->
                 <div class="space-y-2">
                     <label for="procurementTypeId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Jenis Pengadaan <span class="text-rose-500">*</span></label>
-                    <select 
+                    <Select 
                         id="procurementTypeId" 
                         bind:value={form.procurementTypeId}
                         required
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <option value="" disabled selected>Pilih Jenis Pengadaan</option>
-                        {#each procurementTypes as type}
-                            <option value={type.id}>{type.name} (MAK: {type.accountMak})</option>
-                        {/each}
-                    </select>
+                        class="h-[46px] border-slate-300"
+                        options={[
+                            {value: '', label: 'Pilih Jenis Pengadaan'},
+                            ...procurementTypes.map(t => ({value: t.id, label: `${t.name} (MAK: ${t.accountMak})`}))
+                        ]}
+                    />
                 </div>
 
                 <!-- Sumber Dana -->
                 <div class="space-y-2">
                     <label for="fundingSourceId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Sumber Dana</label>
-                    <select 
+                    <Select 
                         id="fundingSourceId" 
                         bind:value={form.fundingSourceId}
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <option value="">Tidak ada sumber dana (Opsional)</option>
-                        {#each fundingSources as src}
-                            <option value={src.id}>{src.gupLabel} - {src.monthName}</option>
-                        {/each}
-                    </select>
+                        class="h-[46px] border-slate-300"
+                        options={[
+                            {value: '', label: 'Tidak ada sumber dana (Opsional)'},
+                            ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName}`}))
+                        ]}
+                    />
                 </div>
             </div>
 
