@@ -20,6 +20,17 @@
         mak: ''
     };
 
+    let prevAccountCode = '';
+    $: if (formData.accountCode !== prevAccountCode) {
+        prevAccountCode = formData.accountCode;
+        if (showModal) {
+            const existingAc = data.masterData?.accountCodes?.find(ac => ac.code === formData.accountCode);
+            if (existingAc) {
+                formData.mak = existingAc.mak;
+            }
+        }
+    }
+
     function getMakFormat(code) {
         const accountCode = data.masterData?.accountCodes?.find(ac => ac.code === code);
         return accountCode ? accountCode.mak : '-';
