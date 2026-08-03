@@ -279,7 +279,7 @@
 
 <!-- Modal Detail GUP -->
 {#if isReviewOpen}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity" on:click|self={() => isReviewOpen = false} role="dialog" aria-modal="true">
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity" on:click|self={() => isReviewOpen = false} on:keydown|self={(e) => e.key === 'Escape' && (isReviewOpen = false)} role="dialog" aria-modal="true" tabindex="-1">
     <div class="bg-slate-50 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
         
         <!-- Header Modal -->

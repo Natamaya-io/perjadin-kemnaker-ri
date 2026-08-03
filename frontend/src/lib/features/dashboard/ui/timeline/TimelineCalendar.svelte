@@ -92,13 +92,13 @@
         </div>
 
         <div class="flex items-center justify-between w-full sm:w-auto gap-2">
-            <button class="p-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors shadow-sm" on:click={prevMonth}>
+            <button class="p-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors shadow-sm" on:click={prevMonth} aria-label="Bulan Sebelumnya">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <span class="text-sm font-bold text-slate-800 flex-1 text-center sm:w-32 hover:text-blue-600 transition-colors" on:click={resetToToday} style="cursor: pointer;" title="Kembali ke hari ini">
+            <span class="text-sm font-bold text-slate-800 flex-1 text-center sm:w-32 hover:text-blue-600 transition-colors" on:click={resetToToday} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && resetToToday()} role="button" tabindex="0" style="cursor: pointer;" title="Kembali ke hari ini">
                 {monthNames[currentMonth]} {currentYear}
             </span>
-            <button class="p-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors shadow-sm" on:click={nextMonth}>
+            <button class="p-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors shadow-sm" on:click={nextMonth} aria-label="Bulan Berikutnya">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </button>
         </div>

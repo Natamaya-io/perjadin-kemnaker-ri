@@ -44,8 +44,8 @@
     let displayTitle = $derived(title || filename);
 
     // Non-reactive variables for DOM elements and PDF objects
-    let container = null;
-    let canvas = null;
+    let container = $state(null);
+    let canvas = $state(null);
     
     // Non-reactive references object
     const refs = {

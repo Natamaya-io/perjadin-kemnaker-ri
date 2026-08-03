@@ -4,7 +4,7 @@
     export let breakdown = [];
     export let employeeCount = 0;
     export let totalCost = 0;
-    export let readonly = false;
+
 
     function formatToElegantStyle(amount) {
         return formatCurrency(amount);

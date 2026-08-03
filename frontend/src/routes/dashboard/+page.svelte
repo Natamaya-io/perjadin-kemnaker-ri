@@ -22,7 +22,7 @@
     import TimelineCalendar from '$lib/features/dashboard/ui/timeline/TimelineCalendar.svelte';
     import PieChart from '$lib/shared/ui/charts/PieChart.svelte';
     
-    export let data;
+
 
     // Only show loading spinner if we don't have cached data yet
     let isFetchingStats = !$dashboardSummaryStore;

@@ -776,7 +776,7 @@
                         <div class="col-span-1 md:col-span-2 mt-4 relative pt-4 border-t border-slate-200 w-full">
                             <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
                                 {#if !isReadOnly}
-                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)}>
+                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)} aria-label="Hapus Biaya">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                                     </button>
                                 {/if}
@@ -977,7 +977,7 @@
                         <div class="col-span-1 md:col-span-3 mt-4 relative pt-4 border-t border-slate-200 w-full">
                             <div class="flex justify-between items-center mb-3 min-h-[32px] pr-8 relative">
                                 {#if !isReadOnly}
-                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)}>
+                                    <button type="button" class="absolute -top-1 -right-1 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-sm z-10" on:click={() => removeAdditionalCost(costIdx)} aria-label="Hapus Biaya">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                         </svg>
@@ -1122,7 +1122,7 @@
                             {#if cost.name !== 'Extend Tiket' && cost.name !== 'Extend Penginapan'}
                             <div class="bg-white p-3 border border-slate-200 rounded-lg relative group shadow-sm">
                                 {#if !isReadOnly}
-                                    <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-md z-10" on:click={() => removeAdditionalCost(index)}>
+                                    <button type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 hover:bg-red-200 transition-colors shadow-md z-10" on:click={() => removeAdditionalCost(index)} aria-label="Hapus Biaya">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                         </svg>
@@ -1227,7 +1227,7 @@
                         <h3 class="text-sm font-bold text-slate-800 tracking-tight truncate">Preview Dokumen</h3>
                         <p class="text-[10px] text-slate-500 truncate">{previewFile.name}</p>
                     </div>
-                    <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={closePreview}>
+                    <button type="button" class="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0" on:click={closePreview} aria-label="Tutup Preview">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>

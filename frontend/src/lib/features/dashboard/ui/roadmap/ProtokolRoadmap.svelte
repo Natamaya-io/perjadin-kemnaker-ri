@@ -91,7 +91,7 @@
                     {/if}
                     
                     <!-- Card Header (Always Visible) -->
-                    <div class="p-5 md:p-6 cursor-pointer select-none" on:click={() => toggleCard(record.id)}>
+                    <div class="p-5 md:p-6 cursor-pointer select-none" on:click={() => toggleCard(record.id)} role="button" tabindex="0" on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleCard(record.id)}>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex-1 pr-8 md:pr-0">
                                 <div class="flex flex-wrap items-center gap-2 mb-1.5">
