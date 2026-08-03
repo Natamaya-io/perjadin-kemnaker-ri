@@ -188,10 +188,10 @@
                                 </td>
                                 <td class="py-4 pr-4 align-middle whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <button on:click={() => openEditModal(type)} class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                        <button aria-label="Edit integrasi" on:click={() => openEditModal(type)} class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                         </button>
-                                        <button on:click={() => handleDelete(type.id)} class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                        <button aria-label="Hapus integrasi" on:click={() => handleDelete(type.id)} class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
                                     </div>
@@ -214,14 +214,16 @@
 <!-- Modal Form -->
 {#if showModal}
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" on:click={() => showModal = false}></div>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div role="button" tabindex="-1" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" on:click={() => showModal = false}></div>
         
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-200">
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h3 class="text-lg font-bold text-slate-800">
                     {formMode === 'add' ? 'Tambah Integrasi Baru' : 'Edit Integrasi'}
                 </h3>
-                <button on:click={() => showModal = false} class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button aria-label="Tutup modal" on:click={() => showModal = false} class="text-slate-400 hover:text-slate-600 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -236,19 +238,19 @@
                 {/if}
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Jenis Pengadaan</label>
-                    <input type="text" bind:value={formData.name} placeholder="Contoh: VIP Halim" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
+                    <label for="integrasi-name" class="block text-sm font-medium text-slate-700 mb-1">Jenis Pengadaan</label>
+                    <input id="integrasi-name" type="text" bind:value={formData.name} placeholder="Contoh: VIP Halim" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Kode Akun</label>
-                    <input type="text" bind:value={formData.accountCode} placeholder="Contoh: S.521119" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
+                    <label for="integrasi-account-code" class="block text-sm font-medium text-slate-700 mb-1">Kode Akun</label>
+                    <input id="integrasi-account-code" type="text" bind:value={formData.accountCode} placeholder="Contoh: S.521119" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
                     <p class="text-[11px] text-slate-500 mt-1">Jika kode belum ada, sistem otomatis membuat referensi baru.</p>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Format MAK Lengkap</label>
-                    <input type="text" bind:value={formData.mak} placeholder="Contoh: 2158.01.WA.2158.EBA.994.002.S.521119" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
+                    <label for="integrasi-mak" class="block text-sm font-medium text-slate-700 mb-1">Format MAK Lengkap</label>
+                    <input id="integrasi-mak" type="text" bind:value={formData.mak} placeholder="Contoh: 2158.01.WA.2158.EBA.994.002.S.521119" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.45)]" />
                 </div>
             </div>
             

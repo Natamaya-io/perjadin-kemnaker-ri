@@ -134,11 +134,11 @@
     {#if isOpen}
         <div class="absolute z-50 mt-2 p-3 w-72 origin-top-left rounded-xl border border-slate-100 bg-white shadow-lg animate-in fade-in zoom-in-95 duration-100">
             <div class="flex items-center justify-between mb-4">
-                <button type="button" on:click|preventDefault={prevMonth} class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                <button type="button" aria-label="Bulan sebelumnya" on:click|preventDefault={prevMonth} class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 <span class="text-sm font-semibold text-slate-700">{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
-                <button type="button" on:click|preventDefault={nextMonth} class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                <button type="button" aria-label="Bulan berikutnya" on:click|preventDefault={nextMonth} class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                 </button>
             </div>

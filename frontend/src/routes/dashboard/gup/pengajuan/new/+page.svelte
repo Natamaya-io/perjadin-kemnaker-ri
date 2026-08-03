@@ -1,3 +1,4 @@
+<script lang="ts">
     import { goto } from '$app/navigation';
     import { api } from '$lib/shared/api';
     import { formatCurrency } from '$lib/shared/utils/utils';
