@@ -246,7 +246,7 @@
                 <button 
                     type="submit" 
                     disabled={isSubmitting}
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-8 py-3 text-sm font-bold text-white border-2 border-indigo-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-8 py-3 text-sm font-bold text-white border-2 border-indigo-400 transition-colors disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto"
                     style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);"
                 >
                     {#if isSubmitting}

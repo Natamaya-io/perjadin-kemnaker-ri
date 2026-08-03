@@ -84,7 +84,7 @@
         </div>
         <div class="flex items-center gap-3 no-print">
             <button 
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-6 py-3 text-sm font-bold text-white border-2 border-amber-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-6 py-3 text-sm font-bold text-white border-2 border-amber-400 transition-colors"
                 style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,7 +93,7 @@
                 Cetak Rekapitulasi
             </button>
             <button 
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-6 py-3 text-sm font-bold text-white border-2 border-indigo-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-6 py-3 text-sm font-bold text-white border-2 border-indigo-400 transition-colors"
                 style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);"
                 on:click={() => goto('/dashboard/gup/pengajuan/new')}
             >
@@ -395,10 +395,10 @@
         <!-- Footer Modal -->
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 rounded-b-2xl">
             <button 
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-amber-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/30 active:scale-95 w-full sm:w-auto"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-amber-400 transition-colors w-full sm:w-auto"
                 style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);"
                 on:click={() => isReviewOpen = false}>Tutup</button>
-            <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-indigo-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);" disabled={!selectedGup}>
+            <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 px-6 py-2.5 text-sm font-bold text-white border-2 border-indigo-400 transition-colors disabled:opacity-50 disabled:pointer-events-none" style="box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.15);" disabled={!selectedGup}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>

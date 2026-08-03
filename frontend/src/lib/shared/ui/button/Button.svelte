@@ -8,15 +8,15 @@
     
     /** @type {Record<string, string>} */
     const variants = {
-        default: 'clay-default bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/30',
-        destructive: 'clay-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-destructive/30',
-        warning: 'clay-warning bg-amber-500 text-white hover:bg-amber-400 hover:shadow-amber-500/30',
-        success: 'clay-success bg-emerald-500 text-white hover:bg-emerald-400 hover:shadow-emerald-500/30',
+        default: 'clay-default bg-primary text-primary-foreground hover:bg-primary/90',
+        destructive: 'clay-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        warning: 'clay-warning bg-amber-500 text-white hover:bg-amber-400',
+        success: 'clay-success bg-emerald-500 text-white hover:bg-emerald-400',
         outline: 'clay-outline border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-        secondary: 'clay-secondary bg-slate-100 text-slate-800 hover:bg-slate-200 hover:shadow-slate-300/50',
+        secondary: 'clay-secondary bg-slate-100 text-slate-800 hover:bg-slate-200',
         ghost: 'clay-ghost bg-slate-50/50 hover:bg-slate-100 text-slate-700',
         glass: 'clay-glass bg-white/10 hover:bg-white/20 border border-white/20 text-white',
-        link: 'text-primary underline-offset-4 hover:underline !shadow-none !translate-y-0 !scale-100'
+        link: 'text-primary underline-offset-4 hover:underline'
     };
     
     /** @type {Record<string, string>} */
@@ -28,7 +28,7 @@
     };
     
     $: classes = cn(
-        'inline-flex items-center justify-center whitespace-nowrap text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-95',
+        'inline-flex items-center justify-center whitespace-nowrap text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors',
         variants[variant],
         sizes[size],
         className
