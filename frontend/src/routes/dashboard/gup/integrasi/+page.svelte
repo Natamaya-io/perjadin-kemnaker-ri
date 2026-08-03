@@ -20,20 +20,33 @@
         mak: ''
     };
 
-    let prevAccountCode = '';
-    $: if (formData.accountCode !== prevAccountCode) {
-        prevAccountCode = formData.accountCode;
-        if (showModal) {
-            const existingAc = data.masterData?.accountCodes?.find(ac => ac.code === formData.accountCode);
-            if (existingAc) {
-                formData.mak = existingAc.mak;
+    let prevName = '';
+    $: if (formData.name !== prevName) {
+        prevName = formData.name;
+        if (showModal && formMode === 'add') {
+            const existingPt = data.masterData?.procurementTypes?.find(pt => pt.name.toLowerCase() === formData.name.toLowerCase());
+            if (existingPt) {
+                formData.accountCode = existingPt.accountCode;
+                formData.mak = getMakFormat(existingPt.accountCode);
             }
         }
     }
 
+    const validMaks = {
+        'S.521119': '2158.01.WA.2158.EBA.994.002.S.521119',
+        'S.523121': '2158.01.WA.2158.EBA.994.002.S.523121',
+        'S.522141': '2158.01.WA.2158.EBA.994.002.S.522141',
+        'S.524111': '2158.01.WA.2158.EBA.994.002.S.524111',
+        'S.524113': '2158.01.WA.2158.EBA.994.002.S.524113',
+        'S.524211': '2158.01.WA.2158.EBA.994.002.S.524211'
+    };
+
     function getMakFormat(code) {
+        if (!code) return '-';
+        if (validMaks[code]) return validMaks[code];
+        
         const accountCode = data.masterData?.accountCodes?.find(ac => ac.code === code);
-        return accountCode ? accountCode.mak : '-';
+        return accountCode && accountCode.mak ? accountCode.mak : '-';
     }
 
     function openAddModal() {
@@ -48,12 +61,10 @@
         formMode = 'edit';
         currentPtId = pt.id;
         
-        const ac = data.masterData?.accountCodes?.find(a => a.code === pt.accountCode);
-        
         formData = {
             name: pt.name,
             accountCode: pt.accountCode || '',
-            mak: ac ? ac.mak : ''
+            mak: getMakFormat(pt.accountCode)
         };
         errorMessage = '';
         showModal = true;
