@@ -108,17 +108,29 @@
 
     <!-- Filter Section -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 no-print">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3 items-end w-full">
+            <!-- Search Bar -->
+            <div class="min-w-0">
+                <label for="searchQuery" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Pencarian</label>
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input id="searchQuery" type="search" bind:value={searchQuery} placeholder="Cari pembayaran..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors md:text-[0.9375rem]">
+                </div>
+            </div>
+            <!-- Jenis Pengadaan -->
+            <div class="w-full md:w-48">
                 <label for="filterJenisPengadaan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Jenis Pengadaan</label>
-                <Select id="filterJenisPengadaan" bind:value={filterJenis} class="h-[42px] border-slate-200" options={[
+                <Select id="filterJenisPengadaan" bind:value={filterJenis} class="border-slate-200 w-full" options={[
                     {value: '', label: 'Semua Jenis'},
                     ...masterData.procurementTypes.map(t => ({value: t.id, label: t.name}))
                 ]} />
             </div>
-            <div>
+            <!-- Bulan -->
+            <div class="w-full md:w-40">
                 <label for="filterBulan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Bulan Transaksi</label>
-                <Select id="filterBulan" bind:value={filterBulan} class="h-[42px] border-slate-200" options={[
+                <Select id="filterBulan" bind:value={filterBulan} class="border-slate-200 w-full" options={[
                     {value: '', label: 'Semua Bulan'},
                     {value: '01', label: 'Januari'},
                     {value: '02', label: 'Februari'},
@@ -134,22 +146,16 @@
                     {value: '12', label: 'Desember'}
                 ]} />
             </div>
-            <div>
-                <label for="searchQuery" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Pencarian</label>
-                <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input id="searchQuery" type="search" bind:value={searchQuery} placeholder="Cari pembayaran..." class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                </div>
-            </div>
-            <div class="flex items-end gap-3">
-                <button type="button" on:click={resetFilters} class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm">
-                    Reset Filter
+            <!-- Reset -->
+            <div class="flex items-end">
+                <button type="button" on:click={resetFilters} class="inline-flex h-full min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-red-600 hover:border-red-100 shadow-sm whitespace-nowrap w-full md:w-auto">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Reset
                 </button>
             </div>
         </div>
     </div>
+
 
     <!-- Tabel Pengajuan GUP -->
     <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden relative flex flex-col">
