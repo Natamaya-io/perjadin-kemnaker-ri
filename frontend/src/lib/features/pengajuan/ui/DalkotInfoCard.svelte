@@ -3,6 +3,7 @@
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
+    import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
 
     export let category = 'Hari Libur';
     export let official = '';
@@ -46,11 +47,10 @@
             <!-- Tanggal Pelaksanaan -->
             <div class="space-y-2">
                 <Label class="text-slate-600 text-sm">Tanggal Pelaksanaan Dinas *</Label>
-                <Input 
-                    type="date" 
+                <Datepicker 
                     bind:value={executionDate}
                     disabled={readonly}
-                    class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
+                    class="{readonly ? 'opacity-70 cursor-not-allowed' : ''}"
                 />
             </div>
 
@@ -106,11 +106,10 @@
             
             <div class="space-y-2">
                 <Label class="text-slate-600 text-sm">Tanggal Surat Tugas <span class="text-xs text-slate-400 font-normal">(Opsional)</span></Label>
-                <Input 
-                    type="date" 
+                <Datepicker 
                     bind:value={suratTugasDate}
                     disabled={readonly}
-                    class="h-10 text-sm {readonly ? 'opacity-70 cursor-not-allowed' : ''}"
+                    class="{readonly ? 'opacity-70 cursor-not-allowed' : ''}"
                 />
                 <p class="text-[10px] text-slate-400">Boleh dikosongkan apabila Surat Tugas belum diterbitkan.</p>
             </div>

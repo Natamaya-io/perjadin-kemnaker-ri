@@ -4,6 +4,7 @@
     import Input from '$lib/shared/ui/input/Input.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
+    import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
     import { toTitleCase } from '$lib/shared/utils/utils';
     import regenciesData from '$lib/shared/assets/regencies.json';
 
@@ -86,11 +87,11 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <Label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold">Tanggal Mulai</Label>
-                            <Input type="date" bind:value={loc.startDate} min={i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || '') : ''} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
+                            <Datepicker bind:value={loc.startDate} min={i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || '') : ''} class="{readonly ? 'opacity-70' : ''}" disabled={readonly} />
                         </div>
                         <div class="space-y-1">
                             <Label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold">Tanggal Selesai</Label>
-                            <Input type="date" bind:value={loc.endDate} min={loc.startDate || (i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || '') : '')} class="h-9 text-xs {readonly ? 'opacity-70' : ''}" disabled={readonly} />
+                            <Datepicker bind:value={loc.endDate} min={loc.startDate || (i > 0 ? (locations[i-1].endDate || locations[i-1].startDate || '') : '')} class="{readonly ? 'opacity-70' : ''}" disabled={readonly} />
                         </div>
                     </div>
                 </div>

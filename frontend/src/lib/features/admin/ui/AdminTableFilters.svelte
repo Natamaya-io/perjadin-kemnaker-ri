@@ -1,6 +1,7 @@
 <script>
 	import Input from '$lib/shared/ui/input/Input.svelte';
 	import Select from '$lib/shared/ui/select/Select.svelte';
+	import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
 
 	export let searchQuery = '';
 	export let statusFilter = 'all';
@@ -70,19 +71,9 @@
 				>Filter Tanggal:</span
 			>
 			<div class="flex items-center gap-1">
-				<input
-					type="date"
-					bind:value={startDate}
-					class="h-7 text-xs border-slate-200 rounded px-2 focus:ring-blue-500 focus:border-blue-500 text-slate-600"
-					placeholder="Dari"
-				/>
+				<Datepicker bind:value={startDate} class="text-xs" />
 				<span class="text-slate-400">-</span>
-				<input
-					type="date"
-					bind:value={endDate}
-					class="h-7 text-xs border-slate-200 rounded px-2 focus:ring-blue-500 focus:border-blue-500 text-slate-600"
-					placeholder="Sampai"
-				/>
+				<Datepicker bind:value={endDate} min={startDate} class="text-xs" />
 			</div>
 			{#if startDate || endDate}
 				<button

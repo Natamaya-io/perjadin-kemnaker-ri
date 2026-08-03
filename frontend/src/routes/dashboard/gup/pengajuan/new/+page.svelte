@@ -1,9 +1,9 @@
-<script lang="ts">
     import { goto } from '$app/navigation';
     import { api } from '$lib/shared/api';
     import { formatCurrency } from '$lib/shared/utils/utils';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
+    import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
 
     export let data: any;
 
@@ -111,12 +111,9 @@
                 <!-- Tanggal Kwitansi -->
                 <div class="space-y-2">
                     <label for="receiptDate" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Tanggal Kwitansi <span class="text-rose-500">*</span></label>
-                    <input 
-                        type="date" 
-                        id="receiptDate" 
+                    <Datepicker 
                         bind:value={form.receiptDate}
-                        required
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        class="border-slate-300"
                     />
                 </div>
             </div>

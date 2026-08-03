@@ -5,6 +5,7 @@
     
     import Label from '$lib/shared/ui/label/Label.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
+    import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
@@ -424,11 +425,11 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Tanggal Mulai *</Label>
-                                            <Input type="date" bind:value={loc.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                                            <Datepicker bind:value={loc.startDate} disabled={!isEditing} class={!isEditing ? 'opacity-70 cursor-default' : ''} />
                                         </div>
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Tanggal Selesai *</Label>
-                                            <Input type="date" bind:value={loc.endDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} />
+                                            <Datepicker bind:value={loc.endDate} disabled={!isEditing} class={!isEditing ? 'opacity-70 cursor-default' : ''} />
                                         </div>
                                     </div>
                                 </div>

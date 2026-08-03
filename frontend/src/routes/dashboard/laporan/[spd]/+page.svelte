@@ -29,6 +29,7 @@
     import Label from '$lib/shared/ui/label/Label.svelte';
     import Textarea from '$lib/shared/ui/textarea/Textarea.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
+    import Datepicker from '$lib/shared/ui/datepicker/Datepicker.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
     import Dialog from '$lib/shared/ui/dialog/Dialog.svelte';
@@ -1287,11 +1288,10 @@
                                          <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Tanggal Surat Tugas</span>
                                      </div>
                                      {#if $userStore.role !== 'kasubag'}
-                                         <input 
-                                             type="date" 
+                                         <Datepicker 
                                              bind:value={manualSuratTugasDate}
-                                             class="font-semibold text-slate-800 bg-white px-3 py-1.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none w-full text-sm transition-all shadow-sm"
-                                         />
+                                             class="text-sm"
+                                        />
                                      {:else}
                                          <div class="font-medium text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block text-sm">
                                              {manualSuratTugasDate ? new Date(manualSuratTugasDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}
@@ -1459,11 +1459,10 @@
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <input 
-                                        type="date" 
+                                    <Datepicker 
                                         bind:value={newTanggalMerah}
                                         disabled={$userStore.role === 'kasubag'}
-                                        class="font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none flex-1 text-sm shadow-sm"
+                                        class="flex-1 text-sm {$userStore.role === 'kasubag' ? 'opacity-50' : ''}"
                                     />
                                     <Button type="button" disabled={$userStore.role === 'kasubag'} on:click={addTanggalMerah} class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm px-6 h-[38px]">
                                         Tambahkan
