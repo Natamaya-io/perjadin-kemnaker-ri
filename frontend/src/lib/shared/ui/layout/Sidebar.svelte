@@ -106,7 +106,7 @@
 </script>
 
 <aside 
-    class="sidebar-root fixed inset-y-0 left-0 z-[60] flex flex-col h-[100dvh] max-w-[85vw] bg-white border-r border-slate-200 shadow-xl md:shadow-[2px_0_8px_-3px_rgba(0,0,0,0.05)] print:hidden transition-transform duration-200 ease-out transform {mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} {isSidebarOpen || mobileOpen ? 'w-[280px]' : 'w-[80px]'}" 
+    class="sidebar-root fixed inset-y-0 left-0 z-40 flex flex-col h-[100dvh] max-w-[85vw] bg-white border-r border-slate-200 shadow-xl md:shadow-[2px_0_8px_-3px_rgba(0,0,0,0.05)] print:hidden transition-transform duration-200 ease-out transform {mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} {isSidebarOpen || mobileOpen ? 'w-[280px]' : 'w-[80px]'}" 
     style="will-change: transform;"
     on:mouseenter={() => { if (!mobileOpen) isSidebarOpen = true; }}
     on:mouseleave={() => { if (!mobileOpen) isSidebarOpen = false; }}

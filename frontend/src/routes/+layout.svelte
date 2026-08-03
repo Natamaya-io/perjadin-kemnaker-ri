@@ -156,7 +156,7 @@
 		{#if $userStore.loggedIn && !isBlankPage}
 			{#if mobileSidebarOpen}
 				<div
-					class="fixed inset-0 z-40 bg-slate-900/80 md:hidden"
+					class="fixed inset-0 z-[35] bg-slate-900/80 md:hidden"
 					on:click={closeMobileSidebar}
 					role="button"
 					tabindex="0"

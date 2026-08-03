@@ -5,7 +5,7 @@
     $: activeRoute = $page.url?.pathname || '';
 </script>
 
-<header class="hidden md:block sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm transition-all flex-none print:hidden">
+<header class="hidden md:block sticky top-0 z-30 w-full border-b border-slate-200 bg-white shadow-sm transition-all flex-none print:hidden">
     <div class="container flex h-16 items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="mr-8 flex items-center">
         <div class="flex items-center space-x-3 select-none">
