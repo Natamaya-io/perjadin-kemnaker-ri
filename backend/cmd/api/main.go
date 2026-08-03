@@ -206,7 +206,12 @@ func main() {
 		protected.GET("/gup/ls", gupHandler.GetMonthlyLS)
 		protected.GET("/gup/data", gupHandler.GetBudgets)
 		protected.GET("/gup/master-data", gupHandler.GetMasterData)
-
+		protected.POST("/gup/master-data/account-codes", gupHandler.CreateAccountCode)
+		protected.PUT("/gup/master-data/account-codes/:id", gupHandler.UpdateAccountCode)
+		protected.DELETE("/gup/master-data/account-codes/:id", gupHandler.DeleteAccountCode)
+		protected.POST("/gup/master-data/procurement-types", gupHandler.CreateProcurementType)
+		protected.PUT("/gup/master-data/procurement-types/:id", gupHandler.UpdateProcurementType)
+		protected.DELETE("/gup/master-data/procurement-types/:id", gupHandler.DeleteProcurementType)
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

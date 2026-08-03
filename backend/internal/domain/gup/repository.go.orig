@@ -17,13 +17,6 @@ type Repository interface {
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
-
-	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
-	UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error
-	DeleteProcurementType(ctx context.Context, id uuid.UUID) error
-	CreateAccountCode(ctx context.Context, ac *models.AccountCode) error
-	UpdateAccountCode(ctx context.Context, ac *models.AccountCode) error
-	DeleteAccountCode(ctx context.Context, id uuid.UUID) error
 }
 
 type repository struct {
@@ -251,56 +244,55 @@ func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]
 	}, nil
 }
 
-func (r *repository) CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error {
+func (r *postgresRepository) CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error {
 	query := `
 		INSERT INTO procurement_types (account_code_id, name, is_active)
 		VALUES ($1, $2, $3)
 		RETURNING id, created_at, updated_at
 	`
-	return r.d.QueryRowContext(ctx, query, pt.AccountCodeID, pt.Name, pt.IsActive).
+	return r.db.QueryRowContext(ctx, query, pt.AccountCodeID, pt.Name, pt.IsActive).
 		Scan(&pt.ID, &pt.CreatedAt, &pt.UpdatedAt)
 }
 
-func (r *repository) UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error {
+func (r *postgresRepository) UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error {
 	query := `
 		UPDATE procurement_types
 		SET account_code_id = $1, name = $2, is_active = $3, updated_at = NOW()
 		WHERE id = $4
 		RETURNING updated_at
 	`
-	return r.d.QueryRowContext(ctx, query, pt.AccountCodeID, pt.Name, pt.IsActive, pt.ID).
+	return r.db.QueryRowContext(ctx, query, pt.AccountCodeID, pt.Name, pt.IsActive, pt.ID).
 		Scan(&pt.UpdatedAt)
 }
 
-func (r *repository) DeleteProcurementType(ctx context.Context, id uuid.UUID) error {
+func (r *postgresRepository) DeleteProcurementType(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM procurement_types WHERE id = $1`
-	_, err := r.d.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *repository) CreateAccountCode(ctx context.Context, ac *models.AccountCode) error {
+func (r *postgresRepository) CreateAccountCode(ctx context.Context, ac *models.AccountCode) error {
 	query := `
 		INSERT INTO account_codes (code, mak, description)
 		VALUES ($1, $2, $3)
 		RETURNING id, created_at, updated_at
 	`
-	return r.d.QueryRowContext(ctx, query, ac.Code, ac.Mak, ac.Description).
+	return r.db.QueryRowContext(ctx, query, ac.Code, ac.Mak, ac.Description).
 		Scan(&ac.ID, &ac.CreatedAt, &ac.UpdatedAt)
 }
 
-func (r *repository) UpdateAccountCode(ctx context.Context, ac *models.AccountCode) error {
+func (r *postgresRepository) UpdateAccountCode(ctx context.Context, ac *models.AccountCode) error {
 	query := `
 		UPDATE account_codes
 		SET code = $1, mak = $2, description = $3, updated_at = NOW()
 		WHERE id = $4
 		RETURNING updated_at
 	`
-	return r.d.QueryRowContext(ctx, query, ac.Code, ac.Mak, ac.Description, ac.ID).
+	return r.db.QueryRowContext(ctx, query, ac.Code, ac.Mak, ac.Description, ac.ID).
 		Scan(&ac.UpdatedAt)
 }
 
-func (r *repository) DeleteAccountCode(ctx context.Context, id uuid.UUID) error {
+func (r *postgresRepository) DeleteAccountCode(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM account_codes WHERE id = $1`
-	_, err := r.d.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
-}
