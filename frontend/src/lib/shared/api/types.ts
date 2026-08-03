@@ -181,6 +181,12 @@ export interface ApiClient {
 
     // GUP
     getGupMasterData(year?: number, customFetch?: typeof fetch): Promise<any>;
+    createAccountCode(data: any): Promise<any>;
+    updateAccountCode(id: string, data: any): Promise<any>;
+    deleteAccountCode(id: string): Promise<any>;
+    createProcurementType(data: any): Promise<any>;
+    updateProcurementType(id: string, data: any): Promise<any>;
+    deleteProcurementType(id: string): Promise<any>;
     getGupPengajuan(customFetch?: typeof fetch): Promise<any[]>;
     getGupPengajuanById(id: string, customFetch?: typeof fetch): Promise<any>;
     createGupPengajuan(data: any): Promise<any>;

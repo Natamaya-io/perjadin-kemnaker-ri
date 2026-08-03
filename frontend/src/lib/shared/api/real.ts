@@ -386,6 +386,46 @@ export class RealApiClient implements ApiClient {
         return this.request<any>(`/gup/master-data${query}`, {}, customFetch);
     }
 
+    async createAccountCode(data: any): Promise<any> {
+        return this.request<any>('/gup/master-data/account-codes', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateAccountCode(id: string, data: any): Promise<any> {
+        return this.request<any>(`/gup/master-data/account-codes/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async deleteAccountCode(id: string): Promise<any> {
+        return this.request<any>(`/gup/master-data/account-codes/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async createProcurementType(data: any): Promise<any> {
+        return this.request<any>('/gup/master-data/procurement-types', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateProcurementType(id: string, data: any): Promise<any> {
+        return this.request<any>(`/gup/master-data/procurement-types/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async deleteProcurementType(id: string): Promise<any> {
+        return this.request<any>(`/gup/master-data/procurement-types/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
     async getGupPengajuan(customFetch?: typeof fetch): Promise<any[]> {
         return this.request<any[]>('/gup/pengajuan', {}, customFetch);
     }
