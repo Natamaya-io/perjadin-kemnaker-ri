@@ -234,34 +234,7 @@
             </table>
         </div>
     </div>
-    <section class="grid grid-cols-1 xl:grid-cols-3 gap-6 no-print">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 xl:col-span-2">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">Integrasi Jenis Pengadaan, Kode Akun, dan MAK</h3>
-            <p class="text-sm text-slate-500 mb-4">
-                Pada form Tambah GUP, pengguna cukup memilih <strong>Jenis Pengadaan</strong>. Sistem akan mengisi <strong>Kode Akun</strong> dan <strong>MAK</strong> secara otomatis berdasarkan data master.
-            </p>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-50 text-slate-600">
-                        <tr>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Jenis Pengadaan</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Kode Akun</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Format MAK</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {#each masterData.procurementTypes as type}
-                            <tr>
-                                <td class="px-4 py-3 text-slate-700 whitespace-nowrap">{type.name}</td>
-                                <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{type.accountCode || '-'}</td>
-                                <td class="px-4 py-3 text-slate-600 font-mono text-[13px] whitespace-nowrap">{type.accountMak || '-'}</td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+    <section class="grid grid-cols-1 gap-6 no-print">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <h3 class="text-lg font-bold text-slate-900 mb-4">Rincian Sumber Dana</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 text-sm">
