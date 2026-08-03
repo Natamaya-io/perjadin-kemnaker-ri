@@ -50,6 +50,12 @@
         });
     }
 
+    function getProcurementTypeName(id: string) {
+        if (!id) return '-';
+        const pt = masterData.procurementTypes.find((p: any) => p.id === id);
+        return pt ? pt.name : '-';
+    }
+
     function resetFilters() {
         searchQuery = '';
         filterBulan = '';
@@ -184,16 +190,22 @@
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="pl-4 py-4 align-middle text-center font-medium text-slate-500">{index + 1}</td>
                                 <td class="py-4 align-middle">
-                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-indigo-700 mb-1">{trx.businessId}</span>
+                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700 mb-1">{trx.businessId}</span>
                                     <div class="font-medium text-slate-800 text-sm line-clamp-2">{trx.paymentDescription}</div>
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200 mt-1.5">
+                                        {getProcurementTypeName(trx.procurementTypeId)}
+                                    </span>
                                 </td>
-                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount)}</td>
-                                <td class="py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount)}</td>
-                                <td class="py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount)}</td>
-                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount - trx.paidAmount - trx.taxAmount)}</td>
+                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
+                                <td class="py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
+                                <td class="py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount || 0)}</td>
+                                <td class="py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
                                 <td class="py-4 align-middle text-xs text-slate-600">
-                                    <div class="font-medium">{formatDate(trx.receiptDate)}</div>
-                                    <div class="text-[10px] text-slate-400 mt-0.5">{trx.recipient}</div>
+                                    <div class="font-medium text-slate-800">{formatDate(trx.receiptDate)}</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5 max-w-[140px] truncate" title={trx.recipient}>Penerima: {trx.recipient || '-'}</div>
+                                    {#if trx.pum}
+                                        <div class="text-[10px] text-slate-400 max-w-[140px] truncate" title={trx.pum}>PUM: {trx.pum}</div>
+                                    {/if}
                                 </td>
                                 <td class="pr-4 py-4 align-middle text-center no-print">
                                     <div class="flex items-center justify-center gap-1.5">
