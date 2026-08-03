@@ -255,12 +255,12 @@
                                             {groupedRecordsMap[record.spd]?.length || 1} Petugas
                                         </div>
                                     </td>
-                                    <td class="py-4 align-top">
+                                    <td class="py-4 pr-8 align-top">
                                         <div class="font-medium text-slate-800 text-sm line-clamp-2">
                                             {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                         </div>
                                         {#if record.agenda}
-                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium max-w-[220px] line-clamp-2">
+                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium line-clamp-2">
                                             <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
                                         </div>
                                         {/if}
