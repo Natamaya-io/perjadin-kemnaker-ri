@@ -41,6 +41,9 @@
     }
 
     $: selisih = form.valueAmount - form.paidAmount - form.taxAmount;
+    $: selectedProcurementType = procurementTypes.find(t => t.id === form.procurementTypeId);
+    $: autoKodeAkun = selectedProcurementType?.accountCode || '-';
+    $: autoMak = selectedProcurementType?.accountMak || '-';
 
     async function handleSubmit() {
         if (!form.businessId || !form.paymentDescription || !form.procurementTypeId || !form.receiptDate || !form.recipient || !form.pum) {
@@ -179,6 +182,24 @@
                             ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName}`}))
                         ]}
                     />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Kode Akun (Auto) -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold uppercase tracking-wide text-slate-500">Kode Akun</label>
+                    <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 font-medium opacity-70 cursor-not-allowed">
+                        {autoKodeAkun}
+                    </div>
+                </div>
+
+                <!-- MAK (Auto) -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold uppercase tracking-wide text-slate-500">MAK</label>
+                    <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 font-medium opacity-70 cursor-not-allowed">
+                        {autoMak}
+                    </div>
                 </div>
             </div>
 
