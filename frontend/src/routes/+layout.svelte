@@ -175,7 +175,7 @@
 			<main class="flex-1 w-full relative">
 				<div
 					class="{$userStore.loggedIn && !isBlankPage
-						? 'max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-10 xl:px-12 py-8 lg:py-10'
+						? 'w-full px-5 sm:px-8 lg:px-10 xl:px-12 py-8 lg:py-10'
 						: ''} min-h-full"
 				>
 						<div class="min-h-full">

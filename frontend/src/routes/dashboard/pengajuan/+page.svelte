@@ -197,7 +197,7 @@
 
 <svelte:window on:scroll|passive={handleWindowScroll} />
 
-<div class="space-y-6 pb-20 max-w-7xl mx-auto">
+<div class="space-y-6 pb-20 w-full">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Daftar Pengajuan Saya</h1>
