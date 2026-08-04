@@ -9,9 +9,21 @@
     let isSubmitting = false;
     let errorMessage = '';
 
-    // Form state
     let formMode = 'add'; // 'add' or 'edit'
     let currentPtId = null;
+
+    // Pagination state
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    
+    $: ptList = data.masterData?.procurementTypes || [];
+    $: totalPages = Math.ceil(ptList.length / itemsPerPage) || 1;
+    $: if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    $: paginatedData = ptList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    function goToPage(page) {
+        if (page >= 1 && page <= totalPages) currentPage = page;
+    }
     
     // We combine them in one simple form for better UX
     let formData = {
@@ -172,8 +184,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {#if data.masterData?.procurementTypes?.length > 0}
-                        {#each data.masterData.procurementTypes as type}
+                    {#if paginatedData && paginatedData.length > 0}
+                        {#each paginatedData as type (type.id)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="pl-4 py-4 align-middle whitespace-nowrap font-medium text-slate-800">
                                     {type.name}
@@ -208,6 +220,53 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Bagian Pagination (Clean & Modern) -->
+        {#if totalPages > 1}
+        <div class="px-4 sm:px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+            <div class="text-sm text-slate-500 text-center sm:text-left">
+                Menampilkan <span class="font-medium text-slate-700">{(currentPage - 1) * itemsPerPage + 1}</span> 
+                hingga <span class="font-medium text-slate-700">{Math.min(currentPage * itemsPerPage, ptList.length)}</span> 
+                dari <span class="font-medium text-slate-700">{ptList.length}</span> data
+            </div>
+            <div class="flex items-center justify-center gap-1 sm:gap-2">
+                <button 
+                    type="button" 
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={currentPage === 1}
+                    on:click={() => goToPage(currentPage - 1)}
+                >
+                    Sebelumnya
+                </button>
+                
+                <div class="hidden sm:flex items-center gap-1">
+                    {#each Array(totalPages) as _, i}
+                        <button 
+                            type="button"
+                            class="w-8 h-8 flex items-center justify-center text-sm font-medium rounded-lg transition-colors {currentPage === i + 1 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600'}"
+                            on:click={() => goToPage(i + 1)}
+                        >
+                            {i + 1}
+                        </button>
+                    {/each}
+                </div>
+                
+                <!-- Mobile page indicator -->
+                <div class="sm:hidden text-sm font-medium text-slate-700 px-2">
+                    Hal {currentPage} / {totalPages}
+                </div>
+
+                <button 
+                    type="button" 
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={currentPage === totalPages}
+                    on:click={() => goToPage(currentPage + 1)}
+                >
+                    Selanjutnya
+                </button>
+            </div>
+        </div>
+        {/if}
     </div>
 </div>
 
