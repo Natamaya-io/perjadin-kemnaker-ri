@@ -1,6 +1,7 @@
 <script>
     import { formatCurrency } from '$lib/shared/utils/utils';
-    import Button from '$lib/shared/ui/button/Button.svelte';
+    import { onMount } from 'svelte';
+    import Chart from 'chart.js/auto';
     
     // Dummy data to simulate the visual dashboard pending backend implementation
     const laporanSummary = {
@@ -18,6 +19,121 @@
         { kode_akun: 'S.521211', jenis_pengadaan: 'Belanja Bahan', jumlah_transaksi: 2, realisasi: 2500000, anggaran: 15000000 },
         { kode_akun: 'S.522151', jenis_pengadaan: 'Belanja Jasa Profesi', jumlah_transaksi: 2, realisasi: 2000000, anggaran: 10000000 },
     ];
+
+    let totalCanvas;
+    let komposisiCanvas;
+    let detailCanvases = [];
+    
+    // Common chart options based on UI styling guidelines
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#0f172a',
+                padding: 12,
+                cornerRadius: 12,
+                displayColors: false,
+                titleFont: { size: 12, family: 'Inter, sans-serif' },
+                bodyFont: { size: 14, weight: 'bold', family: 'Inter, sans-serif' }
+            }
+        }
+    };
+
+    onMount(() => {
+        // 1. Total Serapan Chart
+        new Chart(totalCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Realisasi', 'Sisa Anggaran'],
+                datasets: [{
+                    data: [laporanSummary.total_realisasi, laporanSummary.sisa_anggaran],
+                    backgroundColor: ['#10b981', '#f1f5f9'], // Emerald, Slate
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    tooltip: {
+                        ...commonOptions.plugins.tooltip,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + formatCurrency(context.raw);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Komposisi per Jenis Chart
+        const colors = ['#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981']; // Sky, Amber, Violet, Rose, Emerald
+        new Chart(komposisiCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: laporanRows.map(r => r.kode_akun),
+                datasets: [{
+                    data: laporanRows.map(r => r.realisasi),
+                    backgroundColor: colors.slice(0, laporanRows.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...commonOptions,
+                cutout: '65%',
+                plugins: {
+                    ...commonOptions.plugins,
+                    tooltip: {
+                        ...commonOptions.plugins.tooltip,
+                        callbacks: {
+                            title: function(context) {
+                                return laporanRows[context[0].dataIndex].jenis_pengadaan;
+                            },
+                            label: function(context) {
+                                return 'Realisasi: ' + formatCurrency(context.raw);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Detail per Jenis Pengadaan Charts
+        laporanRows.forEach((row, i) => {
+            if (detailCanvases[i]) {
+                const sisa = Math.max(0, row.anggaran - row.realisasi);
+                new Chart(detailCanvases[i], {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Realisasi', 'Sisa Anggaran'],
+                        datasets: [{
+                            data: [row.realisasi, sisa],
+                            backgroundColor: [colors[i % colors.length], '#f1f5f9'], 
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        plugins: {
+                            ...commonOptions.plugins,
+                            tooltip: {
+                                ...commonOptions.plugins.tooltip,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + formatCurrency(context.raw);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    });
 </script>
 
 <div class="space-y-6 pb-20 w-full">
@@ -74,8 +190,8 @@
             </div>
 
             <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div class="relative h-64 rounded-3xl bg-slate-50 p-4 flex items-center justify-center border border-slate-100 border-dashed">
-                    <span class="text-slate-400 text-sm font-medium">Chart Placeholder</span>
+                <div class="relative h-64 rounded-3xl bg-slate-50 p-4">
+                    <canvas bind:this={totalCanvas}></canvas>
                 </div>
                 <div class="grid grid-cols-1 gap-3 content-start">
                     <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -110,8 +226,8 @@
             </div>
 
             <div class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-5">
-                <div class="relative h-72 rounded-3xl bg-slate-50 p-4 lg:col-span-3 flex items-center justify-center border border-slate-100 border-dashed">
-                    <span class="text-slate-400 text-sm font-medium">Chart Placeholder</span>
+                <div class="relative h-72 rounded-3xl bg-slate-50 p-4 lg:col-span-3">
+                    <canvas bind:this={komposisiCanvas}></canvas>
                 </div>
                 <div class="space-y-3 lg:col-span-2">
                     <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -158,7 +274,7 @@
         </div>
 
         <div class="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2 sm:p-6">
-            {#each laporanRows as row}
+            {#each laporanRows as row, i}
                 <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                     <div class="flex items-start justify-between gap-4">
                         <div>
@@ -173,8 +289,8 @@
                         </button>
                     </div>
 
-                    <div class="relative mt-5 h-52 rounded-3xl bg-slate-50 p-4 flex items-center justify-center border border-slate-100 border-dashed">
-                        <span class="text-slate-400 text-sm font-medium">Chart Placeholder</span>
+                    <div class="relative mt-5 h-52 rounded-3xl bg-slate-50 p-4">
+                        <canvas bind:this={detailCanvases[i]}></canvas>
                     </div>
 
                     <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
