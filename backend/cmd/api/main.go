@@ -202,7 +202,8 @@ func main() {
 		protected.GET("/gup/pengajuan/:id", gupHandler.GetTransactionByID)
 		protected.POST("/gup/pengajuan", gupHandler.CreateTransaction)
 		
-		protected.GET("/gup/laporan", gupHandler.GetTransactions) // For now returns same struct, usually mapped to a report logic
+		protected.GET("/gup/laporan", gupHandler.GetLaporan)
+		protected.POST("/gup/laporan/budget", gupHandler.SaveBudget)
 		protected.GET("/gup/ls", gupHandler.GetMonthlyLS)
 		protected.GET("/gup/data", gupHandler.GetBudgets)
 		protected.GET("/gup/master-data", gupHandler.GetMasterData)

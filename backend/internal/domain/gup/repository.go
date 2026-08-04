@@ -13,10 +13,12 @@ type Repository interface {
 	GetTransactions(ctx context.Context) ([]models.GUPTransaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*models.GUPTransaction, error)
 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
-	
+
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
+	GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error)
+	SaveBudget(ctx context.Context, b *models.Budget) error
 
 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
 	UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error
@@ -303,4 +305,75 @@ func (r *repository) DeleteAccountCode(ctx context.Context, id uuid.UUID) error 
 	query := `DELETE FROM account_codes WHERE id = $1`
 	_, err := r.d.ExecContext(ctx, query, id)
 	return err
+}
+
+// GetLaporanRows menghasilkan rekapitulasi per Jenis Pengadaan:
+// menggabungkan procurement_types, account_codes, gup_transactions, dan budgets
+// dalam satu query agregasi untuk keperluan halaman Laporan.
+func (r *repository) GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error) {
+	query := `
+		SELECT
+			pt.id,
+			pt.name                                           AS jenis_pengadaan,
+			ac.code                                           AS kode_akun,
+			ac.mak,
+			COUNT(gt.id)                                      AS jumlah_transaksi,
+			COALESCE(SUM(gt.paid_amount), 0)                  AS realisasi,
+			COALESCE(SUM(gt.value_amount), 0)                 AS nilai_pengajuan,
+			COALESCE(SUM(gt.tax_amount), 0)                   AS total_pajak,
+			COALESCE(b.amount, 0)                             AS anggaran
+		FROM procurement_types pt
+		JOIN account_codes ac ON pt.account_code_id = ac.id
+		LEFT JOIN gup_transactions gt ON gt.procurement_type_id = pt.id
+		LEFT JOIN budgets b ON b.procurement_type_id = pt.id AND b.year = $1
+		WHERE pt.is_active = true
+		GROUP BY pt.id, pt.name, ac.code, ac.mak, b.amount
+		ORDER BY pt.name ASC
+	`
+	rows, err := r.d.QueryContext(ctx, query, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.LaporanRow
+	for rows.Next() {
+		var row models.LaporanRow
+		if err := rows.Scan(
+			&row.ProcurementTypeID,
+			&row.JenisPengadaan,
+			&row.KodeAkun,
+			&row.Mak,
+			&row.JumlahTransaksi,
+			&row.Realisasi,
+			&row.NilaiPengajuan,
+			&row.TotalPajak,
+			&row.Anggaran,
+		); err != nil {
+			return nil, err
+		}
+		// Hitung sisa dan persentase serapan
+		row.SisaAnggaran = row.Anggaran - row.Realisasi
+		if row.Anggaran > 0 {
+			row.PersentaseSerapan = (row.Realisasi / row.Anggaran) * 100
+		}
+		results = append(results, row)
+	}
+	return results, nil
+}
+
+// SaveBudget menyimpan anggaran per jenis pengadaan (upsert berdasarkan year + procurement_type_id).
+func (r *repository) SaveBudget(ctx context.Context, b *models.Budget) error {
+	if b.ID == uuid.Nil {
+		b.ID = uuid.New()
+	}
+	query := `
+		INSERT INTO budgets (id, year, procurement_type_id, amount, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, NOW(), NOW())
+		ON CONFLICT (year, procurement_type_id)
+		DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
+		RETURNING id, created_at, updated_at
+	`
+	return r.d.QueryRowContext(ctx, query, b.ID, b.Year, b.ProcurementTypeID, b.Amount).
+		Scan(&b.ID, &b.CreatedAt, &b.UpdatedAt)
 }

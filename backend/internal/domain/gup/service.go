@@ -11,10 +11,12 @@ type Service interface {
 	GetTransactions(ctx context.Context) ([]models.GUPTransaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*models.GUPTransaction, error)
 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
-	
+
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
+	GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error)
+	SaveBudget(ctx context.Context, b *models.Budget) error
 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
 	UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error
 	DeleteProcurementType(ctx context.Context, id uuid.UUID) error
@@ -77,4 +79,34 @@ func (s *service) UpdateAccountCode(ctx context.Context, ac *models.AccountCode)
 
 func (s *service) DeleteAccountCode(ctx context.Context, id uuid.UUID) error {
 	return s.repo.DeleteAccountCode(ctx, id)
+}
+
+// GetLaporan mengambil data rekapitulasi per Jenis Pengadaan beserta ringkasan total.
+func (s *service) GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error) {
+	rows, err := s.repo.GetLaporanRows(ctx, year)
+	if err != nil {
+		return nil, err
+	}
+
+	var summary models.LaporanSummary
+	summary.TotalJenisPengadaan = len(rows)
+	for _, row := range rows {
+		summary.TotalAnggaran += row.Anggaran
+		summary.TotalRealisasi += row.Realisasi
+		summary.TotalTransaksi += row.JumlahTransaksi
+	}
+	summary.SisaAnggaran = summary.TotalAnggaran - summary.TotalRealisasi
+	if summary.TotalAnggaran > 0 {
+		summary.PersentaseSerapan = (summary.TotalRealisasi / summary.TotalAnggaran) * 100
+	}
+
+	return &models.LaporanResponse{
+		Summary: summary,
+		Rows:    rows,
+	}, nil
+}
+
+// SaveBudget menyimpan atau memperbarui anggaran untuk satu jenis pengadaan.
+func (s *service) SaveBudget(ctx context.Context, b *models.Budget) error {
+	return s.repo.SaveBudget(ctx, b)
 }

@@ -3,6 +3,7 @@ package gup
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
@@ -207,3 +208,44 @@ func (h *Handler) DeleteAccountCode(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "deleted"})
 }
+
+// GetLaporan mengembalikan rekapitulasi serapan anggaran per Jenis Pengadaan
+// beserta ringkasan total (summary). Endpoint: GET /gup/laporan?year=2025
+func (h *Handler) GetLaporan(c echo.Context) error {
+	yearStr := c.QueryParam("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(time.Now().Year())
+	}
+	year, err := strconv.ParseInt(yearStr, 10, 16)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid year"})
+	}
+
+	ctx := c.Request().Context()
+	resp, err := h.svc.GetLaporan(ctx, int16(year))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// SaveBudget menyimpan atau memperbarui anggaran untuk satu Jenis Pengadaan.
+// Endpoint: POST /gup/laporan/budget
+func (h *Handler) SaveBudget(c echo.Context) error {
+	var b models.Budget
+	if err := c.Bind(&b); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+	if b.Year == 0 {
+		b.Year = int16(time.Now().Year())
+	}
+
+	ctx := c.Request().Context()
+	if err := h.svc.SaveBudget(ctx, &b); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, b)
+}
+

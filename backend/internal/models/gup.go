@@ -68,3 +68,35 @@ type GUPTransaction struct {
 	ProcurementTypeName string `json:"procurementTypeName,omitempty"`
 	FundingSourceLabel  string `json:"fundingSourceLabel,omitempty"`
 }
+
+// LaporanRow adalah hasil agregasi per Jenis Pengadaan untuk halaman Laporan.
+// Nilai ini dihitung langsung di query SQL (GROUP BY procurement_type_id).
+type LaporanRow struct {
+	ProcurementTypeID uuid.UUID `json:"procurementTypeId"`
+	JenisPengadaan    string    `json:"jenisPengadaan"`
+	KodeAkun          string    `json:"kodeAkun"`
+	Mak               string    `json:"mak"`
+	JumlahTransaksi   int64     `json:"jumlahTransaksi"`
+	Realisasi         float64   `json:"realisasi"`
+	NilaiPengajuan    float64   `json:"nilaiPengajuan"`
+	TotalPajak        float64   `json:"totalPajak"`
+	Anggaran          float64   `json:"anggaran"`
+	SisaAnggaran      float64   `json:"sisaAnggaran"`
+	PersentaseSerapan float64   `json:"persentaseSerapan"`
+}
+
+// LaporanSummary adalah ringkasan total dari semua LaporanRow.
+type LaporanSummary struct {
+	TotalAnggaran      float64 `json:"totalAnggaran"`
+	TotalRealisasi     float64 `json:"totalRealisasi"`
+	SisaAnggaran       float64 `json:"sisaAnggaran"`
+	TotalTransaksi     int64   `json:"totalTransaksi"`
+	TotalJenisPengadaan int    `json:"totalJenisPengadaan"`
+	PersentaseSerapan  float64 `json:"persentaseSerapan"`
+}
+
+// LaporanResponse adalah response lengkap untuk endpoint GET /gup/laporan.
+type LaporanResponse struct {
+	Summary LaporanSummary `json:"summary"`
+	Rows    []LaporanRow   `json:"rows"`
+}
