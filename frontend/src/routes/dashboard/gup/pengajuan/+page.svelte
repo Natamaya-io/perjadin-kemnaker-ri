@@ -239,26 +239,6 @@
             </table>
         </div>
     </div>
-    <section class="grid grid-cols-1 gap-6 no-print">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">Rincian Sumber Dana</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 text-sm">
-                {#each masterData.fundingSources as src}
-                    <div class="rounded-xl border border-slate-200 p-3 bg-slate-50">
-                        <div class="flex items-center justify-between gap-3">
-                            <p class="text-slate-500">{src.monthName}</p>
-                            <span class="rounded-full bg-sky-100 px-2 py-1 text-[11px] font-bold text-sky-700">LS</span>
-                        </div>
-                        <p class="font-bold text-slate-900">{src.gupLabel}</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-400">
-                            <!-- Backend LS logic can be injected here -->
-                            Data LS belum dihubungkan
-                        </p>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    </section>
 </div>
 
 <!-- Modal Detail GUP -->
