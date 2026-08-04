@@ -2,6 +2,7 @@
     import { formatCurrency } from '$lib/shared/utils/utils';
     import { onMount } from 'svelte';
     import Chart from 'chart.js/auto';
+    import Button from '$lib/shared/ui/button/Button.svelte';
     
     // Dummy data to simulate the visual dashboard pending backend implementation
     const laporanSummary = {
