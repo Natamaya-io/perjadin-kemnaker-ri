@@ -206,11 +206,7 @@
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="px-4 py-4 align-middle text-center font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                 <td class="px-4 py-4 align-middle">
-                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700 mb-1">{trx.businessId}</span>
-                                    <div class="font-medium text-slate-800 text-sm line-clamp-2">{getProcurementTypeName(trx.procurementTypeId)}</div>
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide bg-slate-100 text-slate-600 border border-slate-200 mt-1.5 max-w-full truncate block" title={trx.paymentDescription}>
-                                        {trx.paymentDescription}
-                                    </span>
+                                    <div class="font-medium text-slate-800 text-sm">{getProcurementTypeName(trx.procurementTypeId)}</div>
                                 </td>
                                 <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
                                 <td class="px-4 py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
