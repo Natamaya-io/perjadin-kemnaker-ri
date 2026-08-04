@@ -108,7 +108,7 @@
 
     <!-- Filter Section -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 no-print">
-        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3 items-end w-full">
+        <div class="grid grid-cols-1 md:grid-cols-[minmax(200px,320px)_1fr_1fr_auto] gap-3 items-end w-full">
             <!-- Search Bar -->
             <div class="min-w-0">
                 <label for="searchQuery" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Pencarian</label>
@@ -120,7 +120,7 @@
                 </div>
             </div>
             <!-- Jenis Pengadaan -->
-            <div class="w-full md:w-48">
+            <div class="w-full">
                 <label for="filterJenisPengadaan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Jenis Pengadaan</label>
                 <Select id="filterJenisPengadaan" bind:value={filterJenis} class="border-slate-200 w-full" options={[
                     {value: '', label: 'Semua Jenis'},
@@ -128,7 +128,7 @@
                 ]} />
             </div>
             <!-- Bulan -->
-            <div class="w-full md:w-40">
+            <div class="w-full">
                 <label for="filterBulan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Bulan Transaksi</label>
                 <Select id="filterBulan" bind:value={filterBulan} class="border-slate-200 w-full" options={[
                     {value: '', label: 'Semua Bulan'},

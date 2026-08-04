@@ -7,7 +7,7 @@
     export let sortOption = 'date-desc';
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 w-full items-center">
+<div class="grid grid-cols-1 md:grid-cols-[minmax(200px,320px)_1fr_1fr] gap-3 w-full items-center">
 
     <!-- Search Bar -->
     <div class="relative w-full min-w-0">
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Filter Status -->
-    <div class="w-full md:w-36">
+    <div class="w-full">
         <Select bind:value={statusFilter} class="bg-white border-slate-200 w-full" options={[
             { value: 'all', label: 'Semua Status' },
             { value: 'Completed', label: 'Selesai' },
@@ -29,7 +29,7 @@
     </div>
 
     <!-- Sort -->
-    <div class="w-full md:w-44">
+    <div class="w-full">
         <Select bind:value={sortOption} class="bg-white border-slate-200 w-full" options={[
             { value: 'date-desc', label: 'Terbaru Pertama' },
             { value: 'date-asc', label: 'Terlama Pertama' },

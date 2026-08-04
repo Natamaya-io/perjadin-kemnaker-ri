@@ -16,7 +16,7 @@
 	];
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 w-full items-center">
+<div class="grid grid-cols-1 md:grid-cols-[minmax(200px,320px)_1fr_1fr_1fr_1fr_auto] gap-3 w-full items-center">
 
 	<!-- Search Bar — mengisi sisa ruang -->
 	<div class="relative w-full min-w-0">
@@ -34,7 +34,7 @@
 	</div>
 
 	<!-- Filter Jenis -->
-	<div class="w-full md:w-36">
+	<div class="w-full">
 		<Select
 			bind:value={typeFilter}
 			class="bg-white border-slate-200 w-full"
@@ -48,7 +48,7 @@
 	</div>
 
 	<!-- Filter Status -->
-	<div class="w-full md:w-36">
+	<div class="w-full">
 		<Select
 			bind:value={statusFilter}
 			class="bg-white border-slate-200 w-full"
@@ -57,7 +57,7 @@
 	</div>
 
 	<!-- Sort -->
-	<div class="w-full md:w-44">
+	<div class="w-full">
 		<Select
 			bind:value={sortOption}
 			class="bg-white border-slate-200 w-full"
@@ -73,13 +73,13 @@
 	</div>
 
 	<!-- Datepicker Dari -->
-	<div class="w-full md:w-44">
+	<div class="w-full">
 		<Datepicker bind:value={startDate} placeholder="Dari tanggal" class="bg-white border-slate-200" />
 	</div>
 
 	<!-- Datepicker Sampai + Reset -->
-	<div class="flex items-center gap-2 w-full md:w-auto">
-		<div class="flex-1 md:w-44">
+	<div class="flex items-center gap-2 w-full">
+		<div class="flex-1 w-full">
 			<Datepicker bind:value={endDate} min={startDate} placeholder="Sampai tanggal" class="bg-white border-slate-200" />
 		</div>
 		{#if startDate || endDate}
