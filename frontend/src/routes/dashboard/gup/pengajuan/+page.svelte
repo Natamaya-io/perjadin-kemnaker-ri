@@ -187,7 +187,7 @@
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Dibayarkan</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[11%]">Pajak</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Selisih</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[15%]">Kwitansi</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[15%]">Tanggal Kwitansi</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-center w-[140px] no-print">Aksi</th>
                     </tr>
                 </thead>
