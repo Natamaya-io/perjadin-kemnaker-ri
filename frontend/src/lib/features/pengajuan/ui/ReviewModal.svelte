@@ -266,7 +266,15 @@
             dispatch('saved');
             close();
         } catch (e) {
-            toast.error('Gagal memperbarui pengajuan.');
+            let errorMsg = e.message && e.message !== 'API Error: 500' 
+                ? e.message 
+                : 'Gagal memperbarui pengajuan.';
+            
+            if (errorMsg.toLowerCase().includes('duplicate entry') || errorMsg.toLowerCase().includes('unique constraint')) {
+                errorMsg = 'Gagal menyimpan: Nomor SPJ sudah terpakai oleh pengajuan lain.';
+            }
+
+            toast.error(errorMsg);
         } finally {
             isLoading = false;
         }
