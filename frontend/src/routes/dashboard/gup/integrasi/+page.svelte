@@ -15,8 +15,19 @@
     // Pagination state
     let currentPage = 1;
     let itemsPerPage = 10;
-    
-    $: ptList = data.masterData?.procurementTypes || [];
+
+    // Filter state
+    let searchQuery = '';
+    let filterAccountCode = '';
+
+    $: ptList = (data.masterData?.procurementTypes || []).filter(pt => {
+        const matchName = !searchQuery || pt.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchCode = !filterAccountCode || (pt.accountCode || '').toLowerCase().includes(filterAccountCode.toLowerCase());
+        return matchName && matchCode;
+    });
+
+    // Reset to page 1 when filter changes
+    $: if (searchQuery || filterAccountCode) currentPage = 1;
     $: totalPages = Math.ceil(ptList.length / itemsPerPage) || 1;
     $: if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
     $: paginatedData = ptList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -169,6 +180,61 @@
                 Tambah Integrasi
             </Button>
         </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <!-- Search Nama -->
+            <div class="relative flex-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                    type="text"
+                    id="filter-nama"
+                    bind:value={searchQuery}
+                    placeholder="Cari nama pengadaan..."
+                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white transition-all"
+                />
+            </div>
+
+            <!-- Filter Kode Akun -->
+            <div class="relative sm:w-56">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                </svg>
+                <input
+                    type="text"
+                    id="filter-kode-akun"
+                    bind:value={filterAccountCode}
+                    placeholder="Filter kode akun..."
+                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white transition-all"
+                />
+            </div>
+
+            <!-- Tombol Reset -->
+            {#if searchQuery || filterAccountCode}
+                <button
+                    type="button"
+                    on:click={() => { searchQuery = ''; filterAccountCode = ''; }}
+                    class="flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-colors whitespace-nowrap"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Reset
+                </button>
+            {/if}
+        </div>
+
+        <!-- Info Hasil Filter -->
+        {#if searchQuery || filterAccountCode}
+            <p class="mt-3 text-xs text-slate-500">
+                Menampilkan <span class="font-semibold text-indigo-600">{ptList.length}</span> hasil dari 
+                <span class="font-semibold">{data.masterData?.procurementTypes?.length || 0}</span> total data
+            </p>
+        {/if}
     </div>
 
     <!-- Tabel -->
