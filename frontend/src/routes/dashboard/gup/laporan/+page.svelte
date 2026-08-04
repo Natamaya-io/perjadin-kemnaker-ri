@@ -32,9 +32,20 @@
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '75%',
         plugins: {
-            legend: { display: false },
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    font: { size: 11, family: 'Inter, sans-serif' },
+                    color: '#64748b',
+                    padding: 12,
+                    boxWidth: 12,
+                    boxHeight: 12,
+                    borderRadius: 4,
+                    useBorderRadius: true
+                }
+            },
             tooltip: {
                 backgroundColor: '#0f172a',
                 padding: 12,
@@ -50,13 +61,15 @@
         if (!totalCanvas) return;
         if (totalChart) totalChart.destroy();
         totalChart = new Chart(totalCanvas, {
-            type: 'doughnut',
+            type: 'pie',
             data: {
                 labels: ['Realisasi', 'Sisa Anggaran'],
                 datasets: [{
                     data: [laporanSummary.totalRealisasi || 0, laporanSummary.sisaAnggaran || 0],
-                    backgroundColor: ['#10b981', '#f1f5f9'],
-                    borderWidth: 0
+                    backgroundColor: ['#10b981', '#e2e8f0'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 8
                 }]
             },
             options: {
@@ -72,18 +85,19 @@
         if (!komposisiCanvas) return;
         if (komposisiChart) komposisiChart.destroy();
         komposisiChart = new Chart(komposisiCanvas, {
-            type: 'doughnut',
+            type: 'pie',
             data: {
-                labels: laporanRows.map(r => r.kodeAkun),
+                labels: laporanRows.map(r => r.jenisPengadaan),
                 datasets: [{
                     data: laporanRows.map(r => r.realisasi || 0),
                     backgroundColor: colors.slice(0, laporanRows.length),
-                    borderWidth: 0
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 10
                 }]
             },
             options: {
                 ...commonOptions,
-                cutout: '65%',
                 plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip,
                     callbacks: {
                         title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan,
@@ -95,20 +109,21 @@
     }
 
     function buildDetailCharts() {
-        // Destroy old charts
         detailCharts.forEach(c => c?.destroy());
         detailCharts = [];
         laporanRows.forEach((row, i) => {
             if (!detailCanvases[i]) return;
             const sisa = Math.max(0, (row.anggaran || 0) - (row.realisasi || 0));
             const chart = new Chart(detailCanvases[i], {
-                type: 'doughnut',
+                type: 'pie',
                 data: {
                     labels: ['Realisasi', 'Sisa Anggaran'],
                     datasets: [{
                         data: [row.realisasi || 0, sisa],
-                        backgroundColor: [colors[i % colors.length], '#f1f5f9'],
-                        borderWidth: 0
+                        backgroundColor: [colors[i % colors.length], '#e2e8f0'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 8
                     }]
                 },
                 options: {
