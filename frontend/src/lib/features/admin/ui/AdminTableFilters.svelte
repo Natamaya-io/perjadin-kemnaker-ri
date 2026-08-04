@@ -40,9 +40,9 @@
 			class="bg-white border-slate-200 w-full"
 			options={[
 				{ value: 'all', label: 'Semua Jenis' },
-				{ value: 'Dalam_Kota', label: 'Dalam Kota' },
-				{ value: 'Luar_Kota', label: 'Luar Kota' },
-				{ value: 'Luar_Negeri', label: 'Luar Negeri' }
+				{ value: 'dalam_kota', label: 'Dalam Kota' },
+				{ value: 'luar_kota', label: 'Luar Kota' },
+				{ value: 'luar_negeri', label: 'Luar Negeri' }
 			]}
 		/>
 	</div>
