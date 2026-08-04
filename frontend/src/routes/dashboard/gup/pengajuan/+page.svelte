@@ -218,10 +218,6 @@
                                 <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
                                 <td class="px-4 py-4 align-middle text-xs text-slate-600">
                                     <div class="font-medium text-slate-800">{formatDate(trx.receiptDate)}</div>
-                                    <div class="text-[10px] text-slate-500 mt-0.5 max-w-[140px] truncate" title={trx.recipient}>Penerima: {trx.recipient || '-'}</div>
-                                    {#if trx.pum}
-                                        <div class="text-[10px] text-slate-400 max-w-[140px] truncate" title={trx.pum}>PUM: {trx.pum}</div>
-                                    {/if}
                                 </td>
                                 <td class="px-4 py-4 align-middle text-center no-print">
                                     <div class="flex items-center justify-center gap-1.5">
