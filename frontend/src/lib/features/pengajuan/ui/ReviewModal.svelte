@@ -337,7 +337,7 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Provinsi *</Label>
-                                            <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-100 border-slate-200 text-slate-500 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''} options={[
+                                            <Select bind:value={loc.province} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-500 font-medium opacity-70 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} on:change={() => loc.location = ''} options={[
                                                 {value: '', label: 'Pilih Provinsi'},
                                                 ...provinces.map(prov => ({value: toTitleCase(prov.name), label: toTitleCase(prov.name)}))
                                             ]} />
@@ -350,7 +350,7 @@
                                                     ...getRegencies(loc.province).map(r => ({value: toTitleCase(r), label: toTitleCase(r)}))
                                                 ]} />
                                             {:else}
-                                                <Input value={toTitleCase(loc.location)} on:input={(e) => loc.location = e.target.value} disabled={!isEditing || !loc.province} class={!isEditing ? 'bg-slate-100 border-slate-200 text-slate-500 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder={!loc.province ? 'Pilih provinsi terlebih dahulu' : 'Contoh: Surabaya'} />
+                                                <Input value={toTitleCase(loc.location)} on:input={(e) => loc.location = e.target.value} disabled={!isEditing || !loc.province} class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-500 font-medium opacity-70 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} placeholder={!loc.province ? 'Pilih provinsi terlebih dahulu' : 'Contoh: Surabaya'} />
                                             {/if}
                                         </div>
                                     </div>
@@ -358,11 +358,11 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Tanggal Mulai *</Label>
-                                            <Datepicker bind:value={loc.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-100 text-slate-500 cursor-default pointer-events-none' : ''} />
+                                            <Datepicker bind:value={loc.startDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 text-slate-500 opacity-70 cursor-default pointer-events-none' : ''} />
                                         </div>
                                         <div class="space-y-1.5">
                                             <Label class="text-slate-600 text-xs">Tanggal Selesai *</Label>
-                                            <Datepicker bind:value={loc.endDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-100 text-slate-500 cursor-default pointer-events-none' : ''} />
+                                            <Datepicker bind:value={loc.endDate} disabled={!isEditing} class={!isEditing ? 'bg-slate-50 text-slate-500 opacity-70 cursor-default pointer-events-none' : ''} />
                                         </div>
                                     </div>
                                 </div>
@@ -392,7 +392,7 @@
                                         min="1"
                                         bind:value={formData.spdNumberInput} 
                                         disabled={!isEditing} 
-                                        class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-emerald-500 focus:border-emerald-500 {!isEditing ? 'bg-slate-100 text-slate-500 opacity-100 cursor-default' : 'bg-white'}" 
+                                        class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-emerald-500 focus:border-emerald-500 {!isEditing ? 'bg-slate-50 text-slate-500 opacity-70 cursor-default' : 'bg-white'}" 
                                         placeholder="Cth: 005" 
                                     />
                                 </div>
