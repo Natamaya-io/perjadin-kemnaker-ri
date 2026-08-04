@@ -50,13 +50,13 @@
         const spaceBelow = viewportHeight - rect.bottom;
         if (spaceBelow < panelHeight && rect.top > panelHeight) {
             // Open upward
-            panelTop = rect.top + window.scrollY - panelHeight - 8;
+            panelTop = rect.top - panelHeight - 8;
         } else {
-            panelTop = rect.bottom + window.scrollY + 8;
+            panelTop = rect.bottom + 8;
         }
 
         // Align left, but prevent overflow right
-        let left = rect.left + window.scrollX;
+        let left = rect.left;
         if (left + panelWidth > window.innerWidth - 8) {
             left = window.innerWidth - panelWidth - 8;
         }
@@ -144,7 +144,7 @@
 </script>
 
 <!-- Listen scroll globally to reposition panel -->
-<svelte:window on:scroll|passive={handleScroll} on:resize={handleScroll} />
+<svelte:window on:scroll|capture|passive={handleScroll} on:resize={handleScroll} />
 
 <div class="relative w-full" use:clickOutside on:click_outside={() => isOpen = false}>
     <input type="hidden" {value} />
