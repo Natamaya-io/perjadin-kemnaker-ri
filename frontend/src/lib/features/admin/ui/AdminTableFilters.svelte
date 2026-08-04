@@ -8,6 +8,7 @@
 	export let sortOption = 'date-desc';
 	export let startDate = '';
 	export let endDate = '';
+	export let typeFilter = 'all';
 	export let statusOptions = [
 		{ value: 'all', label: 'Semua Status' },
 		{ value: 'In Progress', label: 'In Progress' },
@@ -15,7 +16,7 @@
 	];
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-3 w-full items-center">
+<div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 w-full items-center">
 
 	<!-- Search Bar — mengisi sisa ruang -->
 	<div class="relative w-full min-w-0">
@@ -29,6 +30,20 @@
 			placeholder="Cari No. SPJ atau Tujuan..."
 			bind:value={searchQuery}
 			class="pl-9 bg-white border-slate-200 w-full"
+		/>
+	</div>
+
+	<!-- Filter Jenis -->
+	<div class="w-full md:w-36">
+		<Select
+			bind:value={typeFilter}
+			class="bg-white border-slate-200 w-full"
+			options={[
+				{ value: 'all', label: 'Semua Jenis' },
+				{ value: 'Dalam_Kota', label: 'Dalam Kota' },
+				{ value: 'Luar_Kota', label: 'Luar Kota' },
+				{ value: 'Luar_Negeri', label: 'Luar Negeri' }
+			]}
 		/>
 	</div>
 

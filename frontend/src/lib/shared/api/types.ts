@@ -125,6 +125,7 @@ export interface PaginatedParams {
     sort_by?: string;
     start_date?: string; // ISO string
     end_date?: string;   // ISO string
+    type?: string;
     user_id?: string;
 }
 

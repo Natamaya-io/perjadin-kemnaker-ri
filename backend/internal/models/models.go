@@ -167,6 +167,7 @@ type PaginatedParams struct {
 	Status        string     `query:"status"`
 	ReportStatus  string     `query:"report_status"`
 	PaymentStatus string     `query:"payment_status"`
+	Type          string     `query:"type"`
 	SortBy        string     `query:"sort_by"`
 	Limit         int        `query:"limit"`
 }

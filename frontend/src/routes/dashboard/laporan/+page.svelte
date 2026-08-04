@@ -28,6 +28,7 @@
     let sortOption = 'spj-desc'; // Default to newest SPJ first
     let startDate = '';
     let endDate = '';
+    let typeFilter = 'all';
 
     // Expanded agenda state
     let expandedAgendas = new Set();
@@ -115,7 +116,7 @@
             }, 300);
         }
     }
-    $: searchQuery, statusFilter, sortOption, startDate, endDate, handleFiltersChanged();
+    $: searchQuery, statusFilter, sortOption, startDate, endDate, typeFilter, handleFiltersChanged();
 
     function fetchRecords(append = false) {
         if (!$userStore) return;
@@ -123,6 +124,7 @@
         const filters = {
             search: searchQuery,
             report_status: statusFilter === 'all' ? undefined : statusFilter,
+            type: typeFilter === 'all' ? undefined : typeFilter,
             sort_by: sortOption,
             start_date: startDate ? new Date(startDate).toISOString() : undefined,
             end_date: endDate ? new Date(endDate).toISOString() : undefined,
@@ -219,6 +221,7 @@
         <AdminTableFilters
             bind:searchQuery
             bind:statusFilter
+            bind:typeFilter
             bind:sortOption
             bind:startDate
             bind:endDate

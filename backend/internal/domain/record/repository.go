@@ -1247,6 +1247,11 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		args = append(args, params.PaymentStatus)
 		argId++
 	}
+	if params.Type != "" {
+		whereClause += fmt.Sprintf(" AND travel_records.type = $%d", argId)
+		args = append(args, params.Type)
+		argId++
+	}
 
 	joinClause := ""
 	if params.Search != "" {

@@ -39,6 +39,7 @@
     let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
+    let typeFilter = 'all';
 
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
@@ -95,7 +96,7 @@
             }, 300);
         }
     }
-    $: searchQuery, statusFilter, sortOption, startDate, endDate, handleFiltersChanged();
+    $: searchQuery, statusFilter, sortOption, startDate, endDate, typeFilter, handleFiltersChanged();
 
     function fetchRecords(append = false) {        let statusParam = statusFilter === 'all' ? undefined : statusFilter;
         let sortByParam = sortOption;
@@ -116,6 +117,7 @@
             limit,
             search: searchQuery,
             status: statusParam,
+            type: typeFilter === 'all' ? undefined : typeFilter,
             sort_by: sortByParam,
             start_date: startIso,
             end_date: endIso,
@@ -428,6 +430,7 @@
         <AdminTableFilters
             bind:searchQuery
             bind:statusFilter
+            bind:typeFilter
             bind:sortOption
             bind:startDate
             bind:endDate
