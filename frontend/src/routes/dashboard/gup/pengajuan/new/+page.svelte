@@ -28,6 +28,18 @@
     let isSubmitting = false;
     let errorMessage = '';
 
+    let supportingDocumentFile: File | null = null;
+    let fileInputRef: HTMLInputElement;
+
+    function handleFileChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files.length > 0) {
+            supportingDocumentFile = input.files[0];
+        } else {
+            supportingDocumentFile = null;
+        }
+    }
+
     $: selisih = form.valueAmount - form.paidAmount - form.taxAmount;
 
     async function handleSubmit() {
@@ -45,13 +57,20 @@
         errorMessage = '';
 
         try {
+            let documentFile = undefined;
+            if (supportingDocumentFile) {
+                const uploadRes = await api.uploadFile(supportingDocumentFile);
+                documentFile = { path: uploadRes.path, originalName: supportingDocumentFile.name };
+            }
+
             const payload = {
                 ...form,
                 fundingSourceId: form.fundingSourceId || undefined,
                 receiptDate: form.receiptDate ? new Date(form.receiptDate).toISOString() : undefined,
                 valueAmount: Number(form.valueAmount),
                 paidAmount: Number(form.paidAmount),
-                taxAmount: Number(form.taxAmount)
+                taxAmount: Number(form.taxAmount),
+                documentFile
             };
 
             await api.createGupPengajuan(payload);
@@ -239,6 +258,39 @@
                     <span class="font-bold font-mono text-lg {selisih < 0 ? 'text-rose-500' : 'text-slate-900'}">
                         {formatCurrency(selisih)}
                     </span>
+                </div>
+            </div>
+
+            <!-- Dokumen Pendukung -->
+            <div class="space-y-2">
+                <label for="supportingDocument" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Dokumen Pendukung (Opsional)</label>
+                <div class="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                    {#if supportingDocumentFile}
+                        <div class="flex items-center gap-3 overflow-hidden flex-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span class="text-sm font-medium text-slate-700 truncate">{supportingDocumentFile.name}</span>
+                        </div>
+                        <button type="button" class="text-sm text-red-500 font-semibold hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors" on:click={() => { supportingDocumentFile = null; if(fileInputRef) fileInputRef.value = ''; }}>Hapus</button>
+                    {:else}
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-500">Format: PDF atau Gambar (Maks 5MB)</p>
+                        </div>
+                    {/if}
+                    <div class="{supportingDocumentFile ? 'hidden' : ''}">
+                        <label class="cursor-pointer inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-sm transition-all">
+                            Pilih File
+                            <input 
+                                type="file" 
+                                id="supportingDocument"
+                                bind:this={fileInputRef}
+                                on:change={handleFileChange}
+                                accept="application/pdf,image/*" 
+                                class="hidden" 
+                            />
+                        </label>
+                    </div>
                 </div>
             </div>
 
