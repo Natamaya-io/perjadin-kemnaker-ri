@@ -169,7 +169,7 @@
     }
 </script>
 
-<div class="space-y-6 pb-20 max-w-7xl mx-auto">
+<div class="space-y-6 pb-20 w-full">
     <!-- Hero halaman -->
     <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-800 to-sky-900 p-6 sm:p-8 text-white shadow-xl no-print">
         <div class="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl"></div>
