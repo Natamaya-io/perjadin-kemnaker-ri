@@ -286,54 +286,58 @@
                 </tbody>
             </table>
         </div>
-        
-        <!-- Bagian Pagination (Clean & Modern) -->
-        {#if totalPages > 1}
-        <div class="px-4 sm:px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
-            <div class="text-sm text-slate-500 text-center sm:text-left">
-                Menampilkan <span class="font-medium text-slate-700">{(currentPage - 1) * itemsPerPage + 1}</span> 
-                hingga <span class="font-medium text-slate-700">{Math.min(currentPage * itemsPerPage, ptList.length)}</span> 
-                dari <span class="font-medium text-slate-700">{ptList.length}</span> data
-            </div>
-            <div class="flex items-center justify-center gap-1 sm:gap-2">
-                <button 
-                    type="button" 
-                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={currentPage === 1}
-                    on:click={() => goToPage(currentPage - 1)}
-                >
-                    Sebelumnya
-                </button>
-                
-                <div class="hidden sm:flex items-center gap-1">
-                    {#each Array(totalPages) as _, i}
-                        <button 
-                            type="button"
-                            class="w-8 h-8 flex items-center justify-center text-sm font-medium rounded-lg transition-colors {currentPage === i + 1 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600'}"
-                            on:click={() => goToPage(i + 1)}
-                        >
-                            {i + 1}
-                        </button>
-                    {/each}
-                </div>
-                
-                <!-- Mobile page indicator -->
-                <div class="sm:hidden text-sm font-medium text-slate-700 px-2">
-                    Hal {currentPage} / {totalPages}
-                </div>
+    </div>
 
-                <button 
-                    type="button" 
-                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={currentPage === totalPages}
-                    on:click={() => goToPage(currentPage + 1)}
-                >
+    <!-- Pagination (Canonical Pattern) -->
+    {#if totalPages > 1}
+        <div class="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 mt-6 rounded-xl shadow-sm">
+            <!-- MOBILE: Hanya dua tombol -->
+            <div class="flex flex-1 justify-between sm:hidden">
+                <Button variant="outline" size="sm" disabled={currentPage === 1} on:click={() => currentPage--}>
+                    Sebelumnya
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} on:click={() => currentPage++}>
                     Selanjutnya
-                </button>
+                </Button>
+            </div>
+
+            <!-- DESKTOP: Info data + nav lengkap -->
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-slate-700">
+                        Menampilkan <span class="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                        hingga <span class="font-medium">{Math.min(currentPage * itemsPerPage, ptList.length)}</span>
+                        dari <span class="font-medium">{ptList.length}</span> hasil
+                    </p>
+                </div>
+                <div>
+                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button on:click={() => currentPage--} disabled={currentPage === 1} class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        {#each Array(totalPages) as _, i}
+                            {#if totalPages <= 7 || (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage))}
+                                <button on:click={() => currentPage = i + 1} class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {currentPage === i + 1 ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0'}">
+                                    {i + 1}
+                                </button>
+                            {:else if i === 1 || i === totalPages - 2}
+                                <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0">...</span>
+                            {/if}
+                        {/each}
+                        <button on:click={() => currentPage++} disabled={currentPage === totalPages} class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </nav>
+                </div>
             </div>
         </div>
-        {/if}
-    </div>
+    {/if}
 </div>
 
 <!-- Modal Form -->
