@@ -426,14 +426,25 @@
 
 <!-- Modal Input Anggaran -->
 {#if showAnggaranModal}
-    <div class="fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-4 no-print" on:click|self={closeAnggaranModal}>
+    <div
+        class="fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-4 no-print"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-anggaran-title"
+        on:click|self={closeAnggaranModal}
+        on:keydown={(e) => e.key === 'Escape' && closeAnggaranModal()}
+    >
         <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900">Input Anggaran</h3>
+                    <h3 id="modal-anggaran-title" class="text-lg font-bold text-slate-900">Input Anggaran</h3>
                     <p class="text-sm text-slate-500 mt-0.5">{selectedRow?.jenisPengadaan || ''}</p>
                 </div>
-                <button class="rounded-full p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" on:click={closeAnggaranModal}>
+                <button
+                    class="rounded-full p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label="Tutup modal"
+                    on:click={closeAnggaranModal}
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
@@ -451,8 +462,9 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="text-sm font-semibold text-slate-700">Nominal Anggaran (Rp)</label>
+                    <label for="input-anggaran" class="text-sm font-semibold text-slate-700">Nominal Anggaran (Rp)</label>
                     <input
+                        id="input-anggaran"
                         type="number"
                         min="0"
                         bind:value={anggaranInput}

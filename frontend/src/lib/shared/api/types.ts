@@ -191,7 +191,8 @@ export interface ApiClient {
     getGupPengajuan(customFetch?: typeof fetch): Promise<any[]>;
     getGupPengajuanById(id: string, customFetch?: typeof fetch): Promise<any>;
     createGupPengajuan(data: any): Promise<any>;
-    getGupLaporan(customFetch?: typeof fetch): Promise<any[]>;
+    getGupLaporan(year?: number, customFetch?: typeof fetch): Promise<any>;
+    saveGupBudget(data: { procurementTypeId: string; year: number; amount: number }): Promise<any>;
     getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
     getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;
 }
