@@ -274,24 +274,28 @@
                                             {record.stakeholder ? `${record.purpose} ${record.stakeholder}` : record.purpose}
                                         </div>
                                         {#if record.agenda}
-                                        {#if expandedAgendas.has(record.spd)}
-                                        <div class="text-[11px] text-slate-600 mt-1.5 font-medium">
-                                            <span class="text-slate-400 font-normal mr-1">Agenda:</span>{record.agenda}
-                                        </div>
-                                        {/if}
-                                        <button
-                                            type="button"
-                                            on:click|stopPropagation={() => toggleAgenda(record.spd)}
-                                            class="mt-1 text-[10px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors flex items-center gap-0.5"
-                                        >
+                                        <div class="relative mt-1 group inline-block">
+                                            <button
+                                                type="button"
+                                                on:click|stopPropagation={() => toggleAgenda(record.spd)}
+                                                class="text-[10px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors flex items-center gap-0.5"
+                                            >
+                                                {#if expandedAgendas.has(record.spd)}
+                                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                                                    Sembunyikan agenda
+                                                {:else}
+                                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                                    Lihat agenda
+                                                {/if}
+                                            </button>
+                                            
                                             {#if expandedAgendas.has(record.spd)}
-                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
-                                                Sembunyikan agenda
-                                            {:else}
-                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                                Lihat agenda
+                                            <div class="absolute z-50 left-0 top-full mt-1.5 w-64 p-3 bg-white border border-slate-200 rounded-xl shadow-xl text-[11px] text-slate-600 font-medium">
+                                                <span class="text-slate-400 font-normal mr-1 block mb-1">Agenda:</span>
+                                                <span class="leading-relaxed">{record.agenda}</span>
+                                            </div>
                                             {/if}
-                                        </button>
+                                        </div>
                                         {/if}
                                         <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
