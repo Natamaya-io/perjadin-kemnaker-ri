@@ -165,7 +165,7 @@
                         class="h-[46px] border-slate-300"
                         options={[
                             {value: '', label: 'Pilih Jenis Pengadaan'},
-                            ...procurementTypes.map(t => ({value: t.id, label: `${t.name} (MAK: ${t.accountMak})`}))
+                            ...procurementTypes.map(t => ({value: t.id, label: t.name}))
                         ]}
                     />
                 </div>
