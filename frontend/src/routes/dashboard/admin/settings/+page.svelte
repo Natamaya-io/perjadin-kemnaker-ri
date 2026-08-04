@@ -16,6 +16,10 @@
     let settings = {
         ppk_name: $settingsStore.ppk_name || '',
         ppk_nip: $settingsStore.ppk_nip || '',
+        ppk_biro_name: $settingsStore.ppk_biro_name || '',
+        ppk_biro_nip: $settingsStore.ppk_biro_nip || '',
+        ppk_biro_unit: $settingsStore.ppk_biro_unit || '',
+        ppk_biro_dipa: $settingsStore.ppk_biro_dipa || '',
         bendahara_name: $settingsStore.bendahara_name || '',
         bendahara_nip: $settingsStore.bendahara_nip || ''
     };
@@ -33,6 +37,10 @@
                 const newSettings = {
                     ppk_name: data.ppk_name || '',
                     ppk_nip: data.ppk_nip || '',
+                    ppk_biro_name: data.ppk_biro_name || '',
+                    ppk_biro_nip: data.ppk_biro_nip || '',
+                    ppk_biro_unit: data.ppk_biro_unit || '',
+                    ppk_biro_dipa: data.ppk_biro_dipa || '',
                     bendahara_name: data.bendahara_name || '',
                     bendahara_nip: data.bendahara_nip || '',
                     isLoaded: true
@@ -82,7 +90,7 @@
             </div>
             
             <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- PPK -->
                     <div class="space-y-4">
                         <div class="pb-2 border-b border-slate-100">
@@ -112,6 +120,61 @@
                                         bind:value={settings.ppk_nip}
                                         placeholder="Contoh: 19720827 200312 1 002"
                                         class="font-mono"
+                                    />
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+
+                    <!-- PPK Biro Umum -->
+                    <div class="space-y-4">
+                        <div class="pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">PPK Biro Umum Unit Setjen</span>
+                        </div>
+                        {#if !$settingsStore.isLoaded && !settings.ppk_biro_name}
+                            <!-- Skeleton loader for PPK Biro -->
+                            <div class="space-y-4 animate-pulse">
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-24"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-16"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-20"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                                <div class="space-y-1.5"><div class="h-4 bg-slate-200 rounded w-20"></div><div class="h-10 bg-slate-100 rounded border border-slate-200"></div></div>
+                            </div>
+                        {:else}
+                            <div class="space-y-4">
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_biro_name" class="text-xs font-semibold text-slate-600">Nama Lengkap</Label>
+                                    <Input 
+                                        id="ppk_biro_name"
+                                        bind:value={settings.ppk_biro_name}
+                                        placeholder="Contoh: YUDA SUSANTO"
+                                        class="focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_biro_nip" class="text-xs font-semibold text-slate-600">NIP</Label>
+                                    <Input 
+                                        id="ppk_biro_nip"
+                                        bind:value={settings.ppk_biro_nip}
+                                        placeholder="Contoh: 19810516 200901 1 003"
+                                        class="font-mono"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_biro_unit" class="text-xs font-semibold text-slate-600">Unit Kerja</Label>
+                                    <Input 
+                                        id="ppk_biro_unit"
+                                        bind:value={settings.ppk_biro_unit}
+                                        placeholder="Contoh: Biro Umum Unit Setjen"
+                                        class="focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label for="ppk_biro_dipa" class="text-xs font-semibold text-slate-600">DIPA</Label>
+                                    <Input 
+                                        id="ppk_biro_dipa"
+                                        bind:value={settings.ppk_biro_dipa}
+                                        placeholder="Contoh: DIPA Setjen Kemnaker"
+                                        class="focus:ring-indigo-500"
                                     />
                                 </div>
                             </div>
