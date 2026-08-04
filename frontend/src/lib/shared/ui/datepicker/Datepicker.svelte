@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher, tick } from 'svelte';
     import { clickOutside } from '$lib/shared/actions/clickOutside.js';
+    import { portal } from '$lib/shared/actions/portal.js';
     import { cn } from '$lib/shared/utils/utils';
     import { browser } from '$app/environment';
 
@@ -156,20 +157,21 @@
     </button>
 </div>
 
-<!-- Portal: rendered on <body> via fixed position, escapes all overflow containers -->
+<!-- Portal: rendered on <body> via action, escapes all overflow containers -->
 {#if isOpen}
-    <!-- Backdrop tap-to-close (invisible) -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-        class="fixed inset-0 z-[9998]"
-        on:click={() => isOpen = false}
-    ></div>
+    <div use:portal>
+        <!-- Backdrop tap-to-close (invisible) -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+            class="fixed inset-0 z-[9998]"
+            on:click={() => isOpen = false}
+        ></div>
 
-    <div
-        class="fixed z-[9999] p-3 rounded-xl border border-slate-100 bg-white shadow-xl"
-        style="top: {panelTop}px; left: {panelLeft}px; width: {panelWidth}px;"
-    >
+        <div
+            class="fixed z-[9999] p-3 rounded-xl border border-slate-100 bg-white shadow-xl"
+            style="top: {panelTop}px; left: {panelLeft}px; width: {panelWidth}px;"
+        >
         <!-- Header navigasi bulan -->
         <div class="flex items-center justify-between mb-4">
             <button type="button" aria-label="Bulan sebelumnya" on:click|preventDefault={prevMonth} class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
