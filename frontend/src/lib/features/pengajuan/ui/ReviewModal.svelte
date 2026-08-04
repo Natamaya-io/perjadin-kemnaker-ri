@@ -278,9 +278,16 @@
                 finalSpd = `ID-SPJ-${String(formData.spdNumberInput).padStart(3, '0')}`;
             }
 
+            let uploadedPath = baseRecord.suratTugasPath;
+            if (newSuratTugasFile) {
+                const res = await api.uploadFile(newSuratTugasFile);
+                uploadedPath = res.path;
+            }
+
             const commonData = {
                 ...formData,
                 spd: finalSpd, // Include potentially edited SPD
+                suratTugasPath: uploadedPath, // Sertakan file yang baru diunggah jika ada
                 startDate: minStartDate ? new Date(minStartDate).toISOString() : null,
                 endDate: maxEndDate ? new Date(maxEndDate).toISOString() : null,
                 // Backward compatibility for summary
