@@ -4,6 +4,7 @@
     import { api } from '$lib/shared/api';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
+    import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     
     export let data: any;
     
@@ -243,129 +244,137 @@
 
 <!-- Modal Detail GUP -->
 {#if isReviewOpen}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity" on:click|self={() => isReviewOpen = false} on:keydown|self={(e) => e.key === 'Escape' && (isReviewOpen = false)} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="bg-slate-50 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
-        
-        <!-- Header Modal -->
-        <div class="flex items-center justify-between px-6 py-5 bg-white border-b border-slate-200 relative">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-sky-400"></div>
-            <div>
-                <h3 class="text-xl font-bold text-slate-800 tracking-tight">Detail Pengajuan GUP</h3>
-                <p class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-semibold">{selectedGup?.businessId || 'Memuat...'}</p>
-            </div>
-            <button class="p-2 -mr-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors" on:click={() => isReviewOpen = false} title="Tutup" aria-label="Tutup">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+<BaseModal bind:open={isReviewOpen} maxWidth="max-w-3xl">
+    <svelte:fragment slot="header">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Detail Pengajuan GUP</h2>
         </div>
+        <div class="flex items-center gap-2">
+            <span class="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs sm:text-sm">
+                {selectedGup?.businessId || 'Memuat...'}
+            </span>
+        </div>
+    </svelte:fragment>
 
-        <!-- Body Modal -->
-        <div class="p-6 overflow-y-auto flex-1 space-y-6">
-            {#if isFetchingDetail}
-                <div class="flex flex-col items-center justify-center h-48 space-y-4">
-                    <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <p class="text-sm font-medium text-slate-500 animate-pulse">Mengambil data...</p>
-                </div>
-            {:else if selectedGup}
-                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+    <svelte:fragment slot="body">
+        {#if isFetchingDetail}
+            <div class="flex flex-col items-center justify-center h-52 space-y-4">
+                <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                <p class="text-sm font-medium text-slate-500 animate-pulse">Mengambil data detail...</p>
+            </div>
+        {:else if selectedGup}
+            <div class="space-y-5">
+
+                <!-- Kartu: Informasi Dasar -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
-                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
                         <div class="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Informasi Dasar</h4>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">ID Transaksi / SPBY</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Transaksi / SPBY</p>
                             <p class="font-bold text-slate-800 font-mono text-sm">{selectedGup.businessId || '-'}</p>
                         </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Tanggal Kuitansi</p>
-                            <p class="font-bold text-slate-800 text-sm">{formatDate(selectedGup.receiptDate)}</p>
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tanggal Kuitansi</p>
+                            <p class="font-semibold text-slate-800 text-sm">{formatDate(selectedGup.receiptDate)}</p>
                         </div>
-                        <div class="md:col-span-2">
-                            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Uraian Pembayaran</p>
-                            <p class="font-medium text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 text-sm leading-relaxed">{selectedGup.paymentDescription || '-'}</p>
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Penerima Uang (PUM)</p>
+                            <p class="font-semibold text-slate-800 text-sm">{selectedGup.pum || '-'}</p>
                         </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Penerima Uang (PUM)</p>
-                            <p class="font-bold text-slate-800 text-sm">{selectedGup.pum || '-'}</p>
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Penerima Barang/Jasa</p>
+                            <p class="font-semibold text-slate-800 text-sm">{selectedGup.recipient || '-'}</p>
                         </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Penerima Barang/Jasa</p>
-                            <p class="font-bold text-slate-800 text-sm">{selectedGup.recipient || '-'}</p>
+                        <div class="sm:col-span-2 space-y-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Uraian Pembayaran</p>
+                            <p class="font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm leading-relaxed">{selectedGup.paymentDescription || '-'}</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                <!-- Kartu: Rincian Nilai Transaksi -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
-                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
                         <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Rincian Nilai Transaksi</h4>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-center">
-                            <p class="text-xs font-semibold text-slate-500 mb-1">Nilai Kuitansi</p>
-                            <p class="text-xl font-bold text-slate-900">{formatCurrency(selectedGup.valueAmount)}</p>
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-1">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nilai Kuitansi</p>
+                            <p class="text-lg font-bold text-slate-900">{formatCurrency(selectedGup.valueAmount)}</p>
                         </div>
-                        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 flex flex-col justify-center">
-                            <p class="text-xs font-semibold text-emerald-700 mb-1">Yang Dibayarkan (Netto)</p>
-                            <p class="text-xl font-bold text-emerald-600">{formatCurrency(selectedGup.paidAmount)}</p>
+                        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 space-y-1">
+                            <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Yang Dibayarkan (Netto)</p>
+                            <p class="text-lg font-bold text-emerald-600">{formatCurrency(selectedGup.paidAmount)}</p>
                         </div>
-                        <div class="bg-rose-50 rounded-xl p-4 border border-rose-100 flex flex-col justify-center">
-                            <p class="text-xs font-semibold text-rose-700 mb-1">Total Pajak</p>
-                            <p class="text-xl font-bold text-rose-600">{formatCurrency(selectedGup.taxAmount)}</p>
+                        <div class="bg-rose-50 rounded-xl p-4 border border-rose-100 space-y-1">
+                            <p class="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Total Pajak</p>
+                            <p class="text-lg font-bold text-rose-600">{formatCurrency(selectedGup.taxAmount)}</p>
                         </div>
+                    </div>
+                    <!-- Selisih -->
+                    <div class="mt-3 flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-sm font-semibold text-slate-600">Selisih (Nilai − Dibayar − Pajak)</span>
+                        <span class="text-sm font-bold text-slate-800">{formatCurrency((selectedGup.valueAmount || 0) - (selectedGup.paidAmount || 0) - (selectedGup.taxAmount || 0))}</span>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-amber-300 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                <!-- Kartu: Detail Klasifikasi (MAK) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-amber-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 to-orange-400"></div>
-                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
                         <div class="p-2.5 bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Detail Klasifikasi (MAK)</h4>
                     </div>
-                    <div class="space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-slate-50 gap-2">
-                            <span class="text-sm font-semibold text-slate-500">Program / Kegiatan / KRO / RO / Komponen / Sub</span>
-                            <span class="text-sm font-bold text-slate-800 sm:text-right max-w-md">{selectedGup.mak || '-'}</span>
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1.5 py-2.5 border-b border-slate-50">
+                            <span class="text-xs font-semibold text-slate-500 shrink-0">Program / Kegiatan / KRO / RO / Komponen / Sub</span>
+                            <span class="text-sm font-bold text-slate-800 sm:text-right">{selectedGup.mak || '-'}</span>
                         </div>
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-slate-50 gap-2">
-                            <span class="text-sm font-semibold text-slate-500">Kode Akun</span>
-                            <span class="text-sm font-bold text-slate-800 font-mono bg-slate-100 px-2 py-1 rounded inline-block">{selectedGup.accountCode || '-'}</span>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 py-2.5">
+                            <span class="text-xs font-semibold text-slate-500">Kode Akun</span>
+                            <span class="text-sm font-bold text-slate-800 font-mono bg-slate-100 px-2.5 py-1 rounded-lg inline-block">{selectedGup.accountCode || '-'}</span>
                         </div>
                     </div>
                 </div>
 
-            {:else}
-                <div class="text-center py-12">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-400 mb-4">
-                        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <p class="text-slate-500 font-medium">Gagal memuat data detail pengajuan GUP.</p>
+            </div>
+        {:else}
+            <div class="flex flex-col items-center justify-center h-48 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-300 mb-4">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
-            {/if}
-        </div>
-        
-        <!-- Footer Modal -->
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 rounded-b-2xl">
-            <Button variant="warning" class="w-full sm:w-auto" on:click={() => isReviewOpen = false}>Tutup</Button>
-            <Button variant="default" class="gap-2" disabled={!selectedGup}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Cetak SPBY
-            </Button>
-        </div>
-    </div>
-</div>
+                <p class="text-slate-500 font-medium">Gagal memuat data detail pengajuan GUP.</p>
+            </div>
+        {/if}
+    </svelte:fragment>
+
+    <svelte:fragment slot="footer">
+        <button
+            class="px-4 py-2 text-sm font-medium border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-xl transition-colors"
+            on:click={() => isReviewOpen = false}
+        >
+            Tutup
+        </button>
+        <Button variant="default" class="gap-2" disabled={!selectedGup}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Cetak SPBY
+        </Button>
+    </svelte:fragment>
+</BaseModal>
 {/if}
