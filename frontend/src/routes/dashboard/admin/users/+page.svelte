@@ -352,7 +352,7 @@
 
         <div class="space-y-4 py-4">
             <div class="space-y-2">
-                <Label>Nama Lengkap <span class="text-red-500">*</span></Label>
+                <Label>Nama Lengkap *</Label>
                 <Input type="text" placeholder="Contoh: Staf Pengaju" bind:value={formData.name} />
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -361,7 +361,7 @@
                     <Input type="text" placeholder="198..." bind:value={formData.nip} />
                 </div>
                 <div class="space-y-2">
-                    <Label>Nomor HP (WhatsApp) <span class="text-red-500">*</span></Label>
+                    <Label>Nomor HP (WhatsApp) *</Label>
                     <Input type="text" placeholder="08..." bind:value={formData.nomorHp} />
                 </div>
             </div>
@@ -386,15 +386,15 @@
                 </div>
             </div>
             <div class="space-y-2">
-                <Label>Username <span class="text-red-500">*</span></Label>
+                <Label>Username *</Label>
                 <Input type="text" placeholder="Contoh: budi" bind:value={formData.email} />
             </div>
             <div class="space-y-2">
-                <Label>Password {#if editingId}(Kosongkan jika tidak diubah){:else}<span class="text-red-500">*</span>{/if}</Label>
+                <Label>Password {#if editingId}(Kosongkan jika tidak diubah){:else}*{/if}</Label>
                 <Input type="text" placeholder="Minimal 6 karakter" bind:value={formData.password} />
             </div>
             <div class="space-y-2">
-                <Label>Role (Hak Akses) <span class="text-red-500">*</span></Label>
+                <Label>Role (Hak Akses) *</Label>
                 <div class="relative w-full">
                     <Select bind:value={formData.role} class="bg-white border-slate-200" options={[
                         {value: 'protokol', label: 'Protokol (Staf Pengaju)'},

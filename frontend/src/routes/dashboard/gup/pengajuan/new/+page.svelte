@@ -98,7 +98,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- ID Transaksi -->
                 <div class="space-y-2">
-                    <label for="businessId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">ID Transaksi <span class="text-rose-500">*</span></label>
+                    <label for="businessId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">ID Transaksi *</label>
                     <input 
                         type="text" 
                         id="businessId" 
@@ -111,7 +111,7 @@
 
                 <!-- Tanggal Kwitansi -->
                 <div class="space-y-2">
-                    <label for="receiptDate" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Tanggal Kwitansi <span class="text-rose-500">*</span></label>
+                    <label for="receiptDate" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Tanggal Kwitansi *</label>
                     <Datepicker 
                         bind:value={form.receiptDate}
                         class="border-slate-300"
@@ -121,7 +121,7 @@
 
             <!-- Uraian Pembayaran -->
             <div class="space-y-2">
-                <label for="paymentDescription" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Uraian Pembayaran <span class="text-rose-500">*</span></label>
+                <label for="paymentDescription" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Uraian Pembayaran *</label>
                 <textarea 
                     id="paymentDescription" 
                     bind:value={form.paymentDescription}
@@ -135,7 +135,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Jenis Pengadaan -->
                 <div class="space-y-2">
-                    <label for="procurementTypeId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Jenis Pengadaan <span class="text-rose-500">*</span></label>
+                    <label for="procurementTypeId" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Jenis Pengadaan *</label>
                     <Select 
                         id="procurementTypeId" 
                         bind:value={form.procurementTypeId}
@@ -166,7 +166,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Penerima -->
                 <div class="space-y-2">
-                    <label for="recipient" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Penerima <span class="text-rose-500">*</span></label>
+                    <label for="recipient" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Penerima *</label>
                     <input 
                         type="text" 
                         id="recipient" 
@@ -179,7 +179,7 @@
 
                 <!-- PUM -->
                 <div class="space-y-2">
-                    <label for="pum" class="block text-sm font-bold uppercase tracking-wide text-slate-500">PUM <span class="text-rose-500">*</span></label>
+                    <label for="pum" class="block text-sm font-bold uppercase tracking-wide text-slate-500">PUM *</label>
                     <input 
                         type="text" 
                         id="pum" 
@@ -196,7 +196,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Nilai Total -->
                     <div class="space-y-2">
-                        <label for="valueAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Nilai (Rp) <span class="text-rose-500">*</span></label>
+                        <label for="valueAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Nilai (Rp) *</label>
                         <input 
                             type="number" 
                             id="valueAmount" 
@@ -209,7 +209,7 @@
 
                     <!-- Dibayarkan -->
                     <div class="space-y-2">
-                        <label for="paidAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Dibayarkan (Rp) <span class="text-rose-500">*</span></label>
+                        <label for="paidAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Dibayarkan (Rp) *</label>
                         <input 
                             type="number" 
                             id="paidAmount" 
@@ -222,7 +222,7 @@
 
                     <!-- Pajak -->
                     <div class="space-y-2">
-                        <label for="taxAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Pajak (Rp) <span class="text-rose-500">*</span></label>
+                        <label for="taxAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Pajak (Rp) *</label>
                         <input 
                             type="number" 
                             id="taxAmount" 
