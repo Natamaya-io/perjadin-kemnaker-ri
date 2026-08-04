@@ -161,11 +161,23 @@
 	$: totalSBMCost = totalCostPerPerson * currentEmployeeCount;
 
     let newSuratTugasFile = null;
+    let deleteSuratTugasFlag = false; // true = hapus file existing saat save
 
     function handleFileChange(event) {
         const file = event.target.files[0];
         if (file) {
             newSuratTugasFile = file;
+            deleteSuratTugasFlag = false; // batalkan flag hapus jika memilih file baru
+        }
+    }
+
+    function handleDeleteSuratTugas() {
+        if (newSuratTugasFile) {
+            // Baru dipilih tapi belum disimpan — batalkan saja
+            newSuratTugasFile = null;
+        } else {
+            // File sudah tersimpan di DB — tandai untuk dihapus saat save
+            deleteSuratTugasFlag = true;
         }
     }
 
@@ -193,7 +205,9 @@
             }
 
             let uploadedPath = baseRecord.suratTugasPath;
-            if (newSuratTugasFile) {
+            if (deleteSuratTugasFlag) {
+                uploadedPath = null; // Hapus referensi file di database
+            } else if (newSuratTugasFile) {
                 const res = await api.uploadFile(newSuratTugasFile);
                 uploadedPath = res.path;
             }
@@ -261,6 +275,8 @@
     function close() {
         open = false;
         isEditing = false;
+        newSuratTugasFile = null;
+        deleteSuratTugasFlag = false;
         dispatch('close');
     }
 </script>
@@ -379,17 +395,22 @@
                                     <span>Surat Tugas</span>
                                 </Label>
                                 
-                                {#if baseRecord.suratTugasPath || newSuratTugasFile}
-                                    <div class="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-slate-50">
+                                {#if (baseRecord.suratTugasPath && !deleteSuratTugasFlag) || newSuratTugasFile}
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg border {newSuratTugasFile ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-slate-50'}">
                                         <div class="flex items-center gap-2 overflow-hidden">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 {newSuratTugasFile ? 'text-blue-500' : 'text-rose-500'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                             </svg>
-                                            <span class="text-sm font-medium text-slate-700 truncate" title={newSuratTugasFile ? newSuratTugasFile.name : baseRecord.suratTugasPath}>
-                                                {newSuratTugasFile ? newSuratTugasFile.name : baseRecord.suratTugasPath}
-                                            </span>
+                                            <div class="min-w-0">
+                                                <span class="text-sm font-medium text-slate-700 truncate block" title={newSuratTugasFile ? newSuratTugasFile.name : baseRecord.suratTugasPath}>
+                                                    {newSuratTugasFile ? newSuratTugasFile.name : baseRecord.suratTugasPath}
+                                                </span>
+                                                {#if newSuratTugasFile}
+                                                    <span class="text-[10px] text-blue-500 font-medium">File baru — belum disimpan</span>
+                                                {/if}
+                                            </div>
                                         </div>
-                                        <div class="flex items-center gap-2 shrink-0">
+                                        <div class="flex items-center gap-1.5 shrink-0">
                                             {#if baseRecord.suratTugasPath && !newSuratTugasFile}
                                                 <a href={`/uploads/${baseRecord.suratTugasPath}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors">
                                                     Lihat
@@ -397,16 +418,42 @@
                                             {/if}
                                             {#if isEditing}
                                                 <label class="cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-md transition-colors">
-                                                    {baseRecord.suratTugasPath ? 'Ganti' : 'Pilih'}
+                                                    Ganti
                                                     <input type="file" class="hidden" accept="image/*,application/pdf" on:change={handleFileChange} />
                                                 </label>
+                                                <button
+                                                    type="button"
+                                                    on:click={handleDeleteSuratTugas}
+                                                    class="inline-flex items-center justify-center p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                                    title="Hapus file"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
                                             {/if}
                                         </div>
                                     </div>
                                 {:else}
-                                    <div class="flex flex-col items-center justify-center gap-2 p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50 text-center">
-                                        <p class="text-xs text-slate-500 italic">Tidak ada Surat Tugas yang dilampirkan.</p>
-                                        {#if isEditing}
+                                    <div class="flex flex-col items-center justify-center gap-2 p-4 border border-dashed {deleteSuratTugasFlag ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-slate-50'} rounded-lg text-center">
+                                        {#if deleteSuratTugasFlag}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            <p class="text-xs text-red-500 font-medium">File akan dihapus saat menyimpan.</p>
+                                            {#if isEditing}
+                                                <button
+                                                    type="button"
+                                                    on:click={() => deleteSuratTugasFlag = false}
+                                                    class="text-xs text-slate-500 hover:text-slate-700 underline"
+                                                >
+                                                    Batalkan
+                                                </button>
+                                            {/if}
+                                        {:else}
+                                            <p class="text-xs text-slate-500 italic">Tidak ada Surat Tugas yang dilampirkan.</p>
+                                        {/if}
+                                        {#if isEditing && !deleteSuratTugasFlag}
                                             <label class="cursor-pointer inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg shadow-sm transition-all active:scale-95 uppercase tracking-wide">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                                 Upload Surat Tugas
