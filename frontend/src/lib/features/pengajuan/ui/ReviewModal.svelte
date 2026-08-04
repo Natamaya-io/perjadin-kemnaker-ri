@@ -1,7 +1,5 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { portal } from '$lib/shared/actions/portal';
-    import { fade, fly } from 'svelte/transition';
     
     import Label from '$lib/shared/ui/label/Label.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
@@ -11,7 +9,6 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
-    import ConfirmationModal from '$lib/shared/ui/confirmation-modal/ConfirmationModal.svelte';
     import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     
     import { api } from '$lib/shared/api';
@@ -36,8 +33,6 @@
     let selectedEmployeeIds = [];
     let initialEmployeeIds = [];
     let prevOpen = false;
-    
-    let showSpdConfirmModal = false;
     
     let searchQuery = '';
     $: filteredOfficers = protokolOfficers.filter(officer => 
@@ -171,88 +166,6 @@
         const file = event.target.files[0];
         if (file) {
             newSuratTugasFile = file;
-        }
-    }
-
-    async function saveSuratTugasFileOnly() {
-        if (!newSuratTugasFile) return;
-
-        isLoading = true;
-        try {
-            const res = await api.uploadFile(newSuratTugasFile);
-            const uploadedPath = res.path;
-
-            // Update all records in the SPD group
-            for (const record of records) {
-                await updateRecord(record.id, {
-                    suratTugasPath: uploadedPath
-                });
-            }
-
-            toast.success('Surat Tugas berhasil diperbarui.');
-            newSuratTugasFile = null;
-            dispatch('saved');
-        } catch (e) {
-            toast.error('Gagal memperbarui Surat Tugas.');
-        } finally {
-            isLoading = false;
-        }
-    }
-
-	async function saveSuratTugasNumberOnly() {
-        if (!formData.suratTugasNumber) {
-            toast.error('Nomor Surat Tugas tidak boleh kosong.');
-            return;
-        }
-
-        isLoading = true;
-        try {
-            // Update all records in the SPD group
-            for (const record of records) {
-                await updateRecord(record.id, {
-                    suratTugasNumber: formData.suratTugasNumber
-                });
-            }
-
-            toast.success('Nomor Surat Tugas berhasil diperbarui.');
-            dispatch('saved');
-            // We don't close the modal, just let them see the updated state
-        } catch (e) {
-            toast.error('Gagal memperbarui Nomor Surat Tugas.');
-        } finally {
-            isLoading = false;
-        }
-    }
-
-	async function saveSpdNumberOnly() {
-        if (!formData.spdNumberInput) {
-            toast.error('Nomor SPD tidak boleh kosong jika ingin diubah.');
-            return;
-        }
-
-        isLoading = true;
-        try {
-            const finalSpd = `ID-SPJ-${String(formData.spdNumberInput).padStart(3, '0')}`;
-            
-            // Update all records in the SPD group
-            for (const record of records) {
-                await updateRecord(record.id, {
-                    spd: finalSpd
-                });
-            }
-
-            toast.success('Nomor SPJ berhasil diperbarui.');
-            
-            // Beri waktu backend untuk menyinkronkan sequence number di background 
-            // sembari menahan state loading di tombol agar UX lebih mulus
-            await new Promise(resolve => setTimeout(resolve, 600));
-            
-            dispatch('saved');
-            close();
-        } catch (e) {
-            toast.error('Gagal memperbarui Nomor SPD.');
-        } finally {
-            isLoading = false;
         }
     }
 
@@ -445,23 +358,6 @@
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs flex justify-between items-center">
                                     <span>Nomor SPJ</span>
-                                    {#if !isEditing && isEditable && formData.spdNumberInput !== (baseRecord.spd ? baseRecord.spd.replace('ID-SPJ-', '') : '')}
-                                        <button 
-                                            on:click={() => showSpdConfirmModal = true}
-                                            class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-tight flex items-center gap-1"
-                                            disabled={isLoading}
-                                        >
-                                            {#if isLoading}
-                                                <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            {:else}
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                                            {/if}
-                                            Simpan Nomor
-                                        </button>
-                                    {/if}
                                 </Label>
                                 <div class="flex items-center">
                                     <span class="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 text-sm rounded-l-md h-10">
@@ -471,33 +367,16 @@
                                         type="number"
                                         min="1"
                                         bind:value={formData.spdNumberInput} 
-                                        disabled={!isEditing && !isEditable} 
-                                        class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-emerald-500 focus:border-emerald-500 {(!isEditing && !isEditable) ? 'bg-slate-50 opacity-70 cursor-default' : (isEditing ? 'bg-white' : 'bg-emerald-50/30')}" 
+                                        disabled={!isEditing} 
+                                        class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-emerald-500 focus:border-emerald-500 {!isEditing ? 'bg-slate-50 opacity-70 cursor-default' : 'bg-white'}" 
                                         placeholder="Cth: 005" 
                                     />
                                 </div>
-                                {#if !isEditing && isEditable}
-                                    <p class="text-[10px] text-slate-400 italic">Isi untuk mengganti nomor SPJ.</p>
-                                {/if}
                             </div>
 
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs flex justify-between items-center">
                                     <span>Surat Tugas</span>
-                                    {#if isEditable && newSuratTugasFile}
-                                        <button 
-                                            on:click={saveSuratTugasFileOnly}
-                                            class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-tight flex items-center gap-1"
-                                            disabled={isLoading}
-                                        >
-                                            {#if isLoading}
-                                                <LottieLoader size="32px" className="brightness-0 invert" />
-                                            {:else}
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                                            {/if}
-                                            Simpan File
-                                        </button>
-                                    {/if}
                                 </Label>
                                 
                                 {#if baseRecord.suratTugasPath || newSuratTugasFile}
@@ -516,7 +395,7 @@
                                                     Lihat
                                                 </a>
                                             {/if}
-                                            {#if isEditable}
+                                            {#if isEditing}
                                                 <label class="cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-md transition-colors">
                                                     {baseRecord.suratTugasPath ? 'Ganti' : 'Pilih'}
                                                     <input type="file" class="hidden" accept="image/*,application/pdf" on:change={handleFileChange} />
@@ -527,7 +406,7 @@
                                 {:else}
                                     <div class="flex flex-col items-center justify-center gap-2 p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50 text-center">
                                         <p class="text-xs text-slate-500 italic">Tidak ada Surat Tugas yang dilampirkan.</p>
-                                        {#if isEditable}
+                                        {#if isEditing}
                                             <label class="cursor-pointer inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg shadow-sm transition-all active:scale-95 uppercase tracking-wide">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                                 Upload Surat Tugas
@@ -541,30 +420,13 @@
                             <div class="space-y-1.5 pt-2">
                                 <Label class="text-slate-600 text-xs flex justify-between items-center">
                                     <span>Nomor Surat Tugas</span>
-                                    {#if !isEditing && isEditable && formData.suratTugasNumber !== (records[0]?.suratTugasNumber || '')}
-                                        <button 
-                                            on:click={saveSuratTugasNumberOnly}
-                                            class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-tight flex items-center gap-1"
-                                            disabled={isLoading}
-                                        >
-                                            {#if isLoading}
-                                                <LottieLoader size="32px" className="brightness-0 invert" />
-                                            {:else}
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                                            {/if}
-                                            Simpan Nomor
-                                        </button>
-                                    {/if}
                                 </Label>
                                 <Input 
                                     bind:value={formData.suratTugasNumber} 
-                                    disabled={!isEditing && !isEditable} 
-                                    class={(!isEditing && !isEditable) ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : (isEditing ? 'bg-white border-blue-200 focus:border-blue-500' : 'bg-emerald-50/30 border-emerald-200 focus:border-emerald-500')} 
+                                    disabled={!isEditing} 
+                                    class={!isEditing ? 'bg-slate-50 border-slate-200 text-slate-700 font-medium opacity-100 cursor-default' : 'bg-white border-blue-200 focus:border-blue-500'} 
                                     placeholder="Cth: 1/B/2026/01" 
                                 />
-                                {#if !isEditing && isEditable}
-                                    <p class="text-[10px] text-slate-400 italic">Nomor ini dapat diubah langsung tanpa menekan tombol "Edit Pengajuan".</p>
-                                {/if}
                             </div>
                         </div>
                     </div>
@@ -714,14 +576,5 @@
           {/if}
       </svelte:fragment>
   </BaseModal>
-
-  <ConfirmationModal 
-      bind:open={showSpdConfirmModal}
-      title="Konfirmasi Perubahan Nomor SPJ Manual"
-      description="PERHATIAN: Sistem penomoran SPJ bersifat dinamis. Mengubah nomor SPJ secara manual akan mengubah urutan pembuatan dan menyebabkan nomor urut petugas pada SPJ di bawahnya ikut bergeser secara otomatis (efek domino) untuk menyesuaikan. Apakah Anda yakin ingin melanjutkan?"
-      confirmText="Ya, Ubah Nomor SPJ"
-      cancelText="Batal"
-      onConfirm={saveSpdNumberOnly}
-  />
 {/if}
 
