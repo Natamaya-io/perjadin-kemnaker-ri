@@ -216,8 +216,8 @@
                                 <td class="px-4 py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
                                 <td class="px-4 py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount || 0)}</td>
                                 <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
-                                <td class="px-4 py-4 align-middle text-xs text-slate-600">
-                                    <div class="font-medium text-slate-800">{formatDate(trx.receiptDate)}</div>
+                                <td class="px-4 py-4 align-middle text-sm text-slate-700">
+                                    <div class="font-medium">{formatDate(trx.receiptDate)}</div>
                                 </td>
                                 <td class="px-4 py-4 align-middle text-center no-print">
                                     <div class="flex items-center justify-center gap-1.5">
