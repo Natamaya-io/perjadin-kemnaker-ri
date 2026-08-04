@@ -182,7 +182,7 @@
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[5%] text-center">No</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[28%]">Pembayaran</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[28%]">Jenis Pengajuan</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Nilai</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Dibayarkan</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[11%]">Pajak</th>
