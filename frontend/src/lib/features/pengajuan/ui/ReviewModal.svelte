@@ -206,7 +206,7 @@
 
             let uploadedPath = baseRecord.suratTugasPath;
             if (deleteSuratTugasFlag) {
-                uploadedPath = null; // Hapus referensi file di database
+                uploadedPath = ""; // Hapus referensi file di database (gunakan string kosong, bukan null agar Golang meng-override)
             } else if (newSuratTugasFile) {
                 const res = await api.uploadFile(newSuratTugasFile);
                 uploadedPath = res.path;
