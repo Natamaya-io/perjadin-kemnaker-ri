@@ -12,6 +12,7 @@
     import LottieLoader from '$lib/shared/ui/loader/LottieLoader.svelte';
     import CostEstimateCard from '$lib/features/pengajuan/ui/CostEstimateCard.svelte';
     import ConfirmationModal from '$lib/shared/ui/confirmation-modal/ConfirmationModal.svelte';
+    import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     
     import { api } from '$lib/shared/api';
     import { updateRecord, deleteRecord, addRecord } from '$lib/features/pengajuan/store';
@@ -352,35 +353,23 @@
 </script>
 
 {#if open && records.length > 0}
-  <div use:portal>
-    <!-- Background Overlay -->
-    <div class="fixed inset-0 z-[100] bg-slate-900/90" role="button" tabindex="0" aria-label="Close modal" on:click={close} on:keydown={(e) => e.key === 'Escape' && close()}></div>
-    
-    <!-- Modal Dialog -->
-    <div class="fixed left-[50%] top-[50%] z-[100] w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border border-slate-200 bg-white shadow-2xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-white">
-            <div class="flex-1 min-w-0 pr-4">
-                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5">
-                    <h2 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Detail Pengajuan</h2>
-                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(baseRecord).class}">
-                        {getStatusBadge(baseRecord).label}
-                    </span>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                    <span class="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs sm:text-sm">{baseRecord.spd}</span>
-                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
-                        {baseRecord.type ? baseRecord.type.replace(/_/g, ' ') : 'Dalam Kota'}
-                    </span>
-                </div>
-            </div>
-            <button class="rounded-full p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" on:click={close} aria-label="Close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
-            </button>
-        </div>
-        
-        <!-- Body -->
-        <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+  <BaseModal bind:open={open} maxWidth="max-w-4xl" on:close={close}>
+      <svelte:fragment slot="header">
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5">
+              <h2 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Detail Pengajuan</h2>
+              <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border {getStatusBadge(baseRecord).class}">
+                  {getStatusBadge(baseRecord).label}
+              </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span class="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs sm:text-sm">{baseRecord.spd}</span>
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
+                  {baseRecord.type ? baseRecord.type.replace(/_/g, ' ') : 'Dalam Kota'}
+              </span>
+          </div>
+      </svelte:fragment>
+      
+      <svelte:fragment slot="body">
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <!-- Left Column: Details -->
                 <div class="lg:col-span-3 space-y-6">
@@ -696,37 +685,35 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-end gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
-            {#if !isEditing}
-                <Button variant="outline" on:click={close} class="min-w-[100px]">Tutup</Button>
-                {#if isEditable}
-                    <Button variant="default" on:click={() => isEditing = true} class="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit Pengajuan
-                    </Button>
-                {/if}
-            {:else}
-                <Button variant="ghost" on:click={() => isEditing = false} disabled={isLoading} class="min-w-[100px] hover:bg-slate-100">Batal</Button>
-                <Button variant="default" class="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px]" on:click={handleSave} disabled={isLoading}>
-                    {#if isLoading}
-                        <LottieLoader size="36px" className="brightness-0 invert -ml-1" />
-                        Menyimpan...
-                    {:else}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Simpan Perubahan
-                    {/if}
-                </Button>
-            {/if}
-        </div>
-    </div>
-  </div>
+      </svelte:fragment>
+
+      <svelte:fragment slot="footer">
+          {#if !isEditing}
+              <Button variant="outline" on:click={close} class="min-w-[100px]">Tutup</Button>
+              {#if isEditable}
+                  <Button variant="default" on:click={() => isEditing = true} class="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Pengajuan
+                  </Button>
+              {/if}
+          {:else}
+              <Button variant="ghost" on:click={() => isEditing = false} disabled={isLoading} class="min-w-[100px] hover:bg-slate-100">Batal</Button>
+              <Button variant="default" class="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px]" on:click={handleSave} disabled={isLoading}>
+                  {#if isLoading}
+                      <LottieLoader size="36px" className="brightness-0 invert -ml-1" />
+                      Menyimpan...
+                  {:else}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Simpan Perubahan
+                  {/if}
+              </Button>
+          {/if}
+      </svelte:fragment>
+  </BaseModal>
 
   <ConfirmationModal 
       bind:open={showSpdConfirmModal}
