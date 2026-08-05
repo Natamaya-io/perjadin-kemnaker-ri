@@ -885,7 +885,7 @@
 <!-- Modal Chart Detail — Section 9 BaseModal -->
 <BaseModal
     bind:open={showChartModal}
-    maxWidth="max-w-3xl"
+    maxWidth="max-w-5xl"
     on:close={() => { if (modalChart) { modalChart.destroy(); modalChart = null; } chartModalRow = null; }}
 >
     <svelte:fragment slot="header">
@@ -907,17 +907,17 @@
 
     <svelte:fragment slot="body">
         {#if chartModalRow}
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-                <!-- Chart besar — lg:col-span-3 -->
-                <div class="lg:col-span-3">
-                    <div class="relative h-80 rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                <!-- Chart besar — lg:col-span-2 -->
+                <div class="lg:col-span-2">
+                    <div class="relative h-[440px] rounded-2xl bg-slate-50 border border-slate-100 p-6">
                         <canvas bind:this={modalCanvas}></canvas>
                     </div>
                 </div>
 
-                <!-- Stats — lg:col-span-2 -->
-                <div class="lg:col-span-2 flex flex-col gap-3">
+                <!-- Stats — lg:col-span-1 -->
+                <div class="lg:col-span-1 flex flex-col gap-3">
                     <!-- Garis gradasi atas di kartu data -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-full h-1"
