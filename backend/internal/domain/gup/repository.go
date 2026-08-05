@@ -324,7 +324,7 @@ func (r *repository) GetLaporanRows(ctx context.Context, year int16) ([]models.L
 			COALESCE(b.amount, 0)                             AS anggaran
 		FROM procurement_types pt
 		JOIN account_codes ac ON pt.account_code_id = ac.id
-		LEFT JOIN gup_transactions gt ON gt.procurement_type_id = pt.id
+		LEFT JOIN gup_transactions gt ON gt.procurement_type_id = pt.id AND EXTRACT(YEAR FROM gt.receipt_date) = $1
 		LEFT JOIN budgets b ON b.procurement_type_id = pt.id AND b.year = $1
 		WHERE pt.is_active = true
 		GROUP BY pt.id, pt.name, ac.code, ac.mak, b.amount
