@@ -126,7 +126,7 @@
         if (!totalCanvas) return;
         if (totalChart) totalChart.destroy();
         totalChart = new Chart(totalCanvas, {
-            type: 'pie',
+            type: 'doughnut',
             data: {
                 labels: ['Realisasi', 'Sisa Anggaran'],
                 datasets: [{
@@ -139,6 +139,7 @@
             },
             options: {
                 ...commonOptions,
+                cutout: '70%',
                 plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip,
                     callbacks: { label: (ctx) => ctx.label + ': ' + formatCurrency(ctx.raw) }
                 }}
