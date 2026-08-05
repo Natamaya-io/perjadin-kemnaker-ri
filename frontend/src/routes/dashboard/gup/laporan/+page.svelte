@@ -1,6 +1,7 @@
 <script>
     import { formatCurrency } from '$lib/shared/utils/utils';
     import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import Chart from 'chart.js/auto';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
@@ -13,6 +14,13 @@
     $: laporanRows = laporan.rows || [];
     $: laporanSummary = laporan.summary || {};
     $: currentYear = data?.year || new Date().getFullYear();
+
+    // Filter Tahun Global
+    const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i); // -2 to +2 years from current
+    function handleYearChange(event) {
+        const selectedYear = event.target.value;
+        goto(`?year=${selectedYear}`, { invalidateAll: true });
+    }
 
     const colors = ['#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#f97316', '#06b6d4'];
 
@@ -454,7 +462,26 @@
                 </p>
             </div>
 
-            <div class="flex flex-col gap-3 sm:flex-row">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <!-- Global Year Filter (Section 15) -->
+                <div class="relative inline-block w-full sm:w-auto">
+                    <select
+                        class="w-full sm:w-auto appearance-none rounded-xl border border-white/20 bg-white/10 px-4 py-2 pr-10 text-sm font-semibold text-white shadow-sm hover:bg-white/20 hover:border-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 transition-all cursor-pointer backdrop-blur-sm"
+                        value={currentYear}
+                        on:change={handleYearChange}
+                        aria-label="Filter Tahun"
+                    >
+                        {#each yearOptions as y}
+                            <option value={y} class="text-slate-900 font-semibold">{y}</option>
+                        {/each}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+
                 <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(laporanRows[0])}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

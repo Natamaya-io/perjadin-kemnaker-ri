@@ -1,7 +1,9 @@
 import { api } from '$lib/shared/api';
 
-export async function load({ fetch }) {
-    const year = new Date().getFullYear();
+export async function load({ fetch, url }) {
+    const queryYear = url.searchParams.get('year');
+    const year = queryYear ? parseInt(queryYear, 10) : new Date().getFullYear();
+    
     try {
         const response = await api.getGupLaporan(year, fetch);
         return {
