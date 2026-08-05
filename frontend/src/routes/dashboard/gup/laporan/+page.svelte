@@ -443,9 +443,7 @@
 
 <div class="space-y-6 pb-20 w-full">
     <!-- Hero halaman -->
-    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-800 to-sky-900 p-6 sm:p-8 text-white shadow-xl no-print">
-        <div class="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl"></div>
-        <div class="absolute -bottom-28 left-20 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl"></div>
+    <section class="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-8 text-white shadow-xl no-print">
 
         <div class="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div class="max-w-3xl">
@@ -780,8 +778,8 @@
                     {#each pagedRows as row, i}
                         {@const globalI = globalOffset + i}
                         <article class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden">
-                            <!-- Garis gradasi atas sesuai Section 5 guidelines -->
-                            <div class="absolute top-0 left-0 w-full h-1.5" style="background: linear-gradient(to right, {colors[globalI % colors.length]}, {colors[(globalI + 1) % colors.length]})"></div>
+                            <!-- Garis atas sesuai Section 5 guidelines -->
+                            <div class="absolute top-0 left-0 w-full h-1.5" style="background-color: {colors[globalI % colors.length]}"></div>
 
                             <div class="flex items-start gap-3 mb-4 pb-3 border-b border-slate-100/80">
                                 <div class="p-2.5 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {colors[globalI % colors.length]}20; color: {colors[globalI % colors.length]}">
@@ -1083,12 +1081,12 @@
                 <div class="lg:col-span-3">
                     <!-- Kartu chart — Section 5 pattern -->
                     <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group h-full">
-                        <!-- Garis Gradasi Atas — Section 5 -->
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+                        <!-- Garis Atas — Section 5 -->
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
 
                         <!-- Header Kartu — Section 5 -->
                         <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                            <div class="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                            <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                                 </svg>
@@ -1108,10 +1106,10 @@
 
                     <!-- Kartu 1: Realisasi — Section 5, gradasi emerald -->
                     <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
 
                         <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                            <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
+                            <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -1137,10 +1135,10 @@
 
                     <!-- Kartu 2: Sisa Anggaran — Section 5, gradasi amber -->
                     <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400"></div>
 
                         <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                            <div class="p-2.5 bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
+                            <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                 </svg>
@@ -1173,12 +1171,12 @@
                         </div>
                     </div>
 
-                    <!-- Kartu 3: Status Serapan — Section 5, gradasi warna aksen -->
+                    <!-- Kartu 3: Status Serapan — Section 5, warna solid -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-full h-1.5" style="background: linear-gradient(to right, {ac}, {ac2})"></div>
+                        <div class="absolute top-0 left-0 w-full h-1.5" style="background-color: {ac}"></div>
 
                         <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                            <div class="p-2.5 rounded-xl shadow-sm border border-slate-100" style="background: linear-gradient(to bottom right, {ac}15, {ac}30); color: {ac}; border-color: {ac}30">
+                            <div class="p-2.5 rounded-xl shadow-sm border border-slate-100" style="background-color: {ac}15; color: {ac}; border-color: {ac}30">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
@@ -1202,7 +1200,7 @@
                                 {/if}
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full transition-all duration-700" style="width: {Math.min(pct, 100)}%; background: linear-gradient(to right, {ac}, {ac2})"></div>
+                                <div class="h-full rounded-full transition-all duration-700" style="width: {Math.min(pct, 100)}%; background-color: {ac}"></div>
                             </div>
                             <p class="text-xs text-slate-400 leading-relaxed">Persentase serapan dihitung dari Realisasi dibagi Anggaran yang telah ditetapkan.</p>
                         </div>
@@ -1243,9 +1241,9 @@
             <!-- ===== KIRI: Chart canvas ===== -->
             <div class="lg:col-span-3">
                 <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden h-full">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                        <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
+                        <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                             </svg>
@@ -1315,9 +1313,9 @@
             <!-- ===== KIRI: Chart canvas ===== -->
             <div class="lg:col-span-3">
                 <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden h-full">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-sky-500"></div>
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                        <div class="p-2.5 bg-gradient-to-br from-sky-50 to-sky-100/50 text-sky-600 rounded-xl shadow-sm border border-sky-100">
+                        <div class="p-2.5 bg-sky-50 text-sky-600 rounded-xl shadow-sm border border-sky-100">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                             </svg>
@@ -1333,13 +1331,13 @@
             <!-- ===== KANAN: Info cards ===== -->
             <div class="lg:col-span-2 flex flex-col gap-4">
                 <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-blue-500"></div>
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-sky-500"></div>
                     <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Jenis Pengadaan</p>
                     <p class="text-3xl font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</p>
                 </div>
                 
                 <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 to-violet-500"></div>
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-indigo-500"></div>
                     <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Jumlah Transaksi GUP</p>
                     <p class="text-3xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</p>
                 </div>
