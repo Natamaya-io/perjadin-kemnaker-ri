@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import Chart from 'chart.js/auto';
     import Button from '$lib/shared/ui/button/Button.svelte';
+    import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     import { api } from '$lib/shared/api';
 
     export let data;
@@ -28,6 +29,70 @@
     let anggaranInput = '';
     let savingAnggaran = false;
     let saveError = '';
+
+    // Modal Chart Detail
+    let showChartModal = false;
+    let chartModalRow = null;
+    let chartModalIndex = 0;
+    let modalCanvas;
+    let modalChart;
+
+    function openChartModal(row, globalI) {
+        chartModalRow = row;
+        chartModalIndex = globalI;
+        showChartModal = true;
+        // Render chart setelah DOM muncul
+        setTimeout(buildModalChart, 80);
+    }
+
+    function buildModalChart() {
+        if (!modalCanvas || !chartModalRow) return;
+        if (modalChart) modalChart.destroy();
+        const row = chartModalRow;
+        const i = chartModalIndex;
+        const sisa = Math.max(0, (row.anggaran || 0) - (row.realisasi || 0));
+        modalChart = new Chart(modalCanvas, {
+            type: 'pie',
+            data: {
+                labels: ['Realisasi', 'Sisa Anggaran'],
+                datasets: [{
+                    data: [row.realisasi || 0, sisa],
+                    backgroundColor: [colors[i % colors.length], '#e2e8f0'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            font: { size: 13, family: 'Inter, sans-serif' },
+                            color: '#475569',
+                            padding: 16,
+                            boxWidth: 14,
+                            boxHeight: 14,
+                            borderRadius: 4,
+                            useBorderRadius: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 14,
+                        cornerRadius: 12,
+                        displayColors: false,
+                        titleFont: { size: 12, family: 'Inter, sans-serif' },
+                        bodyFont: { size: 15, weight: 'bold', family: 'Inter, sans-serif' },
+                        callbacks: { label: (ctx) => ctx.label + ': ' + formatCurrency(ctx.raw) }
+                    }
+                }
+            }
+        });
+    }
 
     // Filter state
     let filterSearch = '';
@@ -558,11 +623,22 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                                     </svg>
                                 </div>
-                                <div class="min-w-0">
+                                <div class="min-w-0 flex-1">
                                     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{row.kodeAkun}</p>
                                     <h3 class="mt-0.5 text-sm font-black leading-snug text-slate-900 truncate">{row.jenisPengadaan}</h3>
                                     <p class="text-[10px] text-slate-400 mt-0.5">{row.jumlahTransaksi} transaksi</p>
                                 </div>
+                                <!-- Tombol expand chart — Section 4.2 Flat & Clean -->
+                                <button
+                                    type="button"
+                                    title="Lihat chart lebih besar"
+                                    class="text-slate-500 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 p-1.5 rounded transition-colors shrink-0"
+                                    on:click={() => openChartModal(row, globalI)}
+                                >
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                    </svg>
+                                </button>
                             </div>
 
                             <!-- Pie chart canvas -->
@@ -805,3 +881,119 @@
         </div>
     </div>
 {/if}
+
+<!-- Modal Chart Detail — Section 9 BaseModal -->
+<BaseModal
+    bind:open={showChartModal}
+    maxWidth="max-w-3xl"
+    on:close={() => { if (modalChart) { modalChart.destroy(); modalChart = null; } chartModalRow = null; }}
+>
+    <svelte:fragment slot="header">
+        {#if chartModalRow}
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl border border-slate-100 shrink-0"
+                    style="background-color: {colors[chartModalIndex % colors.length]}20; color: {colors[chartModalIndex % colors.length]}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{chartModalRow.kodeAkun} · MAK {chartModalRow.mak}</p>
+                    <h2 class="text-xl font-bold text-slate-800 leading-tight">{chartModalRow.jenisPengadaan}</h2>
+                </div>
+            </div>
+        {/if}
+    </svelte:fragment>
+
+    <svelte:fragment slot="body">
+        {#if chartModalRow}
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+
+                <!-- Chart besar — lg:col-span-3 -->
+                <div class="lg:col-span-3">
+                    <div class="relative h-80 rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                        <canvas bind:this={modalCanvas}></canvas>
+                    </div>
+                </div>
+
+                <!-- Stats — lg:col-span-2 -->
+                <div class="lg:col-span-2 flex flex-col gap-3">
+                    <!-- Garis gradasi atas di kartu data -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1"
+                            style="background: linear-gradient(to right, {colors[chartModalIndex % colors.length]}, {colors[(chartModalIndex + 1) % colors.length]})">
+                        </div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Ringkasan Data</p>
+                        <dl class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <dt class="text-sm text-slate-500">Anggaran</dt>
+                                <dd class="text-sm font-black text-slate-900">{formatCurrency(chartModalRow.anggaran || 0)}</dd>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <dt class="text-sm text-emerald-700">Realisasi</dt>
+                                <dd class="text-sm font-black text-emerald-800">{formatCurrency(chartModalRow.realisasi || 0)}</dd>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <dt class="text-sm text-amber-700">Sisa Anggaran</dt>
+                                <dd class="text-sm font-black text-amber-800">{formatCurrency(chartModalRow.sisaAnggaran || 0)}</dd>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <dt class="text-sm text-violet-700">Total Pajak</dt>
+                                <dd class="text-sm font-black text-violet-800">{formatCurrency(chartModalRow.totalPajak || 0)}</dd>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <dt class="text-sm text-slate-500">Nilai Pengajuan</dt>
+                                <dd class="text-sm font-black text-slate-900">{formatCurrency(chartModalRow.nilaiPengajuan || 0)}</dd>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <dt class="text-sm text-slate-500">Jumlah Transaksi</dt>
+                                <dd class="text-sm font-black text-slate-900">{chartModalRow.jumlahTransaksi} transaksi</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <!-- Progress + badge -->
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Serapan</p>
+                            <span class="text-2xl font-black" style="color: {colors[chartModalIndex % colors.length]}">
+                                {(chartModalRow.persentaseSerapan || 0).toFixed(1)}%
+                            </span>
+                        </div>
+                        <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+                            <div class="h-full rounded-full transition-all duration-700"
+                                style="width: {Math.min(chartModalRow.persentaseSerapan || 0, 100)}%; background-color: {colors[chartModalIndex % colors.length]}">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            {#if chartModalRow.anggaran > 0}
+                                {#if (chartModalRow.persentaseSerapan || 0) > 100}
+                                    <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
+                                {:else if (chartModalRow.persentaseSerapan || 0) >= 80}
+                                    <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-emerald-700">Baik</span>
+                                {:else}
+                                    <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
+                                {/if}
+                            {:else}
+                                <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {/if}
+    </svelte:fragment>
+
+    <svelte:fragment slot="footer">
+        {#if chartModalRow}
+            <p class="text-xs text-slate-400">Data per tahun {currentYear}</p>
+            <button
+                type="button"
+                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                on:click={() => { showChartModal = false; openAnggaranModal(chartModalRow); }}
+            >
+                Input Anggaran
+            </button>
+        {/if}
+    </svelte:fragment>
+</BaseModal>
