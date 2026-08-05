@@ -1050,17 +1050,9 @@
     <!-- Footer — Section 8.2 -->
     <svelte:fragment slot="footer">
         {#if chartModalRow}
-            <p class="text-xs text-slate-400">Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span></p>
-            <button
-                type="button"
-                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                on:click={() => { showChartModal = false; openAnggaranModal(chartModalRow); }}
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Input Anggaran
-            </button>
+            <p class="text-xs text-slate-400 w-full text-center sm:text-left">
+                Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span>
+            </p>
         {/if}
     </svelte:fragment>
 </BaseModal>
