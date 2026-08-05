@@ -888,113 +888,177 @@
     maxWidth="max-w-6xl"
     on:close={() => { if (modalChart) { modalChart.destroy(); modalChart = null; } chartModalRow = null; }}
 >
+    <!-- Header — Section 9.2 -->
     <svelte:fragment slot="header">
         {#if chartModalRow}
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 rounded-xl border border-slate-100 shrink-0"
-                    style="background-color: {colors[chartModalIndex % colors.length]}20; color: {colors[chartModalIndex % colors.length]}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{chartModalRow.kodeAkun} · MAK {chartModalRow.mak}</p>
-                    <h2 class="text-xl font-bold text-slate-800 leading-tight">{chartModalRow.jenisPengadaan}</h2>
-                </div>
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-0.5">
+                    {chartModalRow.kodeAkun} · MAK {chartModalRow.mak}
+                </p>
+                <h2 class="text-xl font-bold text-slate-800 leading-tight">
+                    {chartModalRow.jenisPengadaan}
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">Visualisasi serapan anggaran per jenis pengadaan tahun {currentYear}</p>
             </div>
         {/if}
     </svelte:fragment>
 
+    <!-- Body — Section 9.2 (bg-slate-50/50 diatur BaseModal) -->
     <svelte:fragment slot="body">
         {#if chartModalRow}
             {@const sisa = Math.max(0, (chartModalRow.anggaran || 0) - (chartModalRow.realisasi || 0))}
             {@const pct = chartModalRow.persentaseSerapan || 0}
-            {@const accentColor = colors[chartModalIndex % colors.length]}
+            {@const ac = colors[chartModalIndex % colors.length]}
+            {@const ac2 = colors[(chartModalIndex + 1) % colors.length]}
 
-            <!-- Chart besar — full width -->
-            <div class="relative h-[500px] rounded-2xl bg-slate-50 border border-slate-100 p-6">
-                <canvas bind:this={modalCanvas}></canvas>
-            </div>
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
 
-            <!-- Penjelasan warna + stats grid -->
-            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- ===== KIRI: Chart canvas — lg:col-span-3 ===== -->
+                <div class="lg:col-span-3">
+                    <!-- Kartu chart — Section 5 pattern -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group h-full">
+                        <!-- Garis Gradasi Atas — Section 5 -->
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
 
-                <!-- Keterangan Warna: Realisasi -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl" style="background-color: {accentColor}"></div>
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="inline-block h-4 w-4 rounded-sm flex-shrink-0" style="background-color: {accentColor}"></span>
-                        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Realisasi</p>
+                        <!-- Header Kartu — Section 5 -->
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                            <div class="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Visualisasi Pie Chart</h4>
+                        </div>
+
+                        <!-- Canvas chart -->
+                        <div class="relative flex-1 min-h-[400px]">
+                            <canvas bind:this={modalCanvas}></canvas>
+                        </div>
                     </div>
-                    <p class="text-xl font-black text-slate-900">{formatCurrency(chartModalRow.realisasi || 0)}</p>
-                    <p class="mt-1 text-xs text-slate-400">Anggaran yang telah terealisasi dari total pengajuan GUP yang disetujui.</p>
                 </div>
 
-                <!-- Keterangan Warna: Sisa Anggaran -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl bg-slate-300"></div>
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="inline-block h-4 w-4 rounded-sm flex-shrink-0 bg-[#e2e8f0] border border-slate-300"></span>
-                        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Sisa Anggaran</p>
-                    </div>
-                    <p class="text-xl font-black text-slate-900">{formatCurrency(sisa)}</p>
-                    <p class="mt-1 text-xs text-slate-400">Selisih antara Anggaran yang diinput dengan Realisasi. Tersisa dan belum digunakan.</p>
-                </div>
+                <!-- ===== KANAN: Info cards — lg:col-span-2 ===== -->
+                <div class="lg:col-span-2 flex flex-col gap-4">
 
-                <!-- Ringkasan data + serapan -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl"
-                        style="background: linear-gradient(to right, {accentColor}, {colors[(chartModalIndex + 1) % colors.length]})"></div>
-                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Ringkasan</p>
-                    <dl class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <dt class="text-xs text-slate-500">Anggaran</dt>
-                            <dd class="text-xs font-black text-slate-900">{formatCurrency(chartModalRow.anggaran || 0)}</dd>
+                    <!-- Kartu 1: Realisasi — Section 5, gradasi emerald -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                            <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block h-3 w-3 rounded-sm shrink-0" style="background-color: {ac}"></span>
+                                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Realisasi</h4>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
-                            <dt class="text-xs text-violet-700">Total Pajak</dt>
-                            <dd class="text-xs font-black text-violet-800">{formatCurrency(chartModalRow.totalPajak || 0)}</dd>
+
+                        <div class="space-y-3">
+                            <p class="text-2xl font-black text-emerald-800">{formatCurrency(chartModalRow.realisasi || 0)}</p>
+                            <p class="text-xs text-slate-400 leading-relaxed">Anggaran yang telah terealisasi berdasarkan total pengajuan GUP yang disetujui pada tahun ini.</p>
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <span class="text-xs text-slate-500">Proporsi dari Anggaran</span>
+                                <span class="text-sm font-black" style="color: {ac}">{pct.toFixed(1)}%</span>
+                            </div>
+                            <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div class="h-full rounded-full transition-all duration-700" style="width: {Math.min(pct, 100)}%; background-color: {ac}"></div>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
-                            <dt class="text-xs text-slate-500">Jumlah Transaksi</dt>
-                            <dd class="text-xs font-black text-slate-900">{chartModalRow.jumlahTransaksi} transaksi</dd>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
-                            <dt class="text-xs text-slate-500">Serapan</dt>
-                            <dd class="text-xs font-black" style="color: {accentColor}">{pct.toFixed(1)}%</dd>
-                        </div>
-                    </dl>
-                    <!-- Progress bar -->
-                    <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full transition-all duration-700"
-                            style="width: {Math.min(pct, 100)}%; background-color: {accentColor}"></div>
                     </div>
-                    <div class="mt-2">
-                        {#if chartModalRow.anggaran > 0}
-                            {#if pct > 100}
-                                <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
-                            {:else if pct >= 80}
-                                <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-emerald-700">Baik</span>
-                            {:else}
-                                <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
-                            {/if}
-                        {:else}
-                            <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
-                        {/if}
+
+                    <!-- Kartu 2: Sisa Anggaran — Section 5, gradasi amber -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                            <div class="p-2.5 bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block h-3 w-3 rounded-sm shrink-0 bg-[#e2e8f0] border border-slate-300"></span>
+                                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Sisa Anggaran</h4>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <p class="text-2xl font-black text-amber-800">{formatCurrency(sisa)}</p>
+                            <p class="text-xs text-slate-400 leading-relaxed">Selisih antara anggaran yang diinput dengan total realisasi. Tersisa dan belum digunakan.</p>
+                            <div class="pt-2 border-t border-slate-100">
+                                <dl class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <dt class="text-xs text-slate-500">Anggaran Ditetapkan</dt>
+                                        <dd class="text-xs font-black text-slate-900">{formatCurrency(chartModalRow.anggaran || 0)}</dd>
+                                    </div>
+                                    <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                                        <dt class="text-xs text-violet-700">Total Pajak</dt>
+                                        <dd class="text-xs font-black text-violet-800">{formatCurrency(chartModalRow.totalPajak || 0)}</dd>
+                                    </div>
+                                    <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                                        <dt class="text-xs text-slate-500">Jumlah Transaksi</dt>
+                                        <dd class="text-xs font-black text-slate-900">{chartModalRow.jumlahTransaksi} transaksi</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Kartu 3: Status Serapan — Section 5, gradasi warna aksen -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1.5" style="background: linear-gradient(to right, {ac}, {ac2})"></div>
+
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                            <div class="p-2.5 rounded-xl shadow-sm border border-slate-100" style="background: linear-gradient(to bottom right, {ac}15, {ac}30); color: {ac}; border-color: {ac}30">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Status Serapan</h4>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex items-end justify-between">
+                                <span class="text-3xl font-black" style="color: {ac}">{pct.toFixed(1)}%</span>
+                                {#if chartModalRow.anggaran > 0}
+                                    {#if pct > 100}
+                                        <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[9px] font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
+                                    {:else if pct >= 80}
+                                        <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[9px] font-bold capitalize tracking-wide text-emerald-700">Baik</span>
+                                    {:else}
+                                        <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[9px] font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
+                                    {/if}
+                                {:else}
+                                    <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[9px] font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
+                                {/if}
+                            </div>
+                            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+                                <div class="h-full rounded-full transition-all duration-700" style="width: {Math.min(pct, 100)}%; background: linear-gradient(to right, {ac}, {ac2})"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 leading-relaxed">Persentase serapan dihitung dari Realisasi dibagi Anggaran yang telah ditetapkan.</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         {/if}
     </svelte:fragment>
 
+    <!-- Footer — Section 8.2 -->
     <svelte:fragment slot="footer">
         {#if chartModalRow}
-            <p class="text-xs text-slate-400">Data per tahun {currentYear}</p>
+            <p class="text-xs text-slate-400">Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span></p>
             <button
                 type="button"
-                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors flex items-center gap-2 px-4 py-2 text-sm font-semibold"
                 on:click={() => { showChartModal = false; openAnggaranModal(chartModalRow); }}
             >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
                 Input Anggaran
             </button>
         {/if}
