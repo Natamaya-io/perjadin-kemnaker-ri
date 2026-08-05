@@ -17,6 +17,7 @@
 
     // Filter Tahun Global
     let showYearDropdown = false;
+    let showTxDetailDropdown = false;
     const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i); // -2 to +2 years from current
     function handleYearChange(selectedYear) {
         showYearDropdown = false;
@@ -599,9 +600,46 @@
                     <canvas bind:this={komposisiCanvas}></canvas>
                 </div>
                 <div class="space-y-3 lg:col-span-2">
-                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p class="text-xs font-semibold text-slate-500">Jumlah Transaksi GUP</p>
-                        <h3 class="mt-1 text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</h3>
+                    <div class="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500">Jumlah Transaksi GUP</p>
+                                <h3 class="mt-1 text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</h3>
+                            </div>
+                            <button
+                                type="button"
+                                class="text-slate-400 hover:text-indigo-600 bg-white hover:bg-indigo-50 border border-slate-200 p-1.5 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                on:click={() => showTxDetailDropdown = !showTxDetailDropdown}
+                                title="Rincian per Jenis Pengadaan"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        {#if showTxDetailDropdown}
+                            <!-- Backdrop dropdown -->
+                            <div class="fixed inset-0 z-40" on:click={() => showTxDetailDropdown = false} on:keypress={(e) => e.key === 'Escape' && (showTxDetailDropdown = false)} role="button" tabindex="0" aria-label="Tutup rincian"></div>
+                            
+                            <!-- Panel Dropdown Tingkat Lanjut (Section 6) -->
+                            <div class="absolute right-0 sm:right-auto sm:left-full top-0 sm:ml-4 z-50 w-72 rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                <div class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Rincian Transaksi</h4>
+                                </div>
+                                <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                                    {#each laporanRows as row, i}
+                                        <li class="relative py-2.5 px-4 text-sm hover:bg-slate-50 transition-colors flex items-center justify-between border-b border-slate-50 last:border-0 cursor-default">
+                                            <div class="flex items-center gap-2 overflow-hidden">
+                                                <span class="inline-block h-2 w-2 shrink-0 rounded-full" style="background-color: {colors[i % colors.length]}"></span>
+                                                <span class="text-slate-700 font-medium truncate" title={row.jenisPengadaan}>{row.jenisPengadaan}</span>
+                                            </div>
+                                            <span class="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-xs shrink-0">{row.jumlahTransaksi || 0}</span>
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/if}
                     </div>
                     <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                         <p class="text-xs font-semibold text-slate-500">Nilai Pengajuan</p>
