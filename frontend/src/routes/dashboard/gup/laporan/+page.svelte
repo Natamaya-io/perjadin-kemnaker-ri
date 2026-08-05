@@ -29,6 +29,16 @@
     let savingAnggaran = false;
     let saveError = '';
 
+    // Paginasi — Section 11 UI Styling Guidelines
+    const ITEMS_PER_PAGE = 4;
+    let currentPage = 1;
+    $: totalPages = Math.ceil(laporanRows.length / ITEMS_PER_PAGE);
+    $: pagedRows = laporanRows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    $: globalOffset = (currentPage - 1) * ITEMS_PER_PAGE; // untuk indeks warna chart konsisten
+
+    // Reset halaman jika data berubah
+    $: if (laporanRows) { currentPage = 1; }
+
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -147,6 +157,9 @@
     // Reactive rebuild saat data berubah (misal setelah save anggaran)
     $: if (totalCanvas && laporanSummary) { buildTotalChart(); }
     $: if (komposisiCanvas && laporanRows.length) { buildKomposisiChart(); }
+    // Rebuild detail charts saat halaman berubah (canvas baru di-render setelah tick)
+    $: if (pagedRows) { setTimeout(buildDetailCharts, 50); }
+
 
     function openAnggaranModal(row) {
         selectedRow = row;
@@ -298,15 +311,15 @@
     </section>
 
     <!-- Pie chart per jenis pengadaan -->
-    <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <section>
+        <!-- Header section -->
+        <div class="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Detail Serapan</p>
-                <h2 class="mt-2 text-xl font-black text-slate-900">Pie Chart Tiap Jenis Pengadaan</h2>
-                <p class="mt-1 text-sm text-slate-500">Setiap kartu menampilkan komposisi Realisasi dan Sisa Anggaran berdasarkan anggaran yang diinput.</p>
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Detail Serapan</h2>
+                <p class="text-sm text-slate-500 mt-1">Setiap kartu menampilkan komposisi Realisasi dan Sisa Anggaran berdasarkan anggaran yang diinput.</p>
             </div>
-            <div class="no-print">
-                <Button variant="default" class="gap-2" on:click={() => openAnggaranModal(laporanRows[0])}>
+            <div class="flex items-center gap-3 no-print">
+                <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => openAnggaranModal(laporanRows[0])}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -315,72 +328,159 @@
             </div>
         </div>
 
-        {#if laporanRows.length === 0}
-            <div class="p-16 text-center text-slate-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p class="font-semibold">Belum ada data laporan untuk tahun {currentYear}.</p>
-                <p class="text-sm mt-1 text-slate-400">Pastikan Jenis Pengadaan sudah diinput di master data dan ada transaksi GUP.</p>
-            </div>
-        {:else}
-            <div class="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6">
-                {#each laporanRows as row, i}
-                    <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{row.kodeAkun}</p>
-                                <h3 class="mt-2 text-base font-black leading-snug text-slate-900">{row.jenisPengadaan}</h3>
-                                <p class="mt-1 text-xs text-slate-400">{row.jumlahTransaksi} transaksi pengajuan</p>
-                            </div>
-                        </div>
+        <!-- Grid kartu -->
+        <div class="mt-6">
+            {#if laporanRows.length === 0}
+                <div class="p-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="font-semibold">Belum ada data laporan untuk tahun {currentYear}.</p>
+                    <p class="text-sm mt-1 text-slate-400">Pastikan Jenis Pengadaan sudah diinput di master data dan ada transaksi GUP.</p>
+                </div>
+            {:else}
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {#each pagedRows as row, i}
+                        {@const globalI = globalOffset + i}
+                        <article class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden">
+                            <!-- Garis gradasi atas sesuai Section 5 guidelines -->
+                            <div class="absolute top-0 left-0 w-full h-1.5" style="background: linear-gradient(to right, {colors[globalI % colors.length]}, {colors[(globalI + 1) % colors.length]})"></div>
 
-                        <div class="relative mt-5 h-52 rounded-3xl bg-slate-50 p-4">
-                            <canvas bind:this={detailCanvases[i]}></canvas>
-                        </div>
-
-                        <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
-                            <div class="rounded-2xl bg-slate-50 p-3">
-                                <p class="text-xs font-semibold text-slate-500">Anggaran</p>
-                                <p class="mt-1 font-black text-slate-900">{formatCurrency(row.anggaran || 0)}</p>
-                            </div>
-                            <div class="rounded-2xl bg-emerald-50 p-3 border border-emerald-100">
-                                <p class="text-xs font-semibold text-emerald-700">Realisasi</p>
-                                <p class="mt-1 font-black text-emerald-800">{formatCurrency(row.realisasi || 0)}</p>
-                            </div>
-                            <div class="rounded-2xl bg-amber-50 p-3 border border-amber-100">
-                                <p class="text-xs font-semibold text-amber-700">Sisa</p>
-                                <p class="mt-1 font-black text-amber-800">{formatCurrency(row.sisaAnggaran || 0)}</p>
-                            </div>
-                            <div class="rounded-2xl bg-violet-50 p-3 border border-violet-100">
-                                <p class="text-xs font-semibold text-violet-700">Serapan</p>
-                                <p class="mt-1 font-black text-violet-800">{(row.persentaseSerapan || 0).toFixed(1)}%</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full transition-all duration-500"
-                                    style="width: {Math.min(row.persentaseSerapan || 0, 100)}%; background-color: {colors[i % colors.length]}">
+                            <div class="flex items-start gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                                <div class="p-2.5 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {colors[globalI % colors.length]}20; color: {colors[globalI % colors.length]}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{row.kodeAkun}</p>
+                                    <h3 class="mt-0.5 text-sm font-black leading-snug text-slate-900 truncate">{row.jenisPengadaan}</h3>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">{row.jumlahTransaksi} transaksi</p>
                                 </div>
                             </div>
-                            <div class="mt-3 flex items-center justify-between gap-3">
-                                {#if row.anggaran > 0}
-                                    {#if (row.persentaseSerapan || 0) > 100}
-                                        <span class="inline-flex rounded-full border border-rose-200 bg-rose-100 px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-rose-700">Melebihi Anggaran</span>
-                                    {:else if (row.persentaseSerapan || 0) >= 80}
-                                        <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-emerald-700">Baik</span>
-                                    {:else}
-                                        <span class="inline-flex rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-amber-700">Dalam Progress</span>
-                                    {/if}
-                                {:else}
-                                    <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-slate-600">Belum Diinput</span>
-                                {/if}
-                                <span class="text-xs text-slate-400 font-mono">MAK: {row.mak}</span>
+
+                            <!-- Pie chart canvas -->
+                            <div class="relative h-52 rounded-xl bg-slate-50 p-3">
+                                <canvas bind:this={detailCanvases[globalI]}></canvas>
                             </div>
-                        </div>
-                    </article>
-                {/each}
+
+                            <!-- Stats grid -->
+                            <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                                <div class="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Anggaran</p>
+                                    <p class="mt-1 font-black text-slate-900 text-sm">{formatCurrency(row.anggaran || 0)}</p>
+                                </div>
+                                <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Realisasi</p>
+                                    <p class="mt-1 font-black text-emerald-800 text-sm">{formatCurrency(row.realisasi || 0)}</p>
+                                </div>
+                                <div class="rounded-xl bg-amber-50 border border-amber-100 p-3">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-amber-700">Sisa</p>
+                                    <p class="mt-1 font-black text-amber-800 text-sm">{formatCurrency(row.sisaAnggaran || 0)}</p>
+                                </div>
+                                <div class="rounded-xl bg-violet-50 border border-violet-100 p-3">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-violet-700">Serapan</p>
+                                    <p class="mt-1 font-black text-violet-800 text-sm">{(row.persentaseSerapan || 0).toFixed(1)}%</p>
+                                </div>
+                            </div>
+
+                            <!-- Progress bar + badge -->
+                            <div class="mt-4">
+                                <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full transition-all duration-500"
+                                        style="width: {Math.min(row.persentaseSerapan || 0, 100)}%; background-color: {colors[globalI % colors.length]}"></div>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between gap-2">
+                                    {#if row.anggaran > 0}
+                                        {#if (row.persentaseSerapan || 0) > 100}
+                                            <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
+                                        {:else if (row.persentaseSerapan || 0) >= 80}
+                                            <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-emerald-700">Baik</span>
+                                        {:else}
+                                            <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
+                                        {/if}
+                                    {:else}
+                                        <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
+                                    {/if}
+                                    <span class="text-[10px] text-slate-400 font-mono">MAK: {row.mak}</span>
+                                </div>
+                            </div>
+                        </article>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+
+        <!-- Paginasi — Section 11 UI Styling Guidelines -->
+        {#if totalPages > 1}
+            <div class="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 mt-6 rounded-xl shadow-sm">
+
+                <!-- MOBILE: Hanya dua tombol -->
+                <div class="flex flex-1 justify-between sm:hidden">
+                    <button
+                        on:click={() => currentPage--}
+                        disabled={currentPage === 1}
+                        class="relative inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >Sebelumnya</button>
+                    <button
+                        on:click={() => currentPage++}
+                        disabled={currentPage === totalPages}
+                        class="relative inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >Selanjutnya</button>
+                </div>
+
+                <!-- DESKTOP: Info data + navigasi lengkap -->
+                <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-slate-700">
+                            Menampilkan <span class="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
+                            hingga <span class="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, laporanRows.length)}</span>
+                            dari <span class="font-medium">{laporanRows.length}</span> jenis pengadaan
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <!-- Chevron kiri -->
+                            <button
+                                on:click={() => currentPage--}
+                                disabled={currentPage === 1}
+                                class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <!-- Nomor halaman dengan ellipsis cerdas -->
+                            {#each Array(totalPages) as _, i}
+                                {#if totalPages <= 7 || (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage))}
+                                    <button
+                                        on:click={() => currentPage = i + 1}
+                                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold
+                                            {currentPage === i + 1
+                                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                                : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0'}"
+                                    >{i + 1}</button>
+                                {:else if i === 1 || i === totalPages - 2}
+                                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0">...</span>
+                                {/if}
+                            {/each}
+
+                            <!-- Chevron kanan -->
+                            <button
+                                on:click={() => currentPage++}
+                                disabled={currentPage === totalPages}
+                                class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
             </div>
         {/if}
     </section>
