@@ -29,15 +29,70 @@
     let savingAnggaran = false;
     let saveError = '';
 
+    // Filter state
+    let filterSearch = '';
+    let filterStatus = 'semua'; // semua | baik | progress | melebihi | belum
+    let filterSort = 'nama'; // nama | realisasi_desc | realisasi_asc | serapan_desc
+    let showStatusDropdown = false;
+    let showSortDropdown = false;
+
+    const statusOptions = [
+        { value: 'semua',    label: 'Semua Status' },
+        { value: 'baik',     label: 'Baik (≥ 80%)' },
+        { value: 'progress', label: 'Dalam Progress (< 80%)' },
+        { value: 'melebihi', label: 'Melebihi Anggaran (> 100%)' },
+        { value: 'belum',    label: 'Belum Diinput' }
+    ];
+    const sortOptions = [
+        { value: 'nama',          label: 'Nama A–Z' },
+        { value: 'realisasi_desc', label: 'Realisasi Tertinggi' },
+        { value: 'realisasi_asc',  label: 'Realisasi Terendah' },
+        { value: 'serapan_desc',   label: 'Serapan Tertinggi' }
+    ];
+
+    $: statusLabel = statusOptions.find(o => o.value === filterStatus)?.label ?? 'Semua Status';
+    $: sortLabel   = sortOptions.find(o => o.value === filterSort)?.label ?? 'Nama A–Z';
+
+    // Baris yang sudah difilter dan diurutkan
+    $: filteredRows = laporanRows
+        .filter(row => {
+            const matchSearch = filterSearch.trim() === '' ||
+                row.jenisPengadaan.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                row.kodeAkun.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                row.mak.toLowerCase().includes(filterSearch.trim().toLowerCase());
+
+            const pct = row.persentaseSerapan || 0;
+            const matchStatus = filterStatus === 'semua' ? true
+                : filterStatus === 'belum'    ? (row.anggaran === 0)
+                : filterStatus === 'melebihi' ? (row.anggaran > 0 && pct > 100)
+                : filterStatus === 'baik'     ? (row.anggaran > 0 && pct >= 80 && pct <= 100)
+                : filterStatus === 'progress' ? (row.anggaran > 0 && pct < 80)
+                : true;
+
+            return matchSearch && matchStatus;
+        })
+        .sort((a, b) => {
+            if (filterSort === 'realisasi_desc') return b.realisasi - a.realisasi;
+            if (filterSort === 'realisasi_asc')  return a.realisasi - b.realisasi;
+            if (filterSort === 'serapan_desc')   return b.persentaseSerapan - a.persentaseSerapan;
+            return a.jenisPengadaan.localeCompare(b.jenisPengadaan, 'id');
+        });
+
     // Paginasi — Section 11 UI Styling Guidelines
     const ITEMS_PER_PAGE = 4;
     let currentPage = 1;
-    $: totalPages = Math.ceil(laporanRows.length / ITEMS_PER_PAGE);
-    $: pagedRows = laporanRows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-    $: globalOffset = (currentPage - 1) * ITEMS_PER_PAGE; // untuk indeks warna chart konsisten
+    $: totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+    $: pagedRows = filteredRows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    $: globalOffset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-    // Reset halaman jika data berubah
-    $: if (laporanRows) { currentPage = 1; }
+    // Reset halaman jika filter/data berubah
+    $: if (filteredRows || filterSearch || filterStatus || filterSort) { currentPage = 1; }
+
+    function resetFilters() {
+        filterSearch = '';
+        filterStatus = 'semua';
+        filterSort = 'nama';
+    }
 
     const commonOptions = {
         responsive: true,
@@ -312,7 +367,7 @@
 
     <!-- Pie chart per jenis pengadaan -->
     <section>
-        <!-- Header section -->
+        <!-- Header section — Section 1.1 -->
         <div class="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Detail Serapan</h2>
@@ -328,7 +383,145 @@
             </div>
         </div>
 
-        <!-- Grid kartu -->
+        <!-- Filter section — Section 1.2 -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mt-4 no-print">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+                <!-- Search input -->
+                <div class="relative flex-1">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                        type="text"
+                        placeholder="Cari jenis pengadaan, kode akun, MAK..."
+                        bind:value={filterSearch}
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                    />
+                </div>
+
+                <!-- Dropdown Status Serapan — Section 6 -->
+                <div class="relative sm:w-56">
+                    <button
+                        type="button"
+                        id="filter-status-btn"
+                        class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                        on:click={() => { showStatusDropdown = !showStatusDropdown; showSortDropdown = false; }}
+                    >
+                        <span class="truncate {filterStatus !== 'semua' ? 'font-semibold text-indigo-700' : ''}">{statusLabel}</span>
+                        <svg class="h-4 w-4 text-slate-400 shrink-0 ml-2 transition-transform {showStatusDropdown ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {#if showStatusDropdown}
+                        <div
+                            class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                            role="listbox"
+                            aria-labelledby="filter-status-btn"
+                        >
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <ul class="max-h-60 overflow-y-auto py-1">
+                                {#each statusOptions as opt}
+                                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                    <!-- svelte-ignore a11y_interactive_supports_focus -->
+                                    <li
+                                        role="option"
+                                        aria-selected={filterStatus === opt.value}
+                                        class="cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors
+                                            {filterStatus === opt.value
+                                                ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between'
+                                                : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                        on:click={() => { filterStatus = opt.value; showStatusDropdown = false; }}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {#if filterStatus === opt.value}
+                                            <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        {/if}
+                                    </li>
+                                {/each}
+                            </ul>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Dropdown Urutan — Section 6 -->
+                <div class="relative sm:w-52">
+                    <button
+                        type="button"
+                        id="filter-sort-btn"
+                        class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                        on:click={() => { showSortDropdown = !showSortDropdown; showStatusDropdown = false; }}
+                    >
+                        <span class="truncate {filterSort !== 'nama' ? 'font-semibold text-indigo-700' : ''}">{sortLabel}</span>
+                        <svg class="h-4 w-4 text-slate-400 shrink-0 ml-2 transition-transform {showSortDropdown ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {#if showSortDropdown}
+                        <div
+                            class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                            role="listbox"
+                            aria-labelledby="filter-sort-btn"
+                        >
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <ul class="max-h-60 overflow-y-auto py-1">
+                                {#each sortOptions as opt}
+                                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                    <!-- svelte-ignore a11y_interactive_supports_focus -->
+                                    <li
+                                        role="option"
+                                        aria-selected={filterSort === opt.value}
+                                        class="cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors
+                                            {filterSort === opt.value
+                                                ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between'
+                                                : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                        on:click={() => { filterSort = opt.value; showSortDropdown = false; }}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {#if filterSort === opt.value}
+                                            <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        {/if}
+                                    </li>
+                                {/each}
+                            </ul>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Tombol Reset filter -->
+                {#if filterSearch || filterStatus !== 'semua' || filterSort !== 'nama'}
+                    <button
+                        type="button"
+                        class="shrink-0 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                        on:click={resetFilters}
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Reset
+                    </button>
+                {/if}
+            </div>
+
+            <!-- Info hasil filter -->
+            {#if filterSearch || filterStatus !== 'semua'}
+                <div class="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                    <svg class="h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Menampilkan <span class="font-semibold text-slate-700">{filteredRows.length}</span> dari <span class="font-semibold text-slate-700">{laporanRows.length}</span> jenis pengadaan
+                    {#if filterSearch}<span>· pencarian: &ldquo;<em class="text-slate-700">{filterSearch}</em>&rdquo;</span>{/if}
+                    {#if filterStatus !== 'semua'}<span>· status: <em class="text-indigo-600">{statusLabel}</em></span>{/if}
+                </div>
+            {/if}
+        </div>
+
         <div class="mt-6">
             {#if laporanRows.length === 0}
                 <div class="p-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-sm">
@@ -337,6 +530,18 @@
                     </svg>
                     <p class="font-semibold">Belum ada data laporan untuk tahun {currentYear}.</p>
                     <p class="text-sm mt-1 text-slate-400">Pastikan Jenis Pengadaan sudah diinput di master data dan ada transaksi GUP.</p>
+                </div>
+            {:else if filteredRows.length === 0}
+                <div class="p-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p class="font-semibold text-slate-700">Tidak ada hasil yang cocok.</p>
+                    <p class="text-sm mt-1 text-slate-400">Coba ubah kata kunci pencarian atau filter status.</p>
+                    <button type="button" on:click={resetFilters} class="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Reset Filter
+                    </button>
                 </div>
             {:else}
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
