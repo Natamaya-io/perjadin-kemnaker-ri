@@ -885,7 +885,7 @@
 <!-- Modal Chart Detail — Section 9 BaseModal -->
 <BaseModal
     bind:open={showChartModal}
-    maxWidth="max-w-5xl"
+    maxWidth="max-w-6xl"
     on:close={() => { if (modalChart) { modalChart.destroy(); modalChart = null; } chartModalRow = null; }}
 >
     <svelte:fragment slot="header">
@@ -907,77 +907,80 @@
 
     <svelte:fragment slot="body">
         {#if chartModalRow}
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {@const sisa = Math.max(0, (chartModalRow.anggaran || 0) - (chartModalRow.realisasi || 0))}
+            {@const pct = chartModalRow.persentaseSerapan || 0}
+            {@const accentColor = colors[chartModalIndex % colors.length]}
 
-                <!-- Chart besar — lg:col-span-2 -->
-                <div class="lg:col-span-2">
-                    <div class="relative h-[440px] rounded-2xl bg-slate-50 border border-slate-100 p-6">
-                        <canvas bind:this={modalCanvas}></canvas>
+            <!-- Chart besar — full width -->
+            <div class="relative h-[500px] rounded-2xl bg-slate-50 border border-slate-100 p-6">
+                <canvas bind:this={modalCanvas}></canvas>
+            </div>
+
+            <!-- Penjelasan warna + stats grid -->
+            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+                <!-- Keterangan Warna: Realisasi -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl" style="background-color: {accentColor}"></div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="inline-block h-4 w-4 rounded-sm flex-shrink-0" style="background-color: {accentColor}"></span>
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Realisasi</p>
                     </div>
+                    <p class="text-xl font-black text-slate-900">{formatCurrency(chartModalRow.realisasi || 0)}</p>
+                    <p class="mt-1 text-xs text-slate-400">Anggaran yang telah terealisasi dari total pengajuan GUP yang disetujui.</p>
                 </div>
 
-                <!-- Stats — lg:col-span-1 -->
-                <div class="lg:col-span-1 flex flex-col gap-3">
-                    <!-- Garis gradasi atas di kartu data -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1"
-                            style="background: linear-gradient(to right, {colors[chartModalIndex % colors.length]}, {colors[(chartModalIndex + 1) % colors.length]})">
-                        </div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Ringkasan Data</p>
-                        <dl class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <dt class="text-sm text-slate-500">Anggaran</dt>
-                                <dd class="text-sm font-black text-slate-900">{formatCurrency(chartModalRow.anggaran || 0)}</dd>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <dt class="text-sm text-emerald-700">Realisasi</dt>
-                                <dd class="text-sm font-black text-emerald-800">{formatCurrency(chartModalRow.realisasi || 0)}</dd>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <dt class="text-sm text-amber-700">Sisa Anggaran</dt>
-                                <dd class="text-sm font-black text-amber-800">{formatCurrency(chartModalRow.sisaAnggaran || 0)}</dd>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <dt class="text-sm text-violet-700">Total Pajak</dt>
-                                <dd class="text-sm font-black text-violet-800">{formatCurrency(chartModalRow.totalPajak || 0)}</dd>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <dt class="text-sm text-slate-500">Nilai Pengajuan</dt>
-                                <dd class="text-sm font-black text-slate-900">{formatCurrency(chartModalRow.nilaiPengajuan || 0)}</dd>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <dt class="text-sm text-slate-500">Jumlah Transaksi</dt>
-                                <dd class="text-sm font-black text-slate-900">{chartModalRow.jumlahTransaksi} transaksi</dd>
-                            </div>
-                        </dl>
+                <!-- Keterangan Warna: Sisa Anggaran -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl bg-slate-300"></div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="inline-block h-4 w-4 rounded-sm flex-shrink-0 bg-[#e2e8f0] border border-slate-300"></span>
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Sisa Anggaran</p>
                     </div>
+                    <p class="text-xl font-black text-slate-900">{formatCurrency(sisa)}</p>
+                    <p class="mt-1 text-xs text-slate-400">Selisih antara Anggaran yang diinput dengan Realisasi. Tersisa dan belum digunakan.</p>
+                </div>
 
-                    <!-- Progress + badge -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Serapan</p>
-                            <span class="text-2xl font-black" style="color: {colors[chartModalIndex % colors.length]}">
-                                {(chartModalRow.persentaseSerapan || 0).toFixed(1)}%
-                            </span>
+                <!-- Ringkasan data + serapan -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 rounded-t-2xl"
+                        style="background: linear-gradient(to right, {accentColor}, {colors[(chartModalIndex + 1) % colors.length]})"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Ringkasan</p>
+                    <dl class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <dt class="text-xs text-slate-500">Anggaran</dt>
+                            <dd class="text-xs font-black text-slate-900">{formatCurrency(chartModalRow.anggaran || 0)}</dd>
                         </div>
-                        <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full transition-all duration-700"
-                                style="width: {Math.min(chartModalRow.persentaseSerapan || 0, 100)}%; background-color: {colors[chartModalIndex % colors.length]}">
-                            </div>
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                            <dt class="text-xs text-violet-700">Total Pajak</dt>
+                            <dd class="text-xs font-black text-violet-800">{formatCurrency(chartModalRow.totalPajak || 0)}</dd>
                         </div>
-                        <div class="mt-3">
-                            {#if chartModalRow.anggaran > 0}
-                                {#if (chartModalRow.persentaseSerapan || 0) > 100}
-                                    <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
-                                {:else if (chartModalRow.persentaseSerapan || 0) >= 80}
-                                    <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-emerald-700">Baik</span>
-                                {:else}
-                                    <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
-                                {/if}
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                            <dt class="text-xs text-slate-500">Jumlah Transaksi</dt>
+                            <dd class="text-xs font-black text-slate-900">{chartModalRow.jumlahTransaksi} transaksi</dd>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                            <dt class="text-xs text-slate-500">Serapan</dt>
+                            <dd class="text-xs font-black" style="color: {accentColor}">{pct.toFixed(1)}%</dd>
+                        </div>
+                    </dl>
+                    <!-- Progress bar -->
+                    <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        <div class="h-full rounded-full transition-all duration-700"
+                            style="width: {Math.min(pct, 100)}%; background-color: {accentColor}"></div>
+                    </div>
+                    <div class="mt-2">
+                        {#if chartModalRow.anggaran > 0}
+                            {#if pct > 100}
+                                <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-rose-700">Melebihi Anggaran</span>
+                            {:else if pct >= 80}
+                                <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-emerald-700">Baik</span>
                             {:else}
-                                <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
+                                <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-amber-700">Dalam Progress</span>
                             {/if}
-                        </div>
+                        {:else}
+                            <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-slate-600">Belum Diinput</span>
+                        {/if}
                     </div>
                 </div>
             </div>
