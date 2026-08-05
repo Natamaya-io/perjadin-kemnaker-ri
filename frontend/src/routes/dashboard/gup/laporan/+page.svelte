@@ -444,7 +444,7 @@
 
 <div class="space-y-6 pb-20 w-full">
     <!-- Hero halaman -->
-    <section class="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-8 text-white shadow-xl no-print">
+    <section class="relative rounded-3xl bg-slate-900 p-6 sm:p-8 text-white shadow-xl no-print">
 
         <div class="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div class="max-w-3xl">
