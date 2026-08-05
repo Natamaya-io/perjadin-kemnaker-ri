@@ -1,5 +1,5 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, onDestroy } from 'svelte';
     import { portal } from '$lib/shared/actions/portal';
     
     export let open = false;
@@ -12,6 +12,22 @@
         open = false;
         dispatch('close');
     }
+
+    // Reactive statement to toggle body scrollbar
+    $: if (typeof document !== 'undefined') {
+        if (open) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Ensure scrollbar is restored if component is destroyed while open
+    onDestroy(() => {
+        if (typeof document !== 'undefined') {
+            document.body.style.overflow = '';
+        }
+    });
 </script>
 
 {#if open}
