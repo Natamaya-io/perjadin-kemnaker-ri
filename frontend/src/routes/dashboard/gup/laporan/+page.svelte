@@ -37,6 +37,121 @@
     let modalCanvas;
     let modalChart;
 
+    // Modal Total & Komposisi
+    let showTotalModal = false;
+    let totalModalCanvas;
+    let totalModalChart;
+
+    let showKomposisiModal = false;
+    let komposisiModalCanvas;
+    let komposisiModalChart;
+
+    function openTotalModal() {
+        showTotalModal = true;
+        setTimeout(buildTotalModalChart, 80);
+    }
+
+    function buildTotalModalChart() {
+        if (!totalModalCanvas) return;
+        if (totalModalChart) totalModalChart.destroy();
+        totalModalChart = new Chart(totalModalCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Realisasi', 'Sisa Anggaran'],
+                datasets: [{
+                    data: [laporanSummary.totalRealisasi || 0, laporanSummary.sisaAnggaran || 0],
+                    backgroundColor: ['#10b981', '#e2e8f0'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            font: { size: 13, family: 'Inter, sans-serif' },
+                            color: '#475569',
+                            padding: 16,
+                            boxWidth: 14,
+                            boxHeight: 14,
+                            borderRadius: 4,
+                            useBorderRadius: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 14,
+                        cornerRadius: 12,
+                        displayColors: false,
+                        titleFont: { size: 12, family: 'Inter, sans-serif' },
+                        bodyFont: { size: 15, weight: 'bold', family: 'Inter, sans-serif' },
+                        callbacks: { label: (ctx) => ctx.label + ': ' + formatCurrency(ctx.raw) }
+                    }
+                }
+            }
+        });
+    }
+
+    function openKomposisiModal() {
+        showKomposisiModal = true;
+        setTimeout(buildKomposisiModalChart, 80);
+    }
+
+    function buildKomposisiModalChart() {
+        if (!komposisiModalCanvas) return;
+        if (komposisiModalChart) komposisiModalChart.destroy();
+        komposisiModalChart = new Chart(komposisiModalCanvas, {
+            type: 'pie',
+            data: {
+                labels: laporanRows.map(r => r.jenisPengadaan),
+                datasets: [{
+                    data: laporanRows.map(r => r.realisasi || 0),
+                    backgroundColor: colors.slice(0, laporanRows.length),
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 14
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right', // Posisi di kanan untuk komposisi karena itemnya banyak
+                        labels: {
+                            font: { size: 12, family: 'Inter, sans-serif' },
+                            color: '#475569',
+                            padding: 14,
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            borderRadius: 4,
+                            useBorderRadius: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 14,
+                        cornerRadius: 12,
+                        displayColors: false,
+                        titleFont: { size: 12, family: 'Inter, sans-serif' },
+                        bodyFont: { size: 15, weight: 'bold', family: 'Inter, sans-serif' },
+                        callbacks: {
+                            title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan,
+                            label: (ctx) => 'Realisasi: ' + formatCurrency(ctx.raw)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function openChartModal(row, globalI) {
         chartModalRow = row;
         chartModalIndex = globalI;
@@ -365,9 +480,21 @@
                     <h2 class="mt-2 text-xl font-black text-slate-900">Total Serapan Anggaran</h2>
                     <p class="mt-1 text-sm text-slate-500">Komposisi total Realisasi dan Sisa Anggaran.</p>
                 </div>
-                <div class="rounded-2xl bg-slate-900 px-4 py-3 text-right text-white">
-                    <p class="text-xs text-slate-300">Serapan</p>
-                    <p class="text-2xl font-black">{(laporanSummary.persentaseSerapan || 0).toFixed(1)}%</p>
+                <div class="flex items-center gap-2">
+                    <div class="rounded-2xl bg-slate-900 px-4 py-3 text-right text-white">
+                        <p class="text-xs text-slate-300">Serapan</p>
+                        <p class="text-2xl font-black">{(laporanSummary.persentaseSerapan || 0).toFixed(1)}%</p>
+                    </div>
+                    <button
+                        type="button"
+                        title="Lihat chart lebih besar"
+                        class="text-slate-500 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 p-2 rounded-xl transition-colors shrink-0 no-print self-stretch flex items-center justify-center"
+                        on:click={openTotalModal}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -399,11 +526,23 @@
                     <h2 class="mt-2 text-xl font-black text-slate-900">Realisasi per Jenis Pengadaan</h2>
                     <p class="mt-1 text-sm text-slate-500">Pie chart ini ditarik dari data Realisasi pada menu Pengajuan GUP.</p>
                 </div>
-                <div class="inline-flex items-center gap-2 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-bold text-sky-700 border border-sky-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>{laporanSummary.totalJenisPengadaan || 0}</span> Jenis
+                <div class="flex items-center gap-2">
+                    <div class="inline-flex items-center gap-2 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-bold text-sky-700 border border-sky-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <span>{laporanSummary.totalJenisPengadaan || 0}</span> Jenis
+                    </div>
+                    <button
+                        type="button"
+                        title="Lihat chart lebih besar"
+                        class="text-slate-500 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 p-2 rounded-xl transition-colors shrink-0 no-print self-stretch flex items-center justify-center"
+                        on:click={openKomposisiModal}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -1054,5 +1193,142 @@
                 Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span>
             </p>
         {/if}
+    </svelte:fragment>
+</BaseModal>
+
+<!-- Modal Expand Total Serapan -->
+<BaseModal
+    bind:open={showTotalModal}
+    maxWidth="max-w-6xl"
+    on:close={() => { if (totalModalChart) { totalModalChart.destroy(); totalModalChart = null; } }}
+>
+    <svelte:fragment slot="header">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 leading-tight">
+                Total Serapan Anggaran
+            </h2>
+            <p class="text-sm text-slate-500 mt-1">Komposisi total Realisasi dan Sisa Anggaran tahun {currentYear}</p>
+        </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="body">
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <!-- ===== KIRI: Chart canvas ===== -->
+            <div class="lg:col-span-3">
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden h-full">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                        <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Visualisasi Doughnut</h4>
+                    </div>
+                    <div class="relative flex-1 min-h-[400px]">
+                        <canvas bind:this={totalModalCanvas}></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== KANAN: Info cards ===== -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-300"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Anggaran</p>
+                    <p class="text-3xl font-black text-slate-900">{formatCurrency(laporanSummary.totalAnggaran || 0)}</p>
+                </div>
+                
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-emerald-200 shadow-sm relative overflow-hidden bg-emerald-50/30 group hover:border-emerald-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-2">Total Realisasi</p>
+                    <p class="text-3xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</p>
+                    <div class="mt-4 pt-4 border-t border-emerald-100 flex items-center justify-between">
+                        <span class="text-sm font-semibold text-emerald-700">Serapan</span>
+                        <span class="text-lg font-black text-emerald-700">{(laporanSummary.persentaseSerapan || 0).toFixed(1)}%</span>
+                    </div>
+                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-emerald-100">
+                        <div class="h-full rounded-full bg-emerald-500 transition-all duration-700" style="width: {Math.min(laporanSummary.persentaseSerapan || 0, 100)}%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden bg-amber-50/30 group hover:border-amber-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-amber-700 mb-2">Sisa Anggaran</p>
+                    <p class="text-3xl font-black text-amber-800">{formatCurrency(laporanSummary.sisaAnggaran || 0)}</p>
+                </div>
+            </div>
+        </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="footer">
+        <p class="text-xs text-slate-400 w-full text-center sm:text-left">
+            Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span>
+        </p>
+    </svelte:fragment>
+</BaseModal>
+
+<!-- Modal Expand Komposisi -->
+<BaseModal
+    bind:open={showKomposisiModal}
+    maxWidth="max-w-6xl"
+    on:close={() => { if (komposisiModalChart) { komposisiModalChart.destroy(); komposisiModalChart = null; } }}
+>
+    <svelte:fragment slot="header">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 leading-tight">
+                Realisasi per Jenis Pengadaan
+            </h2>
+            <p class="text-sm text-slate-500 mt-1">Komposisi Realisasi berdasarkan Jenis Pengadaan tahun {currentYear}</p>
+        </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="body">
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <!-- ===== KIRI: Chart canvas ===== -->
+            <div class="lg:col-span-3">
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden h-full">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
+                        <div class="p-2.5 bg-gradient-to-br from-sky-50 to-sky-100/50 text-sky-600 rounded-xl shadow-sm border border-sky-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Visualisasi Pie</h4>
+                    </div>
+                    <div class="relative flex-1 min-h-[400px]">
+                        <canvas bind:this={komposisiModalCanvas}></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== KANAN: Info cards ===== -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-blue-500"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Jenis Pengadaan</p>
+                    <p class="text-3xl font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</p>
+                </div>
+                
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 to-violet-500"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Jumlah Transaksi GUP</p>
+                    <p class="text-3xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</p>
+                </div>
+
+                <div class="bg-white p-5 md:p-6 rounded-2xl border border-emerald-200 shadow-sm relative overflow-hidden bg-emerald-50/30 group hover:border-emerald-300 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-2">Nilai Pengajuan (Total Realisasi)</p>
+                    <p class="text-3xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</p>
+                </div>
+            </div>
+        </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="footer">
+        <p class="text-xs text-slate-400 w-full text-center sm:text-left">
+            Data serapan anggaran tahun <span class="font-semibold text-slate-600">{currentYear}</span>
+        </p>
     </svelte:fragment>
 </BaseModal>
