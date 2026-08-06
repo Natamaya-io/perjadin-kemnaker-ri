@@ -406,9 +406,9 @@
     $: if (pagedRows) { setTimeout(buildDetailCharts, 50); }
 
 
-    function openAnggaranModal(row) {
+    function openAnggaranModal(row = null) {
         selectedRow = row;
-        anggaranInput = row.anggaran > 0 ? String(row.anggaran) : '';
+        anggaranInput = row && row.anggaran > 0 ? String(row.anggaran) : '';
         saveError = '';
         showAnggaranModal = true;
     }
@@ -503,7 +503,7 @@
                     {/if}
                 </div>
 
-                <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(laporanRows[0])}>
+                <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(null)}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
@@ -649,7 +649,7 @@
                 <p class="text-sm text-slate-500 mt-1">Setiap kartu menampilkan komposisi Realisasi dan Sisa Anggaran berdasarkan anggaran yang diinput.</p>
             </div>
             <div class="flex items-center gap-3 no-print">
-                <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => openAnggaranModal(laporanRows[0])}>
+                <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => openAnggaranModal(null)}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -1039,7 +1039,7 @@
             <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h3 id="modal-anggaran-title" class="text-lg font-bold text-slate-900">Input Anggaran</h3>
-                    <p class="text-sm text-slate-500 mt-0.5">{selectedRow?.jenisPengadaan || ''}</p>
+                    <p class="text-sm text-slate-500 mt-0.5">Atur pagu anggaran untuk jenis pengadaan tertentu</p>
                 </div>
                 <button
                     class="rounded-full p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
@@ -1051,16 +1051,38 @@
             </div>
 
             <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div class="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
-                        <p class="text-xs text-slate-500">Kode Akun</p>
-                        <p class="font-bold text-slate-800 mt-0.5">{selectedRow?.kodeAkun || '-'}</p>
-                    </div>
-                    <div class="rounded-xl bg-emerald-50 px-4 py-3 border border-emerald-100">
-                        <p class="text-xs text-emerald-600">Realisasi Saat Ini</p>
-                        <p class="font-bold text-emerald-800 mt-0.5">{formatCurrency(selectedRow?.realisasi || 0)}</p>
+                <div class="space-y-2">
+                    <label for="select-pengadaan" class="text-sm font-semibold text-slate-700">Jenis Pengadaan</label>
+                    <div class="relative">
+                        <select
+                            id="select-pengadaan"
+                            bind:value={selectedRow}
+                            on:change={() => { anggaranInput = selectedRow?.anggaran > 0 ? String(selectedRow.anggaran) : ''; saveError = ''; }}
+                            class="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-3 pr-10 text-sm font-medium text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        >
+                            <option value={null} disabled>-- Pilih Jenis Pengadaan --</option>
+                            {#each laporanRows as row}
+                                <option value={row}>{row.kodeAkun} - {row.jenisPengadaan}</option>
+                            {/each}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
                     </div>
                 </div>
+
+                {#if selectedRow}
+                    <div class="grid grid-cols-2 gap-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div class="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
+                            <p class="text-xs text-slate-500">Kode Akun</p>
+                            <p class="font-bold text-slate-800 mt-0.5">{selectedRow.kodeAkun || '-'}</p>
+                        </div>
+                        <div class="rounded-xl bg-emerald-50 px-4 py-3 border border-emerald-100">
+                            <p class="text-xs text-emerald-600">Realisasi Saat Ini</p>
+                            <p class="font-bold text-emerald-800 mt-0.5">{formatCurrency(selectedRow.realisasi || 0)}</p>
+                        </div>
+                    </div>
+                {/if}
 
                 <div class="space-y-2">
                     <label for="input-anggaran" class="text-sm font-semibold text-slate-700">Nominal Anggaran (Rp)</label>
@@ -1069,8 +1091,9 @@
                         type="number"
                         min="0"
                         bind:value={anggaranInput}
-                        placeholder="Contoh: 50000000"
-                        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        disabled={!selectedRow}
+                        placeholder={selectedRow ? "Contoh: 50000000" : "Pilih jenis pengadaan dahulu"}
+                        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-slate-50"
                     />
                 </div>
 
