@@ -637,12 +637,19 @@
                         <p class="text-xs font-semibold text-slate-500">Nilai Pengajuan</p>
                         <h3 class="mt-1 text-2xl font-black text-slate-900">{formatCurrency(laporanSummary.totalRealisasi || 0)}</h3>
                     </div>
-                    <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700 flex items-start gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Jenis Pengadaan dengan realisasi nol tetap muncul pada kartu detail, tetapi tidak mendominasi pie komposisi.</span>
-                    </div>
+                    <button
+                        type="button"
+                        class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-left hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-center cursor-pointer group shadow-sm"
+                        on:click={() => showInfoModal = true}
+                    >
+                        <div class="flex items-center gap-2 text-blue-700 mb-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="font-bold text-sm">Catatan Laporan</span>
+                        </div>
+                        <p class="text-xs text-blue-600/80 group-hover:text-blue-700 font-medium">Klik untuk membaca panduan pembacaan dan data sumber laporan.</p>
+                    </button>
                 </div>
             </div>
         </article>
@@ -1051,6 +1058,20 @@
                         <span class="text-xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</span>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 flex flex-col sm:flex-row items-start gap-4 shadow-sm">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-slate-900">Catatan Perhitungan Laporan</h4>
+                <p class="mt-1 text-sm text-slate-600 leading-relaxed">
+                    Jenis Pengadaan dengan realisasi nol tetap muncul pada daftar laporan (kartu detail) agar ketersediaan pagu anggarannya bisa dipantau, tetapi jenis tersebut <strong>tidak akan mendominasi grafik pie komposisi</strong> untuk menjaga akurasi representasi pengeluaran riil.
+                </p>
             </div>
         </div>
     </svelte:fragment>
