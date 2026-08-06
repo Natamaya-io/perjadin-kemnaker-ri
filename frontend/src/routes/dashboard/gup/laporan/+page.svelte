@@ -457,7 +457,14 @@
                     </svg>
                     Visualisasi Serapan Anggaran GUP — {currentYear}
                 </div>
-                <h1 class="text-3xl font-black tracking-tight sm:text-4xl">Laporan dan Rekapitulasi</h1>
+                <h1 class="text-3xl font-black tracking-tight sm:text-4xl flex items-center gap-3">
+                    Laporan dan Rekapitulasi
+                    <button type="button" title="Informasi Global & Legenda" on:click={() => showInfoModal = true} class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-1.5 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                </h1>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base">
                     Pantau Anggaran, Realisasi, Sisa Anggaran, dan Persentase Serapan dalam bentuk visualisasi per Jenis Pengadaan.
                 </p>
@@ -505,12 +512,7 @@
                     {/if}
                 </div>
 
-                <Button variant="default" class="gap-2 bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 hover:text-indigo-800" on:click={() => showInfoModal = true}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Informasi
-                </Button>
+
                 <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(null)}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
