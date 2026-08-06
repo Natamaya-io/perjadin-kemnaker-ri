@@ -529,26 +529,6 @@
                     <p class="mt-1 text-sm text-slate-500">Komposisi total Realisasi dan Sisa Anggaran.</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-4 rounded-2xl bg-slate-900 pl-3 pr-5 py-3 shadow-sm border border-slate-800">
-                        <div class="relative w-12 h-12 flex items-center justify-center">
-                            <!-- Background Track -->
-                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                <path class="text-slate-800" stroke-width="4" stroke="currentColor" fill="none"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                <!-- Progress Indicator -->
-                                <path class="text-indigo-400 transition-all duration-1000 ease-out" 
-                                    stroke-dasharray="{Math.min(laporanSummary.persentaseSerapan || 0, 100)}, 100" 
-                                    stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            </svg>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-0.5">Serapan</p>
-                            <p class="text-2xl font-black text-white leading-none">
-                                {(laporanSummary.persentaseSerapan || 0).toFixed(1)}<span class="text-sm font-bold text-slate-500 ml-0.5">%</span>
-                            </p>
-                        </div>
-                    </div>
                     <button
                         type="button"
                         title="Lihat chart lebih besar"
@@ -578,6 +558,22 @@
                     <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4">
                         <p class="text-xs font-semibold text-amber-700">Sisa Anggaran</p>
                         <h3 class="mt-1 text-xl font-black text-amber-800">{formatCurrency(laporanSummary.sisaAnggaran || 0)}</h3>
+                    </div>
+                    <div class="flex items-center justify-between rounded-2xl bg-slate-900 pl-4 pr-5 py-3 shadow-sm border border-slate-800">
+                        <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+                            <!-- Background Track -->
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                <path class="text-slate-800" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <!-- Progress Indicator -->
+                                <path class="text-indigo-400 transition-all duration-1000 ease-out" stroke-dasharray="{Math.min(laporanSummary.persentaseSerapan || 0, 100)}, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-0.5">Persentase Serapan</p>
+                            <p class="text-xl font-black text-white leading-none">
+                                {(laporanSummary.persentaseSerapan || 0).toFixed(1)}<span class="text-sm font-bold text-slate-500 ml-0.5">%</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
