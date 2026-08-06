@@ -16,6 +16,7 @@ type Repository interface {
 
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
+	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 	GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
@@ -203,6 +204,34 @@ func (r *repository) GetMonthlyLS(ctx context.Context, year int16) ([]models.Mon
 		results = append(results, m)
 	}
 	return results, nil
+}
+
+func (r *repository) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error {
+	if len(items) == 0 {
+		return nil
+	}
+	tx, err := r.d.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `
+		INSERT INTO monthly_ls (id, funding_source_id, amount, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
+		ON CONFLICT (funding_source_id) 
+		DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
+	`
+	for _, item := range items {
+		id := item.ID
+		if id == uuid.Nil {
+			id = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, query, id, item.FundingSourceID, item.Amount); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {

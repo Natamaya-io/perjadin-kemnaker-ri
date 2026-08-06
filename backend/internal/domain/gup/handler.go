@@ -94,6 +94,19 @@ func (h *Handler) GetMonthlyLS(c echo.Context) error {
 	return c.JSON(http.StatusOK, ls)
 }
 
+func (h *Handler) SaveMonthlyLS(c echo.Context) error {
+	ctx := c.Request().Context()
+	var payload []models.MonthlyLS
+	if err := c.Bind(&payload); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+	err := h.svc.SaveMonthlyLS(ctx, payload)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "Monthly LS saved successfully"})
+}
+
 func (h *Handler) GetMasterData(c echo.Context) error {
 	yearStr := c.QueryParam("year")
 	if yearStr == "" {

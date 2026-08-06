@@ -14,6 +14,7 @@ type Service interface {
 
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
+	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 	GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
@@ -51,6 +52,10 @@ func (s *service) GetBudgets(ctx context.Context, year int16) ([]models.Budget, 
 
 func (s *service) GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error) {
 	return s.repo.GetMonthlyLS(ctx, year)
+}
+
+func (s *service) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error {
+	return s.repo.SaveMonthlyLS(ctx, items)
 }
 
 func (s *service) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {

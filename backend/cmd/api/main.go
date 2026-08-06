@@ -205,6 +205,7 @@ func main() {
 		protected.GET("/gup/laporan", gupHandler.GetLaporan)
 		protected.POST("/gup/laporan/budget", gupHandler.SaveBudget)
 		protected.GET("/gup/ls", gupHandler.GetMonthlyLS)
+		protected.POST("/gup/ls", gupHandler.SaveMonthlyLS)
 		protected.GET("/gup/data", gupHandler.GetBudgets)
 		protected.GET("/gup/master-data", gupHandler.GetMasterData)
 		protected.POST("/gup/master-data/account-codes", gupHandler.CreateAccountCode)
