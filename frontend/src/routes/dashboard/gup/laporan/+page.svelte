@@ -611,46 +611,43 @@
                 </div>
             </div>
 
-            <div class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-5">
-                <div class="relative h-72 rounded-3xl bg-slate-50 p-4 lg:col-span-3">
-                    <canvas bind:this={komposisiCanvas}></canvas>
-                </div>
-                <div class="space-y-3 lg:col-span-2">
-                    <div class="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-semibold text-slate-500">Jumlah Transaksi GUP</p>
-                                <h3 class="mt-1 text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</h3>
-                            </div>
-                            <a
-                                href="/dashboard/gup/pengajuan"
-                                class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors border border-indigo-100 flex items-center gap-1 shrink-0"
-                            >
-                                Lihat Rincian
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p class="text-xs font-semibold text-slate-500">Nilai Pengajuan</p>
-                        <h3 class="mt-1 text-2xl font-black text-slate-900">{formatCurrency(laporanSummary.totalRealisasi || 0)}</h3>
-                    </div>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-left hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-center cursor-pointer group shadow-sm"
-                        on:click={() => showInfoModal = true}
-                    >
-                        <div class="flex items-center gap-2 text-blue-700 mb-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex flex-col justify-between">
+                    <p class="text-xs font-semibold text-slate-500">Jumlah Transaksi GUP</p>
+                    <div class="mt-1 flex items-center justify-between">
+                        <h3 class="text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</h3>
+                        <a
+                            href="/dashboard/gup/pengajuan"
+                            class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors border border-indigo-100 flex items-center gap-1 shrink-0"
+                        >
+                            Lihat Rincian
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
-                            <span class="font-bold text-sm">Catatan Laporan</span>
-                        </div>
-                        <p class="text-xs text-blue-600/80 group-hover:text-blue-700 font-medium">Klik untuk membaca panduan pembacaan dan data sumber laporan.</p>
-                    </button>
+                        </a>
+                    </div>
                 </div>
+                <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 flex flex-col justify-between">
+                    <p class="text-xs font-semibold text-emerald-700">Nilai Pengajuan</p>
+                    <h3 class="mt-1 text-2xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</h3>
+                </div>
+                <button
+                    type="button"
+                    class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-left hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-center cursor-pointer group shadow-sm h-full w-full"
+                    on:click={() => showInfoModal = true}
+                >
+                    <div class="flex items-center gap-2 text-blue-700 mb-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="font-bold text-sm">Catatan Laporan</span>
+                    </div>
+                    <p class="text-xs text-blue-600/80 group-hover:text-blue-700 font-medium">Klik untuk membaca panduan pembacaan dan data sumber laporan.</p>
+                </button>
+            </div>
+
+            <div class="mt-4 relative h-64 rounded-3xl bg-slate-50 p-4">
+                <canvas bind:this={komposisiCanvas}></canvas>
             </div>
         </article>
     </section>
