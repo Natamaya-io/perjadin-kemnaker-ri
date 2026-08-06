@@ -586,7 +586,7 @@
             </div>
         </article>
 
-        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3 flex flex-col">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Komposisi</p>
@@ -642,7 +642,7 @@
                 </div>
             </div>
 
-            <div class="mt-4 relative h-64 rounded-3xl bg-slate-50 p-4">
+            <div class="mt-4 relative rounded-3xl bg-slate-50 p-4 flex-1 min-h-[16rem]">
                 <canvas bind:this={komposisiCanvas}></canvas>
             </div>
         </article>
