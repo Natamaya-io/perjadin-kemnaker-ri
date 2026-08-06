@@ -827,15 +827,15 @@
                     </button>
                 </div>
             {:else}
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {#each pagedRows as row, i}
                         {@const globalI = globalOffset + i}
-                        <article class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden">
+                        <article class="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden">
                             <!-- Garis atas sesuai Section 5 guidelines -->
                             <div class="absolute top-0 left-0 w-full h-1.5" style="background-color: {colors[globalI % colors.length]}"></div>
 
                             <div class="flex items-start gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                                <div class="p-2.5 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {colors[globalI % colors.length]}20; color: {colors[globalI % colors.length]}">
+                                <div class="p-2 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {colors[globalI % colors.length]}20; color: {colors[globalI % colors.length]}">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                                     </svg>
@@ -859,27 +859,27 @@
                             </div>
 
                             <!-- Pie chart canvas -->
-                            <div class="relative h-52 rounded-xl bg-slate-50 p-3">
+                            <div class="relative h-36 rounded-xl bg-slate-50 p-2">
                                 <canvas bind:this={detailCanvases[globalI]}></canvas>
                             </div>
 
                             <!-- Stats grid -->
                             <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                <div class="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Anggaran</p>
-                                    <p class="mt-1 font-black text-slate-900 text-sm">{formatCurrency(row.anggaran || 0)}</p>
+                                <div class="rounded-xl bg-slate-50 border border-slate-100 p-2.5 flex flex-col justify-center">
+                                    <p class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Anggaran</p>
+                                    <p class="mt-0.5 font-black text-slate-900 text-sm truncate">{formatCurrency(row.anggaran || 0)}</p>
                                 </div>
-                                <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
-                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Realisasi</p>
-                                    <p class="mt-1 font-black text-emerald-800 text-sm">{formatCurrency(row.realisasi || 0)}</p>
+                                <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-2.5 flex flex-col justify-center">
+                                    <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Realisasi</p>
+                                    <p class="mt-0.5 font-black text-emerald-800 text-sm truncate">{formatCurrency(row.realisasi || 0)}</p>
                                 </div>
-                                <div class="rounded-xl bg-amber-50 border border-amber-100 p-3">
-                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-amber-700">Sisa</p>
-                                    <p class="mt-1 font-black text-amber-800 text-sm">{formatCurrency(row.sisaAnggaran || 0)}</p>
+                                <div class="rounded-xl bg-amber-50 border border-amber-100 p-2.5 flex flex-col justify-center">
+                                    <p class="text-[9px] font-bold uppercase tracking-wider text-amber-700">Sisa</p>
+                                    <p class="mt-0.5 font-black text-amber-800 text-sm truncate">{formatCurrency(row.sisaAnggaran || 0)}</p>
                                 </div>
-                                <div class="rounded-xl bg-violet-50 border border-violet-100 p-3">
-                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-violet-700">Serapan</p>
-                                    <p class="mt-1 font-black text-violet-800 text-sm">{(row.persentaseSerapan || 0).toFixed(1)}%</p>
+                                <div class="rounded-xl bg-violet-50 border border-violet-100 p-2.5 flex flex-col justify-center">
+                                    <p class="text-[9px] font-bold uppercase tracking-wider text-violet-700">Serapan</p>
+                                    <p class="mt-0.5 font-black text-violet-800 text-sm truncate">{(row.persentaseSerapan || 0).toFixed(1)}%</p>
                                 </div>
                             </div>
 
