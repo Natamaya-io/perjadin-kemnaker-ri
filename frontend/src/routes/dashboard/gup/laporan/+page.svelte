@@ -588,7 +588,14 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Komposisi</p>
-                    <h2 class="mt-2 text-xl font-black text-slate-900">Realisasi per Jenis Pengadaan</h2>
+                    <h2 class="mt-2 text-xl font-black text-slate-900 flex items-center gap-2">
+                        Realisasi per Jenis Pengadaan
+                        <button type="button" title="Informasi Laporan" on:click={() => showInfoModal = true} class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full p-1 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    </h2>
                     <p class="mt-1 text-sm text-slate-500">Pie chart ini ditarik dari data Realisasi pada menu Pengajuan GUP.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -611,7 +618,7 @@
                 </div>
             </div>
 
-            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex flex-col justify-between">
                     <p class="text-xs font-semibold text-slate-500">Jumlah Transaksi GUP</p>
                     <div class="mt-1 flex items-center justify-between">
@@ -631,19 +638,6 @@
                     <p class="text-xs font-semibold text-emerald-700">Nilai Pengajuan</p>
                     <h3 class="mt-1 text-2xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</h3>
                 </div>
-                <button
-                    type="button"
-                    class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-left hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-center cursor-pointer group shadow-sm h-full w-full"
-                    on:click={() => showInfoModal = true}
-                >
-                    <div class="flex items-center gap-2 text-blue-700 mb-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span class="font-bold text-sm">Catatan Laporan</span>
-                    </div>
-                    <p class="text-xs text-blue-600/80 group-hover:text-blue-700 font-medium">Klik untuk membaca panduan pembacaan dan data sumber laporan.</p>
-                </button>
             </div>
 
             <div class="mt-4 relative h-64 rounded-3xl bg-slate-50 p-4">
