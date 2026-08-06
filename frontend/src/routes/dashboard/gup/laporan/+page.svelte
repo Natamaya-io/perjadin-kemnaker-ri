@@ -561,23 +561,9 @@
                     <p class="text-xs font-semibold text-emerald-700">Total Realisasi</p>
                     <h3 class="mt-1 text-xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</h3>
                 </div>
-                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:col-span-2">
                     <p class="text-xs font-semibold text-amber-700">Sisa Anggaran</p>
                     <h3 class="mt-1 text-xl font-black text-amber-800">{formatCurrency(laporanSummary.sisaAnggaran || 0)}</h3>
-                </div>
-                <div class="rounded-2xl bg-slate-900 p-4 shadow-sm border border-slate-800 flex items-center justify-between gap-2">
-                    <div>
-                        <p class="text-xs font-semibold text-slate-400">Total Serapan</p>
-                        <h3 class="mt-1 text-xl font-black text-white">
-                            {(laporanSummary.persentaseSerapan || 0).toFixed(1)}<span class="text-sm font-bold text-slate-500 ml-0.5">%</span>
-                        </h3>
-                    </div>
-                    <div class="relative w-10 h-10 shrink-0">
-                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path class="text-slate-800" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="text-indigo-400 transition-all duration-1000 ease-out" stroke-dasharray="{Math.min(laporanSummary.persentaseSerapan || 0, 100)}, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        </svg>
-                    </div>
                 </div>
             </div>
 
@@ -1432,12 +1418,20 @@
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <p class="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-2">Total Realisasi</p>
                     <p class="text-3xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</p>
-                    <div class="mt-4 pt-4 border-t border-emerald-100 flex items-center justify-between">
-                        <span class="text-sm font-semibold text-emerald-700">Serapan</span>
-                        <span class="text-lg font-black text-emerald-700">{(laporanSummary.persentaseSerapan || 0).toFixed(1)}%</span>
+                </div>
+
+                <div class="rounded-2xl bg-slate-900 p-5 md:p-6 shadow-sm border border-slate-800 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Total Serapan</p>
+                        <h3 class="mt-2 text-3xl font-black text-white">
+                            {(laporanSummary.persentaseSerapan || 0).toFixed(1)}<span class="text-lg font-bold text-slate-500 ml-1">%</span>
+                        </h3>
                     </div>
-                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-emerald-100">
-                        <div class="h-full rounded-full bg-emerald-500 transition-all duration-700" style="width: {Math.min(laporanSummary.persentaseSerapan || 0, 100)}%"></div>
+                    <div class="relative w-16 h-16 shrink-0">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-slate-800" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="text-indigo-400 transition-all duration-1000 ease-out" stroke-dasharray="{Math.min(laporanSummary.persentaseSerapan || 0, 100)}, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
                     </div>
                 </div>
 
