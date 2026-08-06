@@ -38,6 +38,7 @@
     let savingAnggaran = false;
     let saveError = '';
     let isAnggaranDropdownOpen = false;
+    let showInfoModal = false;
 
     // Modal Chart Detail
     let showChartModal = false;
@@ -504,6 +505,12 @@
                     {/if}
                 </div>
 
+                <Button variant="default" class="gap-2 bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 hover:text-indigo-800" on:click={() => showInfoModal = true}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Informasi
+                </Button>
                 <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(null)}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -514,7 +521,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
-                    Cetak Laporan
+                    Cetak
                 </Button>
             </div>
         </div>
@@ -977,54 +984,83 @@
         {/if}
     </section>
 
-    <!-- Legenda -->
-    <section class="grid grid-cols-1 gap-5 lg:grid-cols-3 no-print">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-            <h3 class="text-lg font-black text-slate-900">Cara baca pie chart</h3>
-            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div class="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <!-- Legenda & Data Sumber telah dipindahkan ke modal Informasi Global -->
+</div>
+
+<!-- Modal Informasi Global -->
+<BaseModal
+    bind:open={showInfoModal}
+    maxWidth="max-w-5xl"
+    on:close={() => showInfoModal = false}
+>
+    <svelte:fragment slot="header">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 leading-tight">Informasi Global & Legenda</h2>
+            <p class="text-sm text-slate-500 mt-1">Panduan membaca laporan dan ringkasan data sumber.</p>
+        </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="body">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2 flex flex-col group hover:border-slate-300 transition-colors">
+                <h3 class="text-lg font-black text-slate-900">Cara baca pie chart</h3>
+                <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 flex-1">
+                    <div class="rounded-xl bg-slate-50 p-4 border border-slate-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <p class="font-bold text-slate-900">Realisasi</p>
+                        <p class="mt-1.5 text-xs text-slate-500 leading-relaxed">Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</p>
                     </div>
-                    <p class="font-bold text-slate-900">Realisasi</p>
-                    <p class="mt-1 text-sm text-slate-500">Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</p>
+                    <div class="rounded-xl bg-slate-50 p-4 border border-slate-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-slate-400"></div>
+                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-200 text-slate-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                        </div>
+                        <p class="font-bold text-slate-900">Sisa Anggaran</p>
+                        <p class="mt-1.5 text-xs text-slate-500 leading-relaxed">Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</p>
+                    </div>
+                    <div class="rounded-xl bg-rose-50/50 p-4 border border-rose-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
+                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <p class="font-bold text-rose-900">Melebihi Anggaran</p>
+                        <p class="mt-1.5 text-xs text-rose-700/70 leading-relaxed">Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</p>
+                    </div>
                 </div>
-                <div class="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-500 text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col group hover:border-slate-300 transition-colors">
+                <h3 class="text-lg font-black text-slate-900">Data Sumber</h3>
+                <div class="mt-5 space-y-3 text-sm flex-1">
+                    <div class="flex flex-col rounded-xl bg-slate-50 px-5 py-4 border border-slate-100 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 w-1 h-full bg-slate-300"></div>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Jenis Pengadaan</span>
+                        <span class="text-2xl font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</span>
                     </div>
-                    <p class="font-bold text-slate-900">Sisa Anggaran</p>
-                    <p class="mt-1 text-sm text-slate-500">Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    <div class="flex flex-col rounded-xl bg-slate-50 px-5 py-4 border border-slate-100 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 w-1 h-full bg-indigo-400"></div>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Transaksi GUP</span>
+                        <span class="text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</span>
                     </div>
-                    <p class="font-bold text-slate-900">Melebihi Anggaran</p>
-                    <p class="mt-1 text-sm text-slate-500">Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</p>
+                    <div class="flex flex-col rounded-xl bg-emerald-50/50 px-5 py-4 border border-emerald-100 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 w-1 h-full bg-emerald-500"></div>
+                        <span class="text-xs font-semibold text-emerald-700 uppercase tracking-widest mb-1">Realisasi</span>
+                        <span class="text-xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </svelte:fragment>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 class="text-lg font-black text-slate-900">Data Sumber</h3>
-            <dl class="mt-4 space-y-3 text-sm">
-                <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
-                    <dt class="text-slate-500">Jenis Pengadaan</dt>
-                    <dd class="font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</dd>
-                </div>
-                <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
-                    <dt class="text-slate-500">Transaksi GUP</dt>
-                    <dd class="font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</dd>
-                </div>
-                <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
-                    <dt class="text-slate-500">Realisasi</dt>
-                    <dd class="font-black text-slate-900">{formatCurrency(laporanSummary.totalRealisasi || 0)}</dd>
-                </div>
-            </dl>
+    <svelte:fragment slot="footer">
+        <div class="w-full flex justify-end">
+            <button on:click={() => showInfoModal = false} class="px-6 py-2.5 text-sm font-bold bg-slate-900 text-white rounded-xl shadow hover:bg-slate-800 transition-all focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">Tutup Informasi</button>
         </div>
-    </section>
-</div>
+    </svelte:fragment>
+</BaseModal>
 
 <!-- Modal Input Anggaran -->
 {#if showAnggaranModal}
