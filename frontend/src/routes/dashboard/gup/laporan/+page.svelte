@@ -408,7 +408,7 @@
 
     function openAnggaranModal(row = null) {
         selectedRow = row;
-        anggaranInput = row && row.anggaran > 0 ? String(row.anggaran) : '';
+        anggaranInput = row && row.anggaran > 0 ? Number(row.anggaran).toLocaleString('id-ID') : '';
         saveError = '';
         showAnggaranModal = true;
     }
@@ -428,7 +428,7 @@
             await api.saveGupBudget({
                 procurementTypeId: selectedRow.procurementTypeId,
                 year: currentYear,
-                amount: parseFloat(anggaranInput)
+                amount: parseFloat(anggaranInput.replace(/\./g, ''))
             });
             // Reload data
             const fresh = await api.getGupLaporan(currentYear);
@@ -1079,7 +1079,7 @@
                                             class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {isSelected ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
                                             on:click={() => {
                                                 selectedRow = row;
-                                                anggaranInput = row.anggaran > 0 ? String(row.anggaran) : '';
+                                                anggaranInput = row.anggaran > 0 ? Number(row.anggaran).toLocaleString('id-ID') : '';
                                                 saveError = '';
                                                 isAnggaranDropdownOpen = false;
                                             }}
@@ -1115,11 +1115,14 @@
                     <label for="input-anggaran" class="text-sm font-semibold text-slate-700">Nominal Anggaran (Rp)</label>
                     <input
                         id="input-anggaran"
-                        type="number"
-                        min="0"
-                        bind:value={anggaranInput}
+                        type="text"
+                        value={anggaranInput}
+                        on:input={(e) => {
+                            let val = e.target.value.replace(/\D/g, '');
+                            anggaranInput = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
+                        }}
                         disabled={!selectedRow}
-                        placeholder={selectedRow ? "Contoh: 50000000" : "Pilih jenis pengadaan dahulu"}
+                        placeholder={selectedRow ? "Contoh: 50.000.000" : "Pilih jenis pengadaan dahulu"}
                         class="w-full rounded-xl border border-slate-300 px-4 py-3 text-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-slate-50"
                     />
                 </div>
