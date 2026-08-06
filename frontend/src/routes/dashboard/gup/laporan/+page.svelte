@@ -1001,70 +1001,86 @@
     </svelte:fragment>
 
     <svelte:fragment slot="body">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2 flex flex-col group hover:border-slate-300 transition-colors">
-                <h3 class="text-lg font-black text-slate-900">Cara baca pie chart</h3>
-                <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 flex-1">
-                    <div class="rounded-xl bg-slate-50 p-4 border border-slate-100 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </div>
-                        <p class="font-bold text-slate-900">Realisasi</p>
-                        <p class="mt-1.5 text-xs text-slate-500 leading-relaxed">Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Kartu Cara Baca Pie Chart -->
+            <div class="lg:col-span-2 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500 transition-colors group-hover:bg-blue-600"></div>
+                
+                <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100/80">
+                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
                     </div>
-                    <div class="rounded-xl bg-slate-50 p-4 border border-slate-100 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-slate-400"></div>
-                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-200 text-slate-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Cara Baca Pie Chart</h4>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:border-emerald-200 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></div>
+                            <span class="font-bold text-slate-900 text-sm">Realisasi</span>
                         </div>
-                        <p class="font-bold text-slate-900">Sisa Anggaran</p>
-                        <p class="mt-1.5 text-xs text-slate-500 leading-relaxed">Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</p>
                     </div>
-                    <div class="rounded-xl bg-rose-50/50 p-4 border border-rose-100 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
-                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-300 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-slate-400 shrink-0"></div>
+                            <span class="font-bold text-slate-900 text-sm">Sisa Anggaran</span>
                         </div>
-                        <p class="font-bold text-rose-900">Melebihi Anggaran</p>
-                        <p class="mt-1.5 text-xs text-rose-700/70 leading-relaxed">Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</p>
+                    </div>
+                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-rose-50 hover:border-rose-200 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-rose-500 shrink-0"></div>
+                            <span class="font-bold text-slate-900 text-sm">Melebihi Anggaran</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col group hover:border-slate-300 transition-colors">
-                <h3 class="text-lg font-black text-slate-900">Data Sumber</h3>
-                <div class="mt-5 space-y-3 text-sm flex-1">
-                    <div class="flex flex-col rounded-xl bg-slate-50 px-5 py-4 border border-slate-100 relative overflow-hidden">
-                        <div class="absolute left-0 top-0 w-1 h-full bg-slate-300"></div>
-                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Jenis Pengadaan</span>
-                        <span class="text-2xl font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</span>
+            <!-- Kartu Data Sumber -->
+            <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-indigo-500 transition-colors group-hover:bg-indigo-600"></div>
+                
+                <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100/80">
+                    <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl shadow-sm border border-indigo-100">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
                     </div>
-                    <div class="flex flex-col rounded-xl bg-slate-50 px-5 py-4 border border-slate-100 relative overflow-hidden">
-                        <div class="absolute left-0 top-0 w-1 h-full bg-indigo-400"></div>
-                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Transaksi GUP</span>
-                        <span class="text-2xl font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</span>
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Data Sumber</h4>
+                </div>
+
+                <div class="space-y-3 flex-1 flex flex-col justify-center">
+                    <div class="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
+                        <span class="text-xs font-semibold text-slate-500">Jenis Pengadaan</span>
+                        <span class="text-sm font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</span>
                     </div>
-                    <div class="flex flex-col rounded-xl bg-emerald-50/50 px-5 py-4 border border-emerald-100 relative overflow-hidden">
-                        <div class="absolute left-0 top-0 w-1 h-full bg-emerald-500"></div>
-                        <span class="text-xs font-semibold text-emerald-700 uppercase tracking-widest mb-1">Realisasi</span>
-                        <span class="text-xl font-black text-emerald-800">{formatCurrency(laporanSummary.totalRealisasi || 0)}</span>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
+                        <span class="text-xs font-semibold text-slate-500">Transaksi GUP</span>
+                        <span class="text-sm font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-xs font-semibold text-slate-500">Total Realisasi</span>
+                        <span class="text-sm font-black text-emerald-600">{formatCurrency(laporanSummary.totalRealisasi || 0)}</span>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 flex flex-col sm:flex-row items-start gap-4 shadow-sm">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <div>
-                <h4 class="text-base font-bold text-slate-900">Catatan Perhitungan Laporan</h4>
-                <p class="mt-1 text-sm text-slate-600 leading-relaxed">
-                    Jenis Pengadaan dengan realisasi nol tetap muncul pada daftar laporan (kartu detail) agar ketersediaan pagu anggarannya bisa dipantau, tetapi jenis tersebut <strong>tidak akan mendominasi grafik pie komposisi</strong> untuk menjaga akurasi representasi pengeluaran riil.
-                </p>
+
+        <div class="mt-6 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-amber-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400 transition-colors group-hover:bg-amber-500"></div>
+            
+            <div class="flex items-start gap-4">
+                <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl shadow-sm border border-amber-100 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900">Catatan Perhitungan Laporan</h4>
+                    <p class="mt-1.5 text-xs text-slate-600 leading-relaxed">
+                        Jenis Pengadaan dengan realisasi nol tetap muncul pada daftar laporan (kartu detail) agar ketersediaan pagu anggarannya bisa dipantau, tetapi jenis tersebut <strong>tidak akan mendominasi grafik pie komposisi</strong> untuk menjaga akurasi representasi pengeluaran riil.
+                    </p>
+                </div>
             </div>
         </div>
     </svelte:fragment>
