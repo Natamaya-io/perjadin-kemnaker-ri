@@ -32,12 +32,12 @@
     let totalChart, komposisiChart;
     let detailCharts = [];
 
-    // Modal Input Anggaran
     let showAnggaranModal = false;
     let selectedRow = null;
     let anggaranInput = '';
     let savingAnggaran = false;
     let saveError = '';
+    let isAnggaranDropdownOpen = false;
 
     // Modal Chart Detail
     let showChartModal = false;
@@ -417,6 +417,7 @@
         showAnggaranModal = false;
         selectedRow = null;
         anggaranInput = '';
+        isAnggaranDropdownOpen = false;
     }
 
     async function handleSaveAnggaran() {
@@ -1051,23 +1052,49 @@
             </div>
 
             <div class="p-6 space-y-4">
-                <div class="space-y-2">
-                    <label for="select-pengadaan" class="text-sm font-semibold text-slate-700">Jenis Pengadaan</label>
-                    <div class="relative">
-                        <select
-                            id="select-pengadaan"
-                            bind:value={selectedRow}
-                            on:change={() => { anggaranInput = selectedRow?.anggaran > 0 ? String(selectedRow.anggaran) : ''; saveError = ''; }}
-                            class="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-3 pr-10 text-sm font-medium text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                <div class="space-y-2 relative">
+                    <label class="text-sm font-semibold text-slate-700">Jenis Pengadaan</label>
+                    <div class="relative w-full">
+                        <button 
+                            type="button" 
+                            on:click={() => isAnggaranDropdownOpen = !isAnggaranDropdownOpen}
+                            class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
                         >
-                            <option value={null} disabled>-- Pilih Jenis Pengadaan --</option>
-                            {#each laporanRows as row}
-                                <option value={row}>{row.kodeAkun} - {row.jenisPengadaan}</option>
-                            {/each}
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
+                            <span class="truncate">{selectedRow ? `${selectedRow.kodeAkun} - ${selectedRow.jenisPengadaan}` : 'Pilih Item...'}</span>
+                            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        {#if isAnggaranDropdownOpen}
+                            <div class="fixed inset-0 z-40" on:click={() => isAnggaranDropdownOpen = false}></div>
+                            
+                            <div class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                                    {#each laporanRows as row}
+                                        {@const isSelected = selectedRow?.procurementTypeId === row.procurementTypeId}
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                        <li 
+                                            class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {isSelected ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                            on:click={() => {
+                                                selectedRow = row;
+                                                anggaranInput = row.anggaran > 0 ? String(row.anggaran) : '';
+                                                saveError = '';
+                                                isAnggaranDropdownOpen = false;
+                                            }}
+                                        >
+                                            <span class="truncate pr-2">{row.kodeAkun} - {row.jenisPengadaan}</span>
+                                            {#if isSelected}
+                                                <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            {/if}
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/if}
                     </div>
                 </div>
 
