@@ -122,4 +122,5 @@ type MonthlyChart struct {
 type Composition struct {
 	Label string  `json:"label"`
 	Value float64 `json:"value"`
+	Count int64   `json:"count"`
 }

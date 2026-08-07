@@ -607,7 +607,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*mode
 
 	// 6. Komposisi UP
 	crows, err := r.d.QueryContext(ctx, `
-		SELECT ac.code, SUM(gt.paid_amount) as total
+		SELECT ac.code, SUM(gt.paid_amount) as total, COUNT(gt.id) as count
 		FROM gup_transactions gt
 		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
 		JOIN account_codes ac ON pt.account_code_id = ac.id
@@ -621,7 +621,7 @@ func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*mode
 	for crows.Next() {
 		var c models.Composition
 		var code string
-		if err := crows.Scan(&code, &c.Value); err == nil {
+		if err := crows.Scan(&code, &c.Value, &c.Count); err == nil {
 			c.Label = code
 			summary.CompositionUP = append(summary.CompositionUP, c)
 		}

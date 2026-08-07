@@ -127,6 +127,7 @@
         const doughCtx = doughNutChartCanvas.getContext('2d');
         const compLabels = (stats.compositionUp || []).map(c => c.label.replace(/^Belanja\s+/i, ''));
         const compData = (stats.compositionUp || []).map(c => c.value);
+        const compCounts = (stats.compositionUp || []).map(c => c.count || 0);
         
         const doughChart = new Chart(doughCtx, {
             type: 'doughnut',
@@ -152,7 +153,8 @@
                             label: function(context) {
                                 if (!compData.length) return 'Belum ada data';
                                 let val = context.raw || 0;
-                                return ' ' + formatCurrency(val);
+                                let count = compCounts[context.dataIndex] || 0;
+                                return ` ${formatCurrency(val)} (${count} Transaksi)`;
                             }
                         }
                     }
