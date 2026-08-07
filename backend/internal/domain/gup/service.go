@@ -11,12 +11,16 @@ type Service interface {
 	GetTransactions(ctx context.Context) ([]models.GUPTransaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*models.GUPTransaction, error)
 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+	UpdateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+	DeleteTransaction(ctx context.Context, id uuid.UUID) error
 
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 	GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error)
+	GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error)
+	GetNextBusinessID(ctx context.Context) (string, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
 	UpdateProcurementType(ctx context.Context, pt *models.ProcurementType) error
@@ -44,6 +48,14 @@ func (s *service) GetTransactionByID(ctx context.Context, id uuid.UUID) (*models
 
 func (s *service) CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error {
 	return s.repo.CreateTransaction(ctx, trx)
+}
+
+func (s *service) UpdateTransaction(ctx context.Context, trx *models.GUPTransaction) error {
+	return s.repo.UpdateTransaction(ctx, trx)
+}
+
+func (s *service) DeleteTransaction(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeleteTransaction(ctx, id)
 }
 
 func (s *service) GetBudgets(ctx context.Context, year int16) ([]models.Budget, error) {
@@ -93,22 +105,34 @@ func (s *service) GetLaporan(ctx context.Context, year int16) (*models.LaporanRe
 		return nil, err
 	}
 
-	var summary models.LaporanSummary
-	summary.TotalJenisPengadaan = len(rows)
+	summary := models.LaporanSummary{}
+	uniqueProcurements := make(map[uuid.UUID]bool)
+
 	for _, row := range rows {
 		summary.TotalAnggaran += row.Anggaran
 		summary.TotalRealisasi += row.Realisasi
 		summary.TotalTransaksi += row.JumlahTransaksi
+		uniqueProcurements[row.ProcurementTypeID] = true
 	}
+
 	summary.SisaAnggaran = summary.TotalAnggaran - summary.TotalRealisasi
 	if summary.TotalAnggaran > 0 {
 		summary.PersentaseSerapan = (summary.TotalRealisasi / summary.TotalAnggaran) * 100
 	}
+	summary.TotalJenisPengadaan = len(uniqueProcurements)
 
 	return &models.LaporanResponse{
-		Summary: summary,
 		Rows:    rows,
+		Summary: summary,
 	}, nil
+}
+
+func (s *service) GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error) {
+	return s.repo.GetDashboardSummary(ctx, year)
+}
+
+func (s *service) GetNextBusinessID(ctx context.Context) (string, error) {
+	return s.repo.GetNextBusinessID(ctx)
 }
 
 // SaveBudget menyimpan atau memperbarui anggaran untuk satu jenis pengadaan.

@@ -60,7 +60,6 @@
                 { label: "Pengajuan GUP", href: "/dashboard/gup/pengajuan", icon: icons.documentEdit, role: ['super_admin', 'kasubag'] },
                 { label: "Laporan dan Rekapitulasi", href: "/dashboard/gup/laporan", icon: icons.chartPie, role: ['super_admin', 'kasubag'] },
                 { label: "LS", href: "/dashboard/gup/ls", icon: icons.cash, role: ['super_admin', 'kasubag'] },
-                { label: "Data", href: "/dashboard/gup/data", icon: icons.receipt, role: ['super_admin', 'kasubag'] },
                 { label: "Integrasi MAK", href: "/dashboard/gup/integrasi", icon: icons.database, role: ['super_admin', 'kasubag'] }
             ]
         },

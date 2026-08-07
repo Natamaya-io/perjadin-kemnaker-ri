@@ -166,6 +166,15 @@ export class RealApiClient implements ApiClient {
         return this.request<import('./types').DashboardSummary>('/dashboard/summary', {}, customFetch);
     }
 
+    async getGupDashboardSummary(customFetch?: typeof fetch, year?: number): Promise<any> {
+        const query = year ? `?year=${year}` : '';
+        return this.request<any>(`/gup/dashboard${query}`, {}, customFetch);
+    }
+
+    async getNextBusinessID(customFetch?: typeof fetch): Promise<{nextId: string}> {
+        return this.request<{nextId: string}>('/gup/next-spm', {}, customFetch);
+    }
+
     async getRecords(filters?: Record<string, any>): Promise<TravelRecord[]> {
         const query = filters ? '?' + new URLSearchParams(filters).toString() : '';
         return this.request<TravelRecord[]>(`/records${query}`);
@@ -441,6 +450,19 @@ export class RealApiClient implements ApiClient {
         });
     }
 
+    async updateGupPengajuan(id: string, data: any): Promise<any> {
+        return this.request<any>(`/gup/pengajuan/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async deleteGupPengajuan(id: string): Promise<void> {
+        return this.request<void>(`/gup/pengajuan/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
     async getGupLaporan(year?: number, customFetch?: typeof fetch): Promise<any> {
         const y = year || new Date().getFullYear();
         return this.request<any>(`/gup/laporan?year=${y}`, {}, customFetch);
@@ -455,6 +477,13 @@ export class RealApiClient implements ApiClient {
 
     async getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]> {
         return this.request<any[]>(`/gup/ls?year=${year}`, {}, customFetch);
+    }
+
+    async saveGupLs(data: any[]): Promise<any> {
+        return this.request('/gup/ls', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     }
 
     async getGupData(year: number, customFetch?: typeof fetch): Promise<any[]> {

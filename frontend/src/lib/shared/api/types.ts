@@ -194,5 +194,6 @@ export interface ApiClient {
     getGupLaporan(year?: number, customFetch?: typeof fetch): Promise<any>;
     saveGupBudget(data: { procurementTypeId: string; year: number; amount: number }): Promise<any>;
     getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
+    saveGupLs(data: any[]): Promise<any>;
     getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;
 }

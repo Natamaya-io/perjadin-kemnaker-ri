@@ -26,10 +26,11 @@ type ProcurementType struct {
 
 type FundingSource struct {
 	Base
-	Year        int16  `json:"year"`
-	MonthNumber int16  `json:"monthNumber"`
-	MonthName   string `json:"monthName"`
-	GupLabel    string `json:"gupLabel"`
+	Year            int16   `json:"year"`
+	MonthNumber     int16   `json:"monthNumber"`
+	MonthName       string  `json:"monthName"`
+	GupLabel        string  `json:"gupLabel"`
+	RemainingBudget float64 `json:"remainingBudget"`
 }
 
 type Budget struct {
@@ -43,8 +44,9 @@ type Budget struct {
 
 type MonthlyLS struct {
 	Base
-	FundingSourceID uuid.UUID `json:"fundingSourceId"`
-	Amount          float64   `json:"amount"`
+	FundingSourceID uuid.UUID  `json:"fundingSourceId"`
+	AccountCodeID   *uuid.UUID `json:"accountCodeId,omitempty"`
+	Amount          float64    `json:"amount"`
 	// Joined fields
 	MonthName string `json:"monthName,omitempty"`
 	GupLabel  string `json:"gupLabel,omitempty"`
@@ -99,4 +101,25 @@ type LaporanSummary struct {
 type LaporanResponse struct {
 	Summary LaporanSummary `json:"summary"`
 	Rows    []LaporanRow   `json:"rows"`
+}
+
+type GupDashboardSummary struct {
+	TotalPaguAnggaran   float64          `json:"totalPaguAnggaran"`
+	TotalRealisasiGUP   float64          `json:"totalRealisasiGup"`
+	SisaSaldoUP         float64          `json:"sisaSaldoUp"`
+	TotalGupBulanIni    float64          `json:"totalGupBulanIni"`
+	StatusDalkotPending int64            `json:"statusDalkotPending"`
+	MonthlyRealisasi    []MonthlyChart   `json:"monthlyRealisasi"`
+	CompositionUP       []Composition    `json:"compositionUp"`
+	RecentTransactions  []GUPTransaction `json:"recentTransactions"`
+}
+
+type MonthlyChart struct {
+	Month int     `json:"month"`
+	Total float64 `json:"total"`
+}
+
+type Composition struct {
+	Label string  `json:"label"`
+	Value float64 `json:"value"`
 }

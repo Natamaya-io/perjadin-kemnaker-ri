@@ -1,0 +1,98 @@
+--- backend/internal/domain/gup/repository.go
++++ backend/internal/domain/gup/repository.go
+@@ -39,6 +39,7 @@
+ 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+ 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
+ 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
++	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
+ 	GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error)
+ 	SaveBudget(ctx context.Context, b *models.Budget) error
+ 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
+@@ -194,6 +195,33 @@
+ 	return results, nil
+ }
+ 
++func (r *repository) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error {
++	if len(items) == 0 {
++		return nil
++	}
++	tx, err := r.d.BeginTx(ctx, nil)
++	if err != nil {
++		return err
++	}
++	defer tx.Rollback()
++
++	query := `
++		INSERT INTO monthly_ls (id, funding_source_id, amount, created_at, updated_at)
++		VALUES ($1, $2, $3, NOW(), NOW())
++		ON CONFLICT (funding_source_id) 
++		DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
++	`
++	for _, item := range items {
++		id := item.ID
++		if id == uuid.Nil {
++			id = uuid.New()
++		}
++		if _, err := tx.ExecContext(ctx, query, id, item.FundingSourceID, item.Amount); err != nil {
++			return err
++		}
++	}
++	return tx.Commit()
++}
++
+ func (r *repository) GetFundingSources(ctx context.Context, year int16) ([]models.FundingSource, error) {
+ 	query := `
+ 		SELECT id, year, month_number, month_name, gup_label, created_at, updated_at
+--- backend/internal/domain/gup/service.go
++++ backend/internal/domain/gup/service.go
+@@ -20,6 +20,7 @@
+ 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+ 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
+ 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
++	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
+ 	GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error)
+ 	SaveBudget(ctx context.Context, b *models.Budget) error
+ 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
+@@ -52,6 +53,10 @@
+ 	return s.repo.GetMonthlyLS(ctx, year)
+ }
+ 
++func (s *service) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error {
++	return s.repo.SaveMonthlyLS(ctx, items)
++}
++
+ func (s *service) GetFundingSources(ctx context.Context, year int16) ([]models.FundingSource, error) {
+ 	return s.repo.GetFundingSources(ctx, year)
+ }
+--- backend/internal/domain/gup/handler.go
++++ backend/internal/domain/gup/handler.go
+@@ -95,6 +95,19 @@
+ 	return c.JSON(http.StatusOK, ls)
+ }
+ 
++func (h *Handler) SaveMonthlyLS(c echo.Context) error {
++	ctx := c.Request().Context()
++	var payload []models.MonthlyLS
++	if err := c.Bind(&payload); err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
++	}
++	err := h.svc.SaveMonthlyLS(ctx, payload)
++	if err != nil {
++		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
++	}
++	return c.JSON(http.StatusOK, map[string]string{"message": "Monthly LS saved successfully"})
++}
++
+ func (h *Handler) GetFundingSources(c echo.Context) error {
+ 	ctx := c.Request().Context()
+ 	yearStr := c.QueryParam("year")
+--- backend/cmd/api/main.go
++++ backend/cmd/api/main.go
+@@ -107,6 +107,7 @@
+ 	gupGroup.GET("/transactions/:id", gupHandler.GetTransactionByID)
+ 	gupGroup.POST("/transactions", gupHandler.CreateTransaction)
+ 	gupGroup.GET("/ls", gupHandler.GetMonthlyLS)
++	gupGroup.POST("/ls", gupHandler.SaveMonthlyLS)
+ 	gupGroup.GET("/budgets", gupHandler.GetBudgets)
+ 	gupGroup.POST("/budgets", gupHandler.SaveBudget)
+ 	gupGroup.GET("/laporan", gupHandler.GetLaporan)

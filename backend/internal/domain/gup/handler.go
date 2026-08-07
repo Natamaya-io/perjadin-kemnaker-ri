@@ -27,6 +27,34 @@ func (h *Handler) GetTransactions(c echo.Context) error {
 	return c.JSON(http.StatusOK, trxs)
 }
 
+func (h *Handler) GetDashboardSummary(c echo.Context) error {
+	yearStr := c.QueryParam("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(time.Now().Year())
+	}
+	year, err := strconv.ParseInt(yearStr, 10, 16)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid year"})
+	}
+
+	ctx := c.Request().Context()
+	summary, err := h.svc.GetDashboardSummary(ctx, int16(year))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, summary)
+}
+
+func (h *Handler) GetNextBusinessID(c echo.Context) error {
+	ctx := c.Request().Context()
+	nextID, err := h.svc.GetNextBusinessID(ctx)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"nextId": nextID})
+}
+
 func (h *Handler) GetTransactionByID(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -56,10 +84,44 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 	return c.JSON(http.StatusCreated, trx)
 }
 
+func (h *Handler) UpdateTransaction(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid transaction id"})
+	}
+
+	var trx models.GUPTransaction
+	if err := c.Bind(&trx); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+	trx.ID = id
+
+	ctx := c.Request().Context()
+	if err := h.svc.UpdateTransaction(ctx, &trx); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, trx)
+}
+
+func (h *Handler) DeleteTransaction(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid transaction id"})
+	}
+
+	ctx := c.Request().Context()
+	if err := h.svc.DeleteTransaction(ctx, id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (h *Handler) GetBudgets(c echo.Context) error {
 	yearStr := c.QueryParam("year")
 	if yearStr == "" {
-		yearStr = "2024" // default year or dynamically fetching current year
+		yearStr = "2026" // default year or dynamically fetching current year
 	}
 	year, err := strconv.ParseInt(yearStr, 10, 16)
 	if err != nil {
@@ -78,7 +140,7 @@ func (h *Handler) GetBudgets(c echo.Context) error {
 func (h *Handler) GetMonthlyLS(c echo.Context) error {
 	yearStr := c.QueryParam("year")
 	if yearStr == "" {
-		yearStr = "2024" // default
+		yearStr = "2026" // default
 	}
 	year, err := strconv.ParseInt(yearStr, 10, 16)
 	if err != nil {
@@ -110,7 +172,7 @@ func (h *Handler) SaveMonthlyLS(c echo.Context) error {
 func (h *Handler) GetMasterData(c echo.Context) error {
 	yearStr := c.QueryParam("year")
 	if yearStr == "" {
-		yearStr = "2024" // default
+		yearStr = "2026" // default
 	}
 	year, err := strconv.ParseInt(yearStr, 10, 16)
 	if err != nil {

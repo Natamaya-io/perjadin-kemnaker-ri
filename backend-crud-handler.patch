@@ -1,0 +1,71 @@
+--- backend/internal/domain/gup/handler.go
++++ backend/internal/domain/gup/handler.go
+@@ -98,3 +98,81 @@
+ 	}
+ 
+ 	return c.JSON(http.StatusOK, map[string]interface{}{})
+ }
++
++func (h *Handler) CreateProcurementType(c echo.Context) error {
++	var pt models.ProcurementType
++	if err := c.Bind(&pt); err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
++	}
++
++	ctx := c.Request().Context()
++	if err := h.svc.CreateProcurementType(ctx, &pt); err != nil {
++		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
++	}
++
++	return c.JSON(http.StatusCreated, pt)
++}
++
++func (h *Handler) UpdateProcurementType(c echo.Context) error {
++	id, err := uuid.Parse(c.Param("id"))
++	if err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid id"})
++	}
++
++	var pt models.ProcurementType
++	if err := c.Bind(&pt); err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
++	}
++	pt.ID = id
++
++	ctx := c.Request().Context()
++	if err := h.svc.UpdateProcurementType(ctx, &pt); err != nil {
++		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
++	}
++
++	return c.JSON(http.StatusOK, pt)
++}
++
++func (h *Handler) DeleteProcurementType(c echo.Context) error {
++	id, err := uuid.Parse(c.Param("id"))
++	if err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid id"})
++	}
++
++	ctx := c.Request().Context()
++	if err := h.svc.DeleteProcurementType(ctx, id); err != nil {
++		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
++	}
++
++	return c.JSON(http.StatusOK, map[string]string{"message": "deleted"})
++}
++
++func (h *Handler) CreateAccountCode(c echo.Context) error {
++	var ac models.AccountCode
++	if err := c.Bind(&ac); err != nil {
++		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
++	}
++
++	ctx := c.Request().Context()
++	if err := h.svc.CreateAccountCode(ctx, &ac); err != nil {
++		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
++	}
++
++	return c.JSON(http.StatusCreated, ac)
++}
++EOF
+patch -p0 < backend-crud-handler.patch

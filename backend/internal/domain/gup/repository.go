@@ -3,6 +3,8 @@ package gup
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,12 +15,16 @@ type Repository interface {
 	GetTransactions(ctx context.Context) ([]models.GUPTransaction, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (*models.GUPTransaction, error)
 	CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+	UpdateTransaction(ctx context.Context, trx *models.GUPTransaction) error
+	DeleteTransaction(ctx context.Context, id uuid.UUID) error
 
 	GetBudgets(ctx context.Context, year int16) ([]models.Budget, error)
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
 	GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error)
+	GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error)
+	GetNextBusinessID(ctx context.Context) (string, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
 
 	CreateProcurementType(ctx context.Context, pt *models.ProcurementType) error
@@ -44,7 +50,7 @@ func (r *repository) GetTransactions(ctx context.Context) ([]models.GUPTransacti
 		SELECT 
 			gt.id, gt.business_id, gt.payment_description, gt.procurement_type_id, 
 			gt.funding_source_id, gt.value_amount, gt.paid_amount, gt.tax_amount, 
-			gt.receipt_date, gt.recipient, gt.pum, gt.created_at, gt.updated_at,
+			gt.receipt_date, gt.recipient, gt.pum, gt.document_file, gt.created_at, gt.updated_at,
 			pt.name as procurement_type_name
 		FROM gup_transactions gt
 		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
@@ -64,7 +70,7 @@ func (r *repository) GetTransactions(ctx context.Context) ([]models.GUPTransacti
 		err := rows.Scan(
 			&trx.ID, &trx.BusinessID, &trx.PaymentDescription, &trx.ProcurementTypeID,
 			&fundingSourceID, &trx.ValueAmount, &trx.PaidAmount, &trx.TaxAmount,
-			&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.CreatedAt, &trx.UpdatedAt,
+			&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.DocumentFile, &trx.CreatedAt, &trx.UpdatedAt,
 			&trx.ProcurementTypeName,
 		)
 		if err != nil {
@@ -87,7 +93,7 @@ func (r *repository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*mod
 		SELECT 
 			gt.id, gt.business_id, gt.payment_description, gt.procurement_type_id, 
 			gt.funding_source_id, gt.value_amount, gt.paid_amount, gt.tax_amount, 
-			gt.receipt_date, gt.recipient, gt.pum, gt.created_at, gt.updated_at,
+			gt.receipt_date, gt.recipient, gt.pum, gt.document_file, gt.created_at, gt.updated_at,
 			pt.name as procurement_type_name
 		FROM gup_transactions gt
 		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
@@ -101,7 +107,7 @@ func (r *repository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*mod
 	err := row.Scan(
 		&trx.ID, &trx.BusinessID, &trx.PaymentDescription, &trx.ProcurementTypeID,
 		&fundingSourceID, &trx.ValueAmount, &trx.PaidAmount, &trx.TaxAmount,
-		&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.CreatedAt, &trx.UpdatedAt,
+		&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.DocumentFile, &trx.CreatedAt, &trx.UpdatedAt,
 		&trx.ProcurementTypeName,
 	)
 	if err != nil {
@@ -118,6 +124,50 @@ func (r *repository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*mod
 }
 
 func (r *repository) CreateTransaction(ctx context.Context, trx *models.GUPTransaction) error {
+	// 1. Math Validation
+	if math.Abs(trx.ValueAmount - (trx.PaidAmount + trx.TaxAmount)) > 0.01 {
+		return fmt.Errorf("validasi gagal: nilai (%.2f) harus sama dengan jumlah dibayarkan (%.2f) + pajak (%.2f)", trx.ValueAmount, trx.PaidAmount, trx.TaxAmount)
+	}
+
+	// 2. Budget Validation
+	year := trx.ReceiptDate.Year()
+	var budgetAmount float64
+	var totalUsedBudget float64
+	
+	err := r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE year = $1 AND procurement_type_id = $2", year, trx.ProcurementTypeID).Scan(&budgetAmount)
+	if err != nil {
+		return err
+	}
+	
+	err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE EXTRACT(YEAR FROM receipt_date) = $1 AND procurement_type_id = $2", year, trx.ProcurementTypeID).Scan(&totalUsedBudget)
+	if err != nil {
+		return err
+	}
+	
+	if budgetAmount - totalUsedBudget < trx.PaidAmount {
+		return fmt.Errorf("validasi gagal: saldo pagu anggaran untuk jenis pengadaan ini tidak mencukupi (Sisa: %.2f, Diajukan: %.2f)", budgetAmount - totalUsedBudget, trx.PaidAmount)
+	}
+
+	// 3. Funding Source Validation
+	if trx.FundingSourceID != nil {
+		var fsAmount float64
+		var fsUsed float64
+		
+		err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(amount), 0) FROM monthly_ls WHERE id = $1", *trx.FundingSourceID).Scan(&fsAmount)
+		if err != nil {
+			return err
+		}
+		
+		err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE funding_source_id = $1", *trx.FundingSourceID).Scan(&fsUsed)
+		if err != nil {
+			return err
+		}
+		
+		if fsAmount - fsUsed < trx.PaidAmount {
+			return fmt.Errorf("validasi gagal: saldo dompet GUP yang dipilih tidak mencukupi (Sisa: %.2f, Diajukan: %.2f)", fsAmount - fsUsed, trx.PaidAmount)
+		}
+	}
+
 	if trx.ID == uuid.Nil {
 		trx.ID = uuid.New()
 	}
@@ -126,9 +176,9 @@ func (r *repository) CreateTransaction(ctx context.Context, trx *models.GUPTrans
 		INSERT INTO gup_transactions (
 			id, business_id, payment_description, procurement_type_id, 
 			funding_source_id, value_amount, paid_amount, tax_amount, 
-			receipt_date, recipient, pum, created_at, updated_at
+			receipt_date, recipient, pum, document_file, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 		)
 	`
 	
@@ -141,12 +191,75 @@ func (r *repository) CreateTransaction(ctx context.Context, trx *models.GUPTrans
 		fsID = *trx.FundingSourceID
 	}
 	
+	_, err = r.d.ExecContext(ctx, query,
+		trx.ID, trx.BusinessID, trx.PaymentDescription, trx.ProcurementTypeID,
+		fsID, trx.ValueAmount, trx.PaidAmount, trx.TaxAmount,
+		trx.ReceiptDate, trx.Recipient, trx.Pum, trx.DocumentFile, trx.CreatedAt, trx.UpdatedAt,
+	)
+	return err
+}
+
+func (r *repository) UpdateTransaction(ctx context.Context, trx *models.GUPTransaction) error {
+	// 1. Math Validation
+	if math.Abs(trx.ValueAmount - (trx.PaidAmount + trx.TaxAmount)) > 0.01 {
+		return fmt.Errorf("validasi gagal: nilai (%.2f) harus sama dengan jumlah dibayarkan (%.2f) + pajak (%.2f)", trx.ValueAmount, trx.PaidAmount, trx.TaxAmount)
+	}
+	
+	// Skip detailed budget checking on update for simplicity (or can be implemented later)
+	query := `
+		UPDATE gup_transactions SET
+			business_id = $2, payment_description = $3, procurement_type_id = $4,
+			funding_source_id = $5, value_amount = $6, paid_amount = $7, tax_amount = $8,
+			receipt_date = $9, recipient = $10, pum = $11, document_file = $12, updated_at = $13
+		WHERE id = $1
+	`
+	trx.UpdatedAt = time.Now()
+	
+	var fsID interface{}
+	if trx.FundingSourceID != nil {
+		fsID = *trx.FundingSourceID
+	}
+	
 	_, err := r.d.ExecContext(ctx, query,
 		trx.ID, trx.BusinessID, trx.PaymentDescription, trx.ProcurementTypeID,
 		fsID, trx.ValueAmount, trx.PaidAmount, trx.TaxAmount,
-		trx.ReceiptDate, trx.Recipient, trx.Pum, trx.CreatedAt, trx.UpdatedAt,
+		trx.ReceiptDate, trx.Recipient, trx.Pum, trx.DocumentFile, trx.UpdatedAt,
 	)
 	return err
+}
+
+func (r *repository) DeleteTransaction(ctx context.Context, id uuid.UUID) error {
+	_, err := r.d.ExecContext(ctx, "DELETE FROM gup_transactions WHERE id = $1", id)
+	return err
+}
+
+func (r *repository) GetNextBusinessID(ctx context.Context) (string, error) {
+	var lastID string
+	query := `
+		SELECT business_id 
+		FROM gup_transactions 
+		WHERE business_id ILIKE 'gup_%' 
+		ORDER BY created_at DESC 
+		LIMIT 1
+	`
+	err := r.d.QueryRowContext(ctx, query).Scan(&lastID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "gup_001", nil
+		}
+		return "", err
+	}
+
+	// Parse the number from lastID (e.g., "gup_010")
+	var seq int
+	_, err = fmt.Sscanf(lastID, "gup_%d", &seq)
+	if err != nil {
+		// Fallback if format is weird but matches ILIKE
+		return "gup_001", nil
+	}
+
+	seq++
+	return fmt.Sprintf("gup_%03d", seq), nil
 }
 
 func (r *repository) GetBudgets(ctx context.Context, year int16) ([]models.Budget, error) {
@@ -179,7 +292,7 @@ func (r *repository) GetBudgets(ctx context.Context, year int16) ([]models.Budge
 func (r *repository) GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error) {
 	query := `
 		SELECT 
-			ls.id, ls.funding_source_id, ls.amount, ls.created_at, ls.updated_at,
+			ls.id, ls.funding_source_id, ls.account_code_id, ls.amount, ls.created_at, ls.updated_at,
 			fs.month_name, fs.gup_label
 		FROM monthly_ls ls
 		JOIN funding_sources fs ON ls.funding_source_id = fs.id
@@ -196,7 +309,7 @@ func (r *repository) GetMonthlyLS(ctx context.Context, year int16) ([]models.Mon
 	for rows.Next() {
 		var m models.MonthlyLS
 		if err := rows.Scan(
-			&m.ID, &m.FundingSourceID, &m.Amount, &m.CreatedAt, &m.UpdatedAt, 
+			&m.ID, &m.FundingSourceID, &m.AccountCodeID, &m.Amount, &m.CreatedAt, &m.UpdatedAt, 
 			&m.MonthName, &m.GupLabel,
 		); err != nil {
 			return nil, err
@@ -217,17 +330,17 @@ func (r *repository) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO monthly_ls (id, funding_source_id, amount, created_at, updated_at)
-		VALUES ($1, $2, $3, NOW(), NOW())
+		INSERT INTO monthly_ls (id, funding_source_id, account_code_id, amount, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		ON CONFLICT (funding_source_id) 
-		DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
+		DO UPDATE SET amount = EXCLUDED.amount, account_code_id = EXCLUDED.account_code_id, updated_at = NOW()
 	`
 	for _, item := range items {
 		id := item.ID
 		if id == uuid.Nil {
 			id = uuid.New()
 		}
-		if _, err := tx.ExecContext(ctx, query, id, item.FundingSourceID, item.Amount); err != nil {
+		if _, err := tx.ExecContext(ctx, query, id, item.FundingSourceID, item.AccountCodeID, item.Amount); err != nil {
 			return err
 		}
 	}
@@ -235,8 +348,18 @@ func (r *repository) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS
 }
 
 func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {
-	// 1. Get FundingSources
-	fsQuery := `SELECT id, year, month_number, month_name, gup_label, created_at, updated_at FROM funding_sources WHERE year = $1 ORDER BY month_number ASC`
+	// 1. Get FundingSources with Remaining Budget
+	fsQuery := `
+		SELECT 
+			fs.id, fs.year, fs.month_number, fs.month_name, fs.gup_label, fs.created_at, fs.updated_at,
+			COALESCE(ml.amount, 0) - COALESCE(
+				(SELECT SUM(paid_amount) FROM gup_transactions WHERE funding_source_id = fs.id), 0
+			) as remaining_budget
+		FROM funding_sources fs
+		LEFT JOIN monthly_ls ml ON ml.funding_source_id = fs.id
+		WHERE fs.year = $1 
+		ORDER BY fs.month_number ASC
+	`
 	fsRows, err := r.d.QueryContext(ctx, fsQuery, year)
 	if err != nil {
 		return nil, err
@@ -246,7 +369,7 @@ func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]
 	var fundingSources []models.FundingSource
 	for fsRows.Next() {
 		var fs models.FundingSource
-		if err := fsRows.Scan(&fs.ID, &fs.Year, &fs.MonthNumber, &fs.MonthName, &fs.GupLabel, &fs.CreatedAt, &fs.UpdatedAt); err != nil {
+		if err := fsRows.Scan(&fs.ID, &fs.Year, &fs.MonthNumber, &fs.MonthName, &fs.GupLabel, &fs.CreatedAt, &fs.UpdatedAt, &fs.RemainingBudget); err != nil {
 			return nil, err
 		}
 		fundingSources = append(fundingSources, fs)
@@ -276,9 +399,27 @@ func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]
 		procurementTypes = append(procurementTypes, pt)
 	}
 
+	// 3. Get AccountCodes
+	acQuery := `SELECT id, code, mak, description, created_at, updated_at FROM account_codes ORDER BY code ASC`
+	acRows, err := r.d.QueryContext(ctx, acQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer acRows.Close()
+
+	var accountCodes []models.AccountCode
+	for acRows.Next() {
+		var ac models.AccountCode
+		if err := acRows.Scan(&ac.ID, &ac.Code, &ac.Mak, &ac.Description, &ac.CreatedAt, &ac.UpdatedAt); err != nil {
+			return nil, err
+		}
+		accountCodes = append(accountCodes, ac)
+	}
+
 	return map[string]interface{}{
 		"fundingSources":   fundingSources,
 		"procurementTypes": procurementTypes,
+		"accountCodes":     accountCodes,
 	}, nil
 }
 
@@ -405,4 +546,114 @@ func (r *repository) SaveBudget(ctx context.Context, b *models.Budget) error {
 	`
 	return r.d.QueryRowContext(ctx, query, b.ID, b.Year, b.ProcurementTypeID, b.Amount).
 		Scan(&b.ID, &b.CreatedAt, &b.UpdatedAt)
+}
+
+func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error) {
+	summary := &models.GupDashboardSummary{
+		MonthlyRealisasi:   make([]models.MonthlyChart, 0),
+		CompositionUP:      make([]models.Composition, 0),
+		RecentTransactions: make([]models.GUPTransaction, 0),
+	}
+
+	// 1. Total Pagu
+	err := r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE year = $1", year).Scan(&summary.TotalPaguAnggaran)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Total Realisasi GUP (Full year)
+	err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE EXTRACT(YEAR FROM receipt_date) = $1", year).Scan(&summary.TotalRealisasiGUP)
+	if err != nil {
+		return nil, err
+	}
+	summary.SisaSaldoUP = summary.TotalPaguAnggaran - summary.TotalRealisasiGUP
+
+	// 3. Total GUP Bulan Ini
+	currentMonth := time.Now().Month()
+	currentYear := time.Now().Year()
+	if int(year) != currentYear {
+		summary.TotalGupBulanIni = 0
+	} else {
+		err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE EXTRACT(YEAR FROM receipt_date) = $1 AND EXTRACT(MONTH FROM receipt_date) = $2", currentYear, currentMonth).Scan(&summary.TotalGupBulanIni)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 4. Status Dalkot Pending
+	err = r.d.QueryRowContext(ctx, "SELECT COUNT(*) FROM dalkot_records WHERE status IN ('Draft', 'Submitted')").Scan(&summary.StatusDalkotPending)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Monthly Realisasi
+	rows, err := r.d.QueryContext(ctx, `
+		SELECT EXTRACT(MONTH FROM receipt_date) as month, SUM(paid_amount) as total
+		FROM gup_transactions
+		WHERE EXTRACT(YEAR FROM receipt_date) = $1
+		GROUP BY EXTRACT(MONTH FROM receipt_date)
+		ORDER BY month
+	`, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var m models.MonthlyChart
+		if err := rows.Scan(&m.Month, &m.Total); err == nil {
+			summary.MonthlyRealisasi = append(summary.MonthlyRealisasi, m)
+		}
+	}
+
+	// 6. Komposisi UP
+	crows, err := r.d.QueryContext(ctx, `
+		SELECT ac.code, SUM(gt.paid_amount) as total
+		FROM gup_transactions gt
+		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
+		JOIN account_codes ac ON pt.account_code_id = ac.id
+		WHERE EXTRACT(YEAR FROM gt.receipt_date) = $1
+		GROUP BY ac.code
+	`, year)
+	if err != nil {
+		return nil, err
+	}
+	defer crows.Close()
+	for crows.Next() {
+		var c models.Composition
+		var code string
+		if err := crows.Scan(&code, &c.Value); err == nil {
+			c.Label = code
+			summary.CompositionUP = append(summary.CompositionUP, c)
+		}
+	}
+
+	// 7. Recent Transactions (limit 5)
+	rRows, err := r.d.QueryContext(ctx, `
+		SELECT 
+			gt.id, gt.business_id, gt.payment_description, gt.procurement_type_id, 
+			gt.funding_source_id, gt.value_amount, gt.paid_amount, gt.tax_amount, 
+			gt.receipt_date, gt.recipient, gt.pum, gt.created_at, gt.updated_at,
+			pt.name as procurement_type_name
+		FROM gup_transactions gt
+		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
+		ORDER BY gt.receipt_date DESC NULLS LAST, gt.created_at DESC
+		LIMIT 5
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rRows.Close()
+	for rRows.Next() {
+		var gt models.GUPTransaction
+		if err := rRows.Scan(
+			&gt.ID, &gt.BusinessID, &gt.PaymentDescription, &gt.ProcurementTypeID,
+			&gt.FundingSourceID, &gt.ValueAmount, &gt.PaidAmount, &gt.TaxAmount,
+			&gt.ReceiptDate, &gt.Recipient, &gt.Pum, &gt.CreatedAt, &gt.UpdatedAt,
+			&gt.ProcurementTypeName,
+		); err == nil {
+			summary.RecentTransactions = append(summary.RecentTransactions, gt)
+		}
+	}
+
+	return summary, nil
 }

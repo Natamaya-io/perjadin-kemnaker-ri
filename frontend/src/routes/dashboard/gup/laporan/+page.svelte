@@ -17,14 +17,22 @@
 
     // Filter Tahun Global
     let showYearDropdown = false;
-    const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i); // -2 to +2 years from current
+    const startYear = 2026;
+    const endYear = Math.max(new Date().getFullYear() + 1, startYear + 1);
+    const yearOptions = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).reverse();
     function handleYearChange(selectedYear) {
         showYearDropdown = false;
         goto(`?year=${selectedYear}`, { invalidateAll: true });
     }
 
-    const colors = ['#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#f97316', '#06b6d4'];
-
+    const baseColors = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+    ];
+    
+    function getColors(length) {
+        return Array.from({length}, (_, i) => baseColors[i % baseColors.length]);
+    }
+    
     // Chart refs
     let totalCanvas;
     let komposisiCanvas;
@@ -119,10 +127,10 @@
         komposisiModalChart = new Chart(komposisiModalCanvas, {
             type: 'pie',
             data: {
-                labels: laporanRows.map(r => r.jenisPengadaan),
+                labels: laporanRows.map(r => r.jenisPengadaan || 'Tidak Diketahui'),
                 datasets: [{
                     data: laporanRows.map(r => r.realisasi || 0),
-                    backgroundColor: colors.slice(0, laporanRows.length),
+                    backgroundColor: getColors(laporanRows.length),
                     borderWidth: 3,
                     borderColor: '#ffffff',
                     hoverOffset: 14
@@ -153,7 +161,7 @@
                         titleFont: { size: 12, family: 'Inter, sans-serif' },
                         bodyFont: { size: 15, weight: 'bold', family: 'Inter, sans-serif' },
                         callbacks: {
-                            title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan,
+                            title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan || 'Tidak Diketahui',
                             label: (ctx) => 'Realisasi: ' + formatCurrency(ctx.raw)
                         }
                     }
@@ -182,7 +190,7 @@
                 labels: ['Realisasi', 'Sisa Anggaran'],
                 datasets: [{
                     data: [row.realisasi || 0, sisa],
-                    backgroundColor: [colors[i % colors.length], '#e2e8f0'],
+                    backgroundColor: [baseColors[i % baseColors.length], '#e2e8f0'],
                     borderWidth: 3,
                     borderColor: '#ffffff',
                     hoverOffset: 12
@@ -343,10 +351,10 @@
         komposisiChart = new Chart(komposisiCanvas, {
             type: 'pie',
             data: {
-                labels: laporanRows.map(r => r.jenisPengadaan),
+                labels: laporanRows.map(r => r.jenisPengadaan || 'Tidak Diketahui'),
                 datasets: [{
                     data: laporanRows.map(r => r.realisasi || 0),
-                    backgroundColor: colors.slice(0, laporanRows.length),
+                    backgroundColor: getColors(laporanRows.length),
                     borderWidth: 2,
                     borderColor: '#ffffff',
                     hoverOffset: 10
@@ -356,7 +364,7 @@
                 ...commonOptions,
                 plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip,
                     callbacks: {
-                        title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan,
+                        title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan || 'Tidak Diketahui',
                         label: (ctx) => 'Realisasi: ' + formatCurrency(ctx.raw)
                     }
                 }}
@@ -376,7 +384,7 @@
                     labels: ['Realisasi', 'Sisa Anggaran'],
                     datasets: [{
                         data: [row.realisasi || 0, sisa],
-                        backgroundColor: [colors[i % colors.length], '#e2e8f0'],
+                        backgroundColor: [baseColors[i % baseColors.length], '#e2e8f0'],
                         borderWidth: 2,
                         borderColor: '#ffffff',
                         hoverOffset: 8
@@ -818,10 +826,10 @@
                         {@const globalI = globalOffset + i}
                         <article class="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden">
                             <!-- Garis atas sesuai Section 5 guidelines -->
-                            <div class="absolute top-0 left-0 w-full h-1.5" style="background-color: {colors[globalI % colors.length]}"></div>
+                            <div class="absolute top-0 left-0 w-full h-1.5" style="background-color: {baseColors[globalI % baseColors.length]}"></div>
 
                             <div class="flex items-start gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                                <div class="p-2 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {colors[globalI % colors.length]}20; color: {colors[globalI % colors.length]}">
+                                <div class="p-2 rounded-xl shadow-sm border border-slate-100 shrink-0" style="background-color: {baseColors[globalI % baseColors.length]}20; color: {baseColors[globalI % baseColors.length]}">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                                     </svg>
@@ -873,7 +881,7 @@
                             <div class="mt-4">
                                 <div class="h-2 overflow-hidden rounded-full bg-slate-100">
                                     <div class="h-full rounded-full transition-all duration-500"
-                                        style="width: {Math.min(row.persentaseSerapan || 0, 100)}%; background-color: {colors[globalI % colors.length]}"></div>
+                                        style="width: {Math.min(row.persentaseSerapan || 0, 100)}%; background-color: {baseColors[globalI % baseColors.length]}"></div>
                                 </div>
                                 <div class="mt-3 flex items-center justify-between gap-2">
                                     {#if row.anggaran > 0}
@@ -902,16 +910,12 @@
 
                 <!-- MOBILE: Hanya dua tombol -->
                 <div class="flex flex-1 justify-between sm:hidden">
-                    <button
-                        on:click={() => currentPage--}
-                        disabled={currentPage === 1}
-                        class="relative inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >Sebelumnya</button>
-                    <button
-                        on:click={() => currentPage++}
-                        disabled={currentPage === totalPages}
-                        class="relative inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >Selanjutnya</button>
+                    <Button variant="outline" size="sm" disabled={currentPage === 1} on:click={() => currentPage--}>
+                        Sebelumnya
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={currentPage === totalPages} on:click={() => currentPage++}>
+                        Selanjutnya
+                    </Button>
                 </div>
 
                 <!-- DESKTOP: Info data + navigasi lengkap -->
@@ -976,107 +980,41 @@
 <!-- Modal Informasi Global -->
 <BaseModal
     bind:open={showInfoModal}
-    maxWidth="max-w-5xl"
+    maxWidth="max-w-lg"
     on:close={() => showInfoModal = false}
 >
-    <svelte:fragment slot="header">
-        <div>
-            <h2 class="text-xl font-bold text-slate-800 leading-tight">Informasi Global & Legenda</h2>
-            <p class="text-sm text-slate-500 mt-1">Panduan membaca laporan dan ringkasan data sumber.</p>
-        </div>
-    </svelte:fragment>
+    <div slot="header">
+        <h2 class="text-lg font-bold text-slate-800">Informasi Global & Legenda</h2>
+    </div>
 
-    <svelte:fragment slot="body">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Kartu Cara Baca Pie Chart -->
-            <div class="lg:col-span-2 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500 transition-colors group-hover:bg-blue-600"></div>
-                
-                <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100/80">
-                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
-                    </div>
-                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Cara Baca Pie Chart</h4>
-                </div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:border-emerald-200 transition-colors">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></div>
-                            <span class="font-bold text-slate-900 text-sm">Realisasi</span>
-                        </div>
-                        <p class="text-xs text-slate-500 leading-relaxed">Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</p>
-                    </div>
-                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-300 transition-colors">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-slate-400 shrink-0"></div>
-                            <span class="font-bold text-slate-900 text-sm">Sisa Anggaran</span>
-                        </div>
-                        <p class="text-xs text-slate-500 leading-relaxed">Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</p>
-                    </div>
-                    <div class="flex flex-col gap-2 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-rose-50 hover:border-rose-200 transition-colors">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-rose-500 shrink-0"></div>
-                            <span class="font-bold text-slate-900 text-sm">Melebihi Anggaran</span>
-                        </div>
-                        <p class="text-xs text-slate-500 leading-relaxed">Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</p>
-                    </div>
-                </div>
-            </div>
+    <div slot="body">
+        <div class="space-y-4 text-sm text-slate-600">
+            <p><strong>Cara Baca Grafik & Indikator Warna:</strong></p>
+            <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                <li><strong class="text-emerald-700">Realisasi (Hijau):</strong> Bagian anggaran yang sudah digunakan berdasarkan Pengajuan GUP.</li>
+                <li><strong class="text-slate-500">Sisa Anggaran (Abu-abu):</strong> Selisih Anggaran dikurangi Realisasi untuk jenis pengadaan tersebut.</li>
+                <li><strong class="text-rose-700">Melebihi Anggaran (Merah):</strong> Muncul jika Realisasi lebih besar daripada Anggaran yang diinput.</li>
+            </ul>
 
-            <!-- Kartu Data Sumber -->
-            <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-indigo-500 transition-colors group-hover:bg-indigo-600"></div>
-                
-                <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100/80">
-                    <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl shadow-sm border border-indigo-100">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
-                    </div>
-                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Data Sumber</h4>
-                </div>
+            <p><strong>Ringkasan Data Sumber:</strong></p>
+            <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                <li>Total Jenis Pengadaan: <strong>{laporanSummary.totalJenisPengadaan || 0}</strong></li>
+                <li>Jumlah Transaksi GUP: <strong>{laporanSummary.totalTransaksi || 0}</strong></li>
+                <li>Total Realisasi: <strong>{formatCurrency(laporanSummary.totalRealisasi || 0)}</strong></li>
+            </ul>
 
-                <div class="space-y-3 flex-1 flex flex-col justify-center">
-                    <div class="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
-                        <span class="text-xs font-semibold text-slate-500">Jenis Pengadaan</span>
-                        <span class="text-sm font-black text-slate-900">{laporanSummary.totalJenisPengadaan || 0}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
-                        <span class="text-xs font-semibold text-slate-500">Transaksi GUP</span>
-                        <span class="text-sm font-black text-slate-900">{laporanSummary.totalTransaksi || 0}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-xs font-semibold text-slate-500">Total Realisasi</span>
-                        <span class="text-sm font-black text-emerald-600">{formatCurrency(laporanSummary.totalRealisasi || 0)}</span>
-                    </div>
-                </div>
+            <div class="mt-2 bg-amber-50 border border-amber-100 p-3 rounded-lg text-amber-800">
+                <strong class="block mb-1">Catatan Perhitungan Laporan:</strong>
+                Jenis Pengadaan dengan realisasi nol tetap muncul pada daftar laporan (kartu detail) agar ketersediaan pagu anggarannya bisa dipantau, tetapi jenis tersebut <strong>tidak akan mendominasi grafik pie komposisi</strong> untuk menjaga akurasi representasi pengeluaran riil.
             </div>
         </div>
+    </div>
 
-        <div class="mt-6 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-amber-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-            <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400 transition-colors group-hover:bg-amber-500"></div>
-            
-            <div class="flex items-start gap-4">
-                <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl shadow-sm border border-amber-100 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h4 class="text-sm font-bold text-slate-900">Catatan Perhitungan Laporan</h4>
-                    <p class="mt-1.5 text-xs text-slate-600 leading-relaxed">
-                        Jenis Pengadaan dengan realisasi nol tetap muncul pada daftar laporan (kartu detail) agar ketersediaan pagu anggarannya bisa dipantau, tetapi jenis tersebut <strong>tidak akan mendominasi grafik pie komposisi</strong> untuk menjaga akurasi representasi pengeluaran riil.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </svelte:fragment>
-
-    <svelte:fragment slot="footer">
-        <div class="w-full flex justify-end">
-            <button on:click={() => showInfoModal = false} class="px-6 py-2.5 text-sm font-bold bg-slate-900 text-white rounded-xl shadow hover:bg-slate-800 transition-all focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">Tutup Informasi</button>
-        </div>
-    </svelte:fragment>
+    <div slot="footer" class="flex justify-end w-full">
+        <Button variant="default" on:click={() => showInfoModal = false}>Mengerti</Button>
+    </div>
 </BaseModal>
+
 
 <!-- Modal Input Anggaran -->
 {#if showAnggaranModal}
@@ -1084,6 +1022,7 @@
         class="fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-4 no-print"
         role="dialog"
         aria-modal="true"
+        tabindex="-1"
         aria-labelledby="modal-anggaran-title"
         on:click|self={closeAnggaranModal}
         on:keydown={(e) => e.key === 'Escape' && closeAnggaranModal()}
@@ -1105,7 +1044,7 @@
 
             <div class="p-6 space-y-4">
                 <div class="space-y-2 relative">
-                    <label class="text-sm font-semibold text-slate-700">Jenis Pengadaan</label>
+                    <span class="block text-sm font-semibold text-slate-700">Jenis Pengadaan</span>
                     <div class="relative w-full">
                         <button 
                             type="button" 
@@ -1119,6 +1058,8 @@
                         </button>
                         
                         {#if isAnggaranDropdownOpen}
+                            <!-- svelte-ignore a11y-click-events-have-key-events -->
+                            <!-- svelte-ignore a11y-no-static-element-interactions -->
                             <div class="fixed inset-0 z-40" on:click={() => isAnggaranDropdownOpen = false}></div>
                             
                             <div class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
@@ -1151,6 +1092,11 @@
                 </div>
 
                 {#if selectedRow}
+                    {@const numericAnggaran = parseInt(String(anggaranInput).replace(/\D/g, ''), 10) || 0}
+                    {@const numericRealisasi = selectedRow.realisasi || 0}
+                    {@const sisaAnggaran = numericAnggaran - numericRealisasi}
+                    {@const persentase = numericAnggaran > 0 ? ((numericRealisasi / numericAnggaran) * 100).toFixed(2) : 0}
+                    
                     <div class="grid grid-cols-2 gap-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
                         <div class="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100">
                             <p class="text-xs text-slate-500">Kode Akun</p>
@@ -1158,7 +1104,17 @@
                         </div>
                         <div class="rounded-xl bg-emerald-50 px-4 py-3 border border-emerald-100">
                             <p class="text-xs text-emerald-600">Realisasi Saat Ini</p>
-                            <p class="font-bold text-emerald-800 mt-0.5">{formatCurrency(selectedRow.realisasi || 0)}</p>
+                            <p class="font-bold text-emerald-800 mt-0.5">{formatCurrency(numericRealisasi)}</p>
+                        </div>
+                        <div class="rounded-xl bg-amber-50 px-4 py-3 border border-amber-100">
+                            <p class="text-xs text-amber-600">Sisa Anggaran</p>
+                            <p class="font-bold text-amber-800 mt-0.5">
+                                {sisaAnggaran < 0 ? '-' : ''}{formatCurrency(Math.abs(sisaAnggaran))}
+                            </p>
+                        </div>
+                        <div class="rounded-xl bg-sky-50 px-4 py-3 border border-sky-100">
+                            <p class="text-xs text-sky-600">Persentase Terpakai</p>
+                            <p class="font-bold text-sky-800 mt-0.5">{persentase}%</p>
                         </div>
                     </div>
                 {/if}
@@ -1185,12 +1141,12 @@
             </div>
 
             <div class="px-6 pb-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
-                <button on:click={closeAnggaranModal} class="px-4 py-2 text-sm font-medium border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-xl transition-colors">
+                <Button variant="outline" on:click={closeAnggaranModal}>
                     Batal
-                </button>
-                <button on:click={handleSaveAnggaran} disabled={savingAnggaran || !anggaranInput} class="px-5 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl shadow-lg transition-colors">
+                </Button>
+                <Button variant="primary" on:click={handleSaveAnggaran} disabled={savingAnggaran || !anggaranInput} class="shadow-lg">
                     {savingAnggaran ? 'Menyimpan...' : 'Simpan Anggaran'}
-                </button>
+                </Button>
             </div>
         </div>
     </div>
@@ -1222,8 +1178,8 @@
         {#if chartModalRow}
             {@const sisa = Math.max(0, (chartModalRow.anggaran || 0) - (chartModalRow.realisasi || 0))}
             {@const pct = chartModalRow.persentaseSerapan || 0}
-            {@const ac = colors[chartModalIndex % colors.length]}
-            {@const ac2 = colors[(chartModalIndex + 1) % colors.length]}
+            {@const ac = baseColors[chartModalIndex % baseColors.length]}
+            {@const ac2 = baseColors[(chartModalIndex + 1) % baseColors.length]}
 
             <div class="grid grid-cols-1 gap-5 lg:grid-cols-5">
 

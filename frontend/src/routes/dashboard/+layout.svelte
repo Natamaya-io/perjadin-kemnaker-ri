@@ -30,7 +30,8 @@
         { path: '/dashboard/vip-bandara', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/total-penarikan', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/sewa-kendaraan', roles: ['super_admin', 'kasubag'] },
-        { path: '/dashboard/pemeliharaan', roles: ['super_admin', 'kasubag'] }
+        { path: '/dashboard/pemeliharaan', roles: ['super_admin', 'kasubag'] },
+        { path: '/dashboard/gup', roles: ['super_admin', 'kasubag'] }
     ];
 
     function checkAccess(pathname, role) {

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
     import { api } from '$lib/shared/api';
     import { formatCurrency } from '$lib/shared/utils/utils';
     import Button from '$lib/shared/ui/button/Button.svelte';
@@ -13,7 +14,7 @@
     let procurementTypes = masterData.procurementTypes || [];
 
     let form = {
-        businessId: 'GUP-' + Date.now(), // Auto-generate a default, user can edit
+        businessId: '', // Auto-generate on mount, user can edit
         paymentDescription: '',
         procurementTypeId: '',
         fundingSourceId: '',
@@ -25,10 +26,31 @@
         pum: ''
     };
 
+    let isEditMode = false;
+    let editId = '';
+
     let isSubmitting = false;
     let errorMessage = '';
 
-    let supportingDocumentFile: File | null = null;
+    // Formatted strings for input display
+    let formattedValueAmount = '';
+    let formattedPaidAmount = '';
+    let formattedTaxAmount = '';
+
+    function handleCurrencyInput(e: Event, field: 'valueAmount' | 'paidAmount' | 'taxAmount') {
+        const target = e.target as HTMLInputElement;
+        let val = target.value.replace(/\D/g, '');
+        const num = val !== '' ? parseInt(val, 10) : 0;
+        form[field] = num;
+        
+        const formatted = val !== '' ? num.toLocaleString('id-ID') : '';
+        if (field === 'valueAmount') formattedValueAmount = formatted;
+        if (field === 'paidAmount') formattedPaidAmount = formatted;
+        if (field === 'taxAmount') formattedTaxAmount = formatted;
+    }
+
+    let supportingDocumentFile: File | { name: string } | null = null;
+    let existingDocumentFile: any = null;
     let fileInputRef: HTMLInputElement;
 
     function handleFileChange(event: Event) {
@@ -45,6 +67,50 @@
     $: autoKodeAkun = selectedProcurementType?.accountCode || '-';
     $: autoMak = selectedProcurementType?.accountMak || '-';
 
+    import { onMount } from 'svelte';
+    onMount(async () => {
+        const idParam = $page.url.searchParams.get('id');
+        if (idParam) {
+            isEditMode = true;
+            editId = idParam;
+            try {
+                const data = await api.getGupPengajuanById(editId);
+                form = {
+                    businessId: data.businessId,
+                    paymentDescription: data.paymentDescription,
+                    procurementTypeId: data.procurementTypeId,
+                    fundingSourceId: data.fundingSourceId || '',
+                    valueAmount: data.valueAmount,
+                    paidAmount: data.paidAmount,
+                    taxAmount: data.taxAmount,
+                    receiptDate: data.receiptDate ? new Date(data.receiptDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    recipient: data.recipient,
+                    pum: data.pum
+                };
+                if (data.documentFile) {
+                    existingDocumentFile = data.documentFile;
+                    supportingDocumentFile = { name: data.documentFile.originalName };
+                }
+                formattedValueAmount = form.valueAmount.toLocaleString('id-ID');
+                formattedPaidAmount = form.paidAmount.toLocaleString('id-ID');
+                formattedTaxAmount = form.taxAmount.toLocaleString('id-ID');
+            } catch (e) {
+                console.error("Failed to fetch edit data:", e);
+                errorMessage = "Gagal memuat data pengajuan untuk diubah.";
+            }
+        } else {
+            try {
+                const res = await api.getNextBusinessID(window.fetch);
+                if (res && res.nextId) {
+                    form.businessId = res.nextId;
+                }
+            } catch (e) {
+                console.warn("Failed to fetch next business ID:", e);
+                form.businessId = 'gup_001';
+            }
+        }
+    });
+
     async function handleSubmit() {
         if (!form.businessId || !form.paymentDescription || !form.procurementTypeId || !form.receiptDate || !form.recipient || !form.pum) {
             errorMessage = 'Mohon lengkapi semua field yang wajib diisi.';
@@ -60,10 +126,14 @@
         errorMessage = '';
 
         try {
-            let documentFile = undefined;
-            if (supportingDocumentFile) {
+            let documentFile = existingDocumentFile;
+            if (supportingDocumentFile && supportingDocumentFile instanceof File) {
                 const uploadRes = await api.uploadFile(supportingDocumentFile);
                 documentFile = { path: uploadRes.path, originalName: supportingDocumentFile.name };
+            }
+
+            if (!supportingDocumentFile) {
+                documentFile = undefined;
             }
 
             const payload = {
@@ -76,7 +146,11 @@
                 documentFile
             };
 
-            await api.createGupPengajuan(payload);
+            if (isEditMode) {
+                await api.updateGupPengajuan(editId, payload);
+            } else {
+                await api.createGupPengajuan(payload);
+            }
             goto('/dashboard/gup/pengajuan');
         } catch (e: any) {
             console.error('Submit error:', e);
@@ -99,8 +173,8 @@
             </svg>
         </Button>
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
-            <p class="text-sm text-slate-500 mt-1">Isi formulir di bawah ini untuk mencatat transaksi GUP.</p>
+            <h1 class="text-3xl font-bold text-slate-900">{isEditMode ? 'Ubah Pengajuan' : 'Buat Pengajuan Baru'}</h1>
+            <p class="text-sm text-slate-500 mt-1">{isEditMode ? 'Ubah formulir di bawah ini untuk mengedit data transaksi GUP.' : 'Isi formulir di bawah ini untuk mencatat transaksi GUP.'}</p>
         </div>
     </div>
 
@@ -165,7 +239,7 @@
                         class="h-[46px] border-slate-300"
                         options={[
                             {value: '', label: 'Pilih Jenis Pengadaan'},
-                            ...procurementTypes.map(t => ({value: t.id, label: t.name}))
+                            ...procurementTypes.map(t => ({value: t.id, label: `${t.name} (Akun: ${t.accountCode || '-'})`}))
                         ]}
                     />
                 </div>
@@ -179,7 +253,7 @@
                         class="h-[46px] border-slate-300"
                         options={[
                             {value: '', label: 'Tidak ada sumber dana (Opsional)'},
-                            ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName}`}))
+                            ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName} (Sisa: ${formatCurrency(s.remainingBudget)})`}))
                         ]}
                     />
                 </div>
@@ -188,7 +262,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Kode Akun (Auto) -->
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold uppercase tracking-wide text-slate-500">Kode Akun</label>
+                    <span class="block text-sm font-bold uppercase tracking-wide text-slate-500">Kode Akun</span>
                     <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 font-medium opacity-70 cursor-not-allowed">
                         {autoKodeAkun}
                     </div>
@@ -196,7 +270,7 @@
 
                 <!-- MAK (Auto) -->
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold uppercase tracking-wide text-slate-500">MAK</label>
+                    <span class="block text-sm font-bold uppercase tracking-wide text-slate-500">MAK</span>
                     <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 font-medium opacity-70 cursor-not-allowed">
                         {autoMak}
                     </div>
@@ -238,12 +312,13 @@
                     <div class="space-y-2">
                         <label for="valueAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Nilai (Rp) *</label>
                         <input 
-                            type="number" 
+                            type="text" 
                             id="valueAmount" 
-                            bind:value={form.valueAmount}
-                            min="0"
+                            value={formattedValueAmount}
+                            on:input={(e) => handleCurrencyInput(e, 'valueAmount')}
                             required
                             class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                            placeholder="0"
                         />
                     </div>
 
@@ -251,12 +326,13 @@
                     <div class="space-y-2">
                         <label for="paidAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Dibayarkan (Rp) *</label>
                         <input 
-                            type="number" 
+                            type="text" 
                             id="paidAmount" 
-                            bind:value={form.paidAmount}
-                            min="0"
+                            value={formattedPaidAmount}
+                            on:input={(e) => handleCurrencyInput(e, 'paidAmount')}
                             required
                             class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                            placeholder="0"
                         />
                     </div>
 
@@ -264,19 +340,20 @@
                     <div class="space-y-2">
                         <label for="taxAmount" class="block text-sm font-bold uppercase tracking-wide text-slate-500">Pajak (Rp) *</label>
                         <input 
-                            type="number" 
+                            type="text" 
                             id="taxAmount" 
-                            bind:value={form.taxAmount}
-                            min="0"
+                            value={formattedTaxAmount}
+                            on:input={(e) => handleCurrencyInput(e, 'taxAmount')}
                             required
                             class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono"
+                            placeholder="0"
                         />
                     </div>
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-slate-200 flex justify-between items-center">
                     <span class="font-bold text-slate-600">Selisih:</span>
-                    <span class="font-bold font-mono text-lg {selisih < 0 ? 'text-rose-500' : 'text-slate-900'}">
+                    <span class="font-bold font-mono text-lg {selisih < 0 ? 'text-rose-500' : selisih === 0 ? 'text-emerald-600' : 'text-amber-500'}">
                         {formatCurrency(selisih)}
                     </span>
                 </div>
@@ -331,7 +408,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                         </svg>
-                        Simpan Pengajuan
+                        {isEditMode ? 'Perbarui Pengajuan' : 'Simpan Pengajuan'}
                     {/if}
                 </Button>
             </div>

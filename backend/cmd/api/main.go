@@ -198,9 +198,17 @@ func main() {
 		protected.DELETE("/dalkot/assignments/:assignmentId", dalkotHandler.RemoveAssignment)
 
 		// GUP Routes
+		gupGroup := protected.Group("/gup")
+		gupGroup.GET("/master-data", gupHandler.GetMasterData)
+		gupGroup.GET("/laporan", gupHandler.GetLaporan)
+		gupGroup.GET("/dashboard", gupHandler.GetDashboardSummary)
+		gupGroup.GET("/next-spm", gupHandler.GetNextBusinessID)
+		gupGroup.POST("/pengajuan", gupHandler.CreateTransaction)
+		
 		protected.GET("/gup/pengajuan", gupHandler.GetTransactions)
 		protected.GET("/gup/pengajuan/:id", gupHandler.GetTransactionByID)
-		protected.POST("/gup/pengajuan", gupHandler.CreateTransaction)
+		protected.PUT("/gup/pengajuan/:id", gupHandler.UpdateTransaction)
+		protected.DELETE("/gup/pengajuan/:id", gupHandler.DeleteTransaction)
 		
 		protected.GET("/gup/laporan", gupHandler.GetLaporan)
 		protected.POST("/gup/laporan/budget", gupHandler.SaveBudget)

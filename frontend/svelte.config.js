@@ -12,10 +12,9 @@ const config = {
 		// Setting biar output folder namanya 'build'
 		adapter: adapter({ out: 'build', precompress: false }),
 		output: {
-			preloadStrategy: 'modulepreload'
+			preloadStrategy: 'preload-mjs'
 		}
 	}
 };
 
 export default config;
-

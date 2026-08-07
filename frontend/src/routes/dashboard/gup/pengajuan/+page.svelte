@@ -5,6 +5,8 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
     import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
+    import KwitansiPrintModal from './KwitansiPrintModal.svelte';
+    import SpbyPrintModal from './SpbyPrintModal.svelte';
     
     export let data: any;
     
@@ -12,8 +14,20 @@
     $: masterData = data?.masterData || { procurementTypes: [], fundingSources: [] };
 
     let searchQuery = '';
+    let filterTahun = new Date().getFullYear().toString();
     let filterBulan = '';
     let filterJenis = '';
+
+    const currentYear = new Date().getFullYear();
+    const startYear = 2026;
+    const endYear = Math.max(currentYear + 1, startYear + 1);
+    const yearOptions = [
+        {value: '', label: 'Semua Tahun'},
+        ...Array.from({ length: endYear - startYear + 1 }, (_, i) => ({
+            value: (startYear + i).toString(),
+            label: (startYear + i).toString()
+        })).reverse()
+    ];
 
     $: filteredTransactions = transactions.filter((trx: any) => {
         let match = true;
@@ -26,6 +40,15 @@
                 (trx.pum && trx.pum.toLowerCase().includes(q)) ||
                 (trx.businessId && trx.businessId.toLowerCase().includes(q))
             );
+        }
+
+        if (filterTahun) {
+            if (trx.receiptDate) {
+                const year = trx.receiptDate.split('-')[0];
+                match = match && year === filterTahun;
+            } else {
+                match = false;
+            }
         }
 
         if (filterBulan) {
@@ -53,7 +76,7 @@
     $: paginatedTransactions = filteredTransactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     // Reset ke halaman 1 jika filter berubah
-    $: if (searchQuery || filterBulan || filterJenis) currentPage = 1;
+    $: if (searchQuery || filterTahun || filterBulan || filterJenis) currentPage = 1;
 
     function formatDate(dateStr: string) {
         if (!dateStr) return '-';
@@ -70,6 +93,7 @@
 
     function resetFilters() {
         searchQuery = '';
+        filterTahun = new Date().getFullYear().toString();
         filterBulan = '';
         filterJenis = '';
     }
@@ -90,6 +114,50 @@
             console.error("Gagal mengambil detail GUP:", error);
         } finally {
             isFetchingDetail = false;
+        }
+    }
+
+    // --- Print Modals Logic ---
+    let isKwitansiOpen = false;
+    let isSpbyOpen = false;
+    let printData: any = null;
+
+    async function handlePrintKwitansi(id: string) {
+        try {
+            const res = await api.getGupPengajuanById(id);
+            printData = { 
+                ...res, 
+                procurementType: masterData.procurementTypes.find(t => t.id === res.procurementTypeId) 
+            };
+            isKwitansiOpen = true;
+        } catch (error) {
+            console.error("Gagal mengambil data Kwitansi:", error);
+            alert("Gagal memuat data untuk dicetak");
+        }
+    }
+
+    async function handlePrintSpby(id: string) {
+        try {
+            const res = await api.getGupPengajuanById(id);
+            printData = { 
+                ...res, 
+                procurementType: masterData.procurementTypes.find(t => t.id === res.procurementTypeId) 
+            };
+            isSpbyOpen = true;
+        } catch (error) {
+            console.error("Gagal mengambil data SPBY:", error);
+            alert("Gagal memuat data untuk dicetak");
+        }
+    }
+
+    async function handleDelete(id: string) {
+        if (!confirm("Apakah Anda yakin ingin menghapus pengajuan GUP ini secara permanen?")) return;
+        try {
+            await api.deleteGupPengajuan(id);
+            fetchTransactions();
+        } catch (error) {
+            console.error("Gagal menghapus pengajuan:", error);
+            alert("Gagal menghapus pengajuan.");
         }
     }
 </script>
@@ -119,7 +187,7 @@
 
     <!-- Filter Section -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 no-print">
-        <div class="grid grid-cols-1 md:grid-cols-[minmax(200px,320px)_1fr_1fr_auto] gap-3 items-end w-full">
+        <div class="grid grid-cols-1 md:grid-cols-[minmax(180px,250px)_1fr_1fr_1fr_auto] gap-3 items-end w-full">
             <!-- Search Bar -->
             <div class="min-w-0">
                 <label for="searchQuery" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Pencarian</label>
@@ -135,8 +203,13 @@
                 <label for="filterJenisPengadaan" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Jenis Pengadaan</label>
                 <Select id="filterJenisPengadaan" bind:value={filterJenis} class="border-slate-200 w-full" options={[
                     {value: '', label: 'Semua Jenis'},
-                    ...masterData.procurementTypes.map(t => ({value: t.id, label: t.name}))
+                    ...masterData.procurementTypes.map(t => ({value: t.id, label: `${t.name} (Akun: ${t.accountCode || '-'})`}))
                 ]} />
+            </div>
+            <!-- Tahun -->
+            <div class="w-full">
+                <label for="filterTahun" class="mb-1.5 block text-xs font-bold uppercase tracking-widest text-slate-500">Tahun</label>
+                <Select id="filterTahun" bind:value={filterTahun} class="border-slate-200 w-full" options={yearOptions} />
             </div>
             <!-- Bulan -->
             <div class="w-full">
@@ -159,10 +232,10 @@
             </div>
             <!-- Reset -->
             <div class="flex items-end">
-                <button type="button" on:click={resetFilters} class="inline-flex h-full min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-red-600 hover:border-red-100 shadow-sm whitespace-nowrap w-full md:w-auto">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <Button variant="outline" on:click={resetFilters} class="h-[42px] hover:text-red-600 hover:border-red-100 w-full md:w-auto">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     Reset
-                </button>
+                </Button>
             </div>
         </div>
     </div>
@@ -182,13 +255,13 @@
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[5%] text-center">No</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[28%]">Pembayaran</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[20%]">Pembayaran</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Nilai</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Dibayarkan</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[11%]">Pajak</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[15%]">Jumlah Dibayarkan</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Pajak</th>
                         <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-right w-[12%]">Selisih</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 w-[15%]">Tanggal Kwitansi</th>
-                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-center w-[140px] no-print">Aksi</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-center w-[12%]">Tanggal Kwitansi</th>
+                        <th class="font-semibold text-slate-700 px-4 py-3 bg-slate-50 text-center w-[12%] no-print">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -204,17 +277,20 @@
                     {:else}
                         {#each paginatedTransactions as trx, index (trx.id)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                <td class="px-4 py-4 align-middle text-center font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                <td class="px-4 py-4 align-middle text-center text-sm text-slate-600">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                 <td class="px-4 py-4 align-middle">
-                                    <div class="font-medium text-slate-800 text-sm">{getProcurementTypeName(trx.procurementTypeId)}</div>
+                                    <div class="font-medium text-slate-800 text-sm leading-relaxed">{trx.paymentDescription || '-'}</div>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                                            {getProcurementTypeName(trx.procurementTypeId)}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
-                                <td class="px-4 py-4 align-middle text-right font-semibold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
-                                <td class="px-4 py-4 align-middle text-right text-rose-500">{formatCurrency(trx.taxAmount || 0)}</td>
-                                <td class="px-4 py-4 align-middle text-right font-medium text-slate-800">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
-                                <td class="px-4 py-4 align-middle text-sm text-slate-700">
-                                    <div class="font-medium">{formatDate(trx.receiptDate)}</div>
-                                </td>
+                                <td class="px-4 py-4 align-middle text-right font-bold text-emerald-600">{formatCurrency(trx.paidAmount || 0)}</td>
+                                <td class="px-4 py-4 align-middle text-right font-medium text-rose-600">{formatCurrency(trx.taxAmount || 0)}</td>
+                                <td class="px-4 py-4 align-middle text-right font-bold {(trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0) < 0 ? 'text-rose-500' : ((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0) === 0 ? 'text-emerald-600' : 'text-amber-500')}">{formatCurrency((trx.valueAmount || 0) - (trx.paidAmount || 0) - (trx.taxAmount || 0))}</td>
+                                <td class="px-4 py-4 align-middle text-center text-sm text-slate-600">{formatDate(trx.receiptDate)}</td>
                                 <td class="px-4 py-4 align-middle text-center no-print">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" title="View Detail" on:click={() => handleReview(trx.id)}>
@@ -223,14 +299,24 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-                                        <button class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 p-1.5 rounded transition-colors" title="Cetak Kwitansi">
+                                        <button class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 p-1.5 rounded transition-colors" title="Cetak Kwitansi" on:click={() => handlePrintKwitansi(trx.id)}>
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </button>
-                                        <button class="text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 p-1.5 rounded transition-colors" title="Cetak SPBY">
+                                        <button class="text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 p-1.5 rounded transition-colors" title="Cetak SPBY" on:click={() => handlePrintSpby(trx.id)}>
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                            </svg>
+                                        </button>
+                                        <button class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-1.5 rounded transition-colors" title="Ubah Pengajuan" on:click={() => goto(`/dashboard/gup/pengajuan/new?id=${trx.id}`)}>
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                        <button class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 p-1.5 rounded transition-colors" title="Hapus Pengajuan" on:click={() => handleDelete(trx.id)}>
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
                                     </div>
@@ -319,10 +405,9 @@
             <div class="space-y-5">
 
                 <!-- Kartu: Informasi Dasar -->
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden group">
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                        <div class="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                        <div class="p-2.5 bg-slate-100 text-slate-600 rounded-xl shadow-sm border border-slate-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Informasi Dasar</h4>
@@ -352,14 +437,19 @@
                 </div>
 
                 <!-- Kartu: Rincian Nilai Transaksi -->
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden group">
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                        <div class="p-2.5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 rounded-xl shadow-sm border border-emerald-100">
+                        <div class="p-2.5 bg-slate-100 text-slate-600 rounded-xl shadow-sm border border-slate-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Rincian Nilai Transaksi</h4>
                     </div>
+                    
+                    <div class="mb-4 flex items-center justify-between px-4 py-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                        <span class="text-sm font-semibold text-indigo-700">Sumber Dana Pengajuan</span>
+                        <span class="text-sm font-bold text-indigo-900 bg-indigo-100/80 px-3 py-1.5 rounded-lg uppercase tracking-wide">{masterData.fundingSources.find(f => f.id === selectedGup.fundingSourceId)?.gupLabel || '-'}</span>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-1">
                             <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nilai Kuitansi</p>
@@ -382,8 +472,7 @@
                 </div>
 
                 <!-- Kartu: Detail Klasifikasi (MAK) -->
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-amber-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative overflow-hidden group">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 to-orange-400"></div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden group">
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
                         <div class="p-2.5 bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -391,13 +480,17 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Detail Klasifikasi (MAK)</h4>
                     </div>
                     <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 py-2.5 border-b border-slate-50">
+                            <span class="text-xs font-semibold text-slate-500">Jenis Pengadaan</span>
+                            <span class="text-sm font-bold text-slate-800">{getProcurementTypeName(selectedGup.procurementTypeId)}</span>
+                        </div>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1.5 py-2.5 border-b border-slate-50">
                             <span class="text-xs font-semibold text-slate-500 shrink-0">Program / Kegiatan / KRO / RO / Komponen / Sub</span>
-                            <span class="text-sm font-bold text-slate-800 sm:text-right">{selectedGup.mak || '-'}</span>
+                            <span class="text-sm font-bold text-slate-800 sm:text-right">{masterData.procurementTypes.find(t => t.id === selectedGup.procurementTypeId)?.accountMak || '-'}</span>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 py-2.5">
                             <span class="text-xs font-semibold text-slate-500">Kode Akun</span>
-                            <span class="text-sm font-bold text-slate-800 font-mono bg-slate-100 px-2.5 py-1 rounded-lg inline-block">{selectedGup.accountCode || '-'}</span>
+                            <span class="text-sm font-bold text-slate-800 font-mono bg-slate-100 px-2.5 py-1 rounded-lg inline-block">{masterData.procurementTypes.find(t => t.id === selectedGup.procurementTypeId)?.accountCode || '-'}</span>
                         </div>
                     </div>
                 </div>
@@ -422,7 +515,7 @@
         >
             Tutup
         </button>
-        <Button variant="default" class="gap-2" disabled={!selectedGup}>
+        <Button variant="default" class="gap-2" disabled={!selectedGup} on:click={() => { isReviewOpen = false; handlePrintSpby(selectedGup.id); }}>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
@@ -431,3 +524,6 @@
     </svelte:fragment>
 </BaseModal>
 {/if}
+
+<KwitansiPrintModal bind:isOpen={isKwitansiOpen} data={printData} />
+<SpbyPrintModal bind:isOpen={isSpbyOpen} data={printData} />

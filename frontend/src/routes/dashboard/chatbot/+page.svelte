@@ -2,71 +2,177 @@
     <title>Chatbot AI - Perjadin Kemnaker RI</title>
 </svelte:head>
 
-<div class="space-y-6 pb-20 w-full">
-    <!-- Header Halaman -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div>
-            <div class="flex items-center gap-3 mb-1">
-                <div class="p-2 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+<script>
+    import { onMount, tick } from 'svelte';
+    
+    let messages = [
+        { role: 'bot', text: 'Halo! Saya asisten AI Perjadin Kemnaker. Ada yang bisa saya bantu terkait pengelolaan GUP atau Perjalanan Dinas hari ini?' }
+    ];
+    let inputText = '';
+    let isTyping = false;
+    let chatContainer;
+    let textareaEl;
+
+    async function scrollToBottom() {
+        await tick();
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+
+    function autoResize() {
+        if (!textareaEl) return;
+        textareaEl.style.height = 'auto';
+        textareaEl.style.height = Math.min(textareaEl.scrollHeight, 128) + 'px'; // Max 32 (128px)
+    }
+
+    async function sendMessage() {
+        if (!inputText.trim() || isTyping) return;
+        
+        // Add user message
+        let currentInput = inputText.trim();
+        messages = [...messages, { role: 'user', text: currentInput }];
+        inputText = '';
+        if (textareaEl) textareaEl.style.height = 'auto'; // Reset height
+        
+        await scrollToBottom();
+        
+        // Simulate bot typing
+        isTyping = true;
+        await scrollToBottom();
+        
+        setTimeout(async () => {
+            isTyping = false;
+            let reply = "Maaf, saat ini saya berjalan dalam mode simulasi (dummy). Integrasi dengan model AI asli sedang dalam tahap pengembangan!";
+            
+            const lowerInput = currentInput.toLowerCase();
+            if (lowerInput.includes("laporan") || lowerInput.includes("gup")) {
+                reply = "Untuk membuat laporan GUP, pastikan Anda sudah mencatat semua transaksi pada menu Pengajuan, lalu buka menu Laporan untuk mencetak ringkasannya secara otomatis.";
+            } else if (lowerInput.includes("pagu") || lowerInput.includes("anggaran")) {
+                reply = "Pagu anggaran dapat dilihat secara rinci di halaman Dashboard. Pastikan Anda sudah menginput nilai LS (Uang Persediaan) bulan ini agar sisa anggaran dapat dihitung akurat.";
+            } else if (lowerInput.includes("halo") || lowerInput.includes("hai")) {
+                reply = "Halo! Selamat datang. Silakan tanyakan hal-hal terkait prosedur Perjalanan Dinas, GUP, atau navigasi sistem ini.";
+            }
+
+            messages = [...messages, { role: 'bot', text: reply }];
+            await scrollToBottom();
+        }, 1500);
+    }
+
+    function handleKeydown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+</script>
+
+<div class="h-[calc(100vh-120px)] w-full flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+    
+    <!-- Chat Header -->
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-md border-2 border-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                     </svg>
                 </div>
-                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Chatbot AI</h1>
+                <span class="absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full"></span>
             </div>
-            <p class="text-sm text-slate-500 mt-1">Asisten cerdas berbasis AI untuk membantu pengelolaan perjalanan dinas.</p>
+            <div>
+                <h2 class="text-lg font-bold text-slate-800 leading-tight">Perjadin AI</h2>
+                <p class="text-xs text-slate-500 font-medium">Asisten Virtual Cerdas</p>
+            </div>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap self-start md:self-auto">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Dalam Pengembangan
-        </span>
+        <div class="flex gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-700 border border-violet-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse"></span>
+                Mode Simulasi
+            </span>
+        </div>
     </div>
 
-    <!-- Konten Placeholder -->
-    <div class="rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <!-- Ilustrasi Utama -->
-        <div class="flex flex-col items-center justify-center py-20 px-8 text-center">
-            <!-- Ikon Animasi -->
-            <div class="relative mb-8">
-                <!-- Lingkaran latar -->
-                <div class="w-28 h-28 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
-                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-violet-200 to-indigo-200 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+    <!-- Chat Messages Area -->
+    <div bind:this={chatContainer} class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50 space-y-6 custom-scrollbar">
+        
+        <div class="flex justify-center mb-8 mt-2">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
+                Hari ini
+            </span>
+        </div>
+
+        {#each messages as msg}
+            {#if msg.role === 'bot'}
+                <!-- Bot Message -->
+                <div class="flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-[80%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-white shadow-sm mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                </div>
-                <!-- Dekorasi partikel -->
-                <span class="absolute top-1 right-1 w-3 h-3 rounded-full bg-violet-400 opacity-70 animate-bounce" style="animation-delay: 0.1s;"></span>
-                <span class="absolute bottom-2 left-0 w-2 h-2 rounded-full bg-indigo-400 opacity-60 animate-bounce" style="animation-delay: 0.3s;"></span>
-                <span class="absolute top-4 -left-1 w-2 h-2 rounded-full bg-violet-300 opacity-50 animate-bounce" style="animation-delay: 0.5s;"></span>
-            </div>
-
-            <h2 class="text-xl font-bold text-slate-800 mb-2">Chatbot AI Segera Hadir</h2>
-            <p class="text-sm text-slate-500 max-w-md leading-relaxed mb-8">
-                Fitur ini sedang dalam tahap pengembangan aktif. Chatbot AI akan membantu Anda menjawab pertanyaan, menyusun laporan, dan menganalisis data perjalanan dinas secara otomatis.
-            </p>
-
-            <!-- Fitur yang akan datang -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-                {#each [
-                    { icon: 'M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z', label: 'Tanya Jawab', desc: 'Ajukan pertanyaan seputar regulasi dan prosedur perjadin' },
-                    { icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z', label: 'Ringkasan Laporan', desc: 'Buat ringkasan laporan perjalanan dinas secara otomatis' },
-                    { icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z', label: 'Analisis Data', desc: 'Analisis tren dan rekapitulasi anggaran secara cerdas' }
-                ] as feature}
-                    <div class="flex flex-col items-center gap-3 p-5 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-violet-200 hover:bg-violet-50/30 transition-colors">
-                        <div class="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d={feature.icon} />
-                            </svg>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-sm font-semibold text-slate-700 mb-1">{feature.label}</p>
-                            <p class="text-xs text-slate-500 leading-relaxed">{feature.desc}</p>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Perjadin AI</span>
+                        <div class="bg-white border border-slate-200 px-5 py-3.5 rounded-2xl rounded-tl-sm shadow-sm text-sm text-slate-700 leading-relaxed">
+                            {msg.text}
                         </div>
                     </div>
-                {/each}
+                </div>
+            {:else}
+                <!-- User Message -->
+                <div class="flex items-start justify-end gap-3 sm:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div class="flex flex-col gap-1 items-end max-w-[90%] sm:max-w-[80%]">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">Anda</span>
+                        <div class="bg-indigo-600 px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-md text-sm text-white leading-relaxed">
+                            {msg.text}
+                        </div>
+                    </div>
+                </div>
+            {/if}
+        {/each}
+
+        {#if isTyping}
+            <!-- Typing Indicator -->
+            <div class="flex items-start gap-4 max-w-[80%] animate-in fade-in duration-200">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-white shadow-sm mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                    </svg>
+                </div>
+                <div class="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1.5 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style="animation-delay: 0s;"></span>
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 0.15s;"></span>
+                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-bounce" style="animation-delay: 0.3s;"></span>
+                </div>
             </div>
+        {/if}
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="p-4 bg-white border-t border-slate-100 z-10 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.02)]">
+        <div class="relative flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-1.5 shadow-inner focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-300 transition-all">
+            <textarea
+                bind:this={textareaEl}
+                bind:value={inputText}
+                on:keydown={handleKeydown}
+                on:input={autoResize}
+                placeholder="Ketik pertanyaan Anda di sini..."
+                class="w-full max-h-32 min-h-[44px] bg-transparent border-none focus:ring-0 resize-none py-3 px-4 text-sm text-slate-700 placeholder:text-slate-400 custom-scrollbar"
+                rows="1"
+            ></textarea>
+            
+            <button 
+                on:click={sendMessage}
+                disabled={!inputText.trim() || isTyping}
+                class="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl m-0.5 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors shadow-sm"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
         </div>
+        <p class="text-[10px] text-center text-slate-400 mt-3 font-medium">
+            Perjadin AI dapat membuat kesalahan. Harap verifikasi informasi penting dengan peraturan resmi.
+        </p>
     </div>
 </div>

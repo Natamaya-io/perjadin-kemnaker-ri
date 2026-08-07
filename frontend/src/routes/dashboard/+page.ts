@@ -8,7 +8,7 @@ export function load({ fetch }) {
             // We intentionally do NOT use `await` here.
             // This allows the SvelteKit router to navigate INSTANTLY (0ms lag).
             // The API call runs in the background and updates the reactive store directly.
-            api.getDashboardSummary(fetch)
+            api.getGupDashboardSummary(fetch)
                 .then(res => {
                     if (res) dashboardSummaryStore.set(res);
                 })

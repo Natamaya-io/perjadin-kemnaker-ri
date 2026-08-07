@@ -1,15 +1,31 @@
 import { api } from '$lib/shared/api';
 
-export async function load({ fetch }) {
+export async function load({ fetch, url }) {
+    const yearStr = url.searchParams.get('year') || '2026';
+    const year = parseInt(yearStr, 10);
+
     try {
-        const response = await api.getGupLs(2024, fetch);
+        const [lsData, transactions, masterData] = await Promise.all([
+            api.getGupLs(year, fetch),
+            api.getGupPengajuan(fetch),
+            api.getGupMasterData(year, fetch)
+        ]);
+
         return {
-            lsData: response || []
+            year: yearStr,
+            lsData: lsData || [],
+            transactions: transactions || [],
+            fundingSources: masterData?.fundingSources || [],
+            accountCodes: masterData?.accountCodes || []
         };
     } catch (e) {
         console.error('Failed to load GUP LS', e);
         return {
-            lsData: []
+            year: yearStr,
+            lsData: [],
+            transactions: [],
+            fundingSources: [],
+            accountCodes: []
         };
     }
 }
