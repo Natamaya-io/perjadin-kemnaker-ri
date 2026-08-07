@@ -39,7 +39,7 @@
 
     // Summary data
     $: totalLs = Array.from(lsMap.values()).reduce((a, b) => a + Number(b), 0);
-    $: totalRealisasi = Array.from(realisasiMap.values()).reduce((a, b) => a + Number(b), 0);
+    $: totalRealisasi = fundingSources.reduce((sum, fs) => sum + (realisasiMap.get(fs.id) || 0), 0);
     $: totalSisa = totalLs - totalRealisasi;
     $: bulanTerisi = lsMap.size;
 
