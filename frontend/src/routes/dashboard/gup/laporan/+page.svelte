@@ -479,46 +479,6 @@
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <!-- Global Year Filter (Section 15 & 6) -->
-                <div class="relative inline-block w-full sm:w-auto">
-                    <!-- Tombol Pemicu -->
-                    <button
-                        type="button"
-                        class="w-full sm:w-auto flex items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20 hover:border-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 transition-all cursor-pointer backdrop-blur-sm"
-                        on:click={() => showYearDropdown = !showYearDropdown}
-                    >
-                        <span>Tahun: {currentYear}</span>
-                        <svg class="h-4 w-4 text-white transition-transform {showYearDropdown ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    {#if showYearDropdown}
-                        <!-- Backdrop untuk click outside -->
-                        <div class="fixed inset-0 z-40" on:click={() => showYearDropdown = false} on:keypress={(e) => e.key === 'Escape' && (showYearDropdown = false)} role="button" tabindex="0" aria-label="Tutup dropdown"></div>
-                        
-                        <!-- Panel Dropdown (Section 6) -->
-                        <div class="absolute right-0 z-50 mt-2 w-full min-w-[120px] origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                            <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
-                                {#each yearOptions as y}
-                                    <li class="relative">
-                                        <button 
-                                            class="w-full text-left cursor-pointer py-2.5 pl-4 pr-4 text-sm transition-colors flex items-center justify-between {currentYear === y ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
-                                            on:click={() => handleYearChange(y)}
-                                        >
-                                            <span>{y}</span>
-                                            {#if currentYear === y}
-                                                <svg class="h-4 w-4 text-indigo-600 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            {/if}
-                                        </button>
-                                    </li>
-                                {/each}
-                            </ul>
-                        </div>
-                    {/if}
-                </div>
 
 
                 <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(null)}>
