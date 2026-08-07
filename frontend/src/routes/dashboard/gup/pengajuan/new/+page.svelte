@@ -28,6 +28,8 @@
 
     let isEditMode = false;
     let editId = '';
+    let originalPaidAmount = 0;
+    let editOriginalFundingSourceId = '';
 
     let isSubmitting = false;
     let errorMessage = '';
@@ -87,6 +89,9 @@
                     recipient: data.recipient,
                     pum: data.pum
                 };
+                originalPaidAmount = data.paidAmount;
+                editOriginalFundingSourceId = data.fundingSourceId || '';
+                
                 if (data.documentFile) {
                     existingDocumentFile = data.documentFile;
                     supportingDocumentFile = { name: data.documentFile.originalName };
@@ -120,6 +125,21 @@
         if (form.valueAmount < 0 || form.paidAmount < 0 || form.taxAmount < 0) {
             errorMessage = 'Nilai nominal tidak boleh negatif.';
             return;
+        }
+
+        if (form.fundingSourceId) {
+            const fs = fundingSources.find(f => f.id === form.fundingSourceId);
+            if (fs) {
+                let available = fs.remainingBudget;
+                if (isEditMode && editOriginalFundingSourceId === form.fundingSourceId) {
+                    available += originalPaidAmount;
+                }
+                
+                if (form.valueAmount > available) {
+                    errorMessage = `Sisa saldo GUP pada sumber dana ini (${formatCurrency(available)}) tidak mencukupi untuk Rincian Nominal yang diajukan.`;
+                    return;
+                }
+            }
         }
 
         isSubmitting = true;
