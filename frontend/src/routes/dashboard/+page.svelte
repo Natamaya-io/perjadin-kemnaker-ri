@@ -185,21 +185,6 @@
                     Pantau pagu anggaran, saldo uang persediaan, status pengajuan, serta riwayat transaksi GUP secara cepat dan terpusat.
                 </p>
             </div>
-            
-            <!-- Global Year Filter -->
-            <div class="relative z-10 w-full sm:w-40 shrink-0">
-                <!-- Wrapper khusus agar teks di dalam select tetap terlihat jelas di background gelap -->
-                <div class="bg-white rounded-xl shadow-sm text-slate-900">
-                    <Select 
-                        options={yearOptions}
-                        bind:value={selectedYear}
-                        on:change={handleYearChange}
-                        placeholder="Pilih Tahun"
-                    />
-                </div>
-            </div>
-
-            <!-- Background Decorations (Clipped) -->
             <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                 <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5"></div>
                 <div class="absolute right-20 -bottom-16 w-52 h-52 rounded-full bg-blue-500/10"></div>
@@ -269,10 +254,19 @@
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Line Chart -->
             <div class="xl:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">Grafik Realisasi GUP Per Bulan</h3>
                         <p class="text-sm text-slate-500">Visualisasi tren pengajuan GUP tahun berjalan.</p>
+                    </div>
+                    <div class="w-full sm:w-32 shrink-0">
+                        <Select 
+                            options={yearOptions}
+                            bind:value={selectedYear}
+                            on:change={handleYearChange}
+                            placeholder="Tahun"
+                            class="border-slate-200 bg-slate-50"
+                        />
                     </div>
                 </div>
                 <div class="h-[300px] w-full">
