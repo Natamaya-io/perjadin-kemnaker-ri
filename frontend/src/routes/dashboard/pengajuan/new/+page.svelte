@@ -169,14 +169,79 @@
 	}, {}));
     
     /** @type {string[]} */
-    let disabledEmployeeIds = []; // We rely on backend validation for overlapping employees instead of checking on the frontend.
+    let disabledEmployeeIds = [];
+
+    // Reactive statement to compute busy employees based on selected dates
+    $: {
+        if (typeof window !== 'undefined' && $recordsStore) {
+            let start = null;
+            let end = null;
+            if (selectedType === 'dalam_kota' && formData.executionDate) {
+                start = new Date(formData.executionDate).setHours(0,0,0,0);
+                end = start;
+            } else if (selectedType === 'luar_kota' && minStartDate && maxEndDate) {
+                start = new Date(minStartDate).setHours(0,0,0,0);
+                end = new Date(maxEndDate).setHours(0,0,0,0);
+            }
+            
+            if (start !== null && end !== null && !isNaN(start) && !isNaN(end)) {
+                const busyIds = new Set();
+                for (const record of $recordsStore) {
+                    if (record.status === 'Rejected') continue; // Rejected SPDs don't block
+                    
+                    let rStart = NaN, rEnd = NaN;
+                    if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
+                        if (record.startDate) {
+                            rStart = new Date(record.startDate).setHours(0,0,0,0);
+                            rEnd = rStart;
+                        }
+                    } else {
+                        if (record.startDate && record.endDate) {
+                            rStart = new Date(record.startDate).setHours(0,0,0,0);
+                            rEnd = new Date(record.endDate).setHours(0,0,0,0);
+                        }
+                    }
+                    if (isNaN(rStart) || isNaN(rEnd)) continue;
+                    
+                    // Check overlap
+                    if (start <= rEnd && end >= rStart) {
+                        if (record.employeesList) {
+                            for (const emp of record.employeesList) {
+                                if (emp.status !== 'Rejected' && (emp.employee?.id || emp.userId)) {
+                                    busyIds.add(emp.employee?.id || emp.userId);
+                                }
+                            }
+                        }
+                    }
+                }
+                disabledEmployeeIds = Array.from(busyIds);
+            } else {
+                disabledEmployeeIds = [];
+            }
+        }
+    }
 
     $: {
-        if (!$loadingStore && !isSuccessfullySubmitted && minStartDate && maxEndDate && disabledEmployeeIds.length > 0) {
-            const conflicts = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
-            if (conflicts.length > 0) {
+        if (!$loadingStore && !isSuccessfullySubmitted && disabledEmployeeIds.length > 0) {
+            // Clean up Luar Kota selectedEmployees
+            const conflictsLuar = formData.selectedEmployees.filter(id => disabledEmployeeIds.includes(id));
+            if (conflictsLuar.length > 0) {
                  formData.selectedEmployees = formData.selectedEmployees.filter(id => !disabledEmployeeIds.includes(id));
-                 toast.warning('Beberapa petugas yang dipilih telah dihapus karena jadwal bentrok.');
+                 toast.warning('Beberapa petugas luar kota yang dipilih telah dihapus karena jadwal bentrok.');
+            }
+            
+            // Clean up Dalam Kota SPJ
+            const conflictsDalkotSpj = formData.selectedSpjEmployees.filter(id => disabledEmployeeIds.includes(id));
+            if (conflictsDalkotSpj.length > 0) {
+                 formData.selectedSpjEmployees = formData.selectedSpjEmployees.filter(id => !disabledEmployeeIds.includes(id));
+                 toast.warning('Beberapa petugas dalkot SPJ dihapus karena jadwal bentrok.');
+            }
+            
+            // Clean up Dalam Kota Riil
+            const conflictsDalkotRiil = formData.selectedRiilEmployees.filter(id => disabledEmployeeIds.includes(id));
+            if (conflictsDalkotRiil.length > 0) {
+                 formData.selectedRiilEmployees = formData.selectedRiilEmployees.filter(id => !disabledEmployeeIds.includes(id));
+                 toast.warning('Beberapa petugas dalkot Transport dihapus karena jadwal bentrok.');
             }
         }
     }
@@ -374,9 +439,10 @@
 
         if (localStorage.getItem('auth_token')) {
             try {
-                const [officers, rates] = await Promise.all([
-                    api.getUsers({ role: 'protokol' }),
-                    /** @type {any} */ (api).getDalkotRates()
+                const [officers, rates, _] = await Promise.all([
+                    api.get('/users?role=pegawai'),
+                    api.get('/dalkot/rates'),
+                    $recordsStore.length === 0 ? loadRecords() : Promise.resolve()
                 ]);
                 
                 protokolOfficers = officers;
@@ -547,6 +613,7 @@
                 {#if selectedType === 'dalam_kota'}
                     <DalkotSidebar 
                         employees={protokolOfficers}
+                        disabledIds={disabledEmployeeIds}
                         bind:selectedSpjEmployees={formData.selectedSpjEmployees}
                         bind:selectedRiilEmployees={formData.selectedRiilEmployees}
                         dalkotType={formData.dalkotType}
