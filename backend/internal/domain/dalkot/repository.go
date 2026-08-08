@@ -29,6 +29,7 @@ type Repository interface {
 	GetRates() ([]models.DalkotRate, error)
 	NextSpdNumber(ctx context.Context) (int, error)
 	SyncSpdSequence(ctx context.Context, nextID int) error
+	SyncAssignmentSequence(ctx context.Context, nextID int) error
 }
 
 type repository struct {
@@ -299,6 +300,12 @@ func (r *repository) NextSpdNumber(ctx context.Context) (int, error) {
 
 func (r *repository) SyncSpdSequence(ctx context.Context, nextID int) error {
 	query := `SELECT setval('dalkot_spd_number_seq', GREATEST((SELECT last_value FROM dalkot_spd_number_seq), $1::bigint))`
+	_, err := r.d.ExecContext(ctx, query, nextID)
+	return err
+}
+
+func (r *repository) SyncAssignmentSequence(ctx context.Context, nextID int) error {
+	query := `SELECT setval('dalkot_assignments_seq_no', $1::bigint, false)`
 	_, err := r.d.ExecContext(ctx, query, nextID)
 	return err
 }

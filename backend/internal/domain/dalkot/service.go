@@ -13,7 +13,7 @@ import (
 )
 
 type Service interface {
-	CreateRecord(record *models.DalkotRecord, assignments []models.DalkotAssignment) error
+	CreateRecord(record *models.DalkotRecord, assignments []models.DalkotAssignment, startAssignmentSeq *int) error
 	GetRecordByID(id uuid.UUID) (*models.DalkotRecord, error)
 	GetRecords() ([]models.DalkotRecord, error)
 	UpdateRecord(record *models.DalkotRecord) error
@@ -35,7 +35,7 @@ func NewService(repo Repository, userRepo user.Repository) Service {
 	return &service{repo: repo, userRepo: userRepo}
 }
 
-func (s *service) CreateRecord(record *models.DalkotRecord, assignments []models.DalkotAssignment) error {
+func (s *service) CreateRecord(record *models.DalkotRecord, assignments []models.DalkotAssignment, startAssignmentSeq *int) error {
 	if record.Category == "" || record.Official == "" || record.DalkotType == "" || record.ActivityName == "" || record.Location == "" {
 		return errors.New("missing required fields for dalkot record")
 	}
@@ -60,6 +60,10 @@ func (s *service) CreateRecord(record *models.DalkotRecord, assignments []models
 
 	if err := s.repo.CreateRecord(record); err != nil {
 		return err
+	}
+
+	if startAssignmentSeq != nil && *startAssignmentSeq > 0 {
+		_ = s.repo.SyncAssignmentSequence(context.Background(), *startAssignmentSeq)
 	}
 
 	for _, assignment := range assignments {

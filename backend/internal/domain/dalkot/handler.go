@@ -29,15 +29,16 @@ func NewHandler(svc Service) *Handler {
 
 func (h *Handler) CreateRecord(c echo.Context) error {
 	var req struct {
-		Record      models.DalkotRecord       `json:"record"`
-		Assignments []models.DalkotAssignment `json:"assignments"`
+		Record             models.DalkotRecord       `json:"record"`
+		Assignments        []models.DalkotAssignment `json:"assignments"`
+		StartAssignmentSeq *int                      `json:"startAssignmentSeq,omitempty"`
 	}
 
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 	}
 
-	if err := h.svc.CreateRecord(&req.Record, req.Assignments); err != nil {
+	if err := h.svc.CreateRecord(&req.Record, req.Assignments, req.StartAssignmentSeq); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 

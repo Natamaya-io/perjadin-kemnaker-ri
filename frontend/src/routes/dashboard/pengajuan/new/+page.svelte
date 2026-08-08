@@ -69,6 +69,7 @@
         suratTugas: null,
         suratTugasNumber: '',
         spdNumberInput: '',
+        startAssignmentSeqInput: '',
         purpose: 'persiapan', // Default
         stakeholder: '',
         // Dalkot specific
@@ -294,6 +295,13 @@
                 },
                 assignments: assignments
             };
+
+            if (formData.startAssignmentSeqInput) {
+                const seq = parseInt(formData.startAssignmentSeqInput, 10);
+                if (!isNaN(seq) && seq > 0) {
+                    dalkotPayload.startAssignmentSeq = seq;
+                }
+            }
         } else {
             tripData = {
                 spd: finalSpd,
@@ -501,6 +509,7 @@
                         bind:official={formData.official}
                         bind:dalkotType={formData.dalkotType}
                         bind:spdNumberInput={formData.spdNumberInput}
+                        bind:startAssignmentSeqInput={formData.startAssignmentSeqInput}
                         bind:activityName={formData.activityName}
                         bind:location={formData.locationDalkot}
                         bind:executionDate={formData.executionDate}
