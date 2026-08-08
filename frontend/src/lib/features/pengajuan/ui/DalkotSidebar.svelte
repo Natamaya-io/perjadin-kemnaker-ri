@@ -305,7 +305,7 @@
                         </div>
                         <div class="text-sm font-semibold text-slate-700">Jumlah Petugas</div>
                     </div>
-                    <div class="text-sm font-bold text-slate-800">{selectedSpjEmployees.length} Orang</div>
+                    <div class="text-sm font-bold text-slate-800">{selectedSpjEmployees?.length || 0} Orang</div>
                 </div>
             {/if}
 
@@ -316,9 +316,9 @@
                         <span class="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">Total Estimasi</span>
                         <span class="text-xl font-black tracking-tight">
                             {#if dalkotType === 'SPJ RIIL'}
-                                {formatToElegantStyle((selectedSpjEmployees.length * spjCostPerPerson) + (selectedRiilEmployees.length * actualCostPerPerson))}
+                                {formatToElegantStyle(((selectedSpjEmployees?.length || 0) * spjCostPerPerson) + ((selectedRiilEmployees?.length || 0) * actualCostPerPerson))}
                             {:else}
-                                {formatToElegantStyle(selectedSpjEmployees.length * spjCostPerPerson)}
+                                {formatToElegantStyle((selectedSpjEmployees?.length || 0) * spjCostPerPerson)}
                             {/if}
                         </span>
                     </div>
@@ -337,7 +337,7 @@
             <Button 
                 class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" 
                 on:click={() => dispatch('submit')}
-                disabled={selectedSpjEmployees.length === 0 && selectedRiilEmployees.length === 0}
+                disabled={(selectedSpjEmployees?.length || 0) === 0 && (selectedRiilEmployees?.length || 0) === 0}
             >
                 Simpan Pengajuan Dalkot
             </Button>

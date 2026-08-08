@@ -20,6 +20,7 @@ import (
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
 	"github.com/kemnaker/perjadin-backend/internal/domain/dalkot"
 	"github.com/kemnaker/perjadin-backend/internal/domain/gup"
+	"github.com/kemnaker/perjadin-backend/internal/domain/chatbot"
 
 	"github.com/kemnaker/perjadin-backend/internal/middleware"
 	"github.com/kemnaker/perjadin-backend/internal/seeder"
@@ -140,6 +141,10 @@ func main() {
 	gupSvc := gup.NewService(gupRepo)
 	gupHandler := gup.NewHandler(gupSvc)
 
+	chatbotRepo := chatbot.NewRepository(db)
+	chatbotSvc := chatbot.NewService(chatbotRepo)
+	chatbotHandler := chatbot.NewHandler(chatbotSvc)
+
 	// Ensure uploads directory exists
 	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
 		sugar.Warnf("Failed to create uploads directory: %v", err)
@@ -222,6 +227,10 @@ func main() {
 		protected.POST("/gup/master-data/procurement-types", gupHandler.CreateProcurementType)
 		protected.PUT("/gup/master-data/procurement-types/:id", gupHandler.UpdateProcurementType)
 		protected.DELETE("/gup/master-data/procurement-types/:id", gupHandler.DeleteProcurementType)
+
+		// Chatbot
+		protected.POST("/chatbot/ask", chatbotHandler.Ask)
+		protected.GET("/chatbot/report", chatbotHandler.GetSnapshot)
 
 		// User Management
 		protected.GET("/users", userHandler.GetUsers)

@@ -204,7 +204,7 @@
             <p class="text-sm text-slate-500 mt-1">Pantau status dan riwayat perjalanan dinas yang telah Anda ajukan.</p>
         </div>
         <div class="flex items-center gap-3">
-            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto('/dashboard/pengajuan/new')}>
+            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto($userStore.role === 'protokol' ? '/dashboard/pengajuan/new?type=dalam_kota' : '/dashboard/pengajuan/new')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>

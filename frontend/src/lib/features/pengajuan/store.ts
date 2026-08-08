@@ -37,10 +37,43 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
     isFetchingRecords.set(true);
     try {
         const response = await api.getPaginatedRecords(params);
+        let allRecords = response.data || [];
+        
+        if (!params.type || params.type === 'Dalam Kota') {
+            try {
+                const dalkotRecords = await api.getDalkotRecords();
+                const filteredDalkot = dalkotRecords.filter(r => params.status && params.status !== 'all' ? r.status === params.status : true);
+                
+                const mappedDalkot = filteredDalkot.map(dr => ({
+                    id: dr.id,
+                    spd: dr.spdNumber,
+                    startDate: dr.executionDate,
+                    endDate: dr.executionDate,
+                    purpose: dr.activityName,
+                    stakeholder: dr.official,
+                    type: 'Dalam Kota',
+                    location: dr.location,
+                    province: 'DKI Jakarta',
+                    status: dr.status,
+                    reportStatus: dr.status,
+                    createdAt: dr.createdAt,
+                    employee: { name: 'Protokol', email: '', role: 'protokol' }
+                }));
+                allRecords = [...allRecords, ...mappedDalkot];
+                allRecords.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            } catch (err) {
+                console.warn("Failed to fetch dalkot records:", err);
+            }
+        }
+
         if (append) {
-            paginatedRecordsStore.update(current => [...current, ...(response.data || [])]);
+            paginatedRecordsStore.update(current => {
+                const existingSpds = new Set(current.map(r => r.spd));
+                const newRecords = allRecords.filter(r => !existingSpds.has(r.spd));
+                return [...current, ...newRecords];
+            });
         } else {
-            paginatedRecordsStore.set(response.data || []);
+            paginatedRecordsStore.set(allRecords);
         }
         paginatedMetadataStore.set({
             totalItems: response.totalItems,
@@ -77,6 +110,18 @@ export async function addRecord(tripData: any) {
         return newRecords;
     } catch (e) {
         console.error("Failed to add record", e);
+        throw e;
+    }
+}
+
+export async function addDalkotRecord(tripData: any) {
+    try {
+        const newRecord = await (api as any).createDalkotRecord(tripData);
+        // Note: Currently we only update the paginated store to show it in the list if needed,
+        // or just let invalidateAll() refresh the list.
+        return newRecord;
+    } catch (e) {
+        console.error("Failed to add dalkot record", e);
         throw e;
     }
 }

@@ -196,4 +196,8 @@ export interface ApiClient {
     getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
     saveGupLs(data: any[]): Promise<any>;
     getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;
+
+    // Chatbot
+    askChatbot(message: string): Promise<any>;
+    getChatbotSnapshot(): Promise<any>;
 }

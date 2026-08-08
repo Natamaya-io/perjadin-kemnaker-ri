@@ -20,7 +20,7 @@
       <nav class="flex items-center space-x-1 text-sm font-medium flex-1">
         <a class="px-4 py-2 rounded-lg transition-all hover:bg-slate-100/80 {activeRoute === '/dashboard' ? 'text-primary bg-blue-50/50 font-semibold' : 'text-slate-600'}" href="/dashboard">Dashboard</a>
         
-        <a class="px-4 py-2 rounded-lg transition-all hover:bg-slate-100/80 {activeRoute.includes('/dashboard/pengajuan') ? 'text-primary bg-blue-50/50 font-semibold' : 'text-slate-600'}" href="/dashboard/pengajuan/new">Pengajuan</a>
+        <a class="px-4 py-2 rounded-lg transition-all hover:bg-slate-100/80 {activeRoute.includes('/dashboard/pengajuan') ? 'text-primary bg-blue-50/50 font-semibold' : 'text-slate-600'}" href="/dashboard/pengajuan">Pengajuan</a>
         
         {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
             <a class="px-4 py-2 rounded-lg transition-all hover:bg-slate-100/80 {activeRoute.includes('/dashboard/admin/perdin') ? 'text-primary bg-blue-50/50 font-semibold' : 'text-slate-600'}" href="/dashboard/admin/perdin">Rekap & Kalkulasi</a>

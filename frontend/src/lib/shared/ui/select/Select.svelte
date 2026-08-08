@@ -17,8 +17,8 @@
         if (!disabled) isOpen = !isOpen;
     }
 
-    function select(val) {
-        if (disabled) return;
+    function select(val, optDisabled = false) {
+        if (disabled || optDisabled) return;
         value = val;
         isOpen = false;
         dispatch('change', { detail: { value: val } });
@@ -56,12 +56,12 @@
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
                     <li 
-                        on:click={() => select(option.value)} 
+                        on:click={() => select(option.value, option.disabled)} 
                         role="option" 
                         aria-selected={String(value) === String(option.value)}
-                        class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors flex items-center justify-between {String(value) === String(option.value) ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                        class="relative select-none py-2.5 pl-4 pr-4 text-sm transition-colors flex items-center justify-between {option.disabled ? 'text-slate-400 cursor-not-allowed bg-slate-50/50' : (String(value) === String(option.value) ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 cursor-pointer' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600 cursor-pointer')}"
                     >
-                        <span class="truncate">{option.label}</span>
+                        <span class="truncate">{option.label} {option.disabled ? '(Belum Tersedia)' : ''}</span>
                         {#if String(value) === String(option.value)}
                             <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

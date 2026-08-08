@@ -24,7 +24,7 @@
 
         <!-- Pengajuan Link -->
         <div class="nav-item-wrapper h-full w-full">
-            <a href="/dashboard/pengajuan/new" class="nav-link flex flex-col items-center justify-center space-y-1 h-full w-full group {activeRoute.includes('/dashboard/pengajuan') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}">
+            <a href="/dashboard/pengajuan" class="nav-link flex flex-col items-center justify-center space-y-1 h-full w-full group {activeRoute.includes('/dashboard/pengajuan') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}">
                 <div class="icon-container relative">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon h-6 w-6 transition-transform group-active:scale-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

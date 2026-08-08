@@ -259,7 +259,7 @@
                         class="h-[46px] border-slate-300"
                         options={[
                             {value: '', label: 'Pilih Jenis Pengadaan'},
-                            ...procurementTypes.map(t => ({value: t.id, label: `${t.name} (Akun: ${t.accountCode || '-'})`}))
+                            ...procurementTypes.map(t => ({value: t.id, label: `${t.name} (Akun: ${t.accountCode || '-'})`, disabled: !t.hasBudget}))
                         ]}
                     />
                 </div>
@@ -273,7 +273,7 @@
                         class="h-[46px] border-slate-300"
                         options={[
                             {value: '', label: 'Tidak ada sumber dana (Opsional)'},
-                            ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName} (Sisa: ${formatCurrency(s.remainingBudget)})`}))
+                            ...fundingSources.map(s => ({value: s.id, label: `${s.gupLabel} - ${s.monthName} (Sisa: ${formatCurrency(s.remainingBudget)})`, disabled: !s.hasIncome}))
                         ]}
                     />
                 </div>

@@ -66,15 +66,20 @@ func (r *repository) GetTransactions(ctx context.Context) ([]models.GUPTransacti
 	for rows.Next() {
 		var trx models.GUPTransaction
 		var fundingSourceID sql.NullString
+		var docFile sql.NullString
 		
 		err := rows.Scan(
 			&trx.ID, &trx.BusinessID, &trx.PaymentDescription, &trx.ProcurementTypeID,
 			&fundingSourceID, &trx.ValueAmount, &trx.PaidAmount, &trx.TaxAmount,
-			&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.DocumentFile, &trx.CreatedAt, &trx.UpdatedAt,
+			&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &docFile, &trx.CreatedAt, &trx.UpdatedAt,
 			&trx.ProcurementTypeName,
 		)
 		if err != nil {
 			return nil, err
+		}
+		
+		if docFile.Valid {
+			trx.DocumentFile = []byte(docFile.String)
 		}
 		
 		if fundingSourceID.Valid {
@@ -103,15 +108,20 @@ func (r *repository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*mod
 	
 	var trx models.GUPTransaction
 	var fundingSourceID sql.NullString
+	var docFile sql.NullString
 	
 	err := row.Scan(
 		&trx.ID, &trx.BusinessID, &trx.PaymentDescription, &trx.ProcurementTypeID,
 		&fundingSourceID, &trx.ValueAmount, &trx.PaidAmount, &trx.TaxAmount,
-		&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &trx.DocumentFile, &trx.CreatedAt, &trx.UpdatedAt,
+		&trx.ReceiptDate, &trx.Recipient, &trx.Pum, &docFile, &trx.CreatedAt, &trx.UpdatedAt,
 		&trx.ProcurementTypeName,
 	)
 	if err != nil {
 		return nil, err
+	}
+	
+	if docFile.Valid {
+		trx.DocumentFile = []byte(docFile.String)
 	}
 	
 	if fundingSourceID.Valid {
@@ -348,13 +358,14 @@ func (r *repository) SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS
 }
 
 func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error) {
-	// 1. Get FundingSources with Remaining Budget
+	// 1. Get FundingSources with Remaining Budget and has_income
 	fsQuery := `
 		SELECT 
 			fs.id, fs.year, fs.month_number, fs.month_name, fs.gup_label, fs.created_at, fs.updated_at,
 			COALESCE(ml.amount, 0) - COALESCE(
 				(SELECT SUM(paid_amount) FROM gup_transactions WHERE funding_source_id = fs.id), 0
-			) as remaining_budget
+			) as remaining_budget,
+			CASE WHEN ml.amount IS NOT NULL AND ml.amount > 0 THEN true ELSE false END as has_income
 		FROM funding_sources fs
 		LEFT JOIN monthly_ls ml ON ml.funding_source_id = fs.id
 		WHERE fs.year = $1 
@@ -369,22 +380,24 @@ func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]
 	var fundingSources []models.FundingSource
 	for fsRows.Next() {
 		var fs models.FundingSource
-		if err := fsRows.Scan(&fs.ID, &fs.Year, &fs.MonthNumber, &fs.MonthName, &fs.GupLabel, &fs.CreatedAt, &fs.UpdatedAt, &fs.RemainingBudget); err != nil {
+		if err := fsRows.Scan(&fs.ID, &fs.Year, &fs.MonthNumber, &fs.MonthName, &fs.GupLabel, &fs.CreatedAt, &fs.UpdatedAt, &fs.RemainingBudget, &fs.HasIncome); err != nil {
 			return nil, err
 		}
 		fundingSources = append(fundingSources, fs)
 	}
 
-	// 2. Get ProcurementTypes with AccountCodes
+	// 2. Get ProcurementTypes with AccountCodes and budget info
 	ptQuery := `
 		SELECT pt.id, pt.account_code_id, pt.name, pt.is_active, pt.created_at, pt.updated_at,
-		       ac.code, ac.mak
+		       ac.code, ac.mak,
+		       CASE WHEN b.amount IS NOT NULL AND b.amount > 0 THEN true ELSE false END as has_budget
 		FROM procurement_types pt
 		JOIN account_codes ac ON pt.account_code_id = ac.id
+		LEFT JOIN budgets b ON b.procurement_type_id = pt.id AND b.year = $1
 		WHERE pt.is_active = true
 		ORDER BY pt.name ASC
 	`
-	ptRows, err := r.d.QueryContext(ctx, ptQuery)
+	ptRows, err := r.d.QueryContext(ctx, ptQuery, year)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +406,7 @@ func (r *repository) GetMasterData(ctx context.Context, year int16) (map[string]
 	var procurementTypes []models.ProcurementType
 	for ptRows.Next() {
 		var pt models.ProcurementType
-		if err := ptRows.Scan(&pt.ID, &pt.AccountCodeID, &pt.Name, &pt.IsActive, &pt.CreatedAt, &pt.UpdatedAt, &pt.AccountCode, &pt.AccountMak); err != nil {
+		if err := ptRows.Scan(&pt.ID, &pt.AccountCodeID, &pt.Name, &pt.IsActive, &pt.CreatedAt, &pt.UpdatedAt, &pt.AccountCode, &pt.AccountMak, &pt.HasBudget); err != nil {
 			return nil, err
 		}
 		procurementTypes = append(procurementTypes, pt)

@@ -22,6 +22,7 @@ type ProcurementType struct {
 	// Joined fields
 	AccountCode string `json:"accountCode,omitempty"`
 	AccountMak  string `json:"accountMak,omitempty"`
+	HasBudget   bool   `json:"hasBudget"`
 }
 
 type FundingSource struct {
@@ -31,6 +32,7 @@ type FundingSource struct {
 	MonthName       string  `json:"monthName"`
 	GupLabel        string  `json:"gupLabel"`
 	RemainingBudget float64 `json:"remainingBudget"`
+	HasIncome       bool    `json:"hasIncome"`
 }
 
 type Budget struct {

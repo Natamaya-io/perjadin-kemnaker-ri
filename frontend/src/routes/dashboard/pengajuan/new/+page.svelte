@@ -3,7 +3,7 @@
     import { api } from '$lib/shared/api';
     import { userStore } from '$lib/features/auth/store';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
-    import { recordsStore, addRecord, loadRecords } from '$lib/features/pengajuan/store';
+    import { recordsStore, addRecord, addDalkotRecord, loadRecords } from '$lib/features/pengajuan/store';
     import { loadingStore, startLoading, stopLoading } from '$lib/shared/stores/loading';
     import { toast } from '$lib/shared/stores/toast';
     import { goto, invalidateAll } from '$app/navigation';
@@ -75,6 +75,7 @@
         actualCostPerPerson: 250000,
         selectedSpjEmployees: [],
         selectedRiilEmployees: [],
+        selectedEmployees: [],
         activityName: '',
         locationDalkot: '',
         reportContent: '',
@@ -189,13 +190,13 @@
     }
 
     function handleSubmit() {
-        if (formData.selectedEmployees.length > 20) {
+        if (formData.selectedEmployees && formData.selectedEmployees.length > 20) {
             toast.warning('Maksimal 20 Petugas Protokol yang diperbolehkan dalam satu pengajuan.');
             return;
         }
 
         if (selectedType === 'luar_kota') {
-            if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province) || formData.selectedEmployees.length === 0) {
+            if (formData.locations.some(loc => !loc.startDate || !loc.endDate || !loc.province) || !formData.selectedEmployees || formData.selectedEmployees.length === 0) {
                 toast.error('Harap lengkapi semua field wajib di setiap lokasi dan pilih minimal satu pegawai.');
                 return;
             }
@@ -216,7 +217,7 @@
                 toast.error('Dokumentasi wajib diunggah.');
                 return;
             }
-            if (formData.selectedSpjEmployees.length === 0 && formData.selectedRiilEmployees.length === 0) {
+            if (!formData.selectedSpjEmployees || !formData.selectedRiilEmployees || (formData.selectedSpjEmployees.length === 0 && formData.selectedRiilEmployees.length === 0)) {
                 toast.error('Pilih setidaknya satu petugas (SPJ atau Riil).');
                 return;
             }
@@ -243,49 +244,75 @@
             }
         }
 
+        const isDalkot = selectedType === 'dalam_kota';
+
         let finalSpd = "";
         if (formData.spdNumberInput) {
             const paddedNumber = String(formData.spdNumberInput).padStart(3, '0');
-            finalSpd = `ID-SPJ-${paddedNumber}`;
+            finalSpd = isDalkot ? `DLK-${paddedNumber}` : `ID-SPJ-${paddedNumber}`;
         }
-
-        const tripData = {
-            spd: finalSpd, // Use the manually crafted SPD if provided, else empty
-            email: $userStore.email,
-            suratTugasPath: uploadedSuratTugasPath,
-            suratTugasNumber: formData.suratTugasNumber,
-            employees: selectedUsers,
-            type: selectedType, // Save the type as well
+        
+        let dalkotPayload;
+        let tripData;
+        
+        if (isDalkot) {
+            const assignments = [];
+            for (const id of formData.selectedSpjEmployees) {
+                assignments.push({
+                    userId: id,
+                    assignmentType: 'SPJ',
+                    spjCost: formData.spjCostPerPerson,
+                    actualCost: formData.actualCostPerPerson
+                });
+            }
+            for (const id of formData.selectedRiilEmployees) {
+                assignments.push({
+                    userId: id,
+                    assignmentType: 'RIIL',
+                    spjCost: 0,
+                    actualCost: formData.actualCostPerPerson
+                });
+            }
             
-            // Luar Kota Data
-            startDate: minStartDate,
-            endDate: maxEndDate,
-            locations: formData.locations, // New structure
-            location: formData.locations[0].location,
-            province: formData.locations[0].province,
-            purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
-            stakeholder: formData.stakeholder,
-            agenda: formData.agenda,
-            totalCost: totalCost, // Set calculated cost
-            
-            // Dalam Kota Data
-            executionDate: formData.executionDate,
-            category: formData.category,
-            official: formData.official,
-            dalkotType: formData.dalkotType,
-            activityName: formData.activityName,
-            locationDalkot: formData.locationDalkot,
-            suratTugasDate: formData.suratTugasDate,
-            spjCostPerPerson: formData.spjCostPerPerson,
-            actualCostPerPerson: formData.actualCostPerPerson,
-            selectedSpjEmployees: formData.selectedSpjEmployees,
-            selectedRiilEmployees: formData.selectedRiilEmployees,
-            reportContent: formData.reportContent
-            // documentationFile will be uploaded similar to suratTugasPath if we implement the backend for it
-        };
+            dalkotPayload = {
+                record: {
+                    executionDate: formData.executionDate ? new Date(formData.executionDate).toISOString() : undefined,
+                    spdNumber: finalSpd,
+                    category: formData.category,
+                    official: formData.official,
+                    dalkotType: formData.dalkotType,
+                    activityName: formData.activityName,
+                    location: formData.locationDalkot,
+                    status: 'pending'
+                },
+                assignments: assignments
+            };
+        } else {
+            tripData = {
+                spd: finalSpd,
+                email: $userStore.email,
+                suratTugasPath: uploadedSuratTugasPath,
+                suratTugasNumber: formData.suratTugasNumber,
+                employees: selectedUsers,
+                type: selectedType,
+                startDate: minStartDate,
+                endDate: maxEndDate,
+                locations: formData.locations,
+                location: formData.locations[0]?.location || '',
+                province: formData.locations[0]?.province || '',
+                purpose: formData.purpose === 'persiapan' ? 'Persiapan dan Pendampingan Kunjungan Kerja' : 'Koordinasi dan Konsultasi Kunjungan Kerja',
+                stakeholder: formData.stakeholder,
+                agenda: formData.agenda,
+                totalCost: totalCost
+            };
+        }
         
         try {
-            await addRecord(tripData);
+            if (isDalkot) {
+                await addDalkotRecord(dalkotPayload);
+            } else {
+                await addRecord(tripData);
+            }
             isSuccessfullySubmitted = true; // Set flag to prevent reactive conflict check
             toast.success('Pengajuan Berhasil Disimpan!');
             
@@ -293,7 +320,7 @@
             
             await invalidateAll();
             
-            if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag') {
+            if ($userStore.role === 'super_admin' || $userStore.role === 'kasubag' || $userStore.role === 'protokol') {
                 goto('/dashboard/pengajuan');
             } else {
                 goto('/dashboard');
@@ -316,7 +343,7 @@
     onMount(async () => {
         if (typeof window === 'undefined') return;
         
-        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag') {
+        if ($userStore.role !== 'super_admin' && $userStore.role !== 'kasubag' && $userStore.role !== 'protokol') {
             goto('/dashboard');
             return;
         }
@@ -459,10 +486,11 @@
                     />
                 {:else}
                     <BasicInfoCard 
-                        email={$userStore.email} 
+                        bind:email={$userStore.email} 
                         bind:suratTugas={formData.suratTugas}
                         bind:suratTugasNumber={formData.suratTugasNumber}
                         bind:spdNumberInput={formData.spdNumberInput}
+                        isDalkot={selectedType === 'dalam_kota'}
                         readonly={isReadOnly}
                     />
                     

@@ -301,6 +301,21 @@ export class RealApiClient implements ApiClient {
              throw e;
          }
     }
+
+    async createDalkotRecord(payload: any): Promise<any> {
+        return this.request<any>('/dalkot', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async getDalkotRecords(): Promise<any[]> {
+        return this.request<any[]>('/dalkot');
+    }
+
+    async getDalkotRecordById(id: string): Promise<any> {
+        return this.request<any>(`/dalkot/${id}`);
+    }
     async updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
         const safeDate = (d: any) => {
             if (!d) return undefined;
@@ -488,5 +503,16 @@ export class RealApiClient implements ApiClient {
 
     async getGupData(year: number, customFetch?: typeof fetch): Promise<any[]> {
         return this.request<any[]>(`/gup/data?year=${year}`, {}, customFetch);
+    }
+
+    async askChatbot(message: string): Promise<any> {
+        return this.request<any>('/chatbot/ask', {
+            method: 'POST',
+            body: JSON.stringify({ message })
+        });
+    }
+
+    async getChatbotSnapshot(): Promise<any> {
+        return this.request<any>('/chatbot/report');
     }
 }
