@@ -440,7 +440,7 @@
         if (localStorage.getItem('auth_token')) {
             try {
                 const [officers, rates, _] = await Promise.all([
-                    api.getUsers({ role: 'pegawai' }),
+                    api.getUsers({ role: 'protokol' }),
                     /** @type {any} */ (api).getDalkotRates(),
                     $recordsStore.length === 0 ? loadRecords() : Promise.resolve()
                 ]);
