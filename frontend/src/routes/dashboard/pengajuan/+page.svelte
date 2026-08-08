@@ -8,6 +8,7 @@
     import { getStatusBadge, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
     
     import ReviewModal from '$lib/features/pengajuan/ui/ReviewModal.svelte';
+    import DalkotReviewModal from '$lib/features/pengajuan/ui/DalkotReviewModal.svelte';
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
     import AdminTableFilters from '$lib/features/admin/ui/AdminTableFilters.svelte';
     import SkeletonTable from '$lib/shared/ui/loader/SkeletonTable.svelte';
@@ -20,7 +21,7 @@
     let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
-    let typeFilter = 'all';
+    let typeFilter = 'luar_kota';
     
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
@@ -117,18 +118,18 @@
         const spdToIndex = {};
 
         for (const record of $paginatedRecordsStore) {
-            const spd = record.spd;
-            if (!newGrouped[spd]) {
-                newGrouped[spd] = [];
-                newUnique.push(spd);
-                spdToIndex[spd] = newDisplay.length;
+            const groupKey = record.spd || record.id;
+            if (!newGrouped[groupKey]) {
+                newGrouped[groupKey] = [];
+                newUnique.push(groupKey);
+                spdToIndex[groupKey] = newDisplay.length;
                 newDisplay.push(record); // initial representative
             }
-            newGrouped[spd].push(record);
+            newGrouped[groupKey].push(record);
             
             // Update representative if this record belongs to the user
             if (record.email === userEmail || (record.employee && record.employee.email === userEmail) || record.employeeId === userId) {
-                const idx = spdToIndex[spd];
+                const idx = spdToIndex[groupKey];
                 newDisplay[idx] = record;
             }
         }
@@ -152,13 +153,20 @@
     }
 
     let isReviewOpen = false;
+    let isDalkotReviewOpen = false;
     let selectedRecords = [];
+    let selectedDalkotRecord = null;
     let isDeleteModalOpen = false;
     let spdToDelete = '';
 
-    function handleReview(spd) {
-        selectedRecords = $paginatedRecordsStore.filter(r => r.spd === spd);
-        isReviewOpen = true;
+    function handleReview(spd, record) {
+        if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
+            selectedDalkotRecord = record;
+            isDalkotReviewOpen = true;
+        } else {
+            selectedRecords = $paginatedRecordsStore.filter(r => (r.spd || r.id) === spd);
+            isReviewOpen = true;
+        }
     }
 
     function handleDelete(spd) {
@@ -204,12 +212,21 @@
             <p class="text-sm text-slate-500 mt-1">Pantau status dan riwayat perjalanan dinas yang telah Anda ajukan.</p>
         </div>
         <div class="flex items-center gap-3">
-            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto($userStore.role === 'protokol' ? '/dashboard/pengajuan/new?type=dalam_kota' : '/dashboard/pengajuan/new')}>
+            {#if $userStore.role === 'super_admin' || $userStore.role === 'kasubag'}
+            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto('/dashboard/pengajuan/new')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Buat Pengajuan Baru
             </Button>
+            {:else if $userStore.role === 'protokol'}
+            <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => goto('/dashboard/pengajuan/new?type=dalam_kota')}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Buat Pengajuan Dalkot
+            </Button>
+            {/if}
         </div>
     </div>
 
@@ -231,7 +248,7 @@
             <table class="w-full text-sm text-left relative border-collapse">
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
-                        <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">ID SPJ</th>
+                        <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">{typeFilter === 'dalam_kota' ? 'ID Dalkot' : 'ID SPJ'}</th>
                         <th class="min-w-[250px] font-semibold text-slate-700 py-3 bg-slate-50">Tujuan & Lokasi</th>
                         <th class="min-w-[130px] font-semibold text-slate-700 py-3 bg-slate-50">Tanggal</th>
                         <th class="min-w-[160px] font-semibold text-slate-700 text-center py-3 bg-slate-50">Status</th>
@@ -255,17 +272,21 @@
                             </td>
                         </tr>
                     {:else}
-                        {#each displayRecords as record (record.spd)}
+                        {#each displayRecords as record (record.id)}
                                 <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
-                                    <td class="pl-4 py-4 align-middle">
-                                        <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
-                                        <div class="mt-1.5">
-                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                                {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
+                                    <td class="py-4 pl-4 align-middle">
+                                        <div class="flex flex-col gap-1.5">
+                                            <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd || '-'}</span>
+                                            <div class="mt-1.5">
+                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                    {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
+                                                </span>
+                                            </div>
+                                            <span class="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full w-fit">
+                                                {record.type === 'Dalam Kota' || record.type === 'dalam_kota' 
+                                                    ? (record.employeesList?.length || 1) 
+                                                    : (groupedRecordsMap[record.spd || record.id]?.length || 1)} Petugas
                                             </span>
-                                        </div>
-                                        <div class="mt-2 text-[10px] text-slate-400">
-                                            {groupedRecordsMap[record.spd]?.length || 1} Petugas
                                         </div>
                                     </td>
                                     <td class="py-4 align-middle">
@@ -301,7 +322,7 @@
                                             <button 
                                                 class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded transition-colors" 
                                                 title="Review"
-                                                on:click={() => handleReview(record.spd)}
+                                                on:click={() => handleReview(record.spd || record.id, record)}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -347,6 +368,11 @@
     provinces={$provincesStore}
     stakeholders={$stakeholdersStore}
     on:saved={() => fetchRecords(false)}
+/>
+
+<DalkotReviewModal
+    bind:open={isDalkotReviewOpen}
+    record={selectedDalkotRecord}
 />
 
 <ConfirmationModal 

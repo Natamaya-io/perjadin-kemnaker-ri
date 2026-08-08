@@ -19,6 +19,7 @@ type DalkotRecord struct {
 	ActivityName      string             `json:"activityName"`
 	Location          string             `json:"location"`
 	Status            string             `json:"status"`
+	ReportContent     string             `json:"reportContent"`
 }
 
 type DalkotAssignment struct {
@@ -28,6 +29,7 @@ type DalkotAssignment struct {
 	Status         string    `json:"status"`
 	SPJCost        float64   `json:"spjCost"`
 	ActualCost     float64   `json:"actualCost"`
+	SequenceNumber int       `json:"sequenceNumber"`
 	DalkotRecordID uuid.UUID `json:"dalkotRecordId"`
 	UserID         uuid.UUID `json:"userId"`
 }
@@ -37,4 +39,12 @@ type DalkotLocation struct {
 	CreatedAt time.Time `json:"createdAt"`
 	Name      string    `json:"name"`
 	IsActive  bool      `json:"isActive"`
+}
+
+type DalkotRate struct {
+	ID           uuid.UUID `json:"id"`
+	CategoryName string    `json:"categoryName"`
+	RateAmount   float64   `json:"rateAmount"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }

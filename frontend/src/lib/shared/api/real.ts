@@ -313,8 +313,24 @@ export class RealApiClient implements ApiClient {
         return this.request<any[]>('/dalkot');
     }
 
+    async getDalkotLocations(): Promise<any[]> {
+        return this.request<any[]>('/dalkot/locations/all');
+    }
+
+    async getDalkotRates(): Promise<any[]> {
+        return this.request<any[]>('/dalkot-rates');
+    }
+
     async getDalkotRecordById(id: string): Promise<any> {
         return this.request<any>(`/dalkot/${id}`);
+    }
+
+    async exportDalkotLaporanPdf(id: string): Promise<Blob> {
+        return this.requestBlob(`/dalkot/${id}/laporan-stream`);
+    }
+
+    async deleteDalkotRecord(id: string): Promise<void> {
+        return this.request<void>(`/dalkot/${id}`, { method: 'DELETE' });
     }
     async updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord> {
         const safeDate = (d: any) => {

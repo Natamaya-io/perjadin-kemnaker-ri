@@ -24,6 +24,7 @@
         { path: '/dashboard/admin/users', roles: ['super_admin', 'kasubag', 'protokol'] },
         { path: '/dashboard/pengajuan', roles: ['super_admin', 'kasubag', 'protokol'] },
         { path: '/dashboard/pengajuan/new', roles: ['super_admin', 'kasubag', 'protokol'] },
+        { path: '/dashboard/chatbot', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/admin/perdin', roles: ['super_admin', 'kasubag'] },
         { path: '/dashboard/billing-protokol', roles: ['protokol', 'super_admin', 'kasubag'] },
         { path: '/dashboard/laporan', roles: ['protokol', 'super_admin', 'kasubag'] },

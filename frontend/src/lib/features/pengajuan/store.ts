@@ -39,26 +39,49 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
         const response = await api.getPaginatedRecords(params);
         let allRecords = response.data || [];
         
-        if (!params.type || params.type === 'Dalam Kota') {
+        if (!params.type || params.type === 'dalam_kota' || params.type === 'Dalam Kota') {
             try {
                 const dalkotRecords = await api.getDalkotRecords();
-                const filteredDalkot = dalkotRecords.filter(r => params.status && params.status !== 'all' ? r.status === params.status : true);
+                const filteredDalkot = dalkotRecords.filter(r => params.status && params.status !== 'all' ? (r.status || '').toLowerCase() === params.status.toLowerCase() : true);
                 
-                const mappedDalkot = filteredDalkot.map(dr => ({
-                    id: dr.id,
-                    spd: dr.spdNumber,
-                    startDate: dr.executionDate,
-                    endDate: dr.executionDate,
-                    purpose: dr.activityName,
-                    stakeholder: dr.official,
-                    type: 'Dalam Kota',
-                    location: dr.location,
-                    province: 'DKI Jakarta',
-                    status: dr.status,
-                    reportStatus: dr.status,
-                    createdAt: dr.createdAt,
-                    employee: { name: 'Protokol', email: '', role: 'protokol' }
-                }));
+                const mappedDalkot = filteredDalkot.map(dr => {
+                    // Gunakan data petugas dari assignments yang sudah di-embed backend
+                    const assignments = dr.assignments || [];
+                    const firstEmployee = assignments.length > 0 ? (assignments[0].user || assignments[0].employee) : null;
+                    return {
+                        id: dr.id,
+                        spd: dr.spdNumber,
+                        startDate: dr.executionDate,
+                        endDate: dr.executionDate,
+                        purpose: dr.activityName,
+                        stakeholder: dr.official,
+                        type: 'Dalam Kota',
+                        location: dr.location,
+                        province: 'DKI Jakarta',
+                        status: dr.status,
+                        reportStatus: dr.status,
+                        createdAt: dr.createdAt,
+                        // Employee utama (untuk kolom tabel)
+                        employee: firstEmployee ? {
+                            name: firstEmployee.name,
+                            email: firstEmployee.email || '',
+                            role: firstEmployee.role || 'protokol',
+                            jabatan: firstEmployee.jabatan || '',
+                            pangkat: firstEmployee.pangkat || '',
+                            golongan: firstEmployee.golongan || '',
+                            nip: firstEmployee.nip || '',
+                            nomorHp: firstEmployee.nomorHp || ''
+                        } : { name: 'Protokol', email: '', role: 'protokol' },
+                        // Seluruh daftar petugas (untuk modal detail)
+                        // Backend mengirim field 'user', modal membutuhkan field 'employee'
+                        employeesList: assignments.map((a: any) => ({
+                            ...a,
+                            sequenceNumber: a.sequenceNumber,
+                            totalCost: a.assignmentType === 'SPJ' ? (a.spjCost || 0) : (a.actualCost || 0),
+                            employee: a.user || a.employee || { name: '-', jabatan: '', role: 'protokol' }
+                        }))
+                    };
+                });
                 allRecords = [...allRecords, ...mappedDalkot];
                 allRecords.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             } catch (err) {
@@ -177,7 +200,15 @@ export async function deleteRecord(id: string) {
 }
 
 export async function deleteRecordBySpd(spd: string) {
-    // Optimistic update: remove from UI immediately
+    // Cari record untuk tentukan apakah Dalkot atau Luar Kota
+    let targetRecord: any = null;
+    paginatedRecordsStore.subscribe(recs => {
+        targetRecord = recs.find(r => r.spd === spd);
+    })();
+
+    const isDalkot = targetRecord?.type === 'Dalam Kota';
+
+    // Optimistic update: hapus dari UI dulu
     recordsStore.update(current => current.filter(r => r.spd !== spd));
     
     let deletedCount = 0;
@@ -191,10 +222,13 @@ export async function deleteRecordBySpd(spd: string) {
     }
 
     try {
-        await api.deleteRecordsBySpd(spd);
+        if (isDalkot && targetRecord?.id) {
+            // Gunakan endpoint Dalkot
+            await (api as any).deleteDalkotRecord(targetRecord.id);
+        } else {
+            await api.deleteRecordsBySpd(spd);
+        }
     } catch (e: any) {
-        // If it's a 502, it might have actually succeeded in the backend
-        // We check if the records are actually gone
         if (e.message?.includes('502')) {
              console.warn("Detected 502 during delete, verifying data status...");
              await loadRecords();
@@ -205,13 +239,11 @@ export async function deleteRecordBySpd(spd: string) {
              })();
 
              if (!exists) {
-                 // Success! Data is gone despite the 502 error
                  return;
              }
         }
 
         console.error(`Failed to delete records for SPD ${spd}`, e);
-        // Rollback: reload from server if it actually failed
         await loadRecords();
         throw e;
     }

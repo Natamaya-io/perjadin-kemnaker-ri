@@ -13,7 +13,7 @@
     export let executionDate = '';
     export let suratTugasNumber = '';
     export let suratTugasDate = '';
-    export let spjCostPerPerson = 170000;
+    export let spjCostPerPerson = 250000;
     export let actualCostPerPerson = 250000;
     export let reportContent = '';
     export let documentationFile = null;
@@ -162,10 +162,11 @@
                         <Input 
                             type="number" 
                             bind:value={actualCostPerPerson}
-                            disabled={readonly}
-                            class="flex-1 rounded-none rounded-r-md h-10 {readonly ? 'bg-slate-50 opacity-70 cursor-not-allowed' : ''}"
+                            disabled={true}
+                            class="flex-1 rounded-none rounded-r-md h-10 bg-slate-50 opacity-80 cursor-not-allowed"
                         />
                     </div>
+                    <p class="text-[10px] text-slate-400">Terisi otomatis sesuai kategori.</p>
                 </div>
             </div>
         </div>

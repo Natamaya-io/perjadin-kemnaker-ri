@@ -66,7 +66,7 @@
         {
             header: "AI",
             items: [
-                { label: "Chatbot AI", href: "/dashboard/chatbot", icon: icons.sparkles, role: ['super_admin', 'kasubag', 'protokol'] }
+                { label: "Chatbot AI", href: "/dashboard/chatbot", icon: icons.sparkles, role: ['super_admin', 'kasubag'] }
             ]
         },
         {

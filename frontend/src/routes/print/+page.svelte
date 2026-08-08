@@ -101,6 +101,8 @@
                 pdfBlob = await api.exportLaporanPdf(record.id);
             } else if (type === 'rincian') {
                 pdfBlob = await api.exportRincianPdf(record.id);
+            } else if (type === 'dalkot_laporan') {
+                pdfBlob = await api.exportDalkotLaporanPdf(record.id);
             }
 
             if (pdfBlob) {
@@ -123,7 +125,9 @@
             ? `SPD_${record.employee.name}_${spd.replace(/\//g, '_')}` 
             : type === 'laporan' 
                 ? `Laporan_${record.employee.name}_${spd.replace(/\//g, '_')}`
-                : `Rincian_Biaya_${record.employee.name}_${spd.replace(/\//g, '_')}`;
+                : type === 'dalkot_laporan'
+                    ? `Laporan_Dalkot_${spd.replace(/\//g, '_')}`
+                    : `Rincian_Biaya_${record.employee.name}_${spd.replace(/\//g, '_')}`;
 
         const a = document.createElement('a');
         a.href = pdfUrl;

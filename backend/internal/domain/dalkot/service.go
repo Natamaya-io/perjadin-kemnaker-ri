@@ -1,7 +1,11 @@
 package dalkot
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/domain/user"
@@ -19,6 +23,7 @@ type Service interface {
 	RemoveAssignment(assignmentID uuid.UUID) error
 
 	GetLocations() ([]models.DalkotLocation, error)
+	GetRates() ([]models.DalkotRate, error)
 }
 
 type service struct {
@@ -37,6 +42,20 @@ func (s *service) CreateRecord(record *models.DalkotRecord, assignments []models
 
 	if record.Status == "" {
 		record.Status = "Draft"
+	}
+
+	if record.SPDNumber == "" {
+		seq, err := s.repo.NextSpdNumber(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to generate dalkot spd number: %w", err)
+		}
+		record.SPDNumber = fmt.Sprintf("DLK-%03d", seq)
+	} else if strings.HasPrefix(record.SPDNumber, "DLK-") {
+		numStr := strings.TrimPrefix(record.SPDNumber, "DLK-")
+		num, err := strconv.Atoi(numStr)
+		if err == nil && num > 0 {
+			_ = s.repo.SyncSpdSequence(context.Background(), num)
+		}
 	}
 
 	if err := s.repo.CreateRecord(record); err != nil {
@@ -121,4 +140,8 @@ func (s *service) RemoveAssignment(assignmentID uuid.UUID) error {
 
 func (s *service) GetLocations() ([]models.DalkotLocation, error) {
 	return s.repo.GetLocations()
+}
+
+func (s *service) GetRates() ([]models.DalkotRate, error) {
+	return s.repo.GetRates()
 }

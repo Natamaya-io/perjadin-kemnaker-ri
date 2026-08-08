@@ -20,7 +20,7 @@ INSERT INTO dalkot_assignments (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status
+RETURNING id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status, sequence_number
 `
 
 type CreateDalkotAssignmentParams struct {
@@ -55,6 +55,7 @@ func (q *Queries) CreateDalkotAssignment(ctx context.Context, arg CreateDalkotAs
 		&i.SpjCost,
 		&i.ActualCost,
 		&i.Status,
+		&i.SequenceNumber,
 	)
 	return i, err
 }
@@ -148,7 +149,7 @@ func (q *Queries) DeleteDalkotRecord(ctx context.Context, id uuid.UUID) error {
 }
 
 const getDalkotAssignmentsByRecordID = `-- name: GetDalkotAssignmentsByRecordID :many
-SELECT id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status FROM dalkot_assignments
+SELECT id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status, sequence_number FROM dalkot_assignments
 WHERE dalkot_record_id = $1 AND deleted_at IS NULL
 ORDER BY created_at ASC
 `
@@ -173,6 +174,7 @@ func (q *Queries) GetDalkotAssignmentsByRecordID(ctx context.Context, dalkotReco
 			&i.SpjCost,
 			&i.ActualCost,
 			&i.Status,
+			&i.SequenceNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -207,6 +209,40 @@ func (q *Queries) GetDalkotLocations(ctx context.Context) ([]DalkotLocation, err
 			&i.Name,
 			&i.IsActive,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDalkotRates = `-- name: GetDalkotRates :many
+SELECT id, category_name, rate_amount, created_at, updated_at FROM dalkot_rates
+ORDER BY created_at ASC
+`
+
+func (q *Queries) GetDalkotRates(ctx context.Context) ([]DalkotRate, error) {
+	rows, err := q.db.QueryContext(ctx, getDalkotRates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DalkotRate{}
+	for rows.Next() {
+		var i DalkotRate
+		if err := rows.Scan(
+			&i.ID,
+			&i.CategoryName,
+			&i.RateAmount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -300,6 +336,17 @@ func (q *Queries) GetDalkotRecords(ctx context.Context) ([]DalkotRecord, error) 
 	return items, nil
 }
 
+const nextDalkotSpdNumber = `-- name: NextDalkotSpdNumber :one
+SELECT nextval('dalkot_spd_number_seq')::int
+`
+
+func (q *Queries) NextDalkotSpdNumber(ctx context.Context) (int32, error) {
+	row := q.db.QueryRowContext(ctx, nextDalkotSpdNumber)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const updateDalkotAssignment = `-- name: UpdateDalkotAssignment :one
 UPDATE dalkot_assignments
 SET
@@ -309,7 +356,7 @@ SET
     status = $5,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status
+RETURNING id, created_at, updated_at, deleted_at, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status, sequence_number
 `
 
 type UpdateDalkotAssignmentParams struct {
@@ -340,6 +387,7 @@ func (q *Queries) UpdateDalkotAssignment(ctx context.Context, arg UpdateDalkotAs
 		&i.SpjCost,
 		&i.ActualCost,
 		&i.Status,
+		&i.SequenceNumber,
 	)
 	return i, err
 }

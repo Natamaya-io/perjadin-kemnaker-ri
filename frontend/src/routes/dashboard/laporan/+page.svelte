@@ -28,7 +28,7 @@
     let sortOption = 'spj-desc'; // Default to newest SPJ first
     let startDate = '';
     let endDate = '';
-    let typeFilter = 'all';
+    let typeFilter = 'luar_kota';
 
     // Expanded agenda state
     let expandedAgendas = new Set();
@@ -235,7 +235,7 @@
             <table class="w-full text-sm text-left relative border-collapse">
                 <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                     <tr>
-                        <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">{$userStore.role !== 'protokol' ? 'ID SPJ' : 'No. SPJ'}</th>
+                        <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">{typeFilter === 'dalam_kota' ? 'ID Dalkot' : 'ID SPJ'}</th>
                         <th class="min-w-[250px] font-semibold text-slate-700 py-3 bg-slate-50">Tujuan & Lokasi</th>
                         <th class="min-w-[160px] font-semibold text-slate-700 py-3 bg-slate-50">Tanggal</th>
                         <th class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3 bg-slate-50">Status Laporan</th>

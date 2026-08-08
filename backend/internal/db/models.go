@@ -41,6 +41,7 @@ type DalkotAssignment struct {
 	SpjCost        sql.NullFloat64 `json:"spj_cost"`
 	ActualCost     sql.NullFloat64 `json:"actual_cost"`
 	Status         sql.NullString  `json:"status"`
+	SequenceNumber sql.NullInt32   `json:"sequence_number"`
 }
 
 type DalkotLocation struct {
@@ -48,6 +49,14 @@ type DalkotLocation struct {
 	Name      string       `json:"name"`
 	IsActive  sql.NullBool `json:"is_active"`
 	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+type DalkotRate struct {
+	ID           uuid.UUID    `json:"id"`
+	CategoryName string       `json:"category_name"`
+	RateAmount   string       `json:"rate_amount"`
+	CreatedAt    sql.NullTime `json:"created_at"`
+	UpdatedAt    sql.NullTime `json:"updated_at"`
 }
 
 type DalkotRecord struct {
@@ -99,11 +108,12 @@ type GupTransaction struct {
 }
 
 type MonthlyL struct {
-	ID              uuid.UUID `json:"id"`
-	FundingSourceID uuid.UUID `json:"funding_source_id"`
-	Amount          string    `json:"amount"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID              uuid.UUID     `json:"id"`
+	FundingSourceID uuid.UUID     `json:"funding_source_id"`
+	Amount          string        `json:"amount"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
+	AccountCodeID   uuid.NullUUID `json:"account_code_id"`
 }
 
 type ProcurementType struct {

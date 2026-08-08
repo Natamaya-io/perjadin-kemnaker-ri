@@ -28,10 +28,16 @@
 
     $: selectedType = $page.url.searchParams.get('type');
 
+    // Protokol hanya boleh akses form dalam_kota — blok selection screen secara reaktif
+    $: if (browser && $userStore.role === 'protokol' && selectedType !== 'dalam_kota') {
+        goto('/dashboard/pengajuan/new?type=dalam_kota');
+    }
+
     // Fetch users for employee selection (Protokol role only)
     /** @type {any[]} */
     let protokolOfficers = [];
     let isFetchingOfficers = true;
+    let dalkotRates = [];
 
     // Form State
     /** 
@@ -283,6 +289,7 @@
                     dalkotType: formData.dalkotType,
                     activityName: formData.activityName,
                     location: formData.locationDalkot,
+                    reportContent: formData.reportContent,
                     status: 'pending'
                 },
                 assignments: assignments
@@ -348,13 +355,24 @@
             return;
         }
 
+        // Protokol hanya boleh akses form dalam_kota
+        if ($userStore.role === 'protokol') {
+            const typeParam = $page.url.searchParams.get('type');
+            if (typeParam !== 'dalam_kota') {
+                goto('/dashboard/pengajuan/new?type=dalam_kota');
+                return;
+            }
+        }
+
         if (localStorage.getItem('auth_token')) {
             try {
-                const [officers] = await Promise.all([
-                    api.getUsers({ role: 'protokol' })
+                const [officers, rates] = await Promise.all([
+                    api.getUsers({ role: 'protokol' }),
+                    /** @type {any} */ (api).getDalkotRates()
                 ]);
                 
                 protokolOfficers = officers;
+                dalkotRates = rates || [];
             } catch (e) {
                 console.error("Failed to load initial data", e);
             } finally {
@@ -364,6 +382,15 @@
             isFetchingOfficers = false;
         }
     });
+
+    // Auto-fill biaya riil berdasarkan kategori (hanya saat kategori berubah)
+    const DALKOT_DEFAULT_RATES = { 'Jam Kerja': 150000, 'Overtime': 150000, 'Hari Libur': 250000 };
+    let _prevCategory = '';
+    $: if (formData.category && formData.category !== _prevCategory) {
+        _prevCategory = formData.category;
+        const rateObj = dalkotRates.find(/** @param {any} r */ r => r.categoryName === formData.category);
+        formData.actualCostPerPerson = rateObj ? rateObj.rateAmount : (DALKOT_DEFAULT_RATES[formData.category] ?? 0);
+    }
 </script>
 
 <div class="max-w-6xl mx-auto space-y-8 pb-20">
@@ -452,11 +479,11 @@
     {:else}
         <!-- Back Button & Form -->
         <div class="flex items-center mb-6 gap-3">
-            <Button variant="outline" class="border-slate-200 text-slate-600 hover:text-slate-900" on:click={() => goto('/dashboard/pengajuan/new')}>
+            <Button variant="outline" class="border-slate-200 text-slate-600 hover:text-slate-900" on:click={() => goto($userStore.role === 'protokol' ? '/dashboard/pengajuan' : '/dashboard/pengajuan/new')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Kembali ke Pilihan
+                {$userStore.role === 'protokol' ? 'Batal' : 'Kembali ke Pilihan'}
             </Button>
             <div class="h-8 w-px bg-slate-200"></div>
             <span class="text-sm font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">

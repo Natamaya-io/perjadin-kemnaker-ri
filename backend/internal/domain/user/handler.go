@@ -43,8 +43,8 @@ func (h *Handler) GetUsers(c echo.Context) error {
 			continue
 		}
 		
-		// If not admin/kasubag, can only see self
-		if role != "super_admin" && role != "kasubag" && u.ID.String() != uidStr {
+		// If not admin/kasubag/protokol, can only see self
+		if role != "super_admin" && role != "kasubag" && role != "protokol" && u.ID.String() != uidStr {
 			continue
 		}
 		

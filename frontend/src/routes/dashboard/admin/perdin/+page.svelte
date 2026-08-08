@@ -39,7 +39,7 @@
     let sortOption = 'spj-desc';
     let startDate = '';
     let endDate = '';
-    let typeFilter = 'all';
+    let typeFilter = 'luar_kota';
 
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
@@ -132,18 +132,26 @@
 
     // Grouping is now extremely cheap because the store only contains the current page (~10 SPDs max)
     $: groupedRecordsMap = $paginatedRecordsStore.reduce((acc, record) => {
-        if (!acc[record.spd]) {
-            acc[record.spd] = { ...record, employeesList: [record] };
+        const groupKey = record.spd || record.id;
+        
+        if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
+            const sortedEmployees = record.employeesList ? [...record.employeesList].sort((a,b) => (b.sequenceNumber || 0) - (a.sequenceNumber || 0)) : [];
+            acc[groupKey] = { ...record, employeesList: sortedEmployees };
+            return acc;
+        }
+
+        if (!acc[groupKey]) {
+            acc[groupKey] = { ...record, employeesList: [record] };
         } else {
-            acc[record.spd].employeesList.push(record);
-            acc[record.spd].employeesList.sort((a,b) => (b.sequenceNumber || 0) - (a.sequenceNumber || 0));
+            acc[groupKey].employeesList.push(record);
+            acc[groupKey].employeesList.sort((a,b) => (b.sequenceNumber || 0) - (a.sequenceNumber || 0));
         }
         return acc;
     }, {});
 
     // Maintain the order of SPDs exactly as returned by Postgres pagination query
-    $: uniqueSPDs = [...new Set($paginatedRecordsStore.map(r => r.spd))];
-    $: uniqueRecords = uniqueSPDs.map(spd => groupedRecordsMap[spd]).filter(Boolean);
+    $: uniqueKeys = [...new Set($paginatedRecordsStore.map(r => r.spd || r.id))];
+    $: uniqueRecords = uniqueKeys.map(key => groupedRecordsMap[key]).filter(Boolean);
 
     function handleWindowScroll() {
         if (typeof window === 'undefined' || $isFetchingRecords) return;
@@ -444,7 +452,7 @@
                 <table class="w-full text-left text-sm border-collapse min-w-[900px] relative">
                     <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            <th class="px-6 py-4 whitespace-nowrap w-[12%]">ID SPJ</th>
+                            <th class="px-6 py-4 whitespace-nowrap w-[12%]">{typeFilter === 'dalam_kota' ? 'ID Dalkot' : 'ID SPJ'}</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[28%]">Lokasi</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[20%]">Tanggal</th>
                             <th class="px-6 py-4 whitespace-nowrap text-right w-[25%]">Total Biaya Akhir</th>
@@ -474,17 +482,17 @@
                                 </tr>
                             {/if}
                         {:else}
-                            {#each uniqueRecords as record (record.spd)}
+                            {#each uniqueRecords as record (record.id)}
                                 <!-- Group Header Row -->
-                            <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd)}>
+                            <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd || record.id)}>
                                 <td class="px-6 py-3 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
                                         <button class="p-1 rounded-md hover:bg-slate-200 transition-colors focus:outline-none shrink-0" aria-label="Toggle details">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500 transition-transform duration-200 {expandedGroups[record.spd] ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500 transition-transform duration-200 {expandedGroups[record.spd || record.id] ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
-                                        <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
+                                        <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd || '-'}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-3">
@@ -510,14 +518,14 @@
                                 </td>
                             </tr>
                             <!-- Employee Rows -->
-                            {#if expandedGroups[record.spd]}
+                            {#if expandedGroups[record.spd || record.id]}
                                 <!-- Nested Table Head for Employee Data inside a single spanning cell to break column dependency -->
                                 <tr>
                                     <td colspan="5" class="p-0 border-b border-slate-200">
                                         <table class="w-full text-left text-sm border-collapse bg-white">
                                             <thead class="bg-slate-100/50 border-y border-slate-200 text-[11px] uppercase tracking-wider font-semibold text-slate-500 shadow-inner">
                                                 <tr>
-                                                    <th class="px-6 py-3 text-left font-semibold w-[12%]">NO. SPD</th>
+                                                    <th class="px-6 py-3 text-left font-semibold w-[12%]">{typeFilter === 'dalam_kota' ? 'ID Petugas' : 'ID SPD'}</th>
                                                     <th class="px-6 py-3 text-left font-semibold w-[28%]">Nama Pegawai & Kontak</th>
                                                     <th class="px-6 py-3 text-left font-semibold w-[20%]">Kelengkapan</th>
                                                     <th class="px-6 py-3 text-right font-semibold w-[25%]">Total Biaya</th>
@@ -600,24 +608,24 @@
 
             <!-- Mobile Stacked/Card View -->
             <div class="lg:hidden flex flex-col divide-y divide-slate-100 bg-slate-50">
-                {#each uniqueRecords as record (record.spd)}
+                {#each uniqueRecords as record (record.id)}
                     <div class="flex flex-col">
                         <!-- Group Header (Mobile) -->
-                        <div role="button" tabindex="0" class="p-4 bg-slate-100/80 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors select-none" on:click={() => toggleGroup(record.spd)} on:keydown={(e) => e.key === 'Enter' && toggleGroup(record.spd)}>
+                        <div role="button" tabindex="0" class="p-4 bg-slate-100/80 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors select-none" on:click={() => toggleGroup(record.spd || record.id)} on:keydown={(e) => e.key === 'Enter' && toggleGroup(record.spd || record.id)}>
                             <div class="flex justify-between items-start mb-2 gap-2">
                                 <div class="flex items-center flex-wrap gap-2">
-                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
+                                    <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd || '-'}</span>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                                         {record.type ? record.type.replace(/_/g, ' ') : 'Dalam Kota'}
                                     </span>
                                 </div>
                                 <button class="p-1 rounded-md bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none" aria-label="Toggle details">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 transition-transform duration-200 {expandedGroups[record.spd] ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 transition-transform duration-200 {expandedGroups[record.spd || record.id] ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
                             </div>
-                            <div class="text-sm font-semibold text-slate-800 leading-tight mb-2 pr-6">{record.purpose}</div>
+                            <div class="text-sm font-semibold text-slate-800 leading-tight mb-2 pr-6">{record.purpose || ''}</div>
                             <div class="flex flex-col gap-1 text-xs text-slate-600">
                                 <div class="flex items-center gap-1.5">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -644,7 +652,7 @@
                                 {#each record.employeesList as empRecord}
                                     <div class="p-4 flex flex-col gap-3">
                                         <div class="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                            <span>NO. SPD: {String(empRecord.sequenceNumber || 0).padStart(3, '0')}</span>
+                                            <span>{typeFilter === 'dalam_kota' ? 'ID Petugas' : 'ID SPD'}: {String(empRecord.sequenceNumber || 0).padStart(3, '0')}</span>
                                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border {getStatusBadge(empRecord).class}">
                                                 {getStatusBadge(empRecord).label}
                                             </span>

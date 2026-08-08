@@ -156,8 +156,9 @@
         return max;
     }, '');
 
-	// When editing, cost is based on new selection. Otherwise based on records length.
-	$: currentEmployeeCount = isEditing ? selectedEmployeeIds.length : records.length;
+	$: currentEmployeeCount = isEditing 
+        ? selectedEmployeeIds.length 
+        : (baseRecord.type === 'Dalam Kota' ? (baseRecord.employeesList?.length || 0) : records.length);
 	$: totalSBMCost = totalCostPerPerson * currentEmployeeCount;
 
     let newSuratTugasFile = null;
@@ -530,7 +531,7 @@
                         </h3>
                         <div class="overflow-y-auto pr-2 space-y-2 flex-1">
                             {#if !isEditing}
-                                {#each records as record}
+                                {#each (baseRecord.type === 'Dalam Kota' ? (baseRecord.employeesList || []) : records) as record}
                                     <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-3">
                                         <div class="h-9 w-9 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
                                             {record.employee?.name ? (record.employee.name.split(' ').filter(Boolean).map(n=>n[0]).join('').substring(0,2).toUpperCase()) : '?'}
@@ -606,6 +607,16 @@
 
       <svelte:fragment slot="footer">
           {#if !isEditing}
+              {#if baseRecord && baseRecord.type === 'Dalam Kota'}
+                  <a href={`/print?type=dalkot_laporan&id=${baseRecord.id}&spd=${encodeURIComponent(baseRecord.spd)}`} target="_blank">
+                      <Button variant="outline" class="min-w-[120px] text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          Cetak Dokumen
+                      </Button>
+                  </a>
+              {/if}
               <Button variant="outline" on:click={close} class="min-w-[100px]">Tutup</Button>
               {#if isEditable}
                   <Button variant="default" on:click={() => isEditing = true} class="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">

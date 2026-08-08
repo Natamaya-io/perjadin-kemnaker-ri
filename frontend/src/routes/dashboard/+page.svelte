@@ -181,11 +181,19 @@
         <!-- Welcome Banner -->
         <div class="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div class="relative z-10">
-                <p class="text-sm text-slate-300 mb-2">Sistem Monitoring Ganti Uang Persediaan</p>
-                <h1 class="text-2xl sm:text-3xl font-bold mb-3">Dashboard GUP & Dalkot</h1>
-                <p class="max-w-3xl text-slate-300 text-sm sm:text-base">
-                    Pantau pagu anggaran, saldo uang persediaan, status pengajuan, serta riwayat transaksi GUP secara cepat dan terpusat.
-                </p>
+                {#if $userStore.role === 'protokol'}
+                    <p class="text-sm text-slate-300 mb-2">Sistem Informasi Perjalanan Dinas</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mb-3">Dashboard Perjalanan Dinas</h1>
+                    <p class="max-w-3xl text-slate-300 text-sm sm:text-base">
+                        Kelola dan pantau seluruh pengajuan perjalanan dinas Anda secara cepat dan terpusat.
+                    </p>
+                {:else}
+                    <p class="text-sm text-slate-300 mb-2">Sistem Monitoring Ganti Uang Persediaan</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mb-3">Dashboard GUP & Dalkot</h1>
+                    <p class="max-w-3xl text-slate-300 text-sm sm:text-base">
+                        Pantau pagu anggaran, saldo uang persediaan, status pengajuan, serta riwayat transaksi GUP secara cepat dan terpusat.
+                    </p>
+                {/if}
             </div>
             <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                 <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5"></div>
@@ -195,6 +203,7 @@
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {#if $userStore.role !== 'protokol'}
             <!-- Pagu -->
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-blue-100 transition-colors">
                 <div class="flex items-start justify-between gap-4 mb-4">
@@ -236,6 +245,7 @@
                     <p class="text-xs text-slate-400 mt-1">Periode bulan berjalan</p>
                 </div>
             </div>
+            {/if}
 
             <!-- Dalkot Status -->
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-rose-100 transition-colors">
@@ -252,6 +262,7 @@
             </div>
         </div>
 
+        {#if $userStore.role !== 'protokol'}
         <!-- Charts Section -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Line Chart -->
@@ -337,6 +348,7 @@
                 </table>
             </div>
         </div>
+        {/if}
 
     </div>
 {/if}

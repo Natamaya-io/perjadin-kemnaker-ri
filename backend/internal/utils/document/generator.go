@@ -58,6 +58,41 @@ func (g *Generator) Generate(ctx context.Context, req DocumentRequest) ([]byte, 
 	return g.convertToPDF(ctx, docxBytes)
 }
 
+func (g *Generator) GenerateHTMLToPDF(ctx context.Context, htmlContent string) ([]byte, error) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	part, err := writer.CreateFormFile("files", "index.html")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := io.Copy(part, strings.NewReader(htmlContent)); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, g.gotenbergURL+"/forms/chromium/convert/html", &body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gotenberg html to pdf error (%d): %s", resp.StatusCode, string(b))
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
 func (g *Generator) GenerateDocx(ctx context.Context, req DocumentRequest) ([]byte, error) {
 	templatePath := filepath.Join(g.templateDir, req.TemplateName)
 	doc, err := docx.ReadDocxFile(templatePath)

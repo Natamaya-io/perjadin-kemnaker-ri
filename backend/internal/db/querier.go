@@ -34,6 +34,7 @@ type Querier interface {
 	GetActiveTripsCount(ctx context.Context, userID uuid.NullUUID) (int64, error)
 	GetDalkotAssignmentsByRecordID(ctx context.Context, dalkotRecordID uuid.UUID) ([]DalkotAssignment, error)
 	GetDalkotLocations(ctx context.Context) ([]DalkotLocation, error)
+	GetDalkotRates(ctx context.Context) ([]DalkotRate, error)
 	GetDalkotRecordByID(ctx context.Context, id uuid.UUID) (DalkotRecord, error)
 	GetDalkotRecords(ctx context.Context) ([]DalkotRecord, error)
 	GetDashboardBudgets(ctx context.Context, userID uuid.NullUUID) ([]GetDashboardBudgetsRow, error)
@@ -64,6 +65,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUsers(ctx context.Context) ([]User, error)
 	GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]User, error)
+	NextDalkotSpdNumber(ctx context.Context) (int32, error)
 	// Returns the next unique sequence value for SPD number generation.
 	// nextval() is atomic and safe under concurrent load.
 	NextSpdNumber(ctx context.Context) (int64, error)

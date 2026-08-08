@@ -272,44 +272,62 @@
         
         <div class="p-5 space-y-4 bg-white">
             {#if dalkotType === 'SPJ RIIL'}
-                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50/50 border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <div class="text-sm font-semibold text-slate-700">Petugas SPJ</div>
+                <!-- Baris Petugas SPJ -->
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Petugas SPJ</span>
                     </div>
-                    <div class="text-sm font-bold text-slate-800">{selectedSpjEmployees.length} Orang</div>
+                    <div class="flex justify-between items-center px-3 py-2 rounded-lg bg-blue-50/60 border border-blue-100">
+                        <div class="text-sm text-slate-600">
+                            <span class="font-bold text-blue-700">{selectedSpjEmployees?.length || 0}</span> orang
+                            <span class="text-slate-400 mx-1">×</span>
+                            <span class="font-mono text-slate-600">Rp {(spjCostPerPerson || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="text-sm font-bold text-blue-700 font-mono">
+                            Rp {((selectedSpjEmployees?.length || 0) * (spjCostPerPerson || 0)).toLocaleString('id-ID')}
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50/50 border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <div class="text-sm font-semibold text-slate-700">Petugas Riil</div>
+
+                <!-- Baris Petugas Riil -->
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Petugas Riil</span>
                     </div>
-                    <div class="text-sm font-bold text-slate-800">{selectedRiilEmployees.length} Orang</div>
+                    <div class="flex justify-between items-center px-3 py-2 rounded-lg bg-amber-50/60 border border-amber-100">
+                        <div class="text-sm text-slate-600">
+                            <span class="font-bold text-amber-700">{selectedRiilEmployees?.length || 0}</span> orang
+                            <span class="text-slate-400 mx-1">×</span>
+                            <span class="font-mono text-slate-600">Rp {(actualCostPerPerson || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="text-sm font-bold text-amber-700 font-mono">
+                            Rp {((selectedRiilEmployees?.length || 0) * (actualCostPerPerson || 0)).toLocaleString('id-ID')}
+                        </div>
+                    </div>
                 </div>
             {:else}
-                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50/50 border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <div class="text-sm font-semibold text-slate-700">Jumlah Petugas</div>
+                <!-- Kebijakan Protokol: hanya SPJ -->
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Petugas</span>
                     </div>
-                    <div class="text-sm font-bold text-slate-800">{selectedSpjEmployees?.length || 0} Orang</div>
+                    <div class="flex justify-between items-center px-3 py-2 rounded-lg bg-blue-50/60 border border-blue-100">
+                        <div class="text-sm text-slate-600">
+                            <span class="font-bold text-blue-700">{selectedSpjEmployees?.length || 0}</span> orang
+                            <span class="text-slate-400 mx-1">×</span>
+                            <span class="font-mono text-slate-600">Rp {(spjCostPerPerson || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="text-sm font-bold text-blue-700 font-mono">
+                            Rp {((selectedSpjEmployees?.length || 0) * (spjCostPerPerson || 0)).toLocaleString('id-ID')}
+                        </div>
+                    </div>
                 </div>
             {/if}
 
-            <!-- Total Section - Streamlined -->
+            <!-- Total Section -->
             <div class="pt-4 border-t border-slate-100">
                 <div class="bg-indigo-600 p-4 rounded-xl flex items-center justify-between text-white shadow-lg shadow-indigo-200">
                     <div class="flex flex-col">

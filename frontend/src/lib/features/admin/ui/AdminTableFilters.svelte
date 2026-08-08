@@ -8,7 +8,7 @@
 	export let sortOption = 'date-desc';
 	export let startDate = '';
 	export let endDate = '';
-	export let typeFilter = 'all';
+	export let typeFilter = 'luar_kota';
 	export let statusOptions = [
 		{ value: 'all', label: 'Semua Status' },
 		{ value: 'In Progress', label: 'In Progress' },
@@ -39,9 +39,8 @@
 			bind:value={typeFilter}
 			class="bg-white border-slate-200 w-full"
 			options={[
-				{ value: 'all', label: 'Semua Jenis' },
-				{ value: 'dalam_kota', label: 'Dalam Kota' },
 				{ value: 'luar_kota', label: 'Luar Kota' },
+				{ value: 'dalam_kota', label: 'Dalam Kota' },
 				{ value: 'luar_negeri', label: 'Luar Negeri' }
 			]}
 		/>
@@ -62,8 +61,8 @@
 			bind:value={sortOption}
 			class="bg-white border-slate-200 w-full"
 			options={[
-				{ value: 'spj-desc', label: 'ID SPJ Terbaru' },
-				{ value: 'spj-asc', label: 'ID SPJ Terlama' },
+				{ value: 'spj-desc', label: 'ID Terbaru' },
+				{ value: 'spj-asc', label: 'ID Terlama' },
 				{ value: 'date-desc', label: 'Tanggal Terbaru' },
 				{ value: 'date-asc', label: 'Tanggal Terlama' },
 				{ value: 'cost-desc', label: 'Biaya Tertinggi' },

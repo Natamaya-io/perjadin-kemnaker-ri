@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +26,9 @@ type Repository interface {
 	GetAssignmentsByRecordID(recordID uuid.UUID) ([]models.DalkotAssignment, error)
 
 	GetLocations() ([]models.DalkotLocation, error)
+	GetRates() ([]models.DalkotRate, error)
+	NextSpdNumber(ctx context.Context) (int, error)
+	SyncSpdSequence(ctx context.Context, nextID int) error
 }
 
 type repository struct {
@@ -94,6 +98,7 @@ func mapDBRecord(dbr db.DalkotRecord) models.DalkotRecord {
 		ActivityName:      dbr.ActivityName,
 		Location:          dbr.Location,
 		Status:            fromNullString(dbr.Status),
+		ReportContent:     fromNullString(dbr.ReportContent),
 		DocumentationFile: docFile,
 	}
 }
@@ -110,6 +115,7 @@ func mapDBAssignment(dba db.DalkotAssignment) models.DalkotAssignment {
 		AssignmentType: dba.AssignmentType,
 		SPJCost:        dba.SpjCost.Float64,
 		ActualCost:     dba.ActualCost.Float64,
+		SequenceNumber: int(dba.SequenceNumber.Int32),
 		Status:         fromNullString(dba.Status),
 	}
 }
@@ -120,6 +126,17 @@ func mapDBLocation(dbl db.DalkotLocation) models.DalkotLocation {
 		CreatedAt: fromNullTime(dbl.CreatedAt),
 		Name:      dbl.Name,
 		IsActive:  dbl.IsActive.Bool,
+	}
+}
+
+func mapDBRate(dbr db.DalkotRate) models.DalkotRate {
+	rateAmount, _ := strconv.ParseFloat(dbr.RateAmount, 64)
+	return models.DalkotRate{
+		ID:           dbr.ID,
+		CategoryName: dbr.CategoryName,
+		RateAmount:   rateAmount,
+		CreatedAt:    fromNullTime(dbr.CreatedAt),
+		UpdatedAt:    fromNullTime(dbr.UpdatedAt),
 	}
 }
 
@@ -138,7 +155,7 @@ func (r *repository) CreateRecord(record *models.DalkotRecord) error {
 		Location:          record.Location,
 		SuratTugasNumber:  sql.NullString{},
 		SuratTugasDate:    sql.NullTime{},
-		ReportContent:     sql.NullString{},
+		ReportContent:     toNullString(record.ReportContent),
 		Status:            toNullString(record.Status),
 		DocumentationFile: toNullRawMessage(record.DocumentationFile),
 	})
@@ -161,7 +178,7 @@ func (r *repository) UpdateRecord(record *models.DalkotRecord) error {
 		Location:          record.Location,
 		SuratTugasNumber:  sql.NullString{},
 		SuratTugasDate:    sql.NullTime{},
-		ReportContent:     sql.NullString{},
+		ReportContent:     toNullString(record.ReportContent),
 		Status:            toNullString(record.Status),
 		DocumentationFile: toNullRawMessage(record.DocumentationFile),
 	})
@@ -258,4 +275,30 @@ func (r *repository) GetLocations() ([]models.DalkotLocation, error) {
 		locations[i] = mapDBLocation(dbl)
 	}
 	return locations, nil
+}
+
+func (r *repository) GetRates() ([]models.DalkotRate, error) {
+	dbrs, err := r.q.GetDalkotRates(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	rates := make([]models.DalkotRate, len(dbrs))
+	for i, dbr := range dbrs {
+		rates[i] = mapDBRate(dbr)
+	}
+	return rates, nil
+}
+
+func (r *repository) NextSpdNumber(ctx context.Context) (int, error) {
+	seq, err := r.q.NextDalkotSpdNumber(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return int(seq), nil
+}
+
+func (r *repository) SyncSpdSequence(ctx context.Context, nextID int) error {
+	query := `SELECT setval('dalkot_spd_number_seq', GREATEST((SELECT last_value FROM dalkot_spd_number_seq), $1::bigint))`
+	_, err := r.d.ExecContext(ctx, query, nextID)
+	return err
 }

@@ -33,8 +33,8 @@
         <Select bind:value={sortOption} class="bg-white border-slate-200 w-full" options={[
             { value: 'date-desc', label: 'Terbaru Pertama' },
             { value: 'date-asc', label: 'Terlama Pertama' },
-            { value: 'spj-asc', label: 'ID SPJ (A-Z)' },
-            { value: 'spj-desc', label: 'ID SPJ (Z-A)' }
+            { value: 'spj-asc', label: 'ID Terlama' },
+            { value: 'spj-desc', label: 'ID Terbaru' }
         ]} />
     </div>
 </div>

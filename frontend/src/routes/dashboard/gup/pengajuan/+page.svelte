@@ -7,6 +7,7 @@
     import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     import KwitansiPrintModal from './KwitansiPrintModal.svelte';
     import SpbyPrintModal from './SpbyPrintModal.svelte';
+    import RekapitulasiPrintModal from './RekapitulasiPrintModal.svelte';
     
     export let data: any;
     
@@ -120,6 +121,7 @@
     // --- Print Modals Logic ---
     let isKwitansiOpen = false;
     let isSpbyOpen = false;
+    let isRekapitulasiOpen = false;
     let printData: any = null;
 
     async function handlePrintKwitansi(id: string) {
@@ -170,7 +172,7 @@
             <p class="text-sm text-slate-500 mt-1">Tabel menampilkan ringkasan pengajuan. Gunakan tombol View untuk rincian.</p>
         </div>
         <div class="flex items-center gap-3 no-print">
-            <Button variant="warning" class="gap-2">
+            <Button variant="warning" class="gap-2" on:click={() => isRekapitulasiOpen = true}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
@@ -527,3 +529,4 @@
 
 <KwitansiPrintModal bind:isOpen={isKwitansiOpen} data={printData} />
 <SpbyPrintModal bind:isOpen={isSpbyOpen} data={printData} />
+<RekapitulasiPrintModal bind:isOpen={isRekapitulasiOpen} transactions={transactions} {masterData} />

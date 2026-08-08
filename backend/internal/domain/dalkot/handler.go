@@ -1,19 +1,30 @@
 package dalkot
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/kemnaker/perjadin-backend/internal/models"
+	"github.com/kemnaker/perjadin-backend/internal/utils/document"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
-	svc Service
+	svc    Service
+	docGen *document.Generator
 }
 
 func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+	gotenbergURL := os.Getenv("GOTENBERG_URL")
+	if gotenbergURL == "" {
+		gotenbergURL = "http://gotenberg:3000"
+	}
+	return &Handler{
+		svc:    svc,
+		docGen: document.NewGenerator(gotenbergURL, "templates"),
+	}
 }
 
 func (h *Handler) CreateRecord(c echo.Context) error {
@@ -34,9 +45,33 @@ func (h *Handler) CreateRecord(c echo.Context) error {
 }
 
 func (h *Handler) GetRecords(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	userIDStr, _ := c.Get("user_id").(string)
+
 	records, err := h.svc.GetRecords()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	if role == "protokol" {
+		uid, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid user id"})
+		}
+		filtered := []models.DalkotRecord{}
+		for _, r := range records {
+			hasAccess := false
+			for _, a := range r.Assignments {
+				if a.UserID == uid {
+					hasAccess = true
+					break
+				}
+			}
+			if hasAccess {
+				filtered = append(filtered, r)
+			}
+		}
+		return c.JSON(http.StatusOK, filtered)
 	}
 
 	return c.JSON(http.StatusOK, records)
@@ -97,6 +132,14 @@ func (h *Handler) GetLocations(c echo.Context) error {
 	return c.JSON(http.StatusOK, locations)
 }
 
+func (h *Handler) GetRates(c echo.Context) error {
+	rates, err := h.svc.GetRates()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, rates)
+}
+
 func (h *Handler) AddAssignment(c echo.Context) error {
 	var req models.DalkotAssignment
 	if err := c.Bind(&req); err != nil {
@@ -121,4 +164,30 @@ func (h *Handler) RemoveAssignment(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "assignment deleted successfully"})
+}
+
+func (h *Handler) ExportLaporanPDF(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
+	}
+
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
+	}
+
+	htmlContent, err := generateLaporanHTML(record)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate HTML template")
+	}
+
+	pdfBytes, err := h.docGen.GenerateHTMLToPDF(c.Request().Context(), htmlContent)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate PDF: %v", err))
+	}
+
+	filename := fmt.Sprintf("Laporan_Dalkot_%s.pdf", record.SPDNumber)
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
 }

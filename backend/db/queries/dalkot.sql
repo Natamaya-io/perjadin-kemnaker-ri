@@ -40,6 +40,9 @@ SELECT * FROM dalkot_records
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC;
 
+-- name: NextDalkotSpdNumber :one
+SELECT nextval('dalkot_spd_number_seq')::int;
+
 -- name: CreateDalkotAssignment :one
 INSERT INTO dalkot_assignments (
     id, dalkot_record_id, user_id, assignment_type, spj_cost, actual_cost, status
@@ -73,3 +76,7 @@ ORDER BY created_at ASC;
 SELECT * FROM dalkot_locations
 WHERE is_active = true
 ORDER BY id ASC;
+
+-- name: GetDalkotRates :many
+SELECT * FROM dalkot_rates
+ORDER BY created_at ASC;

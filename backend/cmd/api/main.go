@@ -196,9 +196,11 @@ func main() {
 		protected.POST("/dalkot", dalkotHandler.CreateRecord)
 		protected.GET("/dalkot", dalkotHandler.GetRecords)
 		protected.GET("/dalkot/:id", dalkotHandler.GetRecordByID)
+		protected.GET("/dalkot/:id/laporan-stream", dalkotHandler.ExportLaporanPDF)
 		protected.PUT("/dalkot/:id", dalkotHandler.UpdateRecord)
 		protected.DELETE("/dalkot/:id", dalkotHandler.DeleteRecord)
 		protected.GET("/dalkot/locations/all", dalkotHandler.GetLocations)
+		protected.GET("/dalkot-rates", dalkotHandler.GetRates)
 		protected.POST("/dalkot/assignments", dalkotHandler.AddAssignment)
 		protected.DELETE("/dalkot/assignments/:assignmentId", dalkotHandler.RemoveAssignment)
 
