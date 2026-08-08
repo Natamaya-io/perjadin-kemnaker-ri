@@ -13,7 +13,12 @@
     }
 </script>
 
-<BaseModal bind:open title="Detail Pengajuan Dalam Kota ({record?.spd || '-'})" size="lg">
+<BaseModal bind:open size="lg">
+    <div slot="header">
+        <h2 class="text-xl font-bold text-slate-800 tracking-tight">Detail Pengajuan Dalam Kota ({record?.spd || '-'})</h2>
+    </div>
+
+    <div slot="body">
     {#if record}
         <div class="space-y-6 text-sm text-slate-700 pb-16 px-2">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
@@ -111,4 +116,5 @@
             </div>
         </div>
     {/if}
+    </div>
 </BaseModal>
