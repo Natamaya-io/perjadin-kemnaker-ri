@@ -19,7 +19,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
                 <div>
                     <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Pelaksanaan</span>
-                    <span class="font-medium text-slate-900">{new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</span>
+                    <span class="font-medium text-slate-900">
+                        {record.startDate && !isNaN(new Date(record.startDate).getTime()) 
+                            ? new Date(record.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'}) 
+                            : '-'}
+                    </span>
                 </div>
                 <div>
                     <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jenis Dalkot</span>
