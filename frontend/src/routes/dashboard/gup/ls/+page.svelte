@@ -22,8 +22,8 @@
     $: transactions = data?.transactions || [];
     $: fundingSources = data?.fundingSources || [];
     $: accountCodes = data?.accountCodes || [];
-    let pendingYear: string | null = null;
-    $: currentYear = pendingYear || data?.year || new Date().getFullYear().toString();
+
+    $: currentYear = data?.year || new Date().getFullYear().toString();
 
     // Mapping LS data (Funding Source ID -> Amount)
     $: lsMap = new Map(lsData.map(ls => [ls.fundingSourceId, ls.amount]));
@@ -72,15 +72,6 @@
     
     // Custom Dropdown State for Form & Year
     let isFormDropdownOpen = false;
-    let isYearDropdownOpen = false;
-    
-    // Tahun yang tersedia (dinamis dari 2026 hingga tahun saat ini + 1)
-    const startYear = 2026;
-    const currentSystemYear = new Date().getFullYear();
-    const availableYears = Array.from(
-        { length: Math.max(currentSystemYear - startYear + 2, 3) }, 
-        (_, i) => (startYear + i).toString()
-    );
 
     function openEditModal(fundingSourceId?: string) {
         const id = fundingSourceId || fundingSources[0]?.id || '';
@@ -115,11 +106,7 @@
         }
     }
     
-    function handleYearChange(e: Event) {
-        const target = e.target as HTMLSelectElement;
-        const newYear = target.value;
-        goto(`?year=${newYear}`, { invalidateAll: true });
-    }
+
 </script>
 
 <div class="space-y-6 pb-20 w-full">
@@ -142,49 +129,6 @@
             <p class="text-sm text-slate-500 mt-1">Sumber dana GUP (LS Januari untuk GUP 1, dst).</p>
         </div>
         <div class="flex flex-col sm:flex-row items-center gap-3">
-            <!-- Global Year Filter (Custom Dropdown) -->
-            <div class="relative w-full sm:w-32">
-                <button 
-                    type="button" 
-                    on:click={() => isYearDropdownOpen = !isYearDropdownOpen}
-                    class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
-                >
-                    <span class="truncate">{currentYear}</span>
-                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                
-                {#if isYearDropdownOpen}
-                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                    <!-- svelte-ignore a11y-no-static-element-interactions -->
-                    <div class="fixed inset-0 z-40" on:click={() => isYearDropdownOpen = false}></div>
-                    
-                    <div class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                        <ul class="py-1">
-                            {#each availableYears as year}
-                                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-                                <li 
-                                    class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {currentYear === year ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
-                                    on:click={() => { 
-                                        pendingYear = year;
-                                        isYearDropdownOpen = false;
-                                        goto(`?year=${year}`, { invalidateAll: true }).then(() => {
-                                            pendingYear = null;
-                                        });
-                                    }}
-                                >
-                                    <span>{year}</span>
-                                    {#if currentYear === year}
-                                        <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                    {/if}
-                                </li>
-                            {/each}
-                        </ul>
-                    </div>
-                {/if}
-            </div>
 
             <!-- Tombol Aksi Utama -->
             <Button variant="default" class="w-full sm:w-auto gap-2" on:click={() => openEditModal()}>
