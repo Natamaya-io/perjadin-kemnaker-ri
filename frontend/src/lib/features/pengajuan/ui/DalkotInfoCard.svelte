@@ -10,6 +10,7 @@
     export let dalkotType = 'SPJ RIIL';
     export let activityName = '';
     export let location = '';
+    export let spdNumberInput = '';
     export let executionDate = '';
     export let suratTugasNumber = '';
     export let suratTugasDate = '';
@@ -43,6 +44,17 @@
 
     <!-- Body -->
     <div class="p-6 space-y-6">
+        <div class="space-y-2">
+            <Label class="text-slate-600 text-sm">Nomor Dalkot <span class="text-xs text-slate-400 font-normal">(Opsional - Kosongkan untuk Otomatis)</span></Label>
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 text-sm rounded-l-md h-10">
+                    DLK-
+                </span>
+                <Input type="number" min="1" bind:value={spdNumberInput} placeholder="Cth: 005" disabled={readonly} class="flex-1 rounded-none rounded-r-md h-10 border-slate-300 focus:ring-blue-500 focus:border-blue-500 {readonly ? 'bg-slate-50 opacity-70 cursor-not-allowed' : ''}" />
+            </div>
+            <p class="text-[10px] text-slate-400">Hanya angka. Isi jika ingin menentukan nomor urut secara manual.</p>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Tanggal Pelaksanaan -->
             <div class="space-y-2">

@@ -500,6 +500,7 @@
                         bind:category={formData.category}
                         bind:official={formData.official}
                         bind:dalkotType={formData.dalkotType}
+                        bind:spdNumberInput={formData.spdNumberInput}
                         bind:activityName={formData.activityName}
                         bind:location={formData.locationDalkot}
                         bind:executionDate={formData.executionDate}
