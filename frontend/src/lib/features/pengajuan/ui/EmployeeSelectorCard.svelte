@@ -1,4 +1,4 @@
-﻿<script>
+<script>
     import { createEventDispatcher } from 'svelte';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Input from '$lib/shared/ui/input/Input.svelte';
@@ -9,10 +9,11 @@
     export let selectedEmployees = [];
     /** @type {string[]} */
     export let disabledIds = [];
-    /** @type {boolean} */
     export let readonly = false;
     /** @type {boolean} */
     export let isLoading = false;
+    /** @type {boolean} */
+    export let isDateSelected = true;
 
     const dispatch = createEventDispatcher();
     
@@ -61,6 +62,14 @@
                     </div>
                 </div>
                 {/each}
+            </div>
+        {:else if !isDateSelected}
+            <div class="flex flex-col items-center justify-center h-full text-center py-6 px-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p class="text-sm font-medium text-slate-600">Pilih Tanggal Pelaksanaan</p>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed">Silakan isi tanggal keberangkatan dan kembali di form sebelah kiri terlebih dahulu untuk melihat daftar petugas.</p>
             </div>
         {:else if filteredEmployees.length === 0}
             <div class="text-center py-6 text-sm text-slate-500 italic">Tidak ada petugas yang cocok.</div>

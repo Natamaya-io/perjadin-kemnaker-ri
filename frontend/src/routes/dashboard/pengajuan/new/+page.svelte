@@ -621,6 +621,7 @@
                         actualCostPerPerson={formData.actualCostPerPerson}
                         isLoading={isFetchingOfficers}
                         readonly={isReadOnly}
+                        isDateSelected={!!formData.executionDate}
                         on:submit={handleSubmit}
                     />
                 {:else}
@@ -635,6 +636,7 @@
                         selectedEmployees={formData.selectedEmployees}
                         isLoading={isFetchingOfficers}
                         readonly={isReadOnly}
+                        isDateSelected={!!minStartDate && !!maxEndDate}
                         on:toggle={toggleEmployee}
                         on:submit={handleSubmit}
                     />
