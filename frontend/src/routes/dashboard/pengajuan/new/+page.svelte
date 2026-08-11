@@ -206,8 +206,8 @@
                 start = new Date(formData.executionDate).setHours(0,0,0,0);
                 end = start;
             } else if (selectedType === 'luar_kota' && minStartDate && maxEndDate) {
-                start = new Date(minStartDate).setHours(0,0,0,0);
-                end = new Date(maxEndDate).setHours(0,0,0,0);
+                // start = new Date(minStartDate).setHours(0,0,0,0);
+                // end = new Date(maxEndDate).setHours(0,0,0,0);
             }
             
             if (start !== null && end !== null && !isNaN(start) && !isNaN(end)) {
