@@ -107,6 +107,32 @@
 
     let isConfirmOpen = false;
 
+    // Auto-fill SPD Number for Dalkot
+    $: {
+        if (selectedType === 'dalam_kota' && $recordsStore && !formData.spdNumberInput) {
+            let maxNumber = 0;
+            const dalkotRecords = $recordsStore.filter(r => r.type === 'Dalam Kota' || r.type === 'dalam_kota');
+            
+            if (dalkotRecords.length > 0) {
+                for (const record of dalkotRecords) {
+                    const spd = record.spd || record.spdNumber;
+                    if (spd && spd.startsWith('DLK-')) {
+                        const numStr = spd.replace('DLK-', '');
+                        const num = parseInt(numStr, 10);
+                        if (!isNaN(num) && num > maxNumber) {
+                            maxNumber = num;
+                        }
+                    }
+                }
+            }
+            
+            // Start from DLK-001 if no data, else increment
+            const nextNumber = maxNumber > 0 ? maxNumber + 1 : 1;
+            formData.spdNumberInput = nextNumber.toString().padStart(3, '0');
+        }
+    }
+
+
     // Helper to get overall start/end dates
     $: minStartDate = formData.locations.reduce((min, loc) => {
         if (!loc.startDate) return min;
@@ -191,8 +217,8 @@
                     
                     let rStart = NaN, rEnd = NaN;
                     if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
-                        if (record.startDate) {
-                            rStart = new Date(record.startDate).setHours(0,0,0,0);
+                        if (record.executionDate || record.startDate) {
+                            rStart = new Date(record.executionDate || record.startDate).setHours(0,0,0,0);
                             rEnd = rStart;
                         }
                     } else {
@@ -281,12 +307,8 @@
                 return;
             }
         } else if (selectedType === 'dalam_kota') {
-            if (!formData.executionDate || !formData.official || !formData.activityName || !formData.locationDalkot || !formData.reportContent) {
-                toast.error('Harap lengkapi semua field wajib Dalkot (termasuk Laporan).');
-                return;
-            }
-            if (!formData.documentationFile) {
-                toast.error('Dokumentasi wajib diunggah.');
+            if (!formData.executionDate || !formData.official || !formData.activityName || !formData.locationDalkot) {
+                toast.error('Harap lengkapi semua field wajib Dalkot.');
                 return;
             }
             if (!formData.selectedSpjEmployees || !formData.selectedRiilEmployees || (formData.selectedSpjEmployees.length === 0 && formData.selectedRiilEmployees.length === 0)) {
@@ -356,7 +378,7 @@
                     activityName: formData.activityName,
                     location: formData.locationDalkot,
                     reportContent: formData.reportContent,
-                    status: 'pending'
+                    status: (formData.reportContent || formData.documentationFile) ? 'pending' : 'Draft'
                 },
                 assignments: assignments
             };
