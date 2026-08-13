@@ -167,7 +167,6 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 	}
 
 	record.Status = "Draft"
-	record.ReportStatus = "Pending"
 
 	// VALIDATION: Prevent duplicate SPD Number assignment manually.
 	if record.SPDNumber != "" {
@@ -226,7 +225,15 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 		return errors.New("CreateRecordsBulk: empty batch")
 	}
 
-	// --- Phase 1: validate all records before any DB write ---
+	// Pre-fetch existing status if adding to an existing SPD group
+	inheritedStatus := "Draft"
+	if records[0].SPDNumber != "" {
+		existingRecords, err := s.repo.GetTravelRecords(ctx, map[string]interface{}{"spd": records[0].SPDNumber})
+		if err == nil && len(existingRecords) > 0 {
+			inheritedStatus = existingRecords[0].Status
+		}
+	}
+
 	for _, r := range records {
 		if len(r.Locations) == 0 {
 			return fmt.Errorf("employee %s: at least one location is required", r.EmployeeID)
@@ -254,8 +261,7 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 			return fmt.Errorf("employee %s is already assigned to a trip during these dates", r.EmployeeID)
 		}
 
-		r.Status = "Draft"
-		r.ReportStatus = "Pending"
+		r.Status = inheritedStatus
 	}
 
 	// Generate SPD number safely AFTER validation passes
@@ -272,6 +278,25 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 	// --- Phase 2: single atomic DB write ---
 	if err := s.repo.CreateTravelRecordsBulk(ctx, records); err != nil {
 		return err
+	}
+
+	// If this is an existing SPD group, check if there's already a report and sync it to the new records
+	if records[0].SPDNumber != "" {
+		go func(spd string) {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			existingRecords, _ := s.repo.GetTravelRecords(bgCtx, map[string]interface{}{"spd": spd})
+			var recordWithReport *models.TravelRecord
+			for _, r := range existingRecords {
+				if r.Report != nil && (r.Report.Text != "" || len(r.Report.Files) > 2) {
+					recordWithReport = r
+					break
+				}
+			}
+			if recordWithReport != nil {
+				s.repo.SyncReportBySpd(bgCtx, spd, recordWithReport)
+			}
+		}(records[0].SPDNumber)
 	}
 
 	ids := make([]uuid.UUID, 0, len(records))
@@ -327,9 +352,6 @@ func (s *service) CreateRecordDirect(ctx context.Context, record *models.TravelR
 
 	if record.Status == "" {
 		record.Status = "Draft"
-	}
-	if record.ReportStatus == "" {
-		record.ReportStatus = "Pending"
 	}
 
 	err := s.repo.CreateTravelRecord(ctx, record)

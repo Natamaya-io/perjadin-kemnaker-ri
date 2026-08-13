@@ -96,6 +96,24 @@
     /** @type {{name: string, type: string, data: string} | null} */
     let previewFile = null;
 
+    // Confirm Submit Modal State
+    let showSubmitConfirmModal = false;
+    let submitActionType = ''; // 'laporan' | 'rincian'
+
+    function promptSubmit(type) {
+        submitActionType = type;
+        showSubmitConfirmModal = true;
+    }
+
+    function confirmSubmitAction() {
+        showSubmitConfirmModal = false;
+        if (submitActionType === 'laporan') {
+            submitLaporan();
+        } else if (submitActionType === 'rincian') {
+            submitRincian();
+        }
+    }
+
     // Split Hotel Modal State
     let showSplitHotelModal = false;
     /** @type {{ sourceEmpId: string | null, locationIndex: number, totalBill: number, days: any, selectedEmpIds: string[], isExtend: boolean, extendIdx: number }} */
@@ -723,9 +741,26 @@
         }
     }
 
-    /** @param {{name: string, type: string, data: string}} file */
+    /** @param {File | {name: string, type: string, data: string, path?: string, blobUrl?: string}} file */
     function openPreview(file) {
-        previewFile = file;
+        if (file instanceof File) {
+            previewFile = {
+                name: file.name,
+                type: file.type,
+                data: URL.createObjectURL(file)
+            };
+        } else {
+            const validData = file.blobUrl || (file.path ? getBlobUrl(file) : null) || file.data;
+            let fullUrl = validData;
+            // Jika validData hanyalah path string "/uploads/...", pastikan URL-nya menjadi full origin URL atau biarkan relative jika diakses di domain yg sama
+            if (typeof validData === 'string' && validData.startsWith('/uploads')) {
+                fullUrl = window.location.origin + validData;
+            } else if (typeof validData === 'string' && !validData.startsWith('http') && !validData.startsWith('blob:') && !validData.startsWith('data:') && !validData.startsWith('/')) {
+                // misal data="1.png", mungkin harusnya ada di /uploads/
+                fullUrl = window.location.origin + '/uploads/' + validData;
+            }
+            previewFile = { ...file, data: fullUrl };
+        }
         isPreviewOpen = true;
     }
 
@@ -1021,7 +1056,7 @@
         startLoading();
         try {
             await updateRecord(record.id, {
-                reportStatus: 'Draft',
+                
                 suratTugasNumber: manualSuratTugasNumber,
                 suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                 reportData: {
@@ -1079,7 +1114,7 @@
             const updates = recordsList.map(r => ({
                 id: r.id,
                 data: {
-                    reportStatus: 'Completed',
+                    status: 'Completed',
                     suratTugasNumber: manualSuratTugasNumber,
                     suratTugasDate: manualSuratTugasDate ? new Date(manualSuratTugasDate).toISOString() : undefined,
                     reportData: {
@@ -1121,6 +1156,7 @@
                 return {
                     id: r.id,
                     data: {
+                        
                         costs: costsToSave,
                         totalCost: local.totalCost
                     }
@@ -1152,7 +1188,7 @@
                 return updateRecord(r.id, {
                     costs: costsToSave,
                     totalCost: local.totalCost,
-                    status: 'Submitted'
+                    status: 'Completed'
                 });
             });
             await Promise.all(updatePromises);
@@ -1613,8 +1649,8 @@
 
                         {#if $userStore.role !== 'kasubag'}
                             <div class="bg-slate-50 border-t border-slate-100 p-4 sm:p-6 -mx-4 sm:-mx-6 md:-mx-8 -mb-4 sm:-mb-6 md:-mb-8 flex flex-col sm:flex-row justify-end gap-3 rounded-b-xl mt-8">
-                                <Button variant="outline" size="lg" disabled={$loadingStore} class="border-blue-200 text-blue-700 hover:bg-blue-50 px-6 w-full sm:w-auto" on:click={saveDraftLaporan}>Simpan Draft</Button>
-                                <Button size="lg" disabled={$loadingStore} class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8 w-full sm:w-auto" on:click={submitLaporan}>Submit Laporan Kegiatan</Button>
+                                <Button size="lg" variant="outline" class="w-full sm:w-auto" disabled={$loadingStore} on:click={saveDraftLaporan}>Simpan Draft Laporan</Button>
+                                <Button size="lg" disabled={$loadingStore} class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-8 w-full sm:w-auto" on:click={() => promptSubmit('laporan')}>Submit Laporan Kegiatan</Button>
                             </div>
                         {/if}
                     </div>
@@ -2236,8 +2272,8 @@
                             
                             {#if $userStore.role !== 'kasubag'}
                                 <div class="bg-slate-50 border-t border-slate-100 p-4 sm:p-6 mt-8 -mx-4 sm:-mx-6 md:-mx-8 -mb-4 sm:-mb-6 md:-mb-8 flex flex-col sm:flex-row justify-end gap-3 rounded-b-xl">
-                                    <Button variant="outline" size="lg" disabled={$loadingStore} class="border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-6 w-full sm:w-auto" on:click={saveDraftRincian}>Simpan Draft</Button>
-                                    <Button size="lg" disabled={$loadingStore} class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8 w-full sm:w-auto" on:click={submitRincian}>Simpan Rincian Biaya</Button>
+                                    <Button size="lg" variant="outline" class="w-full sm:w-auto" disabled={$loadingStore} on:click={saveDraftRincian}>Simpan Draft Rincian</Button>
+                                    <Button size="lg" disabled={$loadingStore} class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8 w-full sm:w-auto" on:click={() => promptSubmit('rincian')}>Simpan Rincian Biaya</Button>
                                 </div>
                             {/if}
                         </div>
@@ -2346,14 +2382,47 @@
                 </button>
             </div>
             
-            <div class="flex-1 overflow-hidden bg-slate-100 relative p-0">
+            <div class="flex-1 overflow-hidden bg-slate-100 relative p-0 flex items-center justify-center">
                 {#if previewFile}
-                    <DocumentViewer 
-                        url={previewFile.data || (previewFile.path ? '/uploads/' + previewFile.path.replace(/^\/?uploads\//, '') : '')} 
-                        type={previewFile.type.startsWith('image/') ? 'image' : (previewFile.type === 'application/pdf' ? 'pdf' : 'docx')} 
-                        filename={previewFile.name} 
-                    />
+                    {#if previewFile.type && previewFile.type.startsWith('image/')}
+                        <div class="p-6 h-full w-full flex items-center justify-center overflow-auto">
+                            <img src={previewFile.data} alt={previewFile.name} class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+                        </div>
+                    {:else if previewFile.type && previewFile.type.includes('pdf')}
+                        <div class="w-full h-full p-2 md:p-6">
+                            <iframe src={previewFile.data} title={previewFile.name} class="w-full h-[85vh] rounded-lg bg-white shadow-xl" frameborder="0"></iframe>
+                        </div>
+                    {:else}
+                        <div class="p-6 h-full w-full overflow-y-auto">
+                            <DocumentViewer 
+                                url={previewFile.data} 
+                                type={previewFile.type}
+                                filename={previewFile.name}
+                            />
+                        </div>
+                    {/if}
                 {/if}
+            </div>
+        </div>
+    </Dialog>
+
+    <!-- Urgent Confirmation Modal for Submit -->
+    <Dialog bind:open={showSubmitConfirmModal} title="Konfirmasi Submit Laporan">
+        <div class="space-y-4">
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div class="text-sm text-amber-800">
+                    <p class="font-bold mb-1">Peringatan Penting!</p>
+                    <p>Setelah Anda men-submit dokumen ini, statusnya akan langsung berubah menjadi <span class="font-bold uppercase tracking-wider">Selesai</span> dan dikirimkan ke server. <strong>Data yang telah disubmit tetap bisa Anda edit kembali</strong> jika terdapat kekeliruan di kemudian hari.</p>
+                    <p class="mt-2">Mohon pastikan seluruh kelengkapan dokumen dan bukti pengeluaran sudah benar dan tidak ada yang terlewat.</p>
+                </div>
+            </div>
+            <p class="text-slate-600 text-sm mt-4 font-medium">Apakah Anda yakin ingin men-submit {submitActionType === 'laporan' ? 'Laporan Kegiatan' : 'Rincian Biaya'} ini sekarang?</p>
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                <Button variant="outline" on:click={() => showSubmitConfirmModal = false}>Batal, Periksa Lagi</Button>
+                <Button class="bg-indigo-600 hover:bg-indigo-700 text-white" on:click={confirmSubmitAction}>Ya, Submit Sekarang</Button>
             </div>
         </div>
     </Dialog>
