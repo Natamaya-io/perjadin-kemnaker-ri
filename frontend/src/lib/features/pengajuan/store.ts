@@ -22,7 +22,50 @@ export async function loadRecords(spd?: string) {
     try {
         const filters = spd ? { spd } : { limit: 100 }; // Prevent over-fetching by adding a limit if no spd
         const data = await api.getRecords(filters);
-        recordsStore.set(data || []);
+        let allRecords = data || [];
+        
+        try {
+            const dalkotRecords = await api.getDalkotRecords();
+            const mappedDalkot = dalkotRecords.map(dr => {
+                const assignments = dr.assignments || [];
+                const firstEmployee = assignments.length > 0 ? (assignments[0].user || assignments[0].employee) : null;
+                return {
+                    id: dr.id,
+                    spd: dr.spdNumber,
+                    startDate: dr.executionDate,
+                    endDate: dr.executionDate,
+                    purpose: dr.activityName,
+                    stakeholder: dr.official,
+                    type: 'Dalam Kota',
+                    location: dr.location,
+                    province: 'DKI Jakarta',
+                    status: dr.status,
+                    createdAt: dr.createdAt,
+                    employee: firstEmployee ? {
+                        name: firstEmployee.name,
+                        email: firstEmployee.email || '',
+                        role: firstEmployee.role || 'protokol',
+                        jabatan: firstEmployee.jabatan || '',
+                        pangkat: firstEmployee.pangkat || '',
+                        golongan: firstEmployee.golongan || '',
+                        nip: firstEmployee.nip || '',
+                        nomorHp: firstEmployee.nomorHp || ''
+                    } : { name: 'Protokol', email: '', role: 'protokol' },
+                    employeesList: assignments.map((a: any) => ({
+                        ...a,
+                        sequenceNumber: a.sequenceNumber,
+                        totalCost: a.assignmentType === 'SPJ' ? (a.spjCost || 0) : (a.actualCost || 0),
+                        employee: a.user || a.employee || { name: '-', jabatan: '', role: 'protokol' }
+                    }))
+                };
+            });
+            allRecords = [...allRecords, ...mappedDalkot];
+            allRecords.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        } catch (err) {
+            console.warn("Failed to fetch dalkot records:", err);
+        }
+
+        recordsStore.set(allRecords);
     } catch (e: any) {
         if (e.message === 'Unauthorized') return;
         console.warn("Failed to load records (backend might be starting):", e.message);
@@ -48,6 +91,7 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
                     // Gunakan data petugas dari assignments yang sudah di-embed backend
                     const assignments = dr.assignments || [];
                     const firstEmployee = assignments.length > 0 ? (assignments[0].user || assignments[0].employee) : null;
+                    const totalAssignmentCost = assignments.reduce((sum: number, a: any) => sum + (a.assignmentType === 'SPJ' ? (a.spjCost || 0) : (a.actualCost || 0)), 0);
                     return {
                         id: dr.id,
                         spd: dr.spdNumber,
@@ -59,8 +103,8 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
                         location: dr.location,
                         province: 'DKI Jakarta',
                         status: dr.status,
-                        reportStatus: dr.status,
                         createdAt: dr.createdAt,
+                        totalCost: totalAssignmentCost,
                         // Employee utama (untuk kolom tabel)
                         employee: firstEmployee ? {
                             name: firstEmployee.name,
@@ -83,10 +127,39 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
                     };
                 });
                 allRecords = [...allRecords, ...mappedDalkot];
-                allRecords.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             } catch (err) {
                 console.warn("Failed to fetch dalkot records:", err);
             }
+        }
+        
+        // Apply frontend sorting based on params.sort_by
+        if (params.sort_by === 'spj-asc') {
+            allRecords.sort((a, b) => {
+                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
+                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                return aNum - bNum;
+            });
+        } else if (params.sort_by === 'spj-desc') {
+            allRecords.sort((a, b) => {
+                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
+                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                return bNum - aNum;
+            });
+        } else if (params.sort_by === 'date-desc') {
+            allRecords.sort((a, b) => new Date(b.startDate || b.createdAt).getTime() - new Date(a.startDate || a.createdAt).getTime());
+        } else if (params.sort_by === 'date-asc') {
+            allRecords.sort((a, b) => new Date(a.startDate || a.createdAt).getTime() - new Date(b.startDate || b.createdAt).getTime());
+        } else if (params.sort_by === 'cost-desc') {
+            allRecords.sort((a, b) => (b.totalCost || 0) - (a.totalCost || 0));
+        } else if (params.sort_by === 'cost-asc') {
+            allRecords.sort((a, b) => (a.totalCost || 0) - (b.totalCost || 0));
+        } else {
+            // default ID Terbaru (spj-desc)
+            allRecords.sort((a, b) => {
+                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
+                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                return bNum - aNum;
+            });
         }
 
         if (append) {
