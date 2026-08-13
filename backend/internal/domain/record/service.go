@@ -158,12 +158,17 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 	record.StartDate = minStart
 	record.EndDate = maxEnd
 
-	overlapping, err := s.repo.GetOverlappingRecords(ctx, record.EmployeeID, record.StartDate, record.EndDate)
-	if err != nil {
-		return err
-	}
-	if len(overlapping) > 0 {
-		return errors.New("employee is already assigned to a trip during these dates")
+	employee, errUsr := s.repo.GetUserByID(ctx, record.EmployeeID)
+	isProtokol := errUsr == nil && employee != nil && employee.Role == "protokol"
+
+	if !isProtokol {
+		overlapping, err := s.repo.GetOverlappingRecords(ctx, record.EmployeeID, record.StartDate, record.EndDate)
+		if err != nil {
+			return err
+		}
+		if len(overlapping) > 0 {
+			return errors.New("employee is already assigned to a trip during these dates")
+		}
 	}
 
 	record.Status = "Draft"
@@ -184,8 +189,8 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 		record.SPDNumber = spd
 	}
 
-	err = s.repo.CreateTravelRecord(ctx, record)
-	if err == nil {
+	errCreate := s.repo.CreateTravelRecord(ctx, record)
+	if errCreate == nil {
 		s.invalidateRecordCaches(ctx, record.ID)
 
 		// Send WhatsApp Notification
@@ -213,7 +218,7 @@ func (s *service) CreateRecord(ctx context.Context, record *models.TravelRecord)
 			}
 		}()
 	}
-	return err
+	return errCreate
 }
 
 // CreateRecordsBulk validates every record in the batch (overlap check, date
@@ -253,12 +258,17 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 		r.StartDate = minStart
 		r.EndDate = maxEnd
 
-		overlapping, err := s.repo.GetOverlappingRecords(ctx, r.EmployeeID, r.StartDate, r.EndDate)
-		if err != nil {
-			return fmt.Errorf("overlap check for employee %s: %w", r.EmployeeID, err)
-		}
-		if len(overlapping) > 0 {
-			return fmt.Errorf("employee %s is already assigned to a trip during these dates", r.EmployeeID)
+		employee, errUsr := s.repo.GetUserByID(ctx, r.EmployeeID)
+		isProtokol := errUsr == nil && employee != nil && employee.Role == "protokol"
+
+		if !isProtokol {
+			overlapping, err := s.repo.GetOverlappingRecords(ctx, r.EmployeeID, r.StartDate, r.EndDate)
+			if err != nil {
+				return fmt.Errorf("overlap check for employee %s: %w", r.EmployeeID, err)
+			}
+			if len(overlapping) > 0 {
+				return fmt.Errorf("employee %s is already assigned to a trip during these dates", r.EmployeeID)
+			}
 		}
 
 		r.Status = inheritedStatus
@@ -287,7 +297,8 @@ func (s *service) CreateRecordsBulk(ctx context.Context, records []*models.Trave
 			defer cancel()
 			existingRecords, _ := s.repo.GetTravelRecords(bgCtx, map[string]interface{}{"spd": spd})
 			var recordWithReport *models.TravelRecord
-			for _, r := range existingRecords {
+			for i := range existingRecords {
+				r := &existingRecords[i]
 				if r.Report != nil && (r.Report.Text != "" || len(r.Report.Files) > 2) {
 					recordWithReport = r
 					break
