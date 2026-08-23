@@ -11,9 +11,9 @@
     function getSteps(record) {
         if (!record) return [];
         const step1Done = true; // Selalu true jika record ada
-        const step2Done = record.reportStatus === 'Completed' || record.status === 'Approved' || record.paymentStatus === 'Paid';
-        const step3Done = record.status === 'Approved' || record.paymentStatus === 'Paid';
-        const step4Done = record.paymentStatus === 'Paid';
+        const step2Done = record.status === 'Submitted' || record.status === 'Approved' || record.status === 'Completed';
+        const step3Done = record.status === 'Approved' || record.status === 'Completed';
+        const step4Done = record.status === 'Completed';
 
         return [
             { 

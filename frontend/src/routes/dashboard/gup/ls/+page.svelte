@@ -7,6 +7,7 @@
     import { api } from '$lib/shared/api';
     import { toast } from '$lib/shared/stores/toast';
     import { formatCurrency } from '$lib/shared/utils/utils';
+    import { userStore } from '$lib/features/auth/store';
 
     export let data: any;
 
@@ -45,7 +46,12 @@
 
     // Filter status
     let isFilterOpen = false;
+    let isYearFilterOpen = false;
     let selectedFilter = 'all';
+
+    let currentSystemYear = new Date().getFullYear();
+    let startYear = 2026;
+    $: yearOptions = Array.from({ length: Math.max(1, currentSystemYear - startYear + 2) }, (_, i) => startYear + i);
 
     // Opsi untuk filter & form
     $: sumberDanaOptions = fundingSources.map(fs => ({
@@ -129,14 +135,104 @@
             <p class="text-sm text-slate-500 mt-1">Sumber dana GUP (LS Januari untuk GUP 1, dst).</p>
         </div>
         <div class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="flex items-center gap-3">
+                <!-- Filter Tahun (Global Custom Dropdown) -->
+                <div class="relative w-full sm:w-32">
+                    <button 
+                        type="button" 
+                        on:click={() => { isYearFilterOpen = !isYearFilterOpen; isFilterOpen = false; }}
+                        class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                    >
+                        <span>{currentYear}</span>
+                        <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    
+                    {#if isYearFilterOpen}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                        <div class="fixed inset-0 z-40" on:click={() => isYearFilterOpen = false}></div>
+                        
+                        <div class="absolute right-0 z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                            <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                                {#each yearOptions as yr}
+                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                    <li 
+                                        class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {currentYear === yr.toString() ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                        on:click={() => { isYearFilterOpen = false; goto(`?year=${yr}`, { invalidateAll: true }); }}
+                                    >
+                                        <span>{yr}</span>
+                                        {#if currentYear === yr.toString()}
+                                            <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                        {/if}
+                                    </li>
+                                {/each}
+                            </ul>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Filter Bulan (Lokal Custom Dropdown) -->
+                <div class="relative w-full sm:w-48">
+                    <button 
+                        type="button" 
+                        on:click={() => { isFilterOpen = !isFilterOpen; isYearFilterOpen = false; }}
+                        class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                    >
+                        <span class="truncate">{selectedFilter === 'all' ? 'Semua Bulan' : (fundingSources.find(f => f.id === selectedFilter)?.monthName || 'Bulan...')}</span>
+                        <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    
+                    {#if isFilterOpen}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                        <div class="fixed inset-0 z-40" on:click={() => isFilterOpen = false}></div>
+                        
+                        <div class="absolute right-0 z-50 mt-2 w-full min-w-[12rem] origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                            <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                <li 
+                                    class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {selectedFilter === 'all' ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                    on:click={() => { selectedFilter = 'all'; isFilterOpen = false; }}
+                                >
+                                    <span>Semua Bulan</span>
+                                    {#if selectedFilter === 'all'}
+                                        <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                    {/if}
+                                </li>
+                                {#each sumberDanaOptions as opt}
+                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                    <li 
+                                        class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {selectedFilter === opt.value ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                        on:click={() => { selectedFilter = opt.value; isFilterOpen = false; }}
+                                    >
+                                        <span class="truncate pr-2">{opt.label}</span>
+                                        {#if selectedFilter === opt.value}
+                                            <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                        {/if}
+                                    </li>
+                                {/each}
+                            </ul>
+                        </div>
+                    {/if}
+                </div>
+            </div>
 
             <!-- Tombol Aksi Utama -->
+            {#if $userStore?.role !== 'kasubag'}
             <Button variant="default" class="w-full sm:w-auto gap-2" on:click={() => openEditModal()}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Input LS Bulanan
             </Button>
+            {/if}
         </div>
     </div>
 
@@ -191,60 +287,10 @@
                 <h2 class="text-lg font-bold text-slate-800">Pemetaan LS ke GUP</h2>
                 <p class="text-sm text-slate-500 mt-1">Realisasi penggunaan dana dihitung otomatis dari riwayat transaksi GUP.</p>
             </div>
-            
-            <!-- Custom Dropdown untuk Filter (Sesuai Guideline) -->
-            <div class="w-full sm:w-64 relative">
-                <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Filter Bulan</span>
-                <button 
-                    type="button" 
-                    on:click={() => isFilterOpen = !isFilterOpen}
-                    class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
-                >
-                    <span class="truncate">{selectedFilter === 'all' ? 'Semua Bulan' : (fundingSources.find(f => f.id === selectedFilter)?.monthName || 'Pilih...')}</span>
-                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                
-                {#if isFilterOpen}
-                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                    <!-- svelte-ignore a11y-no-static-element-interactions -->
-                    <div class="fixed inset-0 z-40" on:click={() => isFilterOpen = false}></div>
-                    
-                    <div class="absolute z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                        <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
-                            <!-- svelte-ignore a11y-click-events-have-key-events -->
-                            <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-                            <li 
-                                class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {selectedFilter === 'all' ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
-                                on:click={() => { selectedFilter = 'all'; isFilterOpen = false; }}
-                            >
-                                <span>Semua Bulan</span>
-                                {#if selectedFilter === 'all'}
-                                    <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                {/if}
-                            </li>
-                            {#each sumberDanaOptions as opt}
-                                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-                                <li 
-                                    class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {selectedFilter === opt.value ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
-                                    on:click={() => { selectedFilter = opt.value; isFilterOpen = false; }}
-                                >
-                                    <span class="truncate pr-2">{opt.label}</span>
-                                    {#if selectedFilter === opt.value}
-                                        <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                    {/if}
-                                </li>
-                            {/each}
-                        </ul>
-                    </div>
-                {/if}
-            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {#each filteredSources as fs (fs.id)}
+            {#each filteredSources as fs, index (fs.id + '-' + index)}
                 {@const lsAmount = lsMap.get(fs.id) || 0}
                 {@const realisasi = realisasiMap.get(fs.id) || 0}
                 {@const sisa = lsAmount - realisasi}
@@ -257,9 +303,11 @@
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">{fs.monthName}</span>
                                 <h3 class="mt-2 text-lg font-black text-slate-900 leading-tight">{fs.gupLabel}</h3>
                             </div>
+                            {#if $userStore?.role !== 'kasubag'}
                             <button on:click={() => openEditModal(fs.id)} type="button" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition-colors border border-indigo-100 flex items-center justify-center shrink-0" title="Input LS {fs.monthName}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             </button>
+                            {/if}
                         </div>
                         
                         <div class="space-y-2.5 text-sm border-t border-slate-100 pt-3">

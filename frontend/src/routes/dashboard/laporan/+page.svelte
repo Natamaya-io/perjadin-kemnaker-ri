@@ -22,13 +22,17 @@
     import DocumentViewer from '$lib/shared/ui/document-viewer/DocumentViewer.svelte';
     import SkeletonTable from '$lib/shared/ui/loader/SkeletonTable.svelte';
 
-    // Filter & Sort State
-    let searchQuery = '';
-    let statusFilter = 'all'; // 'all', 'Completed', 'Pending'
-    let sortOption = 'spj-desc'; // Default to newest SPJ first
-    let startDate = '';
-    let endDate = '';
-    let typeFilter = 'luar_kota';
+    import { laporanFilters } from '$lib/shared/stores/filters';
+
+    // Filter & Sort State (bound to persistent store)
+    let searchQuery = $laporanFilters.searchQuery;
+    let statusFilter = $laporanFilters.statusFilter;
+    let sortOption = $laporanFilters.sortOption;
+    let startDate = $laporanFilters.startDate;
+    let endDate = $laporanFilters.endDate;
+    let typeFilter = $laporanFilters.typeFilter;
+
+    $: $laporanFilters = { searchQuery, statusFilter, sortOption, startDate, endDate, typeFilter };
 
     // Expanded agenda state
     let expandedAgendas = new Set();
@@ -44,7 +48,7 @@
     
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
-        { value: 'Pending', label: 'Belum Lapor' },
+        { value: 'Draft', label: 'Draft' },
         { value: 'Completed', label: 'Selesai' }
     ];
 
@@ -148,7 +152,7 @@
         const userId = $userStore?.id;
         const newGrouped = {};
         const newUnique = [];
-        const newDisplay = [];
+        let newDisplay = [];
         const spdToIndex = {};
 
         for (const record of $paginatedRecordsStore) {
@@ -166,6 +170,21 @@
                 const idx = spdToIndex[spd];
                 newDisplay[idx] = record;
             }
+        }
+        // Filter locally based on statusFilter for Laporan (Draft maps to all non-Completed)
+        if (statusFilter && statusFilter !== 'all') {
+            newDisplay = newDisplay.filter(record => {
+                const isDalkot = record.type === 'Dalam Kota' || record.type === 'dalam_kota';
+                const isSelesai = record.status === 'Completed' || (isDalkot && (record.status === 'pending' || record.status === 'Approved'));
+                
+                if (statusFilter === 'Completed') {
+                    return isSelesai;
+                }
+                if (statusFilter === 'Draft') {
+                    return !isSelesai;
+                }
+                return true;
+            });
         }
         
         groupedRecordsMap = newGrouped;
@@ -226,6 +245,7 @@
             bind:startDate
             bind:endDate
             statusOptions={statusOptions}
+            hideStatus={$userStore?.role === 'protokol'}
         />
     </div>
 
@@ -238,7 +258,19 @@
                         <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">{typeFilter === 'dalam_kota' ? 'ID Dalkot' : 'ID SPJ'}</th>
                         <th class="min-w-[250px] font-semibold text-slate-700 py-3 bg-slate-50">Tujuan & Lokasi</th>
                         <th class="min-w-[160px] font-semibold text-slate-700 py-3 bg-slate-50">Tanggal</th>
-                        <th class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3 bg-slate-50">Status Laporan</th>
+                        <th class="w-[120px] min-w-[120px] font-semibold text-slate-700 py-3 bg-slate-50">
+                            <div class="group relative inline-flex items-center gap-1.5 cursor-help">
+                                Status
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 hover:text-slate-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:block w-56 p-3 bg-slate-800 text-white text-xs rounded-xl shadow-xl z-50 text-left font-normal normal-case pointer-events-none">
+                                    <p class="font-semibold mb-1.5 text-slate-200 border-b border-slate-700 pb-1">Keterangan Status:</p>
+                                    <ul class="space-y-1.5 text-slate-300">
+                                        <li><span class="text-white font-medium">Draft:</span> Dokumen laporan sedang dikerjakan.</li>
+                                        <li><span class="text-white font-medium">Selesai:</span> Seluruh pelaporan telah disubmit.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </th>
                         <th class="w-[150px] min-w-[150px] font-semibold text-slate-700 text-center pr-4 py-3 bg-slate-50">Aksi</th>
                     </tr>
                 </thead>
@@ -257,6 +289,8 @@
                         </tr>
                     {:else}
                         {#each displayRecords as record (record.spd)}
+                                {@const isDalkot = record.type === 'Dalam Kota' || record.type === 'dalam_kota'}
+                                {@const isSelesai = record.status === 'Completed' || (isDalkot && (record.status === 'pending' || record.status === 'Approved'))}
                                 <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                     <td class="pl-4 py-4 align-middle">
                                         <span class="inline-flex items-center font-mono text-[13px] font-bold tracking-widest text-slate-700">{record.spd}</span>
@@ -316,28 +350,24 @@
                                     </td>
                                     <td class="py-4 align-top">
                                         <div class="flex flex-col gap-1.5 items-start">
-                                            <span class={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border", 
-                                                record.reportStatus === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
-                                                record.reportStatus === 'Draft' ? "bg-sky-50 text-sky-700 border-sky-100" : 
-                                                "bg-amber-50 text-amber-700 border-amber-100")}>
-                                                {record.reportStatus === 'Completed' ? 'Selesai' : 
-                                                 record.reportStatus === 'Draft' ? 'Draft' : 'Pending'}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border {isSelesai ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-amber-50 text-amber-700 border-amber-100'}">
+                                                {isSelesai ? 'Selesai' : 'Draft'}
                                             </span>
                                         </div>
                                     </td>
                                     <td class="text-center pr-4 py-4 align-top">
                                         <div class="flex flex-col gap-2">
                                             <div class="flex items-center justify-center gap-2">
-                                                <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="block w-full">
+                                                <a href={record.type === 'Dalam Kota' ? `/dashboard/laporan/dalkot/${record.id}` : `/dashboard/laporan/${encodeURIComponent(record.spd)}`} class="block w-full">
                                                     <Button 
-                                                        variant={record.reportStatus === 'Completed' || $userStore.role === 'kasubag' ? 'outline' : 'default'}
+                                                        variant={isSelesai || $userStore.role === 'kasubag' ? 'outline' : 'default'}
                                                         size="sm"
                                                         class="w-full text-[11px] h-8 rounded-lg gap-1.5"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                         </svg>
-                                                        {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
+                                                        {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (isSelesai ? 'Edit Laporan' : 'Lihat Laporan')}
                                                     </Button>
                                                 </a>
                                             </div>

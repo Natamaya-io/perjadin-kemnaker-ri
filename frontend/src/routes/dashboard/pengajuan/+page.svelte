@@ -5,6 +5,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { provincesStore, stakeholdersStore } from '$lib/shared/stores/master-data';
     import { toast } from '$lib/shared/stores/toast';
+    import { api } from '$lib/shared/api';
     import { getStatusBadge, formatLocations, formatCurrency } from '$lib/shared/utils/utils';
     
     import ReviewModal from '$lib/features/pengajuan/ui/ReviewModal.svelte';
@@ -15,20 +16,24 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import { goto } from '$app/navigation';
 
-    // Filter & Sort State
-    let searchQuery = '';
-    let statusFilter = 'all';
-    let sortOption = 'spj-desc';
-    let startDate = '';
-    let endDate = '';
-    let typeFilter = 'luar_kota';
+    import { pengajuanFilters } from '$lib/shared/stores/filters';
+
+    // Filter & Sort State (bound to persistent store)
+    let searchQuery = $pengajuanFilters.searchQuery;
+    let statusFilter = $pengajuanFilters.statusFilter;
+    let sortOption = $pengajuanFilters.sortOption;
+    let startDate = $pengajuanFilters.startDate;
+    let endDate = $pengajuanFilters.endDate;
+    let typeFilter = $pengajuanFilters.typeFilter;
+
+    $: $pengajuanFilters = { searchQuery, statusFilter, sortOption, startDate, endDate, typeFilter };
     
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
         { value: 'Draft', label: 'Draft' },
-        { value: 'Submitted', label: 'Menunggu Persetujuan' },
-        { value: 'Approved', label: 'Disetujui' },
-        { value: 'Rejected', label: 'Ditolak' }
+        { value: 'Submitted', label: 'Ajukan' },
+        { value: 'Approved', label: 'Setujui' },
+        { value: 'Completed', label: 'Selesai' }
     ];
 
     export let data;
@@ -159,6 +164,18 @@
     let isDeleteModalOpen = false;
     let spdToDelete = '';
 
+    async function handleUpdateDalkotStatus(e) {
+        const { id, status } = e.detail;
+        try {
+            await api.updateDalkotStatus(id, status);
+            toast.success(`Status pengajuan dalkot berhasil diubah menjadi ${status}`);
+            isDalkotReviewOpen = false;
+            fetchRecords(false);
+        } catch (error) {
+            toast.error(error.message || 'Gagal mengubah status');
+        }
+    }
+
     function handleReview(spd, record) {
         if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
             selectedDalkotRecord = record;
@@ -239,6 +256,7 @@
             bind:startDate
             bind:endDate
             statusOptions={statusOptions}
+            hideStatus={$userStore?.role === 'protokol'}
         />
     </div>
 
@@ -251,7 +269,21 @@
                         <th class="min-w-[120px] font-semibold text-slate-700 pl-4 py-3 bg-slate-50">{typeFilter === 'dalam_kota' ? 'ID Dalkot' : 'ID SPJ'}</th>
                         <th class="min-w-[250px] font-semibold text-slate-700 py-3 bg-slate-50">Tujuan & Lokasi</th>
                         <th class="min-w-[130px] font-semibold text-slate-700 py-3 bg-slate-50">Tanggal</th>
-                        <th class="min-w-[160px] font-semibold text-slate-700 text-center py-3 bg-slate-50">Status</th>
+                        <th class="min-w-[160px] font-semibold text-slate-700 text-center py-3 bg-slate-50">
+                            <div class="group relative inline-flex items-center justify-center gap-1.5 cursor-help">
+                                Status
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 hover:text-slate-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:block w-56 p-3 bg-slate-800 text-white text-xs rounded-xl shadow-xl z-50 text-left font-normal normal-case pointer-events-none">
+                                    <p class="font-semibold mb-1.5 text-slate-200 border-b border-slate-700 pb-1">Keterangan Status:</p>
+                                    <ul class="space-y-1.5 text-slate-300">
+                                        <li><span class="text-white font-medium">Draft:</span> Dokumen baru dibuat.</li>
+                                        <li><span class="text-white font-medium">Ajukan:</span> Dikirim untuk direviu.</li>
+                                        <li><span class="text-white font-medium">Setujui:</span> Disetujui sah.</li>
+                                        <li><span class="text-white font-medium">Selesai:</span> Seluruh proses ditutup.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </th>
                         <th class="w-[140px] min-w-[140px] font-semibold text-slate-700 text-center pr-4 py-3 bg-slate-50">Aksi</th>
                     </tr>
                 </thead>
@@ -272,7 +304,7 @@
                             </td>
                         </tr>
                     {:else}
-                        {#each displayRecords as record (record.id)}
+                        {#each displayRecords as record (record.spd || record.id)}
                                 <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                     <td class="py-4 pl-4 align-middle">
                                         <div class="flex flex-col gap-1.5">
@@ -329,7 +361,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
-                                            {#if $userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.creator?.email || record.email) === $userStore?.email}
+                                            {#if ($userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' || (record.creator?.email || record.email) === $userStore?.email) && $userStore?.role !== 'protokol'}
                                                 <button 
                                                     class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1.5 rounded transition-colors" 
                                                     title="Hapus"
@@ -373,6 +405,7 @@
 <DalkotReviewModal
     bind:open={isDalkotReviewOpen}
     record={selectedDalkotRecord}
+    on:updateStatus={handleUpdateDalkotStatus}
 />
 
 <ConfirmationModal 

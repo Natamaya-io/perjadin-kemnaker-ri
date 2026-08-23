@@ -71,10 +71,10 @@
         },
         {
             header: "Zona Admin",
-            role: ["super_admin", "kasubag"],
+            role: ["super_admin"],
             items: [
                  { label: "User", href: "/dashboard/admin/users", icon: icons.userCircle, role: "super_admin" },
-                 { label: "Pengaturan", href: "/dashboard/admin/settings", icon: icons.settings }
+                 { label: "Pengaturan", href: "/dashboard/admin/settings", icon: icons.settings, role: "super_admin" }
             ]
         }
     ];

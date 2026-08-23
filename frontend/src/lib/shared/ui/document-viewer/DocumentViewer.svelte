@@ -64,6 +64,11 @@
     let scale = $state(1.5); // Default scale for better readability
     let totalPages = $state(0);
     
+    let typeStr = $derived((type || '').toLowerCase());
+    let isPdf = $derived(typeStr === 'pdf' || typeStr.includes('pdf'));
+    let isDocx = $derived(typeStr === 'docx' || typeStr.includes('wordprocessing'));
+    let isImage = $derived(typeStr === 'image' || typeStr.startsWith('image/'));
+    
     let _rawUrl = $derived((typeof url === 'string' && url.startsWith('/uploads')) ? window.location.origin + url + '?t=' + new Date().getTime() : url);
     let finalUrl = $derived(getBlobUrl(_rawUrl));
 
@@ -82,7 +87,7 @@
         resetCssZoom();
 
         try {
-            if (type === 'pdf') {
+            if (isPdf) {
                 if (!refs.pdfjsLib) {
                     const mod = await import('pdfjs-dist');
                     refs.pdfjsLib = mod;
@@ -110,7 +115,7 @@
                     totalPages = refs.pdfDoc.numPages;
                     await renderPage(pageNum);
                 });
-            } else if (type === 'docx') {
+            } else if (isDocx) {
                 if (!refs.renderAsync) {
                     const mod = await import('docx-preview');
                     refs.renderAsync = mod.renderAsync;
@@ -126,8 +131,10 @@
                     });
                 }
                 loading = false;
-            } else if (type === 'image') {
+            } else if (isImage) {
                 loading = false;
+            } else {
+                throw new Error(`Tipe file tidak didukung: ${typeStr}`);
             }
         } catch (err) {
             console.error("Error loading document:", err);
@@ -407,7 +414,7 @@
         </div>
         
         <div class="flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-700/50 rounded-lg p-1 border border-slate-600/50 w-full sm:w-auto overflow-x-auto">
-            {#if type === 'pdf'}
+            {#if isPdf}
                 <button aria-label="Halaman sebelumnya" class="p-1.5 sm:p-2 hover:bg-slate-600 rounded text-slate-300 hover:text-white transition-colors disabled:opacity-30 shrink-0" onclick={onPrevPage} disabled={pageNum <= 1}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                 </button>
@@ -464,13 +471,13 @@
             </div>
         {:else}
             <div use:panzoom class="relative flex justify-center items-center z-10 transform-origin-center will-change-transform w-full h-full p-4 md:p-8">
-                {#if type === 'pdf'}
+                {#if isPdf}
                     <div class="shadow-2xl shadow-slate-400/20 rounded-sm overflow-hidden bg-white flex max-h-full">
                         <canvas bind:this={canvas} class="block max-w-full max-h-[85vh] object-contain"></canvas>
                     </div>
-                {:else if type === 'docx'}
+                {:else if isDocx}
                     <div bind:this={container} class="bg-white shadow-2xl p-8 min-h-[800px] w-full max-w-[800px] docx-wrapper"></div>
-                {:else if type === 'image'}
+                {:else if isImage}
                     <img decoding="async" loading="lazy" src={finalUrl} alt={filename} class="max-w-full h-auto shadow-xl rounded-lg" />
                 {/if}
             </div>

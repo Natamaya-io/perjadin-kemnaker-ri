@@ -17,6 +17,7 @@ type Service interface {
 	GetRecordByID(id uuid.UUID) (*models.DalkotRecord, error)
 	GetRecords() ([]models.DalkotRecord, error)
 	UpdateRecord(record *models.DalkotRecord) error
+	UpdateStatus(id uuid.UUID, status string) error
 	DeleteRecord(id uuid.UUID) error
 
 	AddAssignment(assignment *models.DalkotAssignment) error
@@ -124,11 +125,31 @@ func (s *service) GetRecords() ([]models.DalkotRecord, error) {
 }
 
 func (s *service) UpdateRecord(record *models.DalkotRecord) error {
-	return s.repo.UpdateRecord(record)
+	if err := s.repo.UpdateRecord(record); err != nil {
+		return err
+	}
+	
+	// Update assignments if they are included in the payload
+	for _, assignment := range record.Assignments {
+		if assignment.ID != uuid.Nil {
+			_ = s.repo.UpdateAssignment(&assignment)
+		}
+	}
+	
+	return nil
 }
 
 func (s *service) DeleteRecord(id uuid.UUID) error {
 	return s.repo.DeleteRecord(id)
+}
+
+func (s *service) UpdateStatus(id uuid.UUID, status string) error {
+	record, err := s.repo.GetRecordByID(id)
+	if err != nil {
+		return err
+	}
+	record.Status = status
+	return s.repo.UpdateRecord(record)
 }
 
 func (s *service) AddAssignment(assignment *models.DalkotAssignment) error {

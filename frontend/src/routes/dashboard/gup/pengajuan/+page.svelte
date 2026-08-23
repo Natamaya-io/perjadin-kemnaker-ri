@@ -1,6 +1,6 @@
 <script lang="ts">
     import { formatCurrency } from '$lib/shared/utils/utils';
-    import { goto } from '$app/navigation';
+    import { goto, invalidateAll } from '$app/navigation';
     import { api } from '$lib/shared/api';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import Select from '$lib/shared/ui/select/Select.svelte';
@@ -8,6 +8,9 @@
     import KwitansiPrintModal from './KwitansiPrintModal.svelte';
     import SpbyPrintModal from './SpbyPrintModal.svelte';
     import RekapitulasiPrintModal from './RekapitulasiPrintModal.svelte';
+    import { userStore } from '$lib/features/auth/store';
+    import { toast } from '$lib/shared/stores/toast';
+    import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
     
     export let data: any;
     
@@ -134,7 +137,7 @@
             isKwitansiOpen = true;
         } catch (error) {
             console.error("Gagal mengambil data Kwitansi:", error);
-            alert("Gagal memuat data untuk dicetak");
+            toast.send("Gagal memuat data untuk dicetak", 'error');
         }
     }
 
@@ -148,18 +151,30 @@
             isSpbyOpen = true;
         } catch (error) {
             console.error("Gagal mengambil data SPBY:", error);
-            alert("Gagal memuat data untuk dicetak");
+            toast.send("Gagal memuat data untuk dicetak", 'error');
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Apakah Anda yakin ingin menghapus pengajuan GUP ini secara permanen?")) return;
+    let isDeleteModalOpen = false;
+    let transactionToDelete: string | null = null;
+
+    function handleDelete(id: string) {
+        transactionToDelete = id;
+        isDeleteModalOpen = true;
+    }
+
+    async function processDelete() {
+        if (!transactionToDelete) return;
         try {
-            await api.deleteGupPengajuan(id);
-            fetchTransactions();
+            await api.deleteGupPengajuan(transactionToDelete);
+            toast.send("Pengajuan berhasil dihapus", 'success');
+            await invalidateAll();
         } catch (error) {
             console.error("Gagal menghapus pengajuan:", error);
-            alert("Gagal menghapus pengajuan.");
+            toast.send("Gagal menghapus pengajuan", 'error');
+        } finally {
+            isDeleteModalOpen = false;
+            transactionToDelete = null;
         }
     }
 </script>
@@ -178,12 +193,14 @@
                 </svg>
                 Cetak Rekapitulasi
             </Button>
+            {#if $userStore?.role !== 'kasubag'}
             <Button variant="default" class="gap-2" on:click={() => goto('/dashboard/gup/pengajuan/new')}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Tambah GUP
             </Button>
+            {/if}
         </div>
     </div>
 
@@ -277,7 +294,7 @@
                             </td>
                         </tr>
                     {:else}
-                        {#each paginatedTransactions as trx, index (trx.id)}
+                        {#each paginatedTransactions as trx, index (trx.id + '-' + index)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="px-4 py-4 align-middle text-center text-sm text-slate-600">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                 <td class="px-4 py-4 align-middle">
@@ -311,6 +328,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                             </svg>
                                         </button>
+                                        {#if $userStore?.role !== 'kasubag'}
                                         <button class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-1.5 rounded transition-colors" title="Ubah Pengajuan" on:click={() => goto(`/dashboard/gup/pengajuan/new?id=${trx.id}`)}>
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -321,6 +339,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
+                                        {/if}
                                     </div>
                                 </td>
                             </tr>
@@ -476,7 +495,7 @@
                 <!-- Kartu: Detail Klasifikasi (MAK) -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden group">
                     <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100/80">
-                        <div class="p-2.5 bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
+                        <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl shadow-sm border border-amber-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         </div>
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Detail Klasifikasi (MAK)</h4>
@@ -530,3 +549,13 @@
 <KwitansiPrintModal bind:isOpen={isKwitansiOpen} data={printData} />
 <SpbyPrintModal bind:isOpen={isSpbyOpen} data={printData} />
 <RekapitulasiPrintModal bind:isOpen={isRekapitulasiOpen} transactions={transactions} {masterData} />
+
+<ConfirmationModal 
+    bind:open={isDeleteModalOpen}
+    title="Hapus Pengajuan GUP"
+    description="Apakah Anda yakin ingin menghapus pengajuan GUP ini secara permanen? Tindakan ini tidak dapat dibatalkan."
+    confirmText="Ya, Hapus"
+    cancelText="Batal"
+    onConfirm={processDelete}
+    variant="destructive"
+/>

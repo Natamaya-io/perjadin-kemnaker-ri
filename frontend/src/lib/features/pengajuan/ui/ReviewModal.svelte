@@ -112,7 +112,7 @@
     }
     
     $: baseRecord = records[0] || {};
-    $: isEditable = ((baseRecord.status === 'Draft' || baseRecord.status === 'Submitted' || baseRecord.status === 'In Progress') && $userStore?.role !== 'kasubag') || $userStore?.role === 'super_admin';
+    $: isEditable = ((baseRecord.status === 'Draft' || baseRecord.status === 'Submitted' || baseRecord.status === 'In Progress') && $userStore?.role !== 'kasubag' && $userStore?.role !== 'protokol') || $userStore?.role === 'super_admin';
     
     // Calculate SBM Cost
 	$: costBreakdown = Object.values((formData.locations && formData.locations.length > 0
@@ -593,6 +593,7 @@
                         </div>
                     </div>
                     
+                    {#if $userStore?.role !== 'protokol'}
                     <div class="mt-4">
                         <CostEstimateCard 
                             breakdown={costBreakdown}
@@ -601,6 +602,7 @@
                             readonly={true}
                         />
                     </div>
+                    {/if}
                 </div>
             </div>
       </svelte:fragment>
@@ -617,7 +619,6 @@
                       </Button>
                   </a>
               {/if}
-              <Button variant="outline" on:click={close} class="min-w-[100px]">Tutup</Button>
               {#if isEditable}
                   <Button variant="default" on:click={() => isEditing = true} class="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

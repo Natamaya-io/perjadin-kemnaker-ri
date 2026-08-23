@@ -43,6 +43,7 @@ export class RealApiClient implements ApiClient {
             try {
                 const errorJson = JSON.parse(errorText);
                 if (errorJson.message) errorMessage = errorJson.message;
+                else if (errorJson.error) errorMessage = errorJson.error;
             } catch (e) {
                 // ignore
             }
@@ -325,6 +326,13 @@ export class RealApiClient implements ApiClient {
         return this.request<any>(`/dalkot/${id}`);
     }
 
+    async updateDalkotStatus(id: string, status: string): Promise<any> {
+        return this.request<any>(`/dalkot/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status })
+        });
+    }
+
     async exportDalkotLaporanPdf(id: string): Promise<Blob> {
         return this.requestBlob(`/dalkot/${id}/laporan-stream`);
     }
@@ -494,12 +502,16 @@ export class RealApiClient implements ApiClient {
         });
     }
 
-    async getGupLaporan(year?: number, customFetch?: typeof fetch): Promise<any> {
+    async getGupLaporan(year?: number, month?: number, customFetch?: typeof fetch): Promise<any> {
         const y = year || new Date().getFullYear();
-        return this.request<any>(`/gup/laporan?year=${y}`, {}, customFetch);
+        let url = `/gup/laporan?year=${y}`;
+        if (month && month > 0) {
+            url += `&month=${month}`;
+        }
+        return this.request<any>(url, {}, customFetch);
     }
 
-    async saveGupBudget(data: { procurementTypeId: string; year: number; amount: number }): Promise<any> {
+    async saveGupBudget(data: { procurementTypeId: string; year: number; monthNumber: number; amount: number }): Promise<any> {
         return this.request<any>('/gup/laporan/budget', {
             method: 'POST',
             body: JSON.stringify(data)
@@ -521,10 +533,10 @@ export class RealApiClient implements ApiClient {
         return this.request<any[]>(`/gup/data?year=${year}`, {}, customFetch);
     }
 
-    async askChatbot(message: string): Promise<any> {
+    async askChatbot(message: string, sessionId: string = ''): Promise<any> {
         return this.request<any>('/chatbot/ask', {
             method: 'POST',
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ message, session_id: sessionId })
         });
     }
 

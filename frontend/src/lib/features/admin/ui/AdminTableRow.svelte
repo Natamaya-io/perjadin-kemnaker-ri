@@ -21,8 +21,22 @@
     </TableCell>
     <TableCell class="py-3 align-top">
         <div class="flex flex-col gap-0.5">
-            <span class="font-semibold text-slate-900 text-sm">{record.employee?.name || '-'}</span>
-            <span class="text-xs text-slate-500">{record.employee?.rank || '-'}</span>
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-slate-900 text-sm">{record.employee?.name || '-'}</span>
+                {#if record.employeesList && record.employeesList.length > 0}
+                    {#each [...new Set(record.employeesList.map(e => e.assignmentType).filter(Boolean))] as type}
+                        <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-widest border {type === 'SPJ' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
+                            {type}
+                        </span>
+                    {/each}
+                {/if}
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500">{record.employee?.rank || '-'}</span>
+                {#if record.employeesList && record.employeesList.length > 1}
+                    <span class="text-[10px] text-slate-400 font-medium bg-slate-100 px-1.5 py-0.5 rounded-full">+ {record.employeesList.length - 1} Petugas</span>
+                {/if}
+            </div>
         </div>
     </TableCell>
     <TableCell class="py-3 align-top">

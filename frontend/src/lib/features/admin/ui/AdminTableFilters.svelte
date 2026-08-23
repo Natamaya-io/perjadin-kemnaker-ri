@@ -9,10 +9,13 @@
 	export let startDate = '';
 	export let endDate = '';
 	export let typeFilter = 'luar_kota';
+	export let hideStatus = false;
 	export let statusOptions = [
 		{ value: 'all', label: 'Semua Status' },
-		{ value: 'In Progress', label: 'In Progress' },
-		{ value: 'Completed', label: 'Completed' }
+		{ value: 'Submitted', label: 'Ajukan' },
+		{ value: 'Rejected', label: 'Kembalikan' },
+		{ value: 'Approved', label: 'Setujui' },
+		{ value: 'Completed', label: 'Selesai' }
 	];
 </script>
 
@@ -47,6 +50,7 @@
 	</div>
 
 	<!-- Filter Status -->
+	{#if !hideStatus}
 	<div class="w-full">
 		<Select
 			bind:value={statusFilter}
@@ -54,6 +58,7 @@
 			options={statusOptions}
 		/>
 	</div>
+	{/if}
 
 	<!-- Sort -->
 	<div class="w-full">

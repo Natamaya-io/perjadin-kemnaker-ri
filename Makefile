@@ -26,11 +26,26 @@ watch:
 
 deploy-staging-fast:
 	@echo "🚀 --- SOTA Deploy: Build → GHCR Push → Server Pull ---"
-	@echo "📦 [1/3] Building frontend image (cache-optimized)..."
+	@echo "📦 [1/4] Building backend image..."
+	cd backend && podman build -t ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:staging .
+	@echo "📦 [2/4] Building frontend image (cache-optimized)..."
 	cd frontend && podman build -t ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:staging .
-	@echo "⬆️  [2/3] Pushing ONLY changed layers to GHCR..."
+	@echo "⬆️  [3/4] Pushing ONLY changed layers to GHCR..."
+	podman push ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:staging
 	podman push ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:staging
-	@echo "🔄 [3/3] Server pulling new image and restarting..."
-	ssh gatsu51@100.115.101.14 "podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:staging && systemctl --user restart perjadin-stg-frontend.service"
+	@echo "🔄 [4/4] Server pulling new image and restarting..."
+	ssh gatsu51@100.115.101.14 "podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:staging && podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:staging && systemctl --user restart perjadin-stg-backend.service perjadin-stg-frontend.service"
 	@echo "✅ Deploy selesai!"
 
+deploy-production-fast:
+	@echo "🚀 --- PRODUCTION SOTA Deploy: Build → GHCR Push → Server Pull ---"
+	@echo "📦 [1/4] Building backend image..."
+	cd backend && podman build -t ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:latest .
+	@echo "📦 [2/4] Building frontend image (cache-optimized)..."
+	cd frontend && podman build -t ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:latest .
+	@echo "⬆️  [3/4] Pushing ONLY changed layers to GHCR..."
+	podman push ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:latest
+	podman push ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:latest
+	@echo "🔄 [4/4] Server pulling new image and restarting..."
+	ssh gatsu51@100.115.101.14 "podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-backend:latest && podman pull ghcr.io/myceldev-com/perjadin-kemnaker-ri-frontend:latest && systemctl --user restart perjadin-backend.service perjadin-frontend.service"
+	@echo "✅ Deploy production selesai!"

@@ -49,8 +49,6 @@ type TravelRecord struct {
 	Agenda           string           `json:"agenda"`
 	Status           string           `json:"status"`
 	Location         string           `json:"location"`
-	ReportStatus     string           `json:"reportStatus"`
-	PaymentStatus    string           `json:"paymentStatus"`
 	EmployeeIDs      []uuid.UUID      `json:"employeeIds,omitempty"`
 	Locations        []TravelLocation `json:"locations,omitempty"`
 	TotalCost        float64          `json:"totalCost"`
@@ -148,8 +146,6 @@ type DashboardSummary struct {
 	StatusInProgress int64             `json:"statusInProgress"`
 	StatusAssigned   int64             `json:"statusAssigned"`
 	StatusRejected   int64             `json:"statusRejected"`
-	ReportCompleted  int64             `json:"reportCompleted"`
-	ReportPending    int64             `json:"reportPending"`
 }
 
 type DashboardBudget struct {
@@ -165,8 +161,6 @@ type PaginatedParams struct {
 	Cursor        string     `query:"cursor"`
 	Search        string     `query:"search"`
 	Status        string     `query:"status"`
-	ReportStatus  string     `query:"report_status"`
-	PaymentStatus string     `query:"payment_status"`
 	Type          string     `query:"type"`
 	SortBy        string     `query:"sort_by"`
 	Limit         int        `query:"limit"`

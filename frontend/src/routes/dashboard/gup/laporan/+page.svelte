@@ -6,6 +6,7 @@
     import Button from '$lib/shared/ui/button/Button.svelte';
     import BaseModal from '$lib/shared/ui/base-modal/BaseModal.svelte';
     import { api } from '$lib/shared/api';
+    import { userStore } from '$lib/features/auth/store';
 
     export let data;
 
@@ -22,7 +23,30 @@
     const yearOptions = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).reverse();
     function handleYearChange(selectedYear) {
         showYearDropdown = false;
-        goto(`?year=${selectedYear}`, { invalidateAll: true });
+        goto(`?year=${selectedYear}&month=${currentMonth}`, { invalidateAll: true });
+    }
+
+    // Filter Bulan Global
+    $: currentMonth = data?.month || 0;
+    let showMonthDropdown = false;
+    const monthOptions = [
+        { value: 0, label: 'Sepanjang Tahun' },
+        { value: 1, label: 'Januari' },
+        { value: 2, label: 'Februari' },
+        { value: 3, label: 'Maret' },
+        { value: 4, label: 'April' },
+        { value: 5, label: 'Mei' },
+        { value: 6, label: 'Juni' },
+        { value: 7, label: 'Juli' },
+        { value: 8, label: 'Agustus' },
+        { value: 9, label: 'September' },
+        { value: 10, label: 'Oktober' },
+        { value: 11, label: 'November' },
+        { value: 12, label: 'Desember' }
+    ];
+    function handleMonthChange(selectedMonth) {
+        showMonthDropdown = false;
+        goto(`?year=${currentYear}&month=${selectedMonth}`, { invalidateAll: true });
     }
 
     const baseColors = [
@@ -323,13 +347,18 @@
     function buildTotalChart() {
         if (!totalCanvas) return;
         if (totalChart) totalChart.destroy();
+        
+        const totalRealisasi = laporanSummary.totalRealisasi || 0;
+        const totalSisa = laporanSummary.sisaAnggaran || 0;
+        const hasData = totalRealisasi > 0 || totalSisa > 0;
+        
         totalChart = new Chart(totalCanvas, {
             type: 'doughnut',
             data: {
                 labels: ['Realisasi', 'Sisa Anggaran'],
                 datasets: [{
-                    data: [laporanSummary.totalRealisasi || 0, laporanSummary.sisaAnggaran || 0],
-                    backgroundColor: ['#10b981', '#e2e8f0'],
+                    data: hasData ? [totalRealisasi, totalSisa] : [0, 1],
+                    backgroundColor: hasData ? ['#10b981', '#e2e8f0'] : ['#10b981', '#f1f5f9'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
                     hoverOffset: 8
@@ -348,13 +377,17 @@
     function buildKomposisiChart() {
         if (!komposisiCanvas) return;
         if (komposisiChart) komposisiChart.destroy();
+        
+        const realisasiData = laporanRows.map(r => r.realisasi || 0);
+        const hasData = realisasiData.some(val => val > 0);
+
         komposisiChart = new Chart(komposisiCanvas, {
             type: 'pie',
             data: {
-                labels: laporanRows.map(r => r.jenisPengadaan || 'Tidak Diketahui'),
+                labels: hasData ? laporanRows.map(r => r.jenisPengadaan || 'Tidak Diketahui') : ['Belum Ada Realisasi'],
                 datasets: [{
-                    data: laporanRows.map(r => r.realisasi || 0),
-                    backgroundColor: getColors(laporanRows.length),
+                    data: hasData ? realisasiData : [1],
+                    backgroundColor: hasData ? getColors(laporanRows.length) : ['#f1f5f9'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
                     hoverOffset: 10
@@ -364,8 +397,8 @@
                 ...commonOptions,
                 plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip,
                     callbacks: {
-                        title: (ctx) => laporanRows[ctx[0].dataIndex]?.jenisPengadaan || 'Tidak Diketahui',
-                        label: (ctx) => 'Realisasi: ' + formatCurrency(ctx.raw)
+                        title: (ctx) => hasData ? (laporanRows[ctx[0].dataIndex]?.jenisPengadaan || 'Tidak Diketahui') : 'Tidak Diketahui',
+                        label: (ctx) => 'Realisasi: ' + formatCurrency(hasData ? ctx.raw : 0)
                     }
                 }}
             }
@@ -375,16 +408,20 @@
     function buildDetailCharts() {
         detailCharts.forEach(c => c?.destroy());
         detailCharts = [];
-        laporanRows.forEach((row, i) => {
-            if (!detailCanvases[i]) return;
+        pagedRows.forEach((row, i) => {
+            const globalI = globalOffset + i;
+            if (!detailCanvases[globalI]) return;
             const sisa = Math.max(0, (row.anggaran || 0) - (row.realisasi || 0));
-            const chart = new Chart(detailCanvases[i], {
+            const realisasi = row.realisasi || 0;
+            const hasData = realisasi > 0 || sisa > 0;
+            
+            const chart = new Chart(detailCanvases[globalI], {
                 type: 'pie',
                 data: {
                     labels: ['Realisasi', 'Sisa Anggaran'],
                     datasets: [{
-                        data: [row.realisasi || 0, sisa],
-                        backgroundColor: [baseColors[i % baseColors.length], '#e2e8f0'],
+                        data: hasData ? [realisasi, sisa] : [0, 1],
+                        backgroundColor: hasData ? [baseColors[globalI % baseColors.length], '#e2e8f0'] : [baseColors[globalI % baseColors.length], '#f1f5f9'],
                         borderWidth: 2,
                         borderColor: '#ffffff',
                         hoverOffset: 8
@@ -415,9 +452,12 @@
     $: if (pagedRows) { setTimeout(buildDetailCharts, 50); }
 
 
+    let selectedModalMonth = 0;
+    let showModalMonthDropdown = false;
     function openAnggaranModal(row = null) {
         selectedRow = row;
         anggaranInput = row && row.anggaran > 0 ? Number(row.anggaran).toLocaleString('id-ID') : '';
+        selectedModalMonth = currentMonth; // Default ke filter bulan saat ini
         saveError = '';
         showAnggaranModal = true;
     }
@@ -427,6 +467,7 @@
         selectedRow = null;
         anggaranInput = '';
         isAnggaranDropdownOpen = false;
+        showModalMonthDropdown = false;
     }
 
     async function handleSaveAnggaran() {
@@ -437,10 +478,11 @@
             await api.saveGupBudget({
                 procurementTypeId: selectedRow.procurementTypeId,
                 year: currentYear,
+                monthNumber: selectedModalMonth,
                 amount: parseFloat(anggaranInput.replace(/\./g, ''))
             });
             // Reload data
-            const fresh = await api.getGupLaporan(currentYear);
+            const fresh = await api.getGupLaporan(currentYear, currentMonth);
             laporan = fresh || { summary: {}, rows: [] };
             closeAnggaranModal();
             setTimeout(buildDetailCharts, 50);
@@ -453,57 +495,119 @@
 </script>
 
 <div class="space-y-6 pb-20 w-full">
-    <!-- Hero halaman -->
-    <section class="relative rounded-3xl bg-slate-900 p-6 sm:p-8 text-white shadow-xl no-print">
-
-        <div class="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-            <div class="max-w-3xl">
-                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+    <!-- Header halaman dan tombol aksi -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 no-print">
+        <div>
+            <h1 class="text-2xl text-slate-800 tracking-tight flex items-center gap-2">
+                Laporan dan Rekapitulasi
+                <button type="button" title="Informasi Global & Legenda" on:click={() => showInfoModal = true} class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full p-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Visualisasi Serapan Anggaran GUP — {currentYear}
-                </div>
-                <h1 class="text-3xl font-black tracking-tight sm:text-4xl flex items-center gap-3">
-                    Laporan dan Rekapitulasi
-                    <button type="button" title="Informasi Global & Legenda" on:click={() => showInfoModal = true} class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-1.5 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                </h1>
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base">
-                    Pantau Anggaran, Realisasi, Sisa Anggaran, dan Persentase Serapan dalam bentuk visualisasi per Jenis Pengadaan.
-                </p>
-            </div>
-
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-
-
-                <Button variant="warning" class="gap-2" on:click={() => openAnggaranModal(null)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Input Anggaran
-                </Button>
-                <Button variant="default" class="gap-2 bg-white/10 text-white border border-white/20 hover:bg-white/20" on:click={() => window.print()}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                    Cetak
-                </Button>
-            </div>
+                </button>
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">Pantau Anggaran, Realisasi, Sisa Anggaran, dan Persentase Serapan.</p>
         </div>
-    </section>
+        <div class="flex items-center gap-3 no-print">
+            <!-- Dropdown Tahun -->
+            <div class="relative inline-block w-full sm:w-40">
+                <button 
+                    type="button" 
+                    on:click={() => { showYearDropdown = !showYearDropdown; showMonthDropdown = false; }}
+                    class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all cursor-pointer h-10"
+                >
+                    <span>Tahun {currentYear}</span>
+                    <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                
+                {#if showYearDropdown}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <div class="fixed inset-0 z-40" on:click={() => showYearDropdown = false}></div>
+                    
+                    <div class="absolute right-0 z-50 mt-2 w-full origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                            {#each yearOptions as yr}
+                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                <li 
+                                    class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {currentYear === yr ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                    on:click={() => { showYearDropdown = false; handleYearChange(yr); }}
+                                >
+                                    <span>Tahun {yr}</span>
+                                    {#if currentYear === yr}
+                                        <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                    {/if}
+                                </li>
+                            {/each}
+                        </ul>
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Dropdown Bulan -->
+            <div class="relative inline-block w-full sm:w-40">
+                <button 
+                    type="button" 
+                    on:click={() => { showMonthDropdown = !showMonthDropdown; showYearDropdown = false; }}
+                    class="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all cursor-pointer h-10"
+                >
+                    <span class="truncate">{monthOptions.find(m => m.value === currentMonth)?.label || 'Bulan'}</span>
+                    <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                
+                {#if showMonthDropdown}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <div class="fixed inset-0 z-40" on:click={() => showMonthDropdown = false}></div>
+                    
+                    <div class="absolute right-0 z-50 mt-2 w-full min-w-[12rem] origin-top-right rounded-xl border border-slate-100 bg-white shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                            {#each monthOptions as opt}
+                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                <li 
+                                    class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {currentMonth === opt.value ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                    on:click={() => { showMonthDropdown = false; handleMonthChange(opt.value); }}
+                                >
+                                    <span class="truncate pr-2">{opt.label}</span>
+                                    {#if currentMonth === opt.value}
+                                        <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                    {/if}
+                                </li>
+                            {/each}
+                        </ul>
+                    </div>
+                {/if}
+            </div>
+
+            {#if $userStore?.role !== 'kasubag'}
+            <Button variant="warning" class="gap-2 h-10" on:click={() => openAnggaranModal(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Input Anggaran
+            </Button>
+            {/if}
+            <Button variant="outline" class="gap-2 h-10" on:click={() => window.print()}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Cetak
+            </Button>
+        </div>
+    </div>
 
     <!-- Overview -->
     <section class="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <article class="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-2">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Overview</p>
-                    <h2 class="mt-2 text-xl font-black text-slate-900">Total Serapan Anggaran</h2>
+                    <h3 class="text-lg text-slate-800">Total Serapan Anggaran</h3>
                     <p class="mt-1 text-sm text-slate-500">Komposisi total Realisasi dan Sisa Anggaran.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -540,18 +644,17 @@
             </div>
         </article>
 
-        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3 flex flex-col">
+        <article class="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-3 flex flex-col">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Komposisi</p>
-                    <h2 class="mt-2 text-xl font-black text-slate-900 flex items-center gap-2">
+                    <h3 class="text-lg text-slate-800 flex items-center gap-2">
                         Realisasi per Jenis Pengadaan
                         <button type="button" title="Informasi Laporan" on:click={() => showInfoModal = true} class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full p-1 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
-                    </h2>
+                    </h3>
                     <p class="mt-1 text-sm text-slate-500">Pie chart ini ditarik dari data Realisasi pada menu Pengajuan GUP.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -611,12 +714,14 @@
                 <p class="text-sm text-slate-500 mt-1">Setiap kartu menampilkan komposisi Realisasi dan Sisa Anggaran berdasarkan anggaran yang diinput.</p>
             </div>
             <div class="flex items-center gap-3 no-print">
+                {#if $userStore?.role !== 'kasubag'}
                 <Button variant="default" class="w-full sm:w-auto flex items-center justify-center gap-2" on:click={() => openAnggaranModal(null)}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    Input Anggaran
+                    Input Pagu Anggaran
                 </Button>
+                {/if}
             </div>
         </div>
 
@@ -1032,7 +1137,9 @@
                                             class="relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm transition-colors {isSelected ? 'font-semibold text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
                                             on:click={() => {
                                                 selectedRow = row;
-                                                anggaranInput = row.anggaran > 0 ? Number(row.anggaran).toLocaleString('id-ID') : '';
+                                                // Jika memilih row dari modal, tidak mengambil otomatis pagu, karena pagu tergantung bulan
+                                                // Tapi agar simple, biarkan input kosong atau tetap apa adanya
+                                                anggaranInput = '';
                                                 saveError = '';
                                                 isAnggaranDropdownOpen = false;
                                             }}
@@ -1080,6 +1187,46 @@
                 {/if}
 
                 <div class="space-y-2">
+                    <label for="input-bulan" class="text-sm font-semibold text-slate-700">Untuk Bulan</label>
+                    <div class="relative w-full">
+                        <button 
+                            type="button" 
+                            id="input-bulan"
+                            on:click={() => showModalMonthDropdown = !showModalMonthDropdown}
+                            class="flex w-full items-center justify-between appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white transition-colors cursor-pointer"
+                        >
+                            <span class="truncate">{monthOptions.find(m => m.value === selectedModalMonth)?.label || 'Pilih Bulan'}</span>
+                            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        {#if showModalMonthDropdown}
+                            <!-- svelte-ignore a11y-click-events-have-key-events -->
+                            <!-- svelte-ignore a11y-no-static-element-interactions -->
+                            <div class="fixed inset-0 z-40" on:click={() => showModalMonthDropdown = false}></div>
+                            <div class="absolute left-0 right-0 z-50 mt-2 origin-top rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5">
+                                <ul class="max-h-60 overflow-y-auto custom-scrollbar py-1.5">
+                                    {#each monthOptions as opt}
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+                                        <li 
+                                            class="relative cursor-pointer select-none py-2 px-4 text-sm transition-colors {selectedModalMonth === opt.value ? 'font-semibold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-50 flex items-center justify-between' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'}"
+                                            on:click={() => { selectedModalMonth = opt.value; showModalMonthDropdown = false; }}
+                                        >
+                                            <span>{opt.label}</span>
+                                            {#if selectedModalMonth === opt.value}
+                                                <svg class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                            {/if}
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+
+                <div class="space-y-2">
                     <label for="input-anggaran" class="text-sm font-semibold text-slate-700">Nominal Anggaran (Rp)</label>
                     <input
                         id="input-anggaran"
@@ -1104,7 +1251,7 @@
                 <Button variant="outline" on:click={closeAnggaranModal}>
                     Batal
                 </Button>
-                <Button variant="primary" on:click={handleSaveAnggaran} disabled={savingAnggaran || !anggaranInput} class="shadow-lg">
+                <Button variant="default" on:click={handleSaveAnggaran} disabled={savingAnggaran || !anggaranInput}>
                     {savingAnggaran ? 'Menyimpan...' : 'Simpan Anggaran'}
                 </Button>
             </div>

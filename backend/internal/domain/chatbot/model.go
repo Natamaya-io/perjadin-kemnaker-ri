@@ -3,8 +3,9 @@ package chatbot
 import "time"
 
 type AskRequest struct {
-	Message string `json:"message"`
-	Year    int    `json:"year,omitempty"`
+	SessionId string `json:"session_id"`
+	Message   string `json:"message"`
+	Year      int    `json:"year,omitempty"`
 }
 
 type ChatResponse struct {

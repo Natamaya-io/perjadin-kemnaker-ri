@@ -17,6 +17,7 @@
     import AdminTable from '$lib/features/admin/ui/AdminTable.svelte';
     import AdminTableRow from '$lib/features/admin/ui/AdminTableRow.svelte';
     import CostModal from '$lib/features/admin/ui/CostModal.svelte';
+    import DalkotCostModal from '$lib/features/admin/ui/DalkotCostModal.svelte';
     
     // UI Helpers
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
@@ -33,19 +34,24 @@
         });
     }
 
-    // Filter & Sort State
-    let searchQuery = '';
-    let statusFilter = 'all';
-    let sortOption = 'spj-desc';
-    let startDate = '';
-    let endDate = '';
-    let typeFilter = 'luar_kota';
+    import { adminPerdinFilters } from '$lib/shared/stores/filters';
+
+    // Filter & Sort State (bound to persistent store)
+    let searchQuery = $adminPerdinFilters.searchQuery;
+    let statusFilter = $adminPerdinFilters.statusFilter;
+    let sortOption = $adminPerdinFilters.sortOption;
+    let startDate = $adminPerdinFilters.startDate;
+    let endDate = $adminPerdinFilters.endDate;
+    let typeFilter = $adminPerdinFilters.typeFilter;
+
+    $: $adminPerdinFilters = { searchQuery, statusFilter, sortOption, startDate, endDate, typeFilter };
 
     let statusOptions = [
         { value: 'all', label: 'Semua Status' },
-        { value: 'Submitted', label: 'Menunggu Persetujuan' },
-        { value: 'Approved', label: 'Disetujui' },
-        { value: 'Rejected', label: 'Ditolak' }
+        { value: 'Draft', label: 'Draft' },
+        { value: 'Submitted', label: 'Ajukan' },
+        { value: 'Approved', label: 'Setujui' },
+        { value: 'Completed', label: 'Selesai' }
     ];
 
     /** @type {ReturnType<typeof setTimeout>} */
@@ -69,6 +75,11 @@
     let isRejectConfirmOpen = false;
     let isPaidConfirmOpen = false;
     let recordToPay = null;
+
+    let isDalkotModalOpen = false;
+    let selectedDalkotRecord = null;
+    let isDalkotConfirmOpen = false;
+    let isDalkotCompleteConfirmOpen = false;
 
     let expandedGroups = {};
 
@@ -167,6 +178,24 @@
     }
 
     async function openEditModal(record) {
+        if (record.dalkotRecordId || record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
+            const dalkotId = record.dalkotRecordId || record.id;
+            startLoading('Memuat detail Dalkot...');
+            try {
+                const fullDalkot = await api.getDalkotRecordById(dalkotId);
+                if (fullDalkot) {
+                    selectedDalkotRecord = fullDalkot;
+                    isDalkotModalOpen = true;
+                }
+            } catch (e) {
+                console.error("Gagal memuat detail dalkot:", e);
+                toast.error("Gagal memuat data dalkot.");
+            } finally {
+                stopLoading();
+            }
+            return;
+        }
+
         selectedRecord = record;
         editingCosts = { ...record.costs }; // Clone costs as fallback
         
@@ -203,6 +232,20 @@
         pendingOtherUpdatesToSave = pendingOtherUpdates || [];
         pendingSpdToSave = spd || selectedRecord.spd;
         isConfirmOpen = true;
+    }
+
+    function handleDalkotApprove(event) {
+        const { record } = event.detail;
+        selectedDalkotRecord = record;
+        isDalkotConfirmOpen = true;
+    }
+
+    async function handleDalkotReject(event) {
+        const { record } = event.detail;
+        selectedDalkotRecord = record;
+        // Gunakan reject confirmation existing
+        selectedRecord = record; // trick to reuse processReject
+        isRejectConfirmOpen = true;
     }
 
     import { updateMultipleRecords } from '$lib/features/pengajuan/store';
@@ -360,22 +403,104 @@
 
     async function processReject() {
         if (!selectedRecord) return;
+        if (!selectedRecord && !selectedDalkotRecord) return;
+
         startLoading();
         try {
-            await updateMultipleRecords([{
-                id: selectedRecord.id,
-                data: {
+            if (selectedDalkotRecord && isDalkotModalOpen) {
+                const updatedAssignments = (selectedDalkotRecord.assignments || []).map(a => ({
+                    ...a,
                     status: 'Rejected'
-                }
-            }]);
+                }));
+                await api.request(`/dalkot/${selectedDalkotRecord.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        ...selectedDalkotRecord,
+                        status: 'Rejected',
+                        assignments: updatedAssignments
+                    })
+                });
+            } else {
+                await api.updateRecord(selectedRecord.id, {
+                    ...selectedRecord,
+                    status: 'Rejected'
+                });
+            }
+            
             toast.success('Pengajuan berhasil ditolak.');
             fetchRecords();
         } catch (e) {
+            console.error(e);
             toast.error('Gagal menolak pengajuan.');
         } finally {
             stopLoading();
-            isModalOpen = false;
             isRejectConfirmOpen = false;
+            isModalOpen = false;
+            isDalkotModalOpen = false;
+        }
+    }
+
+    async function processDalkotApprove() {
+        if (!selectedDalkotRecord) return;
+        startLoading();
+        try {
+            const updatedAssignments = (selectedDalkotRecord.assignments || []).map(a => ({
+                ...a,
+                status: 'Approved'
+            }));
+
+            await api.request(`/dalkot/${selectedDalkotRecord.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...selectedDalkotRecord,
+                    status: 'Approved',
+                    assignments: updatedAssignments
+                })
+            });
+
+            toast.success('Pengajuan Dalkot berhasil disetujui.');
+            fetchRecords();
+        } catch (e) {
+            console.error(e);
+            toast.error('Gagal menyetujui pengajuan Dalkot.');
+        } finally {
+            stopLoading();
+            isDalkotConfirmOpen = false;
+            isDalkotModalOpen = false;
+        }
+    }
+
+    function handleDalkotComplete(event) {
+        isDalkotCompleteConfirmOpen = true;
+    }
+
+    async function processDalkotComplete() {
+        if (!selectedDalkotRecord) return;
+        startLoading();
+        try {
+            const updatedAssignments = (selectedDalkotRecord.assignments || []).map(a => ({
+                ...a,
+                status: 'Completed'
+            }));
+
+            await api.request(`/dalkot/${selectedDalkotRecord.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...selectedDalkotRecord,
+                    status: 'Completed',
+                    assignments: updatedAssignments
+                })
+            });
+
+            toast.success('Pencairan dana dalkot berhasil. Status menjadi Selesai.');
+            fetchRecords();
+        } catch (e) {
+            console.error(e);
+            toast.error('Gagal memproses pencairan dana dalkot.');
+        } finally {
+            stopLoading();
+            isDalkotCompleteConfirmOpen = false;
+            isDalkotModalOpen = false;
         }
     }
 
@@ -391,7 +516,7 @@
             await updateMultipleRecords([{
                 id: recordToPay.id,
                 data: {
-                    paymentStatus: 'Paid'
+                    status: 'Completed'
                 }
             }]);
             toast.success('Dana berhasil dicairkan. Status menjadi Completed.');
@@ -456,7 +581,21 @@
                             <th class="px-6 py-4 whitespace-nowrap w-[28%]">Lokasi</th>
                             <th class="px-6 py-4 whitespace-nowrap w-[20%]">Tanggal</th>
                             <th class="px-6 py-4 whitespace-nowrap text-right w-[25%]">Total Biaya Akhir</th>
-                            <th class="px-6 py-4 whitespace-nowrap text-center w-[15%]">Status</th>
+                            <th class="px-6 py-4 whitespace-nowrap text-center w-[15%]">
+                                <div class="group relative inline-flex items-center justify-center gap-1.5 cursor-help">
+                                    Status
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 hover:text-slate-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <div class="absolute top-full right-0 mt-2 hidden group-hover:block w-56 p-3 bg-slate-800 text-white text-xs rounded-xl shadow-xl z-50 text-left font-normal normal-case whitespace-normal pointer-events-none">
+                                        <p class="font-semibold mb-1.5 text-slate-200 border-b border-slate-700 pb-1">Keterangan Status:</p>
+                                        <ul class="space-y-1.5 text-slate-300">
+                                            <li><span class="text-white font-medium">Draft:</span> Dokumen baru dibuat.</li>
+                                            <li><span class="text-white font-medium">Ajukan:</span> Menunggu reviu admin.</li>
+                                            <li><span class="text-white font-medium">Setujui:</span> Disetujui sah, menunggu dana dicairkan.</li>
+                                            <li><span class="text-white font-medium">Selesai:</span> Dana dicairkan dan proses ditutup.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -482,7 +621,7 @@
                                 </tr>
                             {/if}
                         {:else}
-                            {#each uniqueRecords as record (record.id)}
+                            {#each uniqueRecords as record (record.spd || record.id)}
                                 <!-- Group Header Row -->
                             <tr class="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors select-none" on:click={() => toggleGroup(record.spd || record.id)}>
                                 <td class="px-6 py-3 whitespace-nowrap">
@@ -563,8 +702,18 @@
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle text-left">
-                                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {empRecord.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' : empRecord.status === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
-                                                                {empRecord.status === 'Rejected' ? 'Rejected' : empRecord.status === 'Draft' ? 'Belum Lengkap' : 'Lengkap'}
+                                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border {
+                                                                empRecord.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' : 
+                                                                empRecord.status === 'Draft' ? 'bg-slate-100 text-slate-700 border-slate-200' : 
+                                                                empRecord.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                                empRecord.status === 'Approved' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                                'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            }">
+                                                                {empRecord.status === 'Rejected' ? 'Rejected' : 
+                                                                 empRecord.status === 'Draft' ? 'Draft' : 
+                                                                 empRecord.status === 'pending' ? 'Ajukan' : 
+                                                                 empRecord.status === 'Approved' ? 'Setujui' : 
+                                                                 'Selesai'}
                                                             </span>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle text-right font-mono font-medium text-blue-600">
@@ -572,9 +721,9 @@
                                                         </td>
                                                         <td class="px-6 py-4 align-middle pr-6">
                                                             <div class="flex items-center justify-center gap-2">
-                                                                {#if empRecord.status === 'Approved' && empRecord.paymentStatus !== 'Paid'}
+                                                                {#if empRecord.status === 'Approved'}
                                                                     <button class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap" on:click={(e) => { e.stopPropagation(); markAsPaid(empRecord); }}>
-                                                                        Cairkan Dana
+                                                                        Selesai
                                                                     </button>
                                                                 {/if}
                                                                 <button class="bg-white border {empRecord.status === 'Approved' ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-slate-200 text-blue-600 hover:bg-blue-50'} px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm whitespace-nowrap" on:click={(e) => { e.stopPropagation(); openEditModal(empRecord); }}>
@@ -608,7 +757,7 @@
 
             <!-- Mobile Stacked/Card View -->
             <div class="lg:hidden flex flex-col divide-y divide-slate-100 bg-slate-50">
-                {#each uniqueRecords as record (record.id)}
+                {#each uniqueRecords as record (record.spd || record.id)}
                     <div class="flex flex-col">
                         <!-- Group Header (Mobile) -->
                         <div role="button" tabindex="0" class="p-4 bg-slate-100/80 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors select-none" on:click={() => toggleGroup(record.spd || record.id)} on:keydown={(e) => e.key === 'Enter' && toggleGroup(record.spd || record.id)}>
@@ -663,9 +812,9 @@
                                                 <div class="font-medium text-sm text-slate-900 leading-tight truncate">{empRecord.employee?.name || '-'}</div>
                                             </div>
                                             <div class="flex gap-1.5">
-                                                {#if empRecord.status === 'Approved' && empRecord.paymentStatus !== 'Paid'}
+                                                {#if empRecord.status === 'Approved'}
                                                     <button class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap" on:click={(e) => { e.stopPropagation(); markAsPaid(empRecord); }}>
-                                                        Cairkan Dana
+                                                        Selesai
                                                     </button>
                                                 {/if}
                                                 <button 
@@ -732,27 +881,50 @@
         on:save={handleModalSave}
         on:reject={handleModalReject}
     />
+    <DalkotCostModal
+        bind:open={isDalkotModalOpen}
+        record={selectedDalkotRecord}
+        on:close={() => isDalkotModalOpen = false}
+        on:approve={handleDalkotApprove}
+        on:reject={handleDalkotReject}
+        on:complete={handleDalkotComplete}
+    />
     <ConfirmationModal
         bind:open={isConfirmOpen}
-        title="Simpan Rincian Biaya"
-        description="Apakah Anda yakin data rincian biaya ini sudah sesuai? Status akan diubah menjadi Approved."
-        confirmText="Ya, Simpan & Approve"
+        title="Setujui Rincian Biaya"
+        description="Apakah Anda yakin data rincian biaya ini sudah sesuai? Status akan diubah menjadi Disetujui."
+        confirmText="Ya, Setujui"
         onConfirm={processSave}
     />
     <ConfirmationModal
         bind:open={isRejectConfirmOpen}
-        title="Tolak Pengajuan"
-        description="Apakah Anda yakin ingin menolak pengajuan ini? Status akan dikembalikan dan ditandai sebagai Rejected."
-        confirmText="Ya, Tolak Pengajuan"
+        title="Kembalikan Pengajuan"
+        description="Apakah Anda yakin ingin mengembalikan pengajuan ini? Status akan ditandai sebagai Dikembalikan."
+        confirmText="Ya, Kembalikan"
         confirmButtonClass="bg-red-600 hover:bg-red-700 focus:ring-red-500"
         onConfirm={processReject}
     />
     <ConfirmationModal
         bind:open={isPaidConfirmOpen}
-        title="Cairkan Dana"
-        description="Apakah Anda yakin dana untuk pegawai ini sudah dicairkan? Status akan berubah menjadi Completed."
-        confirmText="Ya, Tandai Lunas"
+        title="Selesaikan Transaksi"
+        description="Apakah Anda yakin dana untuk pegawai ini sudah dicairkan? Status akan berubah menjadi Selesai."
+        confirmText="Ya, Selesai"
         confirmButtonClass="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
         onConfirm={processPaid}
+    />
+    <ConfirmationModal
+        bind:open={isDalkotConfirmOpen}
+        title="Approve Pengajuan Dalkot"
+        description="Apakah Anda yakin data dalkot ini sudah sesuai? Status akan diubah menjadi Approved."
+        confirmText="Ya, Approve"
+        onConfirm={processDalkotApprove}
+    />
+    <ConfirmationModal
+        bind:open={isDalkotCompleteConfirmOpen}
+        title="Selesaikan Transaksi Dalkot"
+        description="Apakah Anda yakin dana untuk dalkot ini sudah dicairkan? Status akan berubah menjadi Selesai."
+        confirmText="Ya, Selesai"
+        confirmButtonClass="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+        onConfirm={processDalkotComplete}
     />
 </div>

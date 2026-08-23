@@ -1,8 +1,8 @@
 -- name: CreateTravelRecord :one
 INSERT INTO travel_records (
-  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, report_status, payment_status, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
+  id, spd_number, employee_id, creator_id, start_date, end_date, location, province, type, purpose, stakeholder, agenda, status, is_viewed, total_cost, surat_tugas_path, surat_tugas_number, surat_tugas_date
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 ) RETURNING *;
 
 -- name: GetTravelRecords :many
@@ -43,12 +43,10 @@ UPDATE travel_records SET
   agenda = $12,
   status = $13,
   is_viewed = $14,
-  report_status = $15,
-  payment_status = $16,
-  total_cost = $17,
-  surat_tugas_path = $18,
-  surat_tugas_number = $19,
-  surat_tugas_date = $20,
+  total_cost = $15,
+  surat_tugas_path = $16,
+  surat_tugas_number = $17,
+  surat_tugas_date = $18,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
@@ -131,18 +129,11 @@ BEGIN
 END $$;
 
 -- name: GetDashboardStatusCounts :many
-SELECT status, payment_status, report_status, COUNT(*) as count 
+SELECT status, COUNT(*) as count 
 FROM travel_records 
 WHERE deleted_at IS NULL
   AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
-GROUP BY status, payment_status, report_status;
-
--- name: GetDashboardReportCounts :many
-SELECT report_status, COUNT(*) as count 
-FROM travel_records 
-WHERE deleted_at IS NULL
-  AND (NULLIF(sqlc.narg('user_id')::uuid, NULL) IS NULL OR employee_id = sqlc.narg('user_id') OR creator_id = sqlc.narg('user_id'))
-GROUP BY report_status;
+GROUP BY status;
 
 -- name: GetActiveTripsCount :one
 SELECT COUNT(*) 
@@ -183,8 +174,6 @@ FROM travel_records
 LEFT JOIN users ON travel_records.employee_id = users.id
 WHERE travel_records.deleted_at IS NULL
   AND (NULLIF(sqlc.narg('status')::text, '') IS NULL OR travel_records.status = sqlc.narg('status'))
-  AND (NULLIF(sqlc.narg('report_status')::text, '') IS NULL OR travel_records.report_status = sqlc.narg('report_status'))
-  AND (NULLIF(sqlc.narg('payment_status')::text, '') IS NULL OR travel_records.payment_status = sqlc.narg('payment_status'))
   AND (
     NULLIF(sqlc.narg('search')::text, '') IS NULL
     OR travel_records.spd_number ILIKE '%' || sqlc.narg('search') || '%'
@@ -205,8 +194,6 @@ FROM travel_records
 LEFT JOIN users ON travel_records.employee_id = users.id
 WHERE travel_records.deleted_at IS NULL
   AND (NULLIF(sqlc.narg('status')::text, '') IS NULL OR travel_records.status = sqlc.narg('status'))
-  AND (NULLIF(sqlc.narg('report_status')::text, '') IS NULL OR travel_records.report_status = sqlc.narg('report_status'))
-  AND (NULLIF(sqlc.narg('payment_status')::text, '') IS NULL OR travel_records.payment_status = sqlc.narg('payment_status'))
   AND (
     NULLIF(sqlc.narg('search')::text, '') IS NULL
     OR travel_records.spd_number ILIKE '%' || sqlc.narg('search') || '%'

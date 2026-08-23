@@ -11,8 +11,8 @@
         <div class="flex justify-between items-start">
             <div class="flex flex-wrap gap-1.5">
                 <span class={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border", 
-                    record.reportStatus === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100")}>
-                    {record.reportStatus === 'Completed' ? 'Selesai' : 'Pending'}
+                    record.status === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100")}>
+                    {record.status === 'Completed' ? 'Selesai' : 'Pending'}
                 </span>
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200">
                     {record.type ? record.type.split('_').join(' ') : 'Dalam Kota'}
@@ -64,7 +64,7 @@
                      </Button>
                  </a>
              {/if}
-             {#if record.reportStatus === 'Completed'}
+             {#if record.status === 'Completed'}
                 <a href={`/print?type=laporan&spd=${encodeURIComponent(record.spd)}`} target="_blank" class="contents">
                     <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-full hover:bg-slate-200 text-slate-500" title="Cetak Laporan">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,10 +75,10 @@
              {/if}
              <a href={`/dashboard/laporan/${encodeURIComponent(record.spd)}`}>
                 <Button size="sm" class={cn("h-8 text-xs font-medium shadow-sm transition-all", 
-                    record.reportStatus === 'Completed' || $userStore.role === 'kasubag'
+                    record.status === 'Completed' || $userStore.role === 'kasubag'
                     ? "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-blue-600" 
                     : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20")}>
-                    {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (record.reportStatus === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
+                    {$userStore.role === 'kasubag' ? 'Lihat Laporan' : (record.status === 'Completed' ? 'Edit Laporan' : 'Input Laporan')}
                 </Button>
              </a>
          </div>

@@ -1,29 +1,32 @@
 package dalkot
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/kemnaker/perjadin-backend/internal/domain/master"
 	"github.com/kemnaker/perjadin-backend/internal/models"
 	"github.com/kemnaker/perjadin-backend/internal/utils/document"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
-	svc    Service
-	docGen *document.Generator
+	svc       Service
+	masterSvc master.Service
+	docGen    *document.Generator
 }
 
-func NewHandler(svc Service) *Handler {
+func NewHandler(svc Service, masterSvc master.Service) *Handler {
 	gotenbergURL := os.Getenv("GOTENBERG_URL")
 	if gotenbergURL == "" {
 		gotenbergURL = "http://gotenberg:3000"
 	}
 	return &Handler{
-		svc:    svc,
-		docGen: document.NewGenerator(gotenbergURL, "templates"),
+		svc:       svc,
+		masterSvc: masterSvc,
+		docGen:    document.NewGenerator(gotenbergURL, "templates"),
 	}
 }
 
@@ -111,6 +114,30 @@ func (h *Handler) UpdateRecord(c echo.Context) error {
 	return c.JSON(http.StatusOK, req)
 }
 
+func (h *Handler) UpdateStatus(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid record id"})
+	}
+
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	if req.Status == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "status is required"})
+	}
+
+	if err := h.svc.UpdateStatus(id, req.Status); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "status updated successfully"})
+}
+
 func (h *Handler) DeleteRecord(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -178,17 +205,57 @@ func (h *Handler) ExportLaporanPDF(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
 	}
 
-	htmlContent, err := generateLaporanHTML(record)
+	ppkName := "____________________________"
+	ppkNIP := "____________________________"
+	if h.masterSvc != nil {
+		gs, errGs := h.masterSvc.GetSettings(context.Background())
+		if errGs == nil {
+			if gs["ppk_name"] != "" {
+				ppkName = gs["ppk_name"]
+			}
+			if gs["ppk_nip"] != "" {
+				ppkNIP = gs["ppk_nip"]
+			}
+		}
+	}
+
+	htmlContent, err := generateLaporanHTML(record, ppkName, ppkNIP)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate HTML template")
 	}
 
-	pdfBytes, err := h.docGen.GenerateHTMLToPDF(c.Request().Context(), htmlContent)
+	return c.HTML(http.StatusOK, htmlContent)
+}
+
+func (h *Handler) ExportDprPDF(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate PDF: %v", err))
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid record ID")
 	}
 
-	filename := fmt.Sprintf("Laporan_Dalkot_%s.pdf", record.SPDNumber)
-	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	return c.Blob(http.StatusOK, "application/pdf", pdfBytes)
+	record, err := h.svc.GetRecordByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Record not found")
+	}
+
+	ppkName := "____________________________"
+	ppkNIP := "____________________________"
+	if h.masterSvc != nil {
+		gs, errGs := h.masterSvc.GetSettings(context.Background())
+		if errGs == nil {
+			if gs["ppk_name"] != "" {
+				ppkName = gs["ppk_name"]
+			}
+			if gs["ppk_nip"] != "" {
+				ppkNIP = gs["ppk_nip"]
+			}
+		}
+	}
+
+	htmlContent, err := generateDprHTML(record, ppkName, ppkNIP)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.HTML(http.StatusOK, htmlContent)
 }

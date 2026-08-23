@@ -75,6 +75,10 @@
 	$: showLoader = storeLoading;
 </script>
 
+<svelte:head>
+	<title>Perjadin Protokol Kemnaker</title>
+</svelte:head>
+
 {#if showLoader && !MAINTENANCE_MODE}
 	<GlobalLoader />
 {/if}

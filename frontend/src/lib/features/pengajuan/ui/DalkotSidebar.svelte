@@ -253,16 +253,22 @@
                 <div class="text-center py-6 text-sm text-slate-500 italic">Tidak ada petugas yang cocok.</div>
             {:else}
                 {#each filteredSpjEmployees as employee (employee.id)}
-                    <label class="flex items-center space-x-3 p-3 rounded-lg border border-transparent {readonly ? 'cursor-default opacity-50 bg-slate-50' : 'hover:border-slate-200 hover:bg-slate-50 cursor-pointer'} transition-all has-[:checked]:bg-blue-50/30 has-[:checked]:border-blue-200">
+                    {@const isDisabled = disabledIds.includes(employee.id)}
+                    <label class="flex items-center space-x-3 p-3 rounded-lg border border-transparent {readonly || isDisabled ? 'cursor-default opacity-50 bg-slate-50' : 'hover:border-slate-200 hover:bg-slate-50 cursor-pointer'} transition-all has-[:checked]:bg-blue-50/30 has-[:checked]:border-blue-200">
                         <input type="checkbox"
                             checked={selectedSpjEmployees.includes(employee.id)}
-                            on:change={() => toggleSpjEmployee(employee.id)}
-                            disabled={readonly}
-                            class="accent-blue-600 h-5 w-5 rounded border-slate-300 shrink-0 {readonly ? 'opacity-50' : ''}"
+                            on:change={() => !isDisabled && toggleSpjEmployee(employee.id)}
+                            disabled={readonly || isDisabled}
+                            class="accent-blue-600 h-5 w-5 rounded border-slate-300 shrink-0 {readonly || isDisabled ? 'opacity-50' : ''}"
                         />
-                        <div class="grid gap-0.5">
-                            <span class="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                {employee.name}
+                        <div class="grid gap-0.5 w-full">
+                            <span class="text-sm font-semibold text-slate-800 flex items-center justify-between gap-2">
+                                <span class="flex items-center gap-2">
+                                    {employee.name}
+                                </span>
+                                {#if isDisabled}
+                                    <span class="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 font-medium">Sibuk</span>
+                                {/if}
                             </span>
                             {#if employee.jabatan}
                                 <span class="text-xs font-medium text-slate-700">{employee.jabatan}</span>

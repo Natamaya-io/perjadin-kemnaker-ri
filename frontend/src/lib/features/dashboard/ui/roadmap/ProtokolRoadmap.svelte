@@ -21,9 +21,9 @@
 
     function getSteps(record) {
         const step1Done = true; // Selalu true jika record ada
-        const step2Done = record.reportStatus === 'Completed' || record.status === 'Approved' || record.paymentStatus === 'Paid';
-        const step3Done = record.status === 'Approved' || record.paymentStatus === 'Paid';
-        const step4Done = record.paymentStatus === 'Paid';
+        const step2Done = record.status === 'Submitted' || record.status === 'Approved' || record.status === 'Completed';
+        const step3Done = record.status === 'Approved' || record.status === 'Completed';
+        const step4Done = record.status === 'Completed';
 
         return [
             { 
@@ -79,9 +79,9 @@
         </div>
     {:else}
         <div class="grid gap-4">
-            {#each activeRecords as record (record.id)}
+            {#each activeRecords as record, index (record.id + '-' + index)}
                 {@const steps = getSteps(record)}
-                {@const isFullyDone = record.paymentStatus === 'Paid'}
+                {@const isFullyDone = record.status === 'Completed'}
                 {@const isExpanded = expandedCards[record.id]}
                 <div class="bg-white rounded-2xl border {isFullyDone ? 'border-emerald-200/60 bg-emerald-50/10' : 'border-slate-200'} shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
                     {#if isFullyDone}
@@ -111,7 +111,7 @@
                             </div>
                             
                             <div class="flex items-center gap-4 shrink-0">
-                                {#if record.paymentStatus !== 'Paid'}
+                                {#if record.status !== 'Completed'}
                                     <div class="text-right">
                                         <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1 hidden md:block">Status Saat Ini</div>
                                         <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg text-blue-700 font-semibold text-xs md:text-sm">

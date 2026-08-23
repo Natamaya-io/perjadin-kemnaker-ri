@@ -101,7 +101,7 @@
                 <span class="font-bold text-slate-700 font-feature-settings-tnum">
                     {formatIDR(record.totalCost)}
                 </span>
-                {#if record.status === 'Approved' || record.paymentStatus === 'Paid'}
+                {#if record.status === 'Approved' || record.status === 'Completed'}
                      <span class="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1 rounded">Realisasi</span>
                 {:else}
                      <span class="text-[10px] text-slate-400 font-medium">Estimasi</span>

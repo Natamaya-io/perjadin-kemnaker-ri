@@ -34,7 +34,7 @@
             // Priority to 'Completed' (green) over 'Draft/Approved' (red/amber) if there are overlaps
             if (!acc[dateKey]) {
                 acc[dateKey] = record;
-            } else if (acc[dateKey].reportStatus !== 'Completed' && record.reportStatus === 'Completed') {
+            } else if (acc[dateKey].status !== 'Completed' && record.status === 'Completed') {
                 acc[dateKey] = record;
             }
             
@@ -136,7 +136,7 @@
             {#each days as day}
                 {@const dateKey = `${currentYear}-${currentMonth}-${day}`}
                 {@const hasRecord = scheduledDates[dateKey]}
-                {@const isCompleted = hasRecord && hasRecord.reportStatus === 'Completed'}
+                {@const isCompleted = hasRecord && hasRecord.status === 'Completed'}
                 
                 <div class="relative aspect-square rounded-md sm:rounded-lg flex items-center justify-center text-[10px] sm:text-xs md:text-sm transition-all duration-200
                     {hasRecord ? (isCompleted ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-sm font-bold' : 'bg-red-50 border border-red-200 text-red-800 shadow-sm font-bold') : 'bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-blue-200 font-medium'}

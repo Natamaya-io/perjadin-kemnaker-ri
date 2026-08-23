@@ -187,8 +187,6 @@ func mapDBRecord(dbr db.TravelRecord) models.TravelRecord {
 		Agenda:           fromNullString(dbr.Agenda),
 		Status:           fromNullString(dbr.Status),
 		IsViewed:         dbr.IsViewed.Bool,
-		ReportStatus:     fromNullString(dbr.ReportStatus),
-		PaymentStatus:    fromNullString(dbr.PaymentStatus),
 		TotalCost:        fromNullFloat(dbr.TotalCost),
 		SuratTugasPath:   fromNullString(dbr.SuratTugasPath),
 		SuratTugasNumber: fromNullString(dbr.SuratTugasNumber),
@@ -309,8 +307,6 @@ func (r *repository) CreateTravelRecordsBulk(ctx context.Context, records []*mod
 			Agenda:           toNullString(record.Agenda),
 			Status:           toNullString(record.Status),
 			IsViewed:         sql.NullBool{Bool: record.IsViewed, Valid: true},
-			ReportStatus:     toNullString(record.ReportStatus),
-			PaymentStatus:    toNullString(record.PaymentStatus),
 			TotalCost:        toNullFloat(record.TotalCost),
 			SuratTugasPath:   toNullString(record.SuratTugasPath),
 			SuratTugasNumber: toNullString(record.SuratTugasNumber),
@@ -424,8 +420,6 @@ func (r *repository) CreateTravelRecord(ctx context.Context, record *models.Trav
 		Agenda:           toNullString(record.Agenda),
 		Status:           toNullString(record.Status),
 		IsViewed:         sql.NullBool{Bool: record.IsViewed, Valid: true},
-		ReportStatus:     toNullString(record.ReportStatus),
-		PaymentStatus:    toNullString(record.PaymentStatus),
 		TotalCost:        toNullFloat(record.TotalCost),
 		SuratTugasPath:   toNullString(record.SuratTugasPath),
 		SuratTugasNumber: toNullString(record.SuratTugasNumber),
@@ -528,10 +522,9 @@ func (r *repository) SyncReportBySpd(ctx context.Context, spd string, src *model
 		UPDATE travel_records SET
 			surat_tugas_number = COALESCE(NULLIF($2, ''), surat_tugas_number),
 			surat_tugas_date = CASE WHEN $3::timestamp IS NOT NULL THEN $3 ELSE surat_tugas_date END,
-			report_status = COALESCE(NULLIF($4, ''), report_status),
 			updated_at = CURRENT_TIMESTAMP
 		WHERE spd_number = $1 AND deleted_at IS NULL
-	`, spd, src.SuratTugasNumber, toNullTime(src.SuratTugasDate), src.ReportStatus)
+	`, spd, src.SuratTugasNumber, toNullTime(src.SuratTugasDate))
 	if err != nil {
 		return fmt.Errorf("sync travel_records: %w", err)
 	}
@@ -910,41 +903,18 @@ func (r *repository) GetDashboardSummary(ctx context.Context, role string, userI
 		} else {
 			for _, row := range counts {
 				status := fromNullString(row.Status)
-				paymentStatus := fromNullString(row.PaymentStatus)
-				reportStatus := fromNullString(row.ReportStatus)
 
-				switch {
-				case paymentStatus == "Paid":
+				switch status {
+				case "Completed":
 					summary.StatusCompleted += row.Count
-				case reportStatus == "Completed":
+				case "Approved":
+					summary.StatusCompleted += row.Count
+				case "Submitted", "In Progress":
 					summary.StatusInProgress += row.Count
-				case status == "Submitted" || status == "Approved":
-					summary.StatusInProgress += row.Count
-				case status == "Draft" || status == "Assigned":
+				case "Draft", "Assigned", "Pending":
 					summary.StatusAssigned += row.Count
-				case status == "Rejected":
+				case "Rejected":
 					summary.StatusRejected += row.Count
-				}
-			}
-		}
-	}()
-
-	// 4. Report Counts
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		counts, err := r.q.GetDashboardReportCounts(ctx, nullUserID)
-		if err != nil {
-			errMu.Lock()
-			errs = append(errs, fmt.Errorf("GetDashboardReportCounts: %w", err))
-			errMu.Unlock()
-		} else {
-			for _, row := range counts {
-				reportStatus := fromNullString(row.ReportStatus)
-				if reportStatus == "Completed" {
-					summary.ReportCompleted += row.Count
-				} else {
-					summary.ReportPending += row.Count
 				}
 			}
 		}
@@ -1064,8 +1034,6 @@ func (r *repository) UpdateTravelRecord(ctx context.Context, record *models.Trav
 		Agenda:           toNullString(record.Agenda),
 		Status:           toNullString(record.Status),
 		IsViewed:         sql.NullBool{Bool: record.IsViewed, Valid: true},
-		ReportStatus:     toNullString(record.ReportStatus),
-		PaymentStatus:    toNullString(record.PaymentStatus),
 		TotalCost:        toNullFloat(record.TotalCost),
 		SuratTugasPath:   toNullString(record.SuratTugasPath),
 		SuratTugasNumber: toNullString(record.SuratTugasNumber),
@@ -1237,16 +1205,6 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		args = append(args, params.Status)
 		argId++
 	}
-	if params.ReportStatus != "" {
-		whereClause += fmt.Sprintf(" AND travel_records.report_status = $%d", argId)
-		args = append(args, params.ReportStatus)
-		argId++
-	}
-	if params.PaymentStatus != "" {
-		whereClause += fmt.Sprintf(" AND travel_records.payment_status = $%d", argId)
-		args = append(args, params.PaymentStatus)
-		argId++
-	}
 	if params.Type != "" {
 		whereClause += fmt.Sprintf(" AND travel_records.type = $%d", argId)
 		args = append(args, params.Type)
@@ -1299,12 +1257,12 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		mainArgId := argId
 
 		if cursorData.SPD != "" && (params.SortBy == "spj-desc" || params.SortBy == "") {
-			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) < CAST(SUBSTRING($%d FROM 'ID-SPJ-([0-9]+)') AS NUMERIC)", mainArgId)
+			mainWhereClause += fmt.Sprintf(" AND CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) < CAST(NULLIF(SUBSTRING($%d FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC)", mainArgId)
 			mainArgs = append(mainArgs, cursorData.SPD)
 			mainArgId++
 			offset = 0 // Keyset Pagination: No offset needed
 		} else if cursorData.SPD != "" && params.SortBy == "spj-asc" {
-			mainWhereClause += fmt.Sprintf(" AND CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) > CAST(SUBSTRING($%d FROM 'ID-SPJ-([0-9]+)') AS NUMERIC)", mainArgId)
+			mainWhereClause += fmt.Sprintf(" AND CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) > CAST(NULLIF(SUBSTRING($%d FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC)", mainArgId)
 			mainArgs = append(mainArgs, cursorData.SPD)
 			mainArgId++
 			offset = 0 // Keyset Pagination: No offset needed
@@ -1321,19 +1279,19 @@ func (r *repository) GetPaginatedRecords(ctx context.Context, params models.Pagi
 		// Sorting
 		switch params.SortBy {
 		case "spj-asc":
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
+			mainQuery += " ORDER BY CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) ASC"
 		case "spj-desc":
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
+			mainQuery += " ORDER BY CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) DESC"
 		case "date-asc":
-			mainQuery += " ORDER BY MAX(travel_records.start_date) ASC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
+			mainQuery += " ORDER BY MAX(travel_records.start_date) ASC, CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) ASC"
 		case "date-desc":
-			mainQuery += " ORDER BY MAX(travel_records.start_date) DESC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
+			mainQuery += " ORDER BY MAX(travel_records.start_date) DESC, CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) DESC"
 		case "cost-asc":
-			mainQuery += " ORDER BY SUM(travel_records.total_cost) ASC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC"
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) ASC, CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) ASC"
 		case "cost-desc":
-			mainQuery += " ORDER BY SUM(travel_records.total_cost) DESC, CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
+			mainQuery += " ORDER BY SUM(travel_records.total_cost) DESC, CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) DESC"
 		default:
-			mainQuery += " ORDER BY CAST(SUBSTRING(travel_records.spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) DESC"
+			mainQuery += " ORDER BY CAST(NULLIF(SUBSTRING(travel_records.spd_number FROM 'ID-[A-Za-z]+-([0-9]+)'), '') AS NUMERIC) DESC"
 		}
 
 		mainQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", mainArgId, mainArgId+1)
@@ -1585,7 +1543,7 @@ func (r *repository) GetFactualSequenceNumber(ctx context.Context, id uuid.UUID,
 		WITH ordered AS (
 			SELECT id, ROW_NUMBER() OVER (
 				ORDER BY 
-					CAST(SUBSTRING(spd_number FROM 'ID-SPJ-([0-9]+)') AS NUMERIC) ASC, 
+					CAST(NULLIF(REGEXP_REPLACE(spd_number, '\\D', '', 'g'), '') AS NUMERIC) ASC, 
 					sequence_number ASC,
 					created_at ASC
 			) as actual_rank 

@@ -22,7 +22,7 @@ type Repository interface {
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
-	GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error)
+	GetLaporanRows(ctx context.Context, year int16, month int16) ([]models.LaporanRow, error)
 	GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error)
 	GetNextBusinessID(ctx context.Context) (string, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
@@ -493,7 +493,7 @@ func (r *repository) DeleteAccountCode(ctx context.Context, id uuid.UUID) error 
 // GetLaporanRows menghasilkan rekapitulasi per Jenis Pengadaan:
 // menggabungkan procurement_types, account_codes, gup_transactions, dan budgets
 // dalam satu query agregasi untuk keperluan halaman Laporan.
-func (r *repository) GetLaporanRows(ctx context.Context, year int16) ([]models.LaporanRow, error) {
+func (r *repository) GetLaporanRows(ctx context.Context, year int16, month int16) ([]models.LaporanRow, error) {
 	query := `
 		SELECT
 			pt.id,
@@ -501,19 +501,50 @@ func (r *repository) GetLaporanRows(ctx context.Context, year int16) ([]models.L
 			ac.code                                           AS kode_akun,
 			ac.mak,
 			COUNT(gt.id)                                      AS jumlah_transaksi,
-			COALESCE(SUM(gt.paid_amount), 0)                  AS realisasi,
+			COALESCE(SUM(gt.paid_amount), 0) + 
+			CASE 
+				WHEN pt.name ILIKE '%Luar Kota%' OR pt.name ILIKE '%Dalam Negeri%' THEN 
+					(SELECT COALESCE(SUM(total_cost), 0) 
+					 FROM travel_records 
+					 WHERE EXTRACT(YEAR FROM COALESCE(start_date, created_at)) = $1 
+					 AND ($2 = 0 OR EXTRACT(MONTH FROM COALESCE(start_date, created_at)) = $2)
+					 AND deleted_at IS NULL
+					 AND status IN ('Approved', 'Completed')
+					 AND type = 'luar_kota')
+				WHEN pt.name ILIKE '%Luar Negeri%' THEN 
+					(SELECT COALESCE(SUM(total_cost), 0) 
+					 FROM travel_records 
+					 WHERE EXTRACT(YEAR FROM COALESCE(start_date, created_at)) = $1 
+					 AND ($2 = 0 OR EXTRACT(MONTH FROM COALESCE(start_date, created_at)) = $2)
+					 AND deleted_at IS NULL
+					 AND status IN ('Approved', 'Completed')
+					 AND type = 'luar_negeri')
+				WHEN pt.name ILIKE '%Dalam Kota%' THEN 
+					(SELECT COALESCE(SUM(da.spj_cost + da.actual_cost), 0) 
+					 FROM dalkot_assignments da 
+					 JOIN dalkot_records dr ON da.dalkot_record_id = dr.id 
+					 WHERE EXTRACT(YEAR FROM dr.execution_date) = $1 
+					 AND ($2 = 0 OR EXTRACT(MONTH FROM dr.execution_date) = $2)
+					 AND dr.status IN ('Approved', 'Completed'))
+				ELSE 0 
+			END                                               AS realisasi,
 			COALESCE(SUM(gt.value_amount), 0)                 AS nilai_pengajuan,
 			COALESCE(SUM(gt.tax_amount), 0)                   AS total_pajak,
 			COALESCE(b.amount, 0)                             AS anggaran
 		FROM procurement_types pt
 		JOIN account_codes ac ON pt.account_code_id = ac.id
-		LEFT JOIN gup_transactions gt ON gt.procurement_type_id = pt.id AND EXTRACT(YEAR FROM gt.receipt_date) = $1
-		LEFT JOIN budgets b ON b.procurement_type_id = pt.id AND b.year = $1
+		LEFT JOIN gup_transactions gt ON gt.procurement_type_id = pt.id AND EXTRACT(YEAR FROM gt.receipt_date) = $1 AND ($2 = 0 OR EXTRACT(MONTH FROM gt.receipt_date) = $2)
+		LEFT JOIN (
+			SELECT procurement_type_id, SUM(amount) as amount 
+			FROM budgets 
+			WHERE year = $1 AND ($2 = 0 OR month_number = $2)
+			GROUP BY procurement_type_id
+		) b ON b.procurement_type_id = pt.id
 		WHERE pt.is_active = true
 		GROUP BY pt.id, pt.name, ac.code, ac.mak, b.amount
 		ORDER BY pt.name ASC
 	`
-	rows, err := r.d.QueryContext(ctx, query, year)
+	rows, err := r.d.QueryContext(ctx, query, year, month)
 	if err != nil {
 		return nil, err
 	}
@@ -545,19 +576,19 @@ func (r *repository) GetLaporanRows(ctx context.Context, year int16) ([]models.L
 	return results, nil
 }
 
-// SaveBudget menyimpan anggaran per jenis pengadaan (upsert berdasarkan year + procurement_type_id).
+// SaveBudget menyimpan anggaran per jenis pengadaan (upsert berdasarkan year + month_number + procurement_type_id).
 func (r *repository) SaveBudget(ctx context.Context, b *models.Budget) error {
 	if b.ID == uuid.Nil {
 		b.ID = uuid.New()
 	}
 	query := `
-		INSERT INTO budgets (id, year, procurement_type_id, amount, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, NOW(), NOW())
-		ON CONFLICT (year, procurement_type_id)
+		INSERT INTO budgets (id, year, month_number, procurement_type_id, amount, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		ON CONFLICT (year, month_number, procurement_type_id)
 		DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
 		RETURNING id, created_at, updated_at
 	`
-	return r.d.QueryRowContext(ctx, query, b.ID, b.Year, b.ProcurementTypeID, b.Amount).
+	return r.d.QueryRowContext(ctx, query, b.ID, b.Year, b.MonthNumber, b.ProcurementTypeID, b.Amount).
 		Scan(&b.ID, &b.CreatedAt, &b.UpdatedAt)
 }
 
@@ -575,10 +606,15 @@ func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*mode
 	}
 
 	// 2. Total Realisasi GUP (Full year)
-	err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE EXTRACT(YEAR FROM receipt_date) = $1", year).Scan(&summary.TotalRealisasiGUP)
+	rowsLaporan, err := r.GetLaporanRows(ctx, year, 0)
 	if err != nil {
 		return nil, err
 	}
+	var totalRealisasi float64
+	for _, row := range rowsLaporan {
+		totalRealisasi += row.Realisasi
+	}
+	summary.TotalRealisasiGUP = totalRealisasi
 	summary.SisaSaldoUP = summary.TotalPaguAnggaran - summary.TotalRealisasiGUP
 
 	// 3. Total GUP Bulan Ini
@@ -587,10 +623,15 @@ func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*mode
 	if int(year) != currentYear {
 		summary.TotalGupBulanIni = 0
 	} else {
-		err = r.d.QueryRowContext(ctx, "SELECT COALESCE(SUM(paid_amount), 0) FROM gup_transactions WHERE EXTRACT(YEAR FROM receipt_date) = $1 AND EXTRACT(MONTH FROM receipt_date) = $2", currentYear, currentMonth).Scan(&summary.TotalGupBulanIni)
+		rowsLaporanBulan, err := r.GetLaporanRows(ctx, year, int16(currentMonth))
 		if err != nil {
 			return nil, err
 		}
+		var totalRealisasiBulan float64
+		for _, row := range rowsLaporanBulan {
+			totalRealisasiBulan += row.Realisasi
+		}
+		summary.TotalGupBulanIni = totalRealisasiBulan
 	}
 
 	// 4. Status Dalkot Pending
@@ -600,44 +641,37 @@ func (r *repository) GetDashboardSummary(ctx context.Context, year int16) (*mode
 	}
 
 	// 5. Monthly Realisasi
-	rows, err := r.d.QueryContext(ctx, `
-		SELECT EXTRACT(MONTH FROM receipt_date) as month, SUM(paid_amount) as total
-		FROM gup_transactions
-		WHERE EXTRACT(YEAR FROM receipt_date) = $1
-		GROUP BY EXTRACT(MONTH FROM receipt_date)
-		ORDER BY month
-	`, year)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var m models.MonthlyChart
-		if err := rows.Scan(&m.Month, &m.Total); err == nil {
-			summary.MonthlyRealisasi = append(summary.MonthlyRealisasi, m)
+	for m := int16(1); m <= 12; m++ {
+		rowsM, err := r.GetLaporanRows(ctx, year, m)
+		if err == nil {
+			var totalM float64
+			for _, rowM := range rowsM {
+				totalM += rowM.Realisasi
+			}
+			if totalM > 0 {
+				summary.MonthlyRealisasi = append(summary.MonthlyRealisasi, models.MonthlyChart{
+					Month: int(m),
+					Total: totalM,
+				})
+			}
 		}
 	}
 
 	// 6. Komposisi UP
-	crows, err := r.d.QueryContext(ctx, `
-		SELECT ac.code, SUM(gt.paid_amount) as total, COUNT(gt.id) as count
-		FROM gup_transactions gt
-		JOIN procurement_types pt ON gt.procurement_type_id = pt.id
-		JOIN account_codes ac ON pt.account_code_id = ac.id
-		WHERE EXTRACT(YEAR FROM gt.receipt_date) = $1
-		GROUP BY ac.code
-	`, year)
-	if err != nil {
-		return nil, err
-	}
-	defer crows.Close()
-	for crows.Next() {
-		var c models.Composition
-		var code string
-		if err := crows.Scan(&code, &c.Value, &c.Count); err == nil {
-			c.Label = code
-			summary.CompositionUP = append(summary.CompositionUP, c)
+	compMap := make(map[string]float64)
+	compCountMap := make(map[string]int)
+	for _, row := range rowsLaporan {
+		if row.Realisasi > 0 {
+			compMap[row.KodeAkun] += row.Realisasi
+			compCountMap[row.KodeAkun] += int(row.JumlahTransaksi)
 		}
+	}
+	for code, total := range compMap {
+		summary.CompositionUP = append(summary.CompositionUP, models.Composition{
+			Label: code,
+			Value: total,
+			Count: int64(compCountMap[code]),
+		})
 	}
 
 	// 7. Recent Transactions (limit 5)

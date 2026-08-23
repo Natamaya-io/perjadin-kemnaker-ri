@@ -7,7 +7,6 @@ import (
 	_ "net/http/pprof" // Zero-Trust memory profiler
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -45,19 +44,7 @@ func runMigrations(db *sql.DB, sugar *zap.SugaredLogger) {
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		if strings.Contains(err.Error(), "Dirty database") {
-			sugar.Warnf("Detected dirty database. Forcing version 12 and retrying...")
-			// We force to 12 because migration 13 failed
-			if forceErr := m.Force(12); forceErr != nil {
-				sugar.Fatalf("Failed to force migration version: %v", forceErr)
-			}
-			// Retry Up after forcing
-			if retryErr := m.Up(); retryErr != nil && retryErr != migrate.ErrNoChange {
-				sugar.Fatalf("Migration failed after force: %v", retryErr)
-			}
-		} else {
-			sugar.Fatalf("Migration failed: %v", err)
-		}
+		sugar.Fatalf("Migration failed: %v", err)
 	}
 	sugar.Info("Migrations applied successfully.")
 }
@@ -135,7 +122,7 @@ func main() {
 
 	dalkotRepo := dalkot.NewRepository(db)
 	dalkotSvc := dalkot.NewService(dalkotRepo, userRepo)
-	dalkotHandler := dalkot.NewHandler(dalkotSvc)
+	dalkotHandler := dalkot.NewHandler(dalkotSvc, masterSvc)
 
 	gupRepo := gup.NewRepository(db)
 	gupSvc := gup.NewService(gupRepo)
@@ -197,7 +184,9 @@ func main() {
 		protected.GET("/dalkot", dalkotHandler.GetRecords)
 		protected.GET("/dalkot/:id", dalkotHandler.GetRecordByID)
 		protected.GET("/dalkot/:id/laporan-stream", dalkotHandler.ExportLaporanPDF)
+		protected.GET("/dalkot/:id/dpr-stream", dalkotHandler.ExportDprPDF)
 		protected.PUT("/dalkot/:id", dalkotHandler.UpdateRecord)
+		protected.PATCH("/dalkot/:id/status", dalkotHandler.UpdateStatus)
 		protected.DELETE("/dalkot/:id", dalkotHandler.DeleteRecord)
 		protected.GET("/dalkot/locations/all", dalkotHandler.GetLocations)
 		protected.GET("/dalkot-rates", dalkotHandler.GetRates)

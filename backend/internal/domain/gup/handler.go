@@ -296,8 +296,17 @@ func (h *Handler) GetLaporan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid year"})
 	}
 
+	monthStr := c.QueryParam("month")
+	month := int16(0)
+	if monthStr != "" {
+		m, err := strconv.ParseInt(monthStr, 10, 16)
+		if err == nil {
+			month = int16(m)
+		}
+	}
+
 	ctx := c.Request().Context()
-	resp, err := h.svc.GetLaporan(ctx, int16(year))
+	resp, err := h.svc.GetLaporan(ctx, int16(year), month)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

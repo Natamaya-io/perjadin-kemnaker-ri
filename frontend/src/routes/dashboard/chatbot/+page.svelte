@@ -59,6 +59,8 @@
         textareaEl.style.height = Math.min(textareaEl.scrollHeight, 128) + 'px'; // Max 32 (128px)
     }
 
+    let sessionId = Math.random().toString(36).substring(2, 15);
+    
     async function sendMessage() {
         if (!inputText.trim() || isTyping) return;
         
@@ -75,7 +77,7 @@
         await scrollToBottom();
         
         try {
-            const response = await api.askChatbot(currentInput);
+            const response = await api.askChatbot(currentInput, sessionId);
             if (response && response.success) {
                 messages = [...messages, { role: 'bot', text: response.data.answer, data: response.data }];
             } else {
@@ -101,6 +103,7 @@
             { role: 'bot', text: 'Halo! Saya asisten AI Perjadin Kemnaker. Ada yang bisa saya bantu terkait pengelolaan GUP atau Perjalanan Dinas hari ini?' }
         ];
         inputText = '';
+        sessionId = Math.random().toString(36).substring(2, 15);
         if (textareaEl) {
             textareaEl.style.height = 'auto';
         }
@@ -121,11 +124,12 @@
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                     Perjadin AI
+                    <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest self-center ml-1">Beta</span>
                     <button 
                         type="button" 
                         title="Panduan Penggunaan" 
                         on:click={() => showInfoModal = true} 
-                        class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-full p-1 transition-colors"
+                        class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-full p-1 transition-colors ml-1"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

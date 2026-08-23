@@ -179,176 +179,84 @@
     <div class="space-y-6 pb-20 w-full animate-in fade-in duration-500">
         
         <!-- Welcome Banner -->
-        <div class="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div class="relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <div>
                 {#if $userStore.role === 'protokol'}
-                    <p class="text-sm text-slate-300 mb-2">Sistem Informasi Perjalanan Dinas</p>
-                    <h1 class="text-2xl sm:text-3xl font-bold mb-3">Dashboard Perjalanan Dinas</h1>
-                    <p class="max-w-3xl text-slate-300 text-sm sm:text-base">
+                    <p class="text-sm text-slate-500 mb-1">Sistem Informasi Perjalanan Dinas</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">Dashboard Perjalanan Dinas</h1>
+                    <p class="max-w-3xl text-slate-500 text-sm sm:text-base mt-1">
                         Kelola dan pantau seluruh pengajuan perjalanan dinas Anda secara cepat dan terpusat.
                     </p>
                 {:else}
-                    <p class="text-sm text-slate-300 mb-2">Sistem Monitoring Ganti Uang Persediaan</p>
-                    <h1 class="text-2xl sm:text-3xl font-bold mb-3">Dashboard GUP & Dalkot</h1>
-                    <p class="max-w-3xl text-slate-300 text-sm sm:text-base">
+                    <p class="text-sm text-slate-500 mb-1">Sistem Monitoring Ganti Uang Persediaan</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">{$userStore?.role === 'super_admin' || $userStore?.role === 'kasubag' ? 'Master Dashboard' : 'Dashboard GUP & Dalkot'}</h1>
+                    <p class="max-w-3xl text-slate-500 text-sm sm:text-base mt-1">
                         Pantau pagu anggaran, saldo uang persediaan, status pengajuan, serta riwayat transaksi GUP secara cepat dan terpusat.
                     </p>
                 {/if}
             </div>
-            <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5"></div>
-                <div class="absolute right-20 -bottom-16 w-52 h-52 rounded-full bg-blue-500/10"></div>
-            </div>
         </div>
 
-        <!-- Summary Cards -->
+
+
+        <!-- Rekapitulasi Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {#if $userStore.role !== 'protokol'}
-            <!-- Pagu -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-blue-100 transition-colors">
+            <!-- Rekap GUP -->
+            {#if $userStore?.role !== 'protokol'}
+            <a href="/dashboard/rekapitulasi-gup" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-blue-400 hover:shadow-md transition-all group">
                 <div class="flex items-start justify-between gap-4 mb-4">
-                    <p class="text-sm text-slate-500 font-medium">Total Pagu Anggaran UP</p>
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                    <p class="text-sm text-slate-600 font-bold group-hover:text-blue-600 transition-colors">Rekapitulasi GUP</p>
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     </div>
                 </div>
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{formatCurrency(stats.totalPaguAnggaran)}</h3>
-                    <p class="text-xs text-slate-400 mt-1">Tahun Anggaran {new Date().getFullYear()}</p>
+                <div class="flex items-center text-xs font-medium text-blue-600 mt-2">
+                    Lihat Dokumen <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-            </div>
-
-            <!-- Saldo -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-emerald-100 transition-colors">
-                <div class="flex items-start justify-between gap-4 mb-4">
-                    <p class="text-sm text-slate-500 font-medium">Sisa Saldo UP Saat Ini</p>
-                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{formatCurrency(stats.sisaSaldoUp)}</h3>
-                    <p class="text-xs text-slate-400 mt-1">Pagu dikurangi realisasi GUP</p>
-                </div>
-            </div>
-
-            <!-- GUP Bulan ini -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-amber-100 transition-colors">
-                <div class="flex items-start justify-between gap-4 mb-4">
-                    <p class="text-sm text-slate-500 font-medium">GUP Dibayar Bulan Ini</p>
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{formatCurrency(stats.totalGupBulanIni)}</h3>
-                    <p class="text-xs text-slate-400 mt-1">Periode bulan berjalan</p>
-                </div>
-            </div>
+            </a>
             {/if}
 
-            <!-- Dalkot Status -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-rose-100 transition-colors">
+            <!-- Rekap Dalam Kota -->
+            <a href="/dashboard/rekapitulasi-dalkot" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-emerald-400 hover:shadow-md transition-all group">
                 <div class="flex items-start justify-between gap-4 mb-4">
-                    <p class="text-sm text-slate-500 font-medium">Status Dalkot (Pending)</p>
-                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <p class="text-sm text-slate-600 font-bold group-hover:text-emerald-600 transition-colors">Rekapitulasi Perdin Dalam Kota</p>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                     </div>
                 </div>
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{stats.statusDalkotPending} <span class="text-sm font-normal text-slate-500">Berkas</span></h3>
-                    <p class="text-xs text-slate-400 mt-1">Perlu ditindak lanjuti</p>
+                <div class="flex items-center text-xs font-medium text-emerald-600 mt-2">
+                    Lihat Dokumen <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-            </div>
-        </div>
+            </a>
 
-        {#if $userStore.role !== 'protokol'}
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <!-- Line Chart -->
-            <div class="xl:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800">Grafik Realisasi GUP Per Bulan</h3>
-                        <p class="text-sm text-slate-500">Visualisasi tren pengajuan GUP tahun berjalan.</p>
-                    </div>
-                    <div class="w-full sm:w-32 shrink-0">
-                        <Select 
-                            options={yearOptions}
-                            bind:value={selectedYear}
-                            on:change={handleYearChange}
-                            placeholder="Tahun"
-                            class="border-slate-200 bg-slate-50"
-                        />
+            <!-- Rekap Luar Kota -->
+            <a href="/dashboard/rekapitulasi-luar-kota" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-amber-400 hover:shadow-md transition-all group">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <p class="text-sm text-slate-600 font-bold group-hover:text-amber-600 transition-colors">Rekapitulasi Perdin Luar Kota</p>
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
                     </div>
                 </div>
-                <div class="h-[300px] w-full">
-                    <canvas bind:this={lineChartCanvas}></canvas>
+                <div class="flex items-center text-xs font-medium text-amber-600 mt-2">
+                    Lihat Dokumen <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-            </div>
+            </a>
 
-            <!-- Doughnut Chart -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
-                <div class="mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Komposisi Penggunaan UP</h3>
-                    <p class="text-sm text-slate-500">Berdasarkan klasifikasi Belanja (MAK).</p>
+            <!-- Rekap Luar Negeri -->
+            <a href="/dashboard/laporan" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between hover:border-purple-400 hover:shadow-md transition-all group">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <p class="text-sm text-slate-600 font-bold group-hover:text-purple-600 transition-colors">Rekapitulasi Perdin Luar Negeri</p>
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 5-4 4-3-1-1 1 2 4 4 2 1-1-1-3 4-4 5 6l1.2-.7c.4-.2.7-.6.6-1.1z"/></svg>
+                    </div>
                 </div>
-                <div class="flex-1 min-h-[250px] flex items-center justify-center relative">
-                    <canvas bind:this={doughNutChartCanvas}></canvas>
-                    {#if !(stats.compositionUp || []).length}
-                        <div class="absolute inset-0 flex items-center justify-center text-sm text-slate-400">Belum ada data komposisi</div>
-                    {/if}
+                <div class="flex items-center text-xs font-medium text-purple-600 mt-2">
+                    Lihat Dokumen <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-            </div>
+            </a>
         </div>
 
-        <!-- Recent Transactions -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Data Pengajuan GUP Terakhir</h3>
-                    <p class="text-sm text-slate-500">Ringkasan transaksi pengajuan GUP terbaru.</p>
-                </div>
-                <Button variant="default" class="text-sm bg-slate-900 text-white hover:bg-slate-800" on:click={() => window.location.href = '/dashboard/gup/pengajuan'}>
-                    Lihat Semua &rarr;
-                </Button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-50 text-slate-600 font-medium border-b border-slate-100">
-                        <tr>
-                            <th class="px-6 py-4">No. SPM/SPP</th>
-                            <th class="px-6 py-4">Tanggal</th>
-                            <th class="px-6 py-4">Deskripsi Keperluan</th>
-                            <th class="px-6 py-4 text-right">Jumlah</th>
-                            <th class="px-6 py-4 text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {#if !(stats.recentTransactions || []).length}
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-slate-500">Belum ada transaksi GUP.</td>
-                            </tr>
-                        {:else}
-                            {#each (stats.recentTransactions || []) as trx}
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-4 font-mono font-medium text-sm text-slate-700">{trx.businessId || '-'}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{formatDate(trx.receiptDate)}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-800 leading-relaxed font-medium">{trx.paymentDescription || '-'}</td>
-                                    <td class="px-6 py-4 text-right font-bold text-slate-800">{formatCurrency(trx.valueAmount || 0)}</td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {trx.paidAmount > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-                                            {trx.paidAmount > 0 ? 'Lunas' : 'Belum Lunas'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            {/each}
-                        {/if}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {/if}
+
 
     </div>
 {/if}

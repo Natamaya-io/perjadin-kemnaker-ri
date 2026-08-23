@@ -7,6 +7,7 @@
     export let value = '';
     export let placeholder = 'Pilih Item...';
     export let disabled = false;
+    export let id = undefined;
     let className = undefined;
     export { className as class };
 
@@ -37,7 +38,7 @@
     <!-- Hidden input to maintain native form submission behavior if needed -->
     <input type="hidden" {value} {...$$restProps} />
     
-    <button type="button" on:click={toggle} {disabled} class={triggerClass}>
+    <button {id} type="button" on:click={toggle} {disabled} class={triggerClass}>
         <span class="truncate pr-4">{selectedLabel}</span>
         {#if !disabled}
         <svg class="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

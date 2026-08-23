@@ -132,64 +132,90 @@ export function formatLocations(record: any) {
 }
 
 export function getStatusBadge(record: any) {
-    if (!record) return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+    if (!record) return { label: 'Draft', class: 'bg-slate-100 text-slate-700 border-slate-200' };
+
+    // Explicit check for Dalkot (Dalam Kota)
+    if (record.type === 'Dalam Kota' || record.type === 'dalam_kota') {
+        if (record.status === 'Draft') return { label: 'Draft', class: 'bg-slate-100 text-slate-700 border-slate-200' };
+        if (record.status === 'Pending') return { label: 'Kembalikan', class: 'bg-orange-50 text-orange-700 border-orange-200' };
+        if (record.status === 'Submitted') return { label: 'Ajukan', class: 'bg-blue-50 text-blue-700 border-blue-200' };
+        if (record.status === 'Approved') return { label: 'Setujui', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        if (record.status === 'Completed') return { label: 'Selesai', class: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+        if (record.status) return { label: record.status, class: 'bg-slate-50 text-slate-700 border-slate-200' };
+    }
 
     // Group evaluation (if the record has employeesList, it represents the whole SPD group)
     if (record.employeesList && Array.isArray(record.employeesList) && record.employeesList.length > 0) {
-        // Only Completed if ALL employees are Paid
-        const allPaid = record.employeesList.every((emp: any) => emp.paymentStatus === 'Paid');
+        // Only Completed if ALL employees are Paid/Completed
+        const allPaid = record.employeesList.every((emp: any) => emp.status === 'Completed');
         if (allPaid) {
             return {
-                label: 'Completed',
-                class: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                label: 'Selesai',
+                class: 'bg-indigo-50 text-indigo-700 border-indigo-200'
             };
         }
 
-        // Check if any is Rejected
-        const anyRejected = record.employeesList.some((emp: any) => emp.status === 'Rejected');
+        // Check if any is Rejected or Pending
+        const anyRejected = record.employeesList.some((emp: any) => emp.status === 'Rejected' || emp.status === 'Pending');
         if (anyRejected) {
              return {
-                 label: 'Rejected',
+                 label: 'Kembalikan',
                  class: 'bg-red-50 text-red-700 border-red-200'
              };
         }
 
-        // Otherwise it's In Progress if any is Submitted/Approved or Paid (but not all)
-        const anyInProgress = record.employeesList.some((emp: any) => emp.status === 'Submitted' || emp.status === 'Approved' || emp.paymentStatus === 'Paid');
-        if (anyInProgress) {
+        // Check if any is Approved
+        const anyApproved = record.employeesList.some((emp: any) => emp.status === 'Approved');
+        if (anyApproved) {
             return {
-                label: 'In Progress',
-                class: 'bg-orange-50 text-orange-700 border-orange-200'
+                label: 'Setujui',
+                class: 'bg-emerald-50 text-emerald-700 border-emerald-200'
             };
         }
 
-        // Default to Assigned
-        return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+        // Otherwise it's Submitted/Diajukan if any is Submitted
+        const anySubmitted = record.employeesList.some((emp: any) => emp.status === 'Submitted');
+        if (anySubmitted) {
+            return {
+                label: 'Ajukan',
+                class: 'bg-blue-50 text-blue-700 border-blue-200'
+            };
+        }
+
+        // Default to Draft
+        return { label: 'Draft', class: 'bg-slate-100 text-slate-700 border-slate-200' };
     }
 
     // Individual evaluation
-    if (record.paymentStatus === 'Paid') {
+    if (record.status === 'Completed') {
         return {
-            label: 'Completed',
-            class: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            label: 'Selesai',
+            class: 'bg-indigo-50 text-indigo-700 border-indigo-200'
         };
     }
 
-    if (record.status === 'Rejected') {
+    if (record.status === 'Rejected' || record.status === 'Pending') {
         return {
-            label: 'Rejected',
+            label: 'Kembalikan',
             class: 'bg-red-50 text-red-700 border-red-200'
         };
     }
 
-    if (record.status === 'Submitted' || record.status === 'Approved') {
+    if (record.status === 'Approved') {
         return {
-            label: 'In Progress',
-            class: 'bg-orange-50 text-orange-700 border-orange-200'
+            label: 'Setujui',
+            class: 'bg-emerald-50 text-emerald-700 border-emerald-200'
         };
     }
 
-    return { label: 'Assigned', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+    if (record.status === 'Submitted') {
+        return {
+            label: 'Ajukan',
+            class: 'bg-blue-50 text-blue-700 border-blue-200'
+        };
+    }
+
+    return { label: 'Draft', class: 'bg-slate-100 text-slate-700 border-slate-200' };
 }
 import imageCompression from 'browser-image-compression';
 

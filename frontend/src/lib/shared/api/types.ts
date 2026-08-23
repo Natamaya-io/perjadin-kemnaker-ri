@@ -73,8 +73,7 @@ export interface TravelRecord {
     purpose: string;
     stakeholder: string;
     agenda: string;
-    status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
-    reportStatus: 'Pending' | 'Completed' | 'Draft';
+    status: 'Draft' | 'Submitted' | 'Approved' | 'Completed' | 'Pending' | 'Rejected';
     totalCost: number;
     costs?: TravelCost;
     reportData?: TravelReport | null;
@@ -109,8 +108,6 @@ export interface DashboardSummary {
     statusInProgress: number;
     statusAssigned: number;
     statusRejected: number;
-    reportCompleted: number;
-    reportPending: number;
     recentRecords: TravelRecord[];
     budgets: DashboardBudget[];
 }
@@ -120,8 +117,6 @@ export interface PaginatedParams {
     limit?: number;
     search?: string;
     status?: string;
-    report_status?: string;
-    payment_status?: string;
     sort_by?: string;
     start_date?: string; // ISO string
     end_date?: string;   // ISO string
@@ -166,7 +161,7 @@ export interface ApiClient {
     exportLaporanDocx(id: string): Promise<Blob>;
     exportRincianPdf(id: string): Promise<Blob>;
     exportRincianDocx(id: string): Promise<Blob>;
-    createRecord(record: Omit<TravelRecord, 'id' | 'spd' | 'status' | 'reportStatus'>): Promise<TravelRecord[]>; // Returns array because one request can create multiple records (bulk)
+    createRecord(record: Omit<TravelRecord, 'id' | 'spd' | 'status'>): Promise<TravelRecord[]>; // Returns array because one request can create multiple records (bulk)
     updateRecord(id: string, record: Partial<TravelRecord>): Promise<TravelRecord>;
     deleteRecord(id: string): Promise<void>;
     deleteRecordsBySpd(spd: string): Promise<void>;
@@ -191,8 +186,8 @@ export interface ApiClient {
     getGupPengajuan(customFetch?: typeof fetch): Promise<any[]>;
     getGupPengajuanById(id: string, customFetch?: typeof fetch): Promise<any>;
     createGupPengajuan(data: any): Promise<any>;
-    getGupLaporan(year?: number, customFetch?: typeof fetch): Promise<any>;
-    saveGupBudget(data: { procurementTypeId: string; year: number; amount: number }): Promise<any>;
+    getGupLaporan(year?: number, month?: number, customFetch?: typeof fetch): Promise<any>;
+    saveGupBudget(data: { procurementTypeId: string; year: number; monthNumber: number; amount: number }): Promise<any>;
     getGupLs(year: number, customFetch?: typeof fetch): Promise<any[]>;
     saveGupLs(data: any[]): Promise<any>;
     getGupData(year: number, customFetch?: typeof fetch): Promise<any[]>;

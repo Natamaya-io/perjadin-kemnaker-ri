@@ -38,6 +38,7 @@ type FundingSource struct {
 type Budget struct {
 	Base
 	Year              int16     `json:"year"`
+	MonthNumber       int16     `json:"monthNumber"`
 	ProcurementTypeID uuid.UUID `json:"procurementTypeId"`
 	Amount            float64   `json:"amount"`
 	// Joined fields

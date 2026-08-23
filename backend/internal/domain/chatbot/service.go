@@ -42,11 +42,17 @@ func containsAny(haystack string, needles []string) bool {
 
 func (s *service) Ask(ctx context.Context, req AskRequest) (ChatResponse, error) {
 	q := strings.ToLower(strings.TrimSpace(req.Message))
-	wantsChart := containsAny(q, []string{"chart", "grafik", "diagram", "batang"})
+	wantsChart := containsAny(q, []string{"chart", "grafik", "diagram", "batang", "visual"})
+	
 	year := req.Year
+	if extractedYear, found := extractYear(q); found {
+		year = extractedYear
+	}
 	if year == 0 {
 		year = time.Now().Year()
 	}
+
+	sess := getSession(req.SessionId)
 
 	gupSnap, err := s.repo.GetGupSnapshot(ctx, year)
 	if err != nil {
@@ -57,29 +63,110 @@ func (s *service) Ask(ctx context.Context, req AskRequest) (ChatResponse, error)
 		return ChatResponse{}, err
 	}
 
-	// 1. Detect GUP Menus
-	for _, m := range gupSnap.Menus {
-		if strings.Contains(q, strings.ToLower(m.Name)) {
-			return s.answerGupMenu(m, wantsChart), nil
+	// 1. Detect GUP Menus (Fuzzy & Partial Match)
+	var bestMenu *GupMenuStat
+	bestMenuScore := 0
+	for i, m := range gupSnap.Menus {
+		mName := strings.ToLower(m.Name)
+		if strings.Contains(q, mName) {
+			bestMenu = &gupSnap.Menus[i]
+			bestMenuScore = 100
+			break
+		}
+		
+		// Partial token matching for multi-word menus (e.g. "VIP Halim")
+		words := strings.Fields(mName)
+		matches := 0
+		for _, w := range words {
+			if len(w) > 3 && strings.Contains(q, w) {
+				matches++
+			}
+		}
+		if len(words) > 0 {
+			score := (matches * 100) / len(words)
+			if score > bestMenuScore && score >= 50 {
+				bestMenuScore = score
+				bestMenu = &gupSnap.Menus[i]
+			}
+		}
+
+		// Basic typo tolerance for single words
+		if bestMenuScore == 0 {
+			for _, qw := range strings.Fields(q) {
+				if len(qw) > 3 && len(mName) > 3 {
+					if levenshtein(qw, mName) <= 1 {
+						bestMenu = &gupSnap.Menus[i]
+						bestMenuScore = 80
+					}
+				}
+			}
 		}
 	}
 
-	if containsAny(q, []string{"petugas spj", "laporan spj"}) {
+	// Session Context Fallback for Menus
+	if bestMenu == nil && sess.LastMenu != "" && (wantsChart || containsAny(q, []string{"lagi", "detail", "gimana"})) {
+		for i, m := range gupSnap.Menus {
+			if strings.ToLower(m.Name) == sess.LastMenu {
+				bestMenu = &gupSnap.Menus[i]
+				break
+			}
+		}
+	}
+
+	if bestMenu != nil {
+		sess.LastIntent = "gup_menu"
+		sess.LastMenu = strings.ToLower(bestMenu.Name)
+		return s.answerGupMenu(*bestMenu, wantsChart), nil
+	}
+
+	// 2. Score Static Intents
+	bestIntent := ""
+	bestScore := 0
+	for _, r := range rules {
+		for _, kw := range r.Keywords {
+			if strings.Contains(q, kw) {
+				if bestScore < 100 {
+					bestScore = 100
+					bestIntent = r.Intent
+				}
+			} else {
+				// Typo tolerance
+				for _, w := range strings.Fields(q) {
+					if len(w) > 3 && len(kw) > 3 && levenshtein(w, kw) <= 1 {
+						if bestScore < 80 {
+							bestScore = 80
+							bestIntent = r.Intent
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Session Context Fallback for Static Intents
+	if bestIntent == "" && wantsChart && sess.LastIntent != "" {
+		bestIntent = sess.LastIntent
+	}
+
+	if bestIntent != "" {
+		sess.LastIntent = bestIntent
+		sess.LastMenu = "" // clear menu context since we switched intent
+	} else {
+		return s.answerCapabilities(gupSnap, dalkotSnap), nil
+	}
+
+	switch bestIntent {
+	case "dalkot_spj":
 		return s.answerDalkotOfficers("SPJ", dalkotSnap.PetugasSPJ, wantsChart), nil
-	}
-	if containsAny(q, []string{"petugas riil", "petugas rill", "laporan riil", "laporan rill"}) {
+	case "dalkot_riil":
 		return s.answerDalkotOfficers("RIIL", dalkotSnap.PetugasRiil, wantsChart), nil
-	}
-	if containsAny(q, []string{"proses", "selesai", "sukses", "status dalkot"}) {
+	case "dalkot_status":
 		return s.answerDalkotStatus(dalkotSnap, wantsChart), nil
-	}
-	if containsAny(q, []string{"dalkot", "perjalanan dinas dalam kota"}) {
+	case "dalkot_finance":
 		return s.answerDalkotFinance(dalkotSnap, wantsChart), nil
-	}
-	if containsAny(q, []string{"12 menu", "menu gup", "jenis gup", "pilihan gup"}) {
+	case "gup_menus":
 		return s.answerGupMenuList(gupSnap, wantsChart), nil
-	}
-	if containsAny(q, []string{"gup", "anggaran", "realisasi", "serapan", "keuangan"}) {
+	case "gup_overview":
 		return s.answerGupOverview(gupSnap, wantsChart), nil
 	}
 

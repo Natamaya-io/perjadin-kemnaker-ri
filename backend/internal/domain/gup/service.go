@@ -18,7 +18,7 @@ type Service interface {
 	GetMonthlyLS(ctx context.Context, year int16) ([]models.MonthlyLS, error)
 	SaveMonthlyLS(ctx context.Context, items []models.MonthlyLS) error
 	GetMasterData(ctx context.Context, year int16) (map[string]interface{}, error)
-	GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error)
+	GetLaporan(ctx context.Context, year int16, month int16) (*models.LaporanResponse, error)
 	GetDashboardSummary(ctx context.Context, year int16) (*models.GupDashboardSummary, error)
 	GetNextBusinessID(ctx context.Context) (string, error)
 	SaveBudget(ctx context.Context, b *models.Budget) error
@@ -99,8 +99,8 @@ func (s *service) DeleteAccountCode(ctx context.Context, id uuid.UUID) error {
 }
 
 // GetLaporan mengambil data rekapitulasi per Jenis Pengadaan beserta ringkasan total.
-func (s *service) GetLaporan(ctx context.Context, year int16) (*models.LaporanResponse, error) {
-	rows, err := s.repo.GetLaporanRows(ctx, year)
+func (s *service) GetLaporan(ctx context.Context, year int16, month int16) (*models.LaporanResponse, error) {
+	rows, err := s.repo.GetLaporanRows(ctx, year, month)
 	if err != nil {
 		return nil, err
 	}

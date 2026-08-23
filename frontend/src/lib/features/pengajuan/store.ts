@@ -133,16 +133,22 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
         }
         
         // Apply frontend sorting based on params.sort_by
+        const extractSeq = (spd: string) => {
+            if (!spd) return 0;
+            const match = spd.match(/ID-[A-Za-z]+-(\d+)/i);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+
         if (params.sort_by === 'spj-asc') {
             allRecords.sort((a, b) => {
-                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
-                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                const aNum = extractSeq(a.spd);
+                const bNum = extractSeq(b.spd);
                 return aNum - bNum;
             });
         } else if (params.sort_by === 'spj-desc') {
             allRecords.sort((a, b) => {
-                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
-                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                const aNum = extractSeq(a.spd);
+                const bNum = extractSeq(b.spd);
                 return bNum - aNum;
             });
         } else if (params.sort_by === 'date-desc') {
@@ -156,8 +162,8 @@ export async function loadPaginatedRecords(params: import('$lib/shared/api/types
         } else {
             // default ID Terbaru (spj-desc)
             allRecords.sort((a, b) => {
-                const aNum = parseInt((a.spd || '').replace(/\D/g, ''), 10) || 0;
-                const bNum = parseInt((b.spd || '').replace(/\D/g, ''), 10) || 0;
+                const aNum = extractSeq(a.spd);
+                const bNum = extractSeq(b.spd);
                 return bNum - aNum;
             });
         }

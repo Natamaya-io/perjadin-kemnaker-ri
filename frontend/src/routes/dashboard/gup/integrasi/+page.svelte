@@ -3,6 +3,7 @@
     import { invalidateAll } from '$app/navigation';
     import Button from '$lib/shared/ui/button/Button.svelte';
     import { ConfirmationModal } from '$lib/shared/ui/confirmation-modal';
+    import { userStore } from '$lib/features/auth/store';
 
     import Select from '$lib/shared/ui/select/Select.svelte';
 
@@ -279,6 +280,7 @@
             <p class="text-sm text-slate-500 mt-1">Kelola referensi kode akun dan format MAK untuk pengadaan GUP.</p>
         </div>
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            {#if $userStore?.role !== 'kasubag'}
             <Button variant="outline" on:click={openAddAcModal} class="w-full sm:w-auto flex items-center justify-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -291,6 +293,7 @@
                 </svg>
                 Tambah Jenis Pengadaan
             </Button>
+            {/if}
         </div>
     </div>
 
@@ -375,12 +378,14 @@
                         <th class="font-semibold text-slate-700 pl-4 py-3 bg-slate-50 whitespace-nowrap w-1/3">Jenis Pengadaan</th>
                         <th class="font-semibold text-slate-700 py-3 bg-slate-50 whitespace-nowrap w-1/4">Kode Akun</th>
                         <th class="font-semibold text-slate-700 py-3 bg-slate-50 whitespace-nowrap">Format MAK</th>
+                        {#if $userStore?.role !== 'kasubag'}
                         <th class="font-semibold text-slate-700 py-3 pr-4 bg-slate-50 whitespace-nowrap text-right">Aksi</th>
+                        {/if}
                     </tr>
                 </thead>
                 <tbody>
                     {#if paginatedData && paginatedData.length > 0}
-                        {#each paginatedData as type (type.id)}
+                        {#each paginatedData as type, index (type.id + '-' + index)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="pl-4 py-4 align-middle whitespace-nowrap font-medium text-slate-800">
                                     {type.name}
@@ -393,6 +398,7 @@
                                 <td class="py-4 align-middle whitespace-nowrap font-mono text-[13px] tracking-widest text-slate-700">
                                     {getMakFormat(type.accountCode)}
                                 </td>
+                                {#if $userStore?.role !== 'kasubag'}
                                 <td class="py-4 pr-4 align-middle whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <button aria-label="Edit integrasi" on:click={() => openEditModal(type)} class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
@@ -403,6 +409,7 @@
                                         </button>
                                     </div>
                                 </td>
+                                {/if}
                             </tr>
                         {/each}
                     {:else}
@@ -493,12 +500,14 @@
                         <th class="font-semibold text-slate-700 pl-4 py-3 bg-slate-50 whitespace-nowrap w-1/5">Kode Akun</th>
                         <th class="font-semibold text-slate-700 py-3 bg-slate-50 whitespace-nowrap">Format MAK</th>
                         <th class="font-semibold text-slate-700 py-3 bg-slate-50 whitespace-nowrap">Keterangan</th>
+                        {#if $userStore?.role !== 'kasubag'}
                         <th class="font-semibold text-slate-700 py-3 pr-4 bg-slate-50 whitespace-nowrap text-right">Aksi</th>
+                        {/if}
                     </tr>
                 </thead>
                 <tbody>
                     {#if acPaginatedData && acPaginatedData.length > 0}
-                        {#each acPaginatedData as ac (ac.id)}
+                        {#each acPaginatedData as ac, index (ac.id + '-' + index)}
                             <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition-colors bg-white">
                                 <td class="pl-4 py-4 align-middle whitespace-nowrap">
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold tracking-wide bg-sky-50 text-sky-700 border border-sky-200">
@@ -511,6 +520,7 @@
                                 <td class="py-4 align-middle whitespace-nowrap text-slate-600">
                                     {ac.description || '-'}
                                 </td>
+                                {#if $userStore?.role !== 'kasubag'}
                                 <td class="py-4 pr-4 align-middle whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <button aria-label="Edit Kode Akun" on:click={() => openEditAcModal(ac)} class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
@@ -521,6 +531,7 @@
                                         </button>
                                     </div>
                                 </td>
+                                {/if}
                             </tr>
                         {/each}
                     {:else}
@@ -620,6 +631,7 @@
                 <div>
                     <label for="integrasi-account-code" class="block text-sm font-medium text-slate-700 mb-1">Pilih Kode Akun (Tujuan Integrasi)</label>
                     <Select
+                        id="integrasi-account-code"
                         options={accountCodeOptions}
                         bind:value={formData.accountCodeId}
                         class="w-full h-10 text-sm bg-white border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
