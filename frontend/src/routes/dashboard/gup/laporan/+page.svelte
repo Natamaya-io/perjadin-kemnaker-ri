@@ -498,7 +498,7 @@
     <!-- Header halaman dan tombol aksi -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 no-print">
         <div>
-            <h1 class="text-2xl text-slate-800 tracking-tight flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                 Laporan dan Rekapitulasi
                 <button type="button" title="Informasi Global & Legenda" on:click={() => showInfoModal = true} class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full p-1 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -607,7 +607,7 @@
         <article class="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-2">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h3 class="text-lg text-slate-800">Total Serapan Anggaran</h3>
+                    <h3 class="text-lg font-bold text-slate-800">Total Serapan Anggaran</h3>
                     <p class="mt-1 text-sm text-slate-500">Komposisi total Realisasi dan Sisa Anggaran.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -647,7 +647,7 @@
         <article class="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-3 flex flex-col">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h3 class="text-lg text-slate-800 flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                         Realisasi per Jenis Pengadaan
                         <button type="button" title="Informasi Laporan" on:click={() => showInfoModal = true} class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full p-1 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
