@@ -72,13 +72,7 @@ ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
 ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
 ENV QPDF_BIN_PATH=/usr/bin/qpdf
 ENV PDFTK_BIN_PATH=/usr/bin/pdftk
-ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
-ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
-ENV UNOCONVERTER_BIN_PATH=/usr/bin/unoconverter
-ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
-ENV QPDF_BIN_PATH=/usr/bin/qpdf
-ENV PDFTK_BIN_PATH=/usr/bin/pdftk
-ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
+ENV LIBREOFFICE_BIN_PATH=/usr/lib/libreoffice/program/soffice.bin
 ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
 ENV UNOCONVERTER_BIN_PATH=/usr/bin/unoconverter
 
