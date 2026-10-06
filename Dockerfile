@@ -76,6 +76,11 @@ ENV LIBREOFFICE_BIN_PATH=/usr/lib/libreoffice/program/soffice.bin
 ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
 ENV UNOCONVERTER_BIN_PATH=/usr/bin/unoconverter
 
+# Copy Fonts and Fontconfig from Gotenberg
+COPY --from=gotenberg-source /usr/share/fonts /usr/share/fonts
+COPY --from=gotenberg-source /etc/fonts/conf.d /etc/fonts/conf.d
+RUN fc-cache -f
+
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
 COPY --from=backend-builder /app/backend/db/migrations ./db/migrations
