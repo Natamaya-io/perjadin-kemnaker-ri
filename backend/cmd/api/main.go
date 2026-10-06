@@ -6,6 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof" // Zero-Trust memory profiler
 	"os"
+	"io/fs"
+	"strings"
+	"github.com/kemnaker/perjadin-backend/ui"
 	"os/signal"
 	"time"
 
@@ -236,7 +239,27 @@ func main() {
 		protected.PUT("/master/settings", masterHandler.UpdateSettings, middleware.RoleMiddleware("super_admin", "kasubag"))
 	}
 
-	// 8. Start Server with Graceful Shutdown
+	// 9. SPA Frontend (Embedded)
+	distFS, err := fs.Sub(ui.Assets, "dist")
+	if err != nil {
+		sugar.Fatalf("Failed to get dist FS: %v", err)
+	}
+	
+	// Serve SPA frontend using Echo's Static middleware with HTML5 fallback
+	e.Use(echoMiddleware.StaticWithConfig(echoMiddleware.StaticConfig{
+		Root:       ".", // Root of the distFS
+		Filesystem: http.FS(distFS),
+		HTML5:      true, // This enables SPA fallback to index.html on 404
+		Skipper: func(c echo.Context) bool {
+			// Do not serve SPA fallback for API or Uploads routes
+			if strings.HasPrefix(c.Request().URL.Path, "/api/") || strings.HasPrefix(c.Request().URL.Path, "/uploads/") {
+				return true
+			}
+			return false
+		},
+	}))
+
+	// 10. Start Server with Graceful Shutdown
 	go func() {
 		if err := e.Start(":" + cfg.App.Port); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")

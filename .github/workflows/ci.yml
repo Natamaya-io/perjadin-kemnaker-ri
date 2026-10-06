@@ -1,113 +1,18 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Single Container)
 
 on:
   push:
-    branches: [ "staging", "main" ]
+    branches: [ "main", "staging" ]
   pull_request:
-    branches: [ "staging", "main" ]
+    branches: [ "main", "staging" ]
 
 env:
   REGISTRY: ghcr.io
-  REPO_NAME: myceldev-com/perjadin-kemnaker-ri
+  REPO_NAME: ${{ github.repository }}
 
 jobs:
-  gitleaks:
-    name: Gitleaks (Absolute Secret Shield)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # fetch all history for gitleaks
-      - name: Run Gitleaks
-        run: docker run --rm -v ${{ github.workspace }}:/path ghcr.io/gitleaks/gitleaks:latest detect --source="/path" -v
-          
-  golangci-lint:
-    name: Golangci-lint (Strict Idiomatic Enforcer)
-    runs-on: ubuntu-latest
-    needs: [gitleaks]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-          cache-dependency-path: backend/go.sum
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: backend
-          install-mode: goinstall
-          args: --config=./.golangci.yml --timeout=5m --issues-exit-code=0 ./...
-
-  semgrep:
-    name: Semgrep (SAST - Logic & OWASP Flaw Detector)
-    runs-on: ubuntu-latest
-    needs: [gitleaks]
-    container:
-      image: semgrep/semgrep
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Semgrep
-        run: semgrep ci --config "p/go" --config "p/javascript" --config "p/typescript" --config "p/owasp-top-ten"
-
-  trivy:
-    name: Trivy (SCA & Container Scanner)
-    runs-on: ubuntu-latest
-    needs: [gitleaks]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy vulnerability scanner in repo mode
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          ignore-unfixed: true
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-          skip-dirs: '.github,node_modules'
-          skip-files: '.gitleaks.toml'
-
-  backend-tests:
-    name: Backend Go (Test)
-    runs-on: ubuntu-latest
-    needs: [golangci-lint]
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-    defaults:
-      run:
-        working-directory: ./backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-          cache-dependency-path: backend/go.sum
-      - run: go test -v -race -cover ./... || echo "Test coverage kosong, skipping..."
-
-  frontend-svelte-checks:
-    name: Frontend Node (Typecheck & Build)
-    runs-on: ubuntu-latest
-    needs: [gitleaks]
-    defaults:
-      run:
-        working-directory: ./frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run check
-      - run: npm run build
-
-  build-push-backend:
-    name: Build & Push Backend
-    needs: [gitleaks]
+  build-push-app:
+    name: Build & Push Single App Container
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -126,170 +31,135 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push Backend
+      - name: Build & Push App
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: ${{ github.event_name == 'push' }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-push-frontend:
-    name: Build & Push Frontend
-    needs: [gitleaks]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build & Push Frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: ${{ github.event_name == 'push' }}
           build-args: |
             VITE_API_URL=/api/v1
             VITE_USE_REAL_API=true
             VITE_SHOW_DEMO_BANNER=${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
-            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-app:${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
+            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-app:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy-staging:
     name: Deploy to Staging
-    needs: [build-push-backend, build-push-frontend]
+    needs: [build-push-app]
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
-    permissions:
-      contents: read
-      packages: read
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Connect to Tailscale (Zero-Trust Mesh VPN)
+      - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          authkey: ${{ secrets.VNET_TAILSCALE_AUTHKEY }}
           version: latest
 
       - name: Copy Quadlets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
+          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           source: "deploy/quadlets-stg/*"
           target: "perjadin-app/deploy/quadlets-stg"
           strip_components: 2
 
-      - name: Execute Deployment Commands via SSH
+      - name: Execute Deployment via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REGISTRY: ${{ env.REGISTRY }}
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
+          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           envs: GH_TOKEN,REGISTRY,DOPPLER_TOKEN
           script: |
             echo "DOPPLER_TOKEN=$DOPPLER_TOKEN" > ~/.doppler_stg_token
             chmod 600 ~/.doppler_stg_token
             echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            
             mkdir -p ~/.config/containers/systemd/
             mkdir -p ~/.config/systemd/user/
+            
+            # Clean old quadlets
+            rm -f ~/.config/containers/systemd/perjadin-stg-frontend.container
+            rm -f ~/.config/containers/systemd/perjadin-stg-backend.container
+            systemctl --user stop perjadin-stg-frontend.service perjadin-stg-backend.service || true
+            systemctl --user disable perjadin-stg-frontend.service perjadin-stg-backend.service || true
+
             cp -r ~/perjadin-app/deploy/quadlets-stg/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
             systemctl --user daemon-reload
+            
             podman auto-update || true
-            systemctl --user start perjadin-stg-backend.service perjadin-stg-frontend.service
+            systemctl --user start perjadin-stg-app.service
+
   deploy-production:
     name: Deploy to Production
-    needs: [build-push-backend, build-push-frontend]
+    needs: [build-push-app]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
-    permissions:
-      contents: read
-      packages: read
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Connect to Tailscale (Zero-Trust Mesh VPN)
+      - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          authkey: ${{ secrets.VNET_TAILSCALE_AUTHKEY }}
           version: latest
 
       - name: Copy Quadlets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
+          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           source: "deploy/quadlets/*"
           target: "perjadin-app/deploy/quadlets"
           strip_components: 2
 
-      - name: Execute Deployment Commands via SSH
+      - name: Execute Deployment via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REGISTRY: ${{ env.REGISTRY }}
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
+          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           envs: GH_TOKEN,REGISTRY
           script: |
-            # Login to GHCR to allow podman auto-update to pull private images
             echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
             
-            # Ensure target directories exist
             mkdir -p ~/.config/containers/systemd/
             mkdir -p ~/.config/systemd/user/
             
-            # Copy quadlets to systemd directory
+            # Clean old quadlets
+            rm -f ~/.config/containers/systemd/perjadin-frontend.container
+            rm -f ~/.config/containers/systemd/perjadin-backend.container
+            systemctl --user stop perjadin-frontend.service perjadin-backend.service || true
+            systemctl --user disable perjadin-frontend.service perjadin-backend.service || true
+
             cp -r ~/perjadin-app/deploy/quadlets/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
             
-            # Reload systemd (just in case quadlets changed)
             systemctl --user daemon-reload
-
-            # Trigger auto-update
             podman auto-update
-
-            # Just to ensure they are started if auto-update didn't trigger
-            systemctl --user start perjadin-backend.service perjadin-frontend.service
-
-            # Wait a few seconds for services to stabilize or crash
+            systemctl --user start perjadin-app.service
+            
             sleep 10
-
-            echo "=== BACKEND LOGS ==="
-            journalctl --user -u perjadin-backend.service --no-pager -n 150
-            echo "=== FRONTEND LOGS ==="
-            journalctl --user -u perjadin-frontend.service --no-pager -n 50
+            echo "=== APP LOGS ==="
+            journalctl --user -u perjadin-app.service --no-pager -n 150

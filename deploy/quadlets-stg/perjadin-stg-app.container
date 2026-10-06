@@ -1,0 +1,35 @@
+[Unit]
+Description=Backend Go API Service
+Requires=perjadin-stg-secrets.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service
+After=perjadin-stg-secrets.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service
+
+[Container]
+ContainerName=perjadin-stg-app
+# Using the pre-built image from registry
+Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-app:staging
+EnvironmentFile=/dev/shm/perjadin_stg.env
+Network=perjadin-stg.network
+Volume=%h/.persistent/perjadin-kemnaker-ri/stg/backend_uploads:/app/uploads
+PublishPort=37211:8081
+
+# Hardcoded non-secret envs specific to infrastructure routing
+Environment=APP_PORT=8081
+Environment=DB_HOST=perjadin-stg-db
+Environment=DB_PORT=5432
+Environment=DB_SSLMODE=disable
+Environment=REDIS_HOST=perjadin-stg-redis
+Environment=REDIS_PORT=6379
+Environment=GOTENBERG_URL=http://perjadin-stg-gotenberg:3000
+Environment=SEED_DB=true
+Environment=ALLOW_CLEANUP=false
+
+# Enable automatic pulling of latest image when systemd service starts/restarts
+AutoUpdate=registry
+
+[Service]
+Restart=always
+# Ensure graceful shutdown of the Go app
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

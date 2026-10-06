@@ -8,7 +8,7 @@ ContainerName=perjadin-redis
 Image=public.ecr.aws/docker/library/redis:7-alpine
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
-Volume=perjadin-redis.volume:/data
+Volume=%h/.persistent/perjadin-kemnaker-ri/prod/redis_data:/data
 # Exec string is appended to the container entrypoint
 Exec=redis-server --requirepass "${REDIS_PASSWORD}"
 

@@ -1,4 +1,5 @@
 node_modules
+GEMINI.md
 
 # Output
 .output
@@ -36,3 +37,4 @@ MASTER_BLUEPRINT_*.docx
 *.docx
 prod_dump.sql
 backend/uploads/
+backend/ui/dist/
