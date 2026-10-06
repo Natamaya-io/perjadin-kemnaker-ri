@@ -7,7 +7,7 @@ const config = {
 	kit: {
 		csrf: {
 			checkOrigin: true,
-			trustedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://100.115.101.14:3000', 'https://perjadin.kemnaker.go.id', 'http://perjadin.kemnaker.go.id', 'https://sinurdin.gatsu51.com']
+			trustedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://100.115.101.14:3000', 'https://perjadin.kemnaker.go.id', 'http://perjadin.kemnaker.go.id', 'https://sinurdin.gatsu51.com', 'https://staging.gatsu51.com']
 		},
 		// Setting SPA Static
 		adapter: adapter({ 
