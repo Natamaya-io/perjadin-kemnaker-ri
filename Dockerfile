@@ -45,15 +45,23 @@ FROM gotenberg/gotenberg:8
 USER root
 WORKDIR /app
 
-# Install PostgreSQL, Redis, Supervisor on Debian
+# Install PostgreSQL, Redis, Supervisor, and Locales on Debian
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql \
+    curl ca-certificates gnupg locales \
+    && sed -i -e "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/" /etc/locale.gen \
+    && dpkg-reconfigure --frontend=noninteractive locales \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
+    && echo "deb http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-16 \
     redis-server \
     supervisor \
     gosu \
-    curl \
-    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
