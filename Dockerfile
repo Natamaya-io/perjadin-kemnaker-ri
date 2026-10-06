@@ -44,7 +44,7 @@ FROM gotenberg/gotenberg:8 AS gotenberg-source
 # ==========================================
 # Stage 4: THE SOTA FAT CONTAINER
 # ==========================================
-FROM alpine:latest
+FROM alpine:3.19
 WORKDIR /app
 
 # Install all stateful and infrastructure dependencies
@@ -60,6 +60,8 @@ RUN apk --no-cache add \
     font-noto-emoji \
     curl \
     fontconfig
+
+ENV CHROMIUM_BIN_PATH=/usr/bin/chromium-browser
 
 # Copy Gotenberg Binary and its system requirements
 COPY --from=gotenberg-source /usr/bin/gotenberg /usr/bin/gotenberg
