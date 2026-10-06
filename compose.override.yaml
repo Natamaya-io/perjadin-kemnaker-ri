@@ -10,12 +10,14 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    ports:
+      - "3000:3000"
     environment:
       - CHOKIDAR_USEPOLLING=true # Penting untuk docker di OS tertentu agar file watching jalan
       - NODE_ENV=development
-      - BACKEND_URL=http://backend:8081
+      - BACKEND_URL=http://app:8081
 
-  backend:
+  app:
     # Mengizinkan file template MS Word (.docx) diedit dan dibaca secara live oleh kontainer
     volumes:
       - ./backend/templates:/app/templates
