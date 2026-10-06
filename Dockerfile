@@ -45,7 +45,7 @@ WORKDIR /app
 
 # Install all stateful and infrastructure dependencies
 # Using Debian packages since gotenberg:8 is based on Debian
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y locales \
     postgresql \
     redis-server \
     supervisor \
@@ -55,7 +55,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Symlink postgres binaries to /usr/bin so initdb and postgres are in PATH
-RUN ln -s /usr/lib/postgresql/*/bin/* /usr/bin/
+RUN sed -i "/en_US.UTF-8/s/^# //g" /etc/locale.gen && locale-gen
+RUN ln -sf /usr/lib/postgresql/*/bin/* /usr/bin/
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
