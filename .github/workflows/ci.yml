@@ -102,6 +102,8 @@ jobs:
             systemctl --user start perjadin-stg-app.service
             
             rm -rf /tmp/quadlets-stg
+            podman image prune -a -f || true
+            podman container prune -f || true
           EOF
 
   deploy-production:
@@ -153,6 +155,8 @@ jobs:
             systemctl --user start perjadin-app.service
             
             rm -rf /tmp/quadlets
+            podman image prune -a -f || true
+            podman container prune -f || true
             
             sleep 10
             echo "=== APP LOGS ==="
