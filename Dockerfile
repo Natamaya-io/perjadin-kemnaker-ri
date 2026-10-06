@@ -44,7 +44,7 @@ USER root
 WORKDIR /app
 
 # Install all stateful and infrastructure dependencies
-# Using Debian packages since gotenberg:8 is based on Debian Bookworm
+# Using Debian packages since gotenberg:8 is based on Debian
 RUN apt-get update && apt-get install -y \
     postgresql \
     redis-server \
@@ -53,6 +53,9 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Symlink postgres binaries to /usr/bin so initdb and postgres are in PATH
+RUN ln -s /usr/lib/postgresql/*/bin/* /usr/bin/
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
@@ -77,8 +80,6 @@ ENV DB_SSLMODE=disable
 ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 ENV GOTENBERG_URL=http://127.0.0.1:3000
-
-# Remove Gotenberg default entrypoint environment overrides if any, but gotenberg image doesn't override critical envs that would break postgres.
 
 EXPOSE 8081
 
