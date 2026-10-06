@@ -88,8 +88,11 @@ jobs:
             # Clean old quadlets
             rm -f ~/.config/containers/systemd/perjadin-stg-frontend.container
             rm -f ~/.config/containers/systemd/perjadin-stg-backend.container
-            systemctl --user stop perjadin-stg-frontend.service perjadin-stg-backend.service || true
-            systemctl --user disable perjadin-stg-frontend.service perjadin-stg-backend.service || true
+            rm -f ~/.config/containers/systemd/perjadin-stg-db.container
+            rm -f ~/.config/containers/systemd/perjadin-stg-redis.container
+            rm -f ~/.config/containers/systemd/perjadin-stg-gotenberg.container
+            systemctl --user stop perjadin-stg-frontend.service perjadin-stg-backend.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service || true
+            systemctl --user disable perjadin-stg-frontend.service perjadin-stg-backend.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service || true
 
             cp -r ~/perjadin-app/deploy/quadlets-stg/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
@@ -134,8 +137,11 @@ jobs:
             # Clean old quadlets
             rm -f ~/.config/containers/systemd/perjadin-frontend.container
             rm -f ~/.config/containers/systemd/perjadin-backend.container
-            systemctl --user stop perjadin-frontend.service perjadin-backend.service || true
-            systemctl --user disable perjadin-frontend.service perjadin-backend.service || true
+            rm -f ~/.config/containers/systemd/perjadin-db.container
+            rm -f ~/.config/containers/systemd/perjadin-redis.container
+            rm -f ~/.config/containers/systemd/perjadin-gotenberg.container
+            systemctl --user stop perjadin-frontend.service perjadin-backend.service perjadin-db.service perjadin-redis.service perjadin-gotenberg.service || true
+            systemctl --user disable perjadin-frontend.service perjadin-backend.service perjadin-db.service perjadin-redis.service perjadin-gotenberg.service || true
 
             cp -r ~/perjadin-app/deploy/quadlets/* ~/.config/containers/systemd/ || true
             cp ~/perjadin-app/deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
