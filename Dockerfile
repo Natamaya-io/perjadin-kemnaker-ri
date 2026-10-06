@@ -67,6 +67,16 @@ ENV CHROMIUM_BIN_PATH=/usr/bin/chromium-browser
 COPY --from=gotenberg-source /usr/bin/gotenberg /usr/bin/gotenberg
 COPY --from=gotenberg-source /opt/gotenberg/chromium-hyphen-data /opt/gotenberg/chromium-hyphen-data
 ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
+ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
+ENV QPDF_BIN_PATH=/usr/bin/qpdf
+ENV PDFTK_BIN_PATH=/usr/bin/pdftk
+ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
+ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
+ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
+ENV QPDF_BIN_PATH=/usr/bin/qpdf
+ENV PDFTK_BIN_PATH=/usr/bin/pdftk
+ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
+ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
@@ -79,7 +89,7 @@ RUN mkdir -p uploads /var/lib/postgresql/data /run/postgresql /etc/supervisor.d
 # Inject Supervisor and Entrypoint
 COPY deploy/fat-container/supervisord.conf /etc/supervisord.conf
 COPY deploy/fat-container/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh     && ln -s /bin/true /usr/bin/exiftool     && ln -s /bin/true /usr/bin/qpdf     && ln -s /bin/true /usr/bin/pdftk     && ln -s /bin/true /usr/bin/libreoffice     && ln -s /bin/true /usr/bin/pdfcpu
 
 # Force internal loopback connections
 ENV DB_HOST=127.0.0.1
