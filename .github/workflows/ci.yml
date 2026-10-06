@@ -66,28 +66,18 @@ jobs:
           authkey: ${{ secrets.VNET_TAILSCALE_AUTHKEY }}
           version: latest
 
-      - name: Copy Quadlets to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
-          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          source: "deploy/quadlets-stg/*"
-          target: "perjadin-app/deploy/quadlets-stg"
-          strip_components: 2
+      - name: Copy Quadlets to Server via Tailscale SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p ~/perjadin-app/deploy/quadlets-stg"
+          scp -o StrictHostKeyChecking=no -r deploy/quadlets-stg/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:~/perjadin-app/deploy/quadlets-stg/
 
-      - name: Execute Deployment via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Execute Deployment via Tailscale SSH
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REGISTRY: ${{ env.REGISTRY }}
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        with:
-          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
-          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          envs: GH_TOKEN,REGISTRY,DOPPLER_TOKEN
-          script: |
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} << EOF
             echo "DOPPLER_TOKEN=$DOPPLER_TOKEN" > ~/.doppler_stg_token
             chmod 600 ~/.doppler_stg_token
             echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
@@ -107,6 +97,7 @@ jobs:
             
             podman auto-update || true
             systemctl --user start perjadin-stg-app.service
+          EOF
 
   deploy-production:
     name: Deploy to Production
@@ -124,27 +115,17 @@ jobs:
           authkey: ${{ secrets.VNET_TAILSCALE_AUTHKEY }}
           version: latest
 
-      - name: Copy Quadlets to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
-          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          source: "deploy/quadlets/*"
-          target: "perjadin-app/deploy/quadlets"
-          strip_components: 2
+      - name: Copy Quadlets to Server via Tailscale SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p ~/perjadin-app/deploy/quadlets"
+          scp -o StrictHostKeyChecking=no -r deploy/quadlets/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:~/perjadin-app/deploy/quadlets/
 
-      - name: Execute Deployment via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Execute Deployment via Tailscale SSH
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REGISTRY: ${{ env.REGISTRY }}
-        with:
-          host: ${{ secrets.GATSU51_TAILSCALE_IP }}
-          username: ${{ secrets.GATSU51_SERVER_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          envs: GH_TOKEN,REGISTRY
-          script: |
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} << EOF
             echo "$GH_TOKEN" | podman login "$REGISTRY" -u ${{ github.actor }} --password-stdin
             
             mkdir -p ~/.config/containers/systemd/
@@ -166,3 +147,4 @@ jobs:
             sleep 10
             echo "=== APP LOGS ==="
             journalctl --user -u perjadin-app.service --no-pager -n 150
+          EOF
