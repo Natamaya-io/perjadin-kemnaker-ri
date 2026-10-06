@@ -68,8 +68,8 @@ jobs:
 
       - name: Copy Quadlets to Server via Tailscale SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p ~/perjadin-app/deploy/quadlets-stg"
-          scp -o StrictHostKeyChecking=no -r deploy/quadlets-stg/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:~/perjadin-app/deploy/quadlets-stg/
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p /tmp/quadlets-stg"
+          scp -o StrictHostKeyChecking=no -r deploy/quadlets-stg/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:/tmp/quadlets-stg/
 
       - name: Execute Deployment via Tailscale SSH
         env:
@@ -94,12 +94,14 @@ jobs:
             systemctl --user stop perjadin-stg-frontend.service perjadin-stg-backend.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service || true
             systemctl --user disable perjadin-stg-frontend.service perjadin-stg-backend.service perjadin-stg-db.service perjadin-stg-redis.service perjadin-stg-gotenberg.service || true
 
-            cp -r ~/perjadin-app/deploy/quadlets-stg/* ~/.config/containers/systemd/ || true
-            cp ~/perjadin-app/deploy/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
+            cp -r /tmp/quadlets-stg/* ~/.config/containers/systemd/ || true
+            cp /tmp/quadlets-stg/perjadin-stg-secrets.service ~/.config/systemd/user/ || true
             systemctl --user daemon-reload
             
             podman auto-update || true
             systemctl --user start perjadin-stg-app.service
+            
+            rm -rf /tmp/quadlets-stg
           EOF
 
   deploy-production:
@@ -120,8 +122,8 @@ jobs:
 
       - name: Copy Quadlets to Server via Tailscale SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p ~/perjadin-app/deploy/quadlets"
-          scp -o StrictHostKeyChecking=no -r deploy/quadlets/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:~/perjadin-app/deploy/quadlets/
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }} "mkdir -p /tmp/quadlets"
+          scp -o StrictHostKeyChecking=no -r deploy/quadlets/* ${{ secrets.GATSU51_SERVER_USERNAME }}@${{ secrets.GATSU51_TAILSCALE_IP }}:/tmp/quadlets/
 
       - name: Execute Deployment via Tailscale SSH
         env:
@@ -143,12 +145,14 @@ jobs:
             systemctl --user stop perjadin-frontend.service perjadin-backend.service perjadin-db.service perjadin-redis.service perjadin-gotenberg.service || true
             systemctl --user disable perjadin-frontend.service perjadin-backend.service perjadin-db.service perjadin-redis.service perjadin-gotenberg.service || true
 
-            cp -r ~/perjadin-app/deploy/quadlets/* ~/.config/containers/systemd/ || true
-            cp ~/perjadin-app/deploy/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
+            cp -r /tmp/quadlets/* ~/.config/containers/systemd/ || true
+            cp /tmp/quadlets/perjadin-secrets.service ~/.config/systemd/user/ || true
             
             systemctl --user daemon-reload
             podman auto-update
             systemctl --user start perjadin-app.service
+            
+            rm -rf /tmp/quadlets
             
             sleep 10
             echo "=== APP LOGS ==="
