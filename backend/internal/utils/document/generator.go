@@ -544,27 +544,26 @@ func removeEmptyParagraphs(xml string) string {
 // removeTrailingJunkParagraphs removes paragraphs at the end of the document
 // (just before </w:body>) that contain only soft line breaks (<w:br/>) or are
 // completely empty. These cause LibreOffice to render blank pages in the PDF.
+// Handles both regular paragraphs (<w:p>...</w:p>) and self-closing (<w:p ... />).
 func removeTrailingJunkParagraphs(xml string) string {
 	bodyEnd := strings.LastIndex(xml, "</w:body>")
 	if bodyEnd == -1 {
 		return xml
 	}
 
-	// Find the last sectPr or body end anchor to work backwards from
+	// Find the last sectPr to use as the upper boundary anchor
 	anchor := bodyEnd
 	sectPrStart := strings.LastIndex(xml[:bodyEnd], "<w:sectPr")
 	if sectPrStart != -1 {
 		anchor = sectPrStart
 	}
 
+	// Remove regular paragraphs (<w:p>...</w:p>) working backward from anchor
 	for {
-		// Find the </w:p> immediately before our anchor
 		pEnd := strings.LastIndex(xml[:anchor], "</w:p>")
 		if pEnd == -1 {
 			break
 		}
-
-		// Find its opening <w:p> tag
 		pStart1 := strings.LastIndex(xml[:pEnd], "<w:p>")
 		pStart2 := strings.LastIndex(xml[:pEnd], "<w:p ")
 		pStart := pStart1
@@ -574,28 +573,95 @@ func removeTrailingJunkParagraphs(xml string) string {
 		if pStart == -1 {
 			break
 		}
-
 		paraContent := xml[pStart : pEnd+6]
-
-		// Check if paragraph has real text content
 		hasText := strings.Contains(paraContent, "<w:t>") || strings.Contains(paraContent, "<w:t ")
-		// Check if it has a real page break
 		hasPageBreak := strings.Contains(paraContent, `<w:br w:type="page"/>`)
-		// Check if it has drawing (image)
 		hasDrawing := strings.Contains(paraContent, "<w:drawing>")
-
 		if hasText || hasPageBreak || hasDrawing {
-			// Real content found, stop
 			break
 		}
-
-		// Paragraph is junk (empty or only soft breaks) - remove it
 		xml = xml[:pStart] + xml[pEnd+6:]
-		// Update anchor since we removed content before it
 		anchor = pStart
 	}
 
+	// Also remove self-closing paragraphs (<w:p ... />) immediately before anchor.
+	// These are empty paragraphs that Word sometimes uses and are invisible to
+	// the </w:p> search above but still cause extra pages in LibreOffice.
+	selfClosingRe := `<w:p [^>]+/>`
+	for {
+		// Find last occurrence before anchor
+		sub := xml[:anchor]
+		lastIdx := -1
+		matchLen := 0
+
+		// Manual search for last self-closing <w:p .../> before anchor
+		searchFrom := 0
+		for {
+			start := strings.Index(sub[searchFrom:], "<w:p ")
+			if start == -1 {
+				break
+			}
+			absStart := searchFrom + start
+			// Find the end of this tag
+			endTag := strings.Index(sub[absStart:], "/>")
+			if endTag == -1 {
+				searchFrom = absStart + 5
+				continue
+			}
+			absEnd := absStart + endTag + 2
+			// Verify it's a self-closing paragraph (not <w:pPr>, <w:pStyle>, etc.)
+			tagContent := sub[absStart:absEnd]
+			// Must be just <w:p .../>
+			if !strings.HasPrefix(tagContent, "<w:p ") {
+				searchFrom = absStart + 5
+				continue
+			}
+			// Ensure it's self-closing (ends with />) and does not contain > before />
+			innerTag := tagContent[5 : len(tagContent)-2]
+			if strings.Contains(innerTag, ">") {
+				searchFrom = absStart + 5
+				continue
+			}
+			lastIdx = absStart
+			matchLen = len(tagContent)
+			searchFrom = absStart + 5
+		}
+		_ = selfClosingRe
+
+		if lastIdx == -1 {
+			break
+		}
+
+		// Check that this self-closing paragraph is directly adjacent (no real content between it and anchor)
+		between := strings.TrimSpace(xml[lastIdx+matchLen : anchor])
+		// Allow only other self-closing paragraphs or whitespace between
+		if between != "" && !isOnlySelfClosingParagraphs(between) {
+			break
+		}
+
+		// Remove from lastIdx to anchor (remove all self-closing paras in one shot)
+		xml = xml[:lastIdx] + xml[anchor:]
+		anchor = lastIdx
+	}
+
 	return xml
+}
+
+// isOnlySelfClosingParagraphs returns true if the string contains only
+// self-closing <w:p .../> elements and whitespace.
+func isOnlySelfClosingParagraphs(s string) bool {
+	s = strings.TrimSpace(s)
+	for len(s) > 0 {
+		if !strings.HasPrefix(s, "<w:p ") {
+			return false
+		}
+		end := strings.Index(s, "/>")
+		if end == -1 {
+			return false
+		}
+		s = strings.TrimSpace(s[end+2:])
+	}
+	return true
 }
 
 func adjustPetugasTableWidths(xml string) string {
