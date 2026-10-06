@@ -37,48 +37,22 @@ COPY --from=frontend-builder /app/frontend/build/ ui/dist/
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o perjadin-api ./cmd/api
 
 # ==========================================
-# Stage 3: Gotenberg Engine (Chromium + PDF)
-# ==========================================
-FROM gotenberg/gotenberg:8 AS gotenberg-source
-
-# ==========================================
 # Stage 4: THE SOTA FAT CONTAINER
 # ==========================================
-FROM alpine:3.19
+FROM gotenberg/gotenberg:8
+USER root
 WORKDIR /app
 
 # Install all stateful and infrastructure dependencies
-RUN apk --no-cache add \
+# Using Debian packages since gotenberg:8 is based on Debian Bookworm
+RUN apt-get update && apt-get install -y \
     postgresql \
-    redis \
+    redis-server \
     supervisor \
-    su-exec \
     tzdata \
     ca-certificates \
-    chromium \
-    ttf-freefont \
-    font-noto-emoji \
     curl \
-    fontconfig
-
-ENV CHROMIUM_BIN_PATH=/usr/bin/chromium-browser
-
-# Copy Gotenberg Binary and its system requirements
-COPY --from=gotenberg-source /usr/bin/gotenberg /usr/bin/gotenberg
-COPY --from=gotenberg-source /opt/gotenberg/chromium-hyphen-data /opt/gotenberg/chromium-hyphen-data
-ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
-ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
-ENV QPDF_BIN_PATH=/usr/bin/qpdf
-ENV PDFTK_BIN_PATH=/usr/bin/pdftk
-ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
-ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
-ENV UNOCONVERTER_BIN_PATH=/usr/bin/unoconverter
-ENV EXIFTOOL_BIN_PATH=/usr/bin/exiftool
-ENV QPDF_BIN_PATH=/usr/bin/qpdf
-ENV PDFTK_BIN_PATH=/usr/bin/pdftk
-ENV LIBREOFFICE_BIN_PATH=/usr/bin/libreoffice
-ENV PDFCPU_BIN_PATH=/usr/bin/pdfcpu
-ENV UNOCONVERTER_BIN_PATH=/usr/bin/unoconverter
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
@@ -86,12 +60,12 @@ COPY --from=backend-builder /app/backend/db/migrations ./db/migrations
 COPY --from=backend-builder /app/backend/templates ./templates
 
 # Setup configuration and data directories
-RUN mkdir -p uploads /var/lib/postgresql/data /run/postgresql /etc/supervisor.d
+RUN mkdir -p uploads /var/lib/postgresql/data /run/postgresql /etc/supervisor/conf.d
 
 # Inject Supervisor and Entrypoint
-COPY deploy/fat-container/supervisord.conf /etc/supervisord.conf
+COPY deploy/fat-container/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY deploy/fat-container/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh     && ln -s /bin/true /usr/bin/exiftool     && ln -s /bin/true /usr/bin/qpdf     && ln -s /bin/true /usr/bin/pdftk     && ln -s /bin/true /usr/bin/libreoffice     && ln -s /bin/true /usr/bin/pdfcpu     && ln -s /bin/true /usr/bin/unoconverter
+RUN chmod +x /entrypoint.sh
 
 # Force internal loopback connections
 ENV DB_HOST=127.0.0.1
@@ -104,10 +78,12 @@ ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 ENV GOTENBERG_URL=http://127.0.0.1:3000
 
+# Remove Gotenberg default entrypoint environment overrides if any, but gotenberg image doesn't override critical envs that would break postgres.
+
 EXPOSE 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f http://127.0.0.1:8081/api/v1/auth/demo-users || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
