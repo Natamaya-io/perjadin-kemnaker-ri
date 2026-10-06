@@ -65,6 +65,8 @@ ENV CHROMIUM_BIN_PATH=/usr/bin/chromium-browser
 
 # Copy Gotenberg Binary and its system requirements
 COPY --from=gotenberg-source /usr/bin/gotenberg /usr/bin/gotenberg
+COPY --from=gotenberg-source /opt/gotenberg/chromium-hyphen-data /opt/gotenberg/chromium-hyphen-data
+ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
 
 # Copy Go Backend
 COPY --from=backend-builder /app/backend/perjadin-api .
