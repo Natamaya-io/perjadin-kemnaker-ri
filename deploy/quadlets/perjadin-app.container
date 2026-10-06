@@ -9,7 +9,7 @@ Image=ghcr.io/natamaya-io/perjadin-kemnaker-ri-app:latest
 EnvironmentFile=/dev/shm/perjadin.env
 Network=perjadin.network
 Volume=%h/.persistent/perjadin-kemnaker-ri/prod/backend_uploads:/app/uploads
-Volume=%h/.persistent/perjadin-kemnaker-ri/prod/db_data:/var/lib/postgresql/data
+Volume=%h/.persistent/perjadin-kemnaker-ri/prod/postgres_data:/var/lib/postgresql/data
 Volume=%h/.persistent/perjadin-kemnaker-ri/prod/redis_data:/data
 PublishPort=8081:8081
 

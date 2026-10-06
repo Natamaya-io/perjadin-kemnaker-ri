@@ -9,7 +9,7 @@ Image=ghcr.io/natamaya-io/perjadin-kemnaker-ri-app:staging
 EnvironmentFile=/dev/shm/perjadin_stg.env
 Network=perjadin-stg.network
 Volume=%h/.persistent/perjadin-kemnaker-ri/stg/backend_uploads:/app/uploads
-Volume=%h/.persistent/perjadin-kemnaker-ri/stg/db_data:/var/lib/postgresql/data
+Volume=%h/.persistent/perjadin-kemnaker-ri/stg/postgres_data:/var/lib/postgresql/data
 Volume=%h/.persistent/perjadin-kemnaker-ri/stg/redis_data:/data
 PublishPort=37211:8081
 
