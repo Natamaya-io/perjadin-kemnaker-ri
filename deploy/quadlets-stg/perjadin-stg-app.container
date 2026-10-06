@@ -6,7 +6,7 @@ After=perjadin-stg-secrets.service perjadin-stg-db.service perjadin-stg-redis.se
 [Container]
 ContainerName=perjadin-stg-app
 # Using the pre-built image from registry
-Image=ghcr.io/myceldev-com/perjadin-kemnaker-ri-app:staging
+Image=ghcr.io/natamaya-io/perjadin-kemnaker-ri-app:staging
 EnvironmentFile=/dev/shm/perjadin_stg.env
 Network=perjadin-stg.network
 Volume=%h/.persistent/perjadin-kemnaker-ri/stg/backend_uploads:/app/uploads
