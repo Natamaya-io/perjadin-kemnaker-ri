@@ -12,7 +12,7 @@ Aplikasi ini mengotomatiskan seluruh siklus birokrasi: mulai dari pengajuan Sura
 
 Aplikasi ini menggunakan pendekatan arsitektur **Fat Container Monolith** demi keandalan, determinisme, dan kemudahan deployment di lingkungan *on-premise* maupun VPS tunggal (Bare-Metal).
 
-- **Frontend:** SvelteKit, SolidJS, TailwindCSS, Ark UI (Antislop Design System).
+- **Frontend:** SvelteKit, SolidJS, TailwindCSS, Ark UI.
 - **Backend:** Golang (Echo Framework, GORM).
 - **Database & Cache:** PostgreSQL 16 & Redis 8.0.
 - **Document Engine:** Gotenberg (berbasis Debian/LibreOffice 26.8) untuk *rendering* PDF yang *pixel-perfect*.
