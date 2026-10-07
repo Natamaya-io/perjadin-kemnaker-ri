@@ -33,7 +33,7 @@ Aplikasi ini memodelkan alur birokrasi nyata di pemerintahan. Berikut adalah sik
 
 ## 📱 Panduan Komprehensif Fitur Sidebar
 
-Navigasi sistem ini dikategorisasikan secara logis dalam *Sidebar* sesuai dengan spesialisasi tugas (RBAC). Berikut adalah penjabaran mendalam untuk setiap modul:
+Penjabaran modul berdasarkan hak akses (RBAC):
 
 ### 1. Dashboard (`/dashboard`)
 - **Fungsi:** Pusat kendali (*Command Center*) aplikasi.
@@ -43,7 +43,6 @@ Navigasi sistem ini dikategorisasikan secara logis dalam *Sidebar* sesuai dengan
 ---
 
 ### 2. Perjalanan Dinas (Perjadin)
-Modul ini adalah urat nadi utama yang mengelola data mentah dan administratif dari setiap keberangkatan dinas.
 
 #### A. Pengajuan Perjalanan (`/dashboard/pengajuan`)
 - **Fungsi:** Formulir entri utama untuk menjadwalkan tugas kedinasan.
@@ -76,7 +75,6 @@ Modul ini adalah urat nadi utama yang mengelola data mentah dan administratif da
 ---
 
 ### 3. Ganti Uang Persediaan (GUP)
-Modul ini mengelola tata kelola kas kecil/bendahara pengeluaran dalam skema birokrasi pemerintahan.
 
 #### A. Pengajuan GUP (`/dashboard/gup/pengajuan`)
 - **Fungsi:** Pembuatan keranjang/batch tagihan yang akan diajukan penggantian dananya.
@@ -107,7 +105,6 @@ Modul ini mengelola tata kelola kas kecil/bendahara pengeluaran dalam skema biro
 ---
 
 ### 4. AI (Kecerdasan Buatan)
-Modul ini merupakan injeksi teknologi untuk memodernisasi cara pengguna berinteraksi dengan sistem ERP.
 
 #### A. Chatbot AI (`/dashboard/chatbot`)
 - **Fungsi:** Asisten Virtual Birokrasi & Pencarian Cerdas.
@@ -119,7 +116,6 @@ Modul ini merupakan injeksi teknologi untuk memodernisasi cara pengguna berinter
 ---
 
 ### 5. Zona Admin
-Area restriktif untuk mengatur fondasi konfigurasi aplikasi dan hak akses pengguna.
 
 #### A. Manajemen Pengguna (`/dashboard/admin/users`)
 - **Fungsi:** Manajemen Akun dan *Role-Based Access Control* (RBAC).
