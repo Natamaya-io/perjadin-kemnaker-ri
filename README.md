@@ -10,7 +10,6 @@ Aplikasi ini mengotomatiskan seluruh siklus birokrasi: mulai dari pengajuan Sura
 
 ## 🏗️ Arsitektur & Tumpukan Teknologi
 
-Aplikasi ini menggunakan pendekatan arsitektur **Fat Container Monolith** demi keandalan, determinisme, dan kemudahan deployment di lingkungan *on-premise* maupun VPS tunggal (Bare-Metal).
 
 - **Frontend:** SvelteKit, TailwindCSS, Bits UI.
 - **Backend:** Golang (Echo Framework, GORM).
