@@ -16,8 +16,6 @@ Aplikasi ini menggunakan pendekatan arsitektur **Fat Container Monolith** demi k
 - **Backend:** Golang (Echo Framework, GORM).
 - **Database & Cache:** PostgreSQL 16 & Redis 8.0.
 - **Document Engine:** Gotenberg (berbasis Debian/LibreOffice 26.8) untuk *rendering* PDF yang *pixel-perfect*.
-- **Infrastructure:** Podman (Quadlets), systemd, GitHub Actions (CI/CD), Tailscale VNet, Cloudflare Tunnel.
-- **AI / Machine Learning:** FastText + HNSW (Hierarchical Navigable Small World) untuk *Intent Classification* (Modul Skripsi).
 
 ---
 
