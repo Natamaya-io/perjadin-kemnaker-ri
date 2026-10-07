@@ -35,7 +35,7 @@ Aplikasi ini memodelkan alur birokrasi nyata di pemerintahan. Berikut adalah sik
 
 Navigasi sistem ini dikategorisasikan secara logis dalam *Sidebar* sesuai dengan spesialisasi tugas (RBAC). Berikut adalah penjabaran mendalam untuk setiap modul:
 
-### 1. Dashboard
+### 1. Dashboard (`/dashboard`)
 - **Fungsi:** Pusat kendali (*Command Center*) aplikasi.
 - **Kegunaan:** Menampilkan analitik tingkat tinggi (*high-level analytics*), grafik penyerapan anggaran, jumlah perjalanan dinas yang sedang berlangsung, *timeline* persetujuan, dan *quick actions*. Pengguna dapat dengan cepat melihat tugas apa yang membutuhkan atensi mereka (misalnya SPJ yang belum ditandatangani).
 - **Akses:** Super Admin, Kasubag, Protokol.
@@ -45,7 +45,7 @@ Navigasi sistem ini dikategorisasikan secara logis dalam *Sidebar* sesuai dengan
 ### 2. Perjalanan Dinas (Perjadin)
 Modul ini adalah urat nadi utama yang mengelola data mentah dan administratif dari setiap keberangkatan dinas.
 
-#### A. Pengajuan Perjalanan
+#### A. Pengajuan Perjalanan (`/dashboard/pengajuan`)
 - **Fungsi:** Formulir entri utama untuk menjadwalkan tugas kedinasan.
 - **Kegunaan:** 
   - Membuat Nomor Surat Tugas secara berurutan.
@@ -54,17 +54,16 @@ Modul ini adalah urat nadi utama yang mengelola data mentah dan administratif da
   - Mengatur jadwal *itinerary* (Keberangkatan & Kepulangan).
 - **Akses:** Super Admin, Kasubag, Protokol.
 
-#### B. Rekap & Kalkulasi
-- **Fungsi:** Mesin hitung otomatis berbasis *Standar Biaya Masukan* (SBM) Kementerian Keuangan.
+#### B. Manajemen Perdin Admin (`/dashboard/admin/perdin`)
+- **Fungsi:** Pusat rekapitulasi, verifikasi, dan mesin hitung otomatis berbasis *Standar Biaya Masukan* (SBM) Kementerian Keuangan.
 - **Kegunaan:** 
-  - Mencegah kesalahan manusia (*human error*) dalam menghitung plafon anggaran.
+  - Melakukan tinjauan menyeluruh (*override* admin) terhadap semua pengajuan dinas.
   - Sistem otomatis mengekstrak tarif uang harian berdasarkan provinsi tujuan.
   - Menghitung tarif penginapan maksimal sesuai eselon/golongan.
-  - Menghitung taksiran biaya tiket pesawat atau transport lokal.
   - Membantu bendahara mencadangkan/memblokir pagu anggaran yang diperlukan sebelum uang benar-benar dicairkan.
 - **Akses:** Super Admin, Kasubag.
 
-#### C. Laporan Perjadin
+#### C. Laporan Perjadin (`/dashboard/laporan`)
 - **Fungsi:** Generator dokumen administratif birokrasi (Cetak PDF).
 - **Kegunaan:**
   - Mengubah data JSON yang diinput menjadi formulir resmi pemerintahan (*pixel-perfect*).
@@ -79,12 +78,12 @@ Modul ini adalah urat nadi utama yang mengelola data mentah dan administratif da
 ### 3. Ganti Uang Persediaan (GUP)
 Modul ini mengelola tata kelola kas kecil/bendahara pengeluaran dalam skema birokrasi pemerintahan.
 
-#### A. Pengajuan GUP
+#### A. Pengajuan GUP (`/dashboard/gup/pengajuan`)
 - **Fungsi:** Pembuatan keranjang/batch tagihan yang akan diajukan penggantian dananya.
 - **Kegunaan:** Ketika bendahara telah menalangi biaya Perjalanan Dinas menggunakan Uang Persediaan (UP), tagihan-tagihan SPJ tersebut dikelompokkan ke dalam satu "Pengajuan GUP". Di sini, pengguna mendaftarkan SPJ mana saja yang akan di-*reimburse* kepada KPPN (Kantor Pelayanan Perbendaharaan Negara).
 - **Akses:** Super Admin, Kasubag.
 
-#### B. Laporan dan Rekapitulasi
+#### B. Laporan GUP (`/dashboard/gup/laporan`)
 - **Fungsi:** Laporan eksekutif terkait sisa Uang Persediaan.
 - **Kegunaan:**
   - Melacak status setiap pengajuan GUP (Draft, Diajukan, Cair).
@@ -92,12 +91,12 @@ Modul ini mengelola tata kelola kas kecil/bendahara pengeluaran dalam skema biro
   - Memastikan *cash flow* kas negara di instansi tetap sehat dan akuntabel.
 - **Akses:** Super Admin, Kasubag.
 
-#### C. LS (Langsung)
+#### C. Pembayaran Langsung / LS (`/dashboard/gup/ls`)
 - **Fungsi:** Manajemen Pembayaran Langsung.
 - **Kegunaan:** Digunakan untuk transaksi perjalanan dinas atau konsinyering (Rapat di Luar Kantor) yang nominalnya melebihi limit Uang Persediaan, sehingga pembayaran ditransfer langsung dari Rekening Kas Negara ke rekening pihak ketiga (misalnya: Hotel, Maskapai, atau Event Organizer).
 - **Akses:** Super Admin, Kasubag.
 
-#### D. Integrasi MAK (Mata Anggaran Kegiatan)
+#### D. Integrasi MAK (`/dashboard/gup/integrasi`)
 - **Fungsi:** Sinkronisasi pembebanan anggaran.
 - **Kegunaan:**
   - Setiap SPJ wajib dibebankan pada satu MAK spesifik (contoh: *524111 - Belanja Perjalanan Dinas Biasa*).
@@ -108,14 +107,13 @@ Modul ini mengelola tata kelola kas kecil/bendahara pengeluaran dalam skema biro
 ---
 
 ### 4. AI (Kecerdasan Buatan)
-Modul ini merupakan injeksi teknologi *State-of-the-Art* untuk memodernisasi cara pengguna berinteraksi dengan sistem ERP yang kaku. (Fokus Tesis / Skripsi).
+Modul ini merupakan injeksi teknologi untuk memodernisasi cara pengguna berinteraksi dengan sistem ERP.
 
-#### A. Chatbot AI
-- **Fungsi:** Asisten Virtual Birokrasi & Pencarian Cerdas berbasis NLP.
+#### A. Chatbot AI (`/dashboard/chatbot`)
+- **Fungsi:** Asisten Virtual Birokrasi & Pencarian Cerdas.
 - **Kegunaan:**
-  - **Intent Classification Berkecepatan Tinggi:** Menggunakan algoritma **FastText** yang dikombinasikan dengan pencarian vektor **HNSW (Hierarchical Navigable Small World)** untuk memahami bahasa alami pegawai secara presisi dan dengan latensi sub-milidetik.
-  - **Navigasi Sistem (Command Hub):** Alih-alih mencari menu secara manual, pengguna dapat mengetik *"Saya mau cetak laporan SPJ Pak Menteri ke Bali bulan lalu"*, dan AI akan mengklasifikasikan niat (intent) tersebut lalu memunculkan dokumen yang dimaksud secara otomatis.
-  - **Tanya Jawab Regulasi SBM:** Pengguna dapat bertanya *"Berapa pagu hotel eselon II di Surabaya?"* dan Chatbot akan meretrieve data SBM yang valid di dalam sistem.
+  - **Navigasi Sistem (Command Hub):** Alih-alih mencari menu secara manual, pengguna dapat berinteraksi dengan AI untuk memunculkan aksi spesifik.
+  - **Tanya Jawab Regulasi SBM:** Pengguna dapat bertanya seputar regulasi SBM yang valid di dalam sistem.
 - **Akses:** Super Admin, Kasubag.
 
 ---
@@ -123,7 +121,7 @@ Modul ini merupakan injeksi teknologi *State-of-the-Art* untuk memodernisasi car
 ### 5. Zona Admin
 Area restriktif untuk mengatur fondasi konfigurasi aplikasi dan hak akses pengguna.
 
-#### A. User
+#### A. Manajemen Pengguna (`/dashboard/admin/users`)
 - **Fungsi:** Manajemen Akun dan *Role-Based Access Control* (RBAC).
 - **Kegunaan:**
   - Membuat, mengedit, atau menonaktifkan akun pegawai (Protokol, Bendahara, Kasubag, Admin).
@@ -131,7 +129,7 @@ Area restriktif untuk mengatur fondasi konfigurasi aplikasi dan hak akses penggu
   - Mengelola data profil, Nomor Induk Pegawai (NIP), dan jabatan struktural yang akan tercetak di lembar SPJ.
 - **Akses:** Super Admin.
 
-#### B. Pengaturan
+#### B. Pengaturan Sistem (`/dashboard/admin/settings`)
 - **Fungsi:** Pusat konfigurasi sistem, parameter global, dan infrastruktur.
 - **Kegunaan:**
   - Memperbarui tabel tarif SBM tahunan tanpa harus mengubah *source code*.
