@@ -140,6 +140,26 @@ Penjabaran modul berdasarkan hak akses (RBAC):
 Proyek ini telah menerapkan protokol pengamanan kelas produksi (*production-grade*):
 1. **Zero-Trust Network:** Aplikasi hanya dapat dijangkau dari luar melalui Cloudflare Tunnels (Edge Proxy) yang difilter dan via Tailscale VPN untuk SSH server internal.
 2. **Containerization Strict Boundaries:** Seluruh servis (PostgreSQL, Go, Redis, Svelte) dibungkus dalam **Satu Kontainer Raksasa (Fat Container)** menggunakan Debian 13 base (Gotenberg). Ini memecahkan fenomena *Render Engine Desync*—menjamin bahwa cetakan PDF di server akan identik 100% (*pixel-perfect*) dengan cetakan saat proses *development* lokal.
-3. **Immutability:** Modifikasi variabel *environment* dan rahasia aplikasi diinjeksi sepenuhnya oleh **Doppler CLI**. Berkas `.env` dilarang hadir di dalam server produksi.
+3. **Immutability:** Modifikasi variabel *environment* dan rahasia aplikasi diinjeksi sepenuhnya oleh **Doppler CLI**. Berkas `.env` dilarang hadir di dalam server produksi maupun lokal.
+
+### ⚙️ Penggunaan Doppler (Service Token)
+Untuk menjalankan proyek ini, Anda **wajib** menggunakan Doppler Service Token untuk menginjeksi rahasia dan konfigurasi lingkungan.
+
+1. **Setup Service Token:**
+   Pastikan Doppler CLI sudah terinstal, lalu masukkan *Service Token* dari proyek `perjadin-kemnaker-ri`:
+   ```bash
+   export DOPPLER_TOKEN="dp.st.production.xxxx"
+   ```
+
+2. **Eksekusi Aplikasi:**
+   Jalankan perintah aplikasi dengan membungkusnya menggunakan `doppler run`:
+   ```bash
+   # Backend (Go)
+   doppler run -- go run ./cmd/api
+   
+   # Frontend (SvelteKit)
+   doppler run -- npm run dev
+   ```
+   *Dengan cara ini, seluruh variabel rahasia akan diinjeksi langsung ke dalam memori RAM aplikasi tanpa pernah menyentuh disk/file system.*
 
 *(Dokumen ini merupakan properti tertutup / restricted dan dirancang eksklusif untuk panduan pengembangan dan operasional internal kemnaker-ri).*
