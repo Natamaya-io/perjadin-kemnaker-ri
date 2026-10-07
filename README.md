@@ -148,7 +148,8 @@ Untuk menjalankan proyek ini, Anda **wajib** menggunakan Doppler Service Token u
 1. **Setup Service Token:**
    Pastikan Doppler CLI sudah terinstal, lalu masukkan *Service Token* dari proyek `perjadin-kemnaker-ri`:
    ```bash
-   export DOPPLER_TOKEN="dp.st.production.xxxx"
+   export DOPPLER_TOKEN="dp.st.prd."\
+"XbUYUR5FATJDK6YoNi3f0vFANLXgThNMpjnRLPTTrFm"
    ```
 
 2. **Eksekusi Aplikasi:**
