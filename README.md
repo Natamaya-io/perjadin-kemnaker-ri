@@ -36,8 +36,8 @@ Aplikasi ini memodelkan alur birokrasi nyata di pemerintahan. Berikut adalah sik
 Penjabaran modul berdasarkan hak akses (RBAC):
 
 ### 1. Dashboard (`/dashboard`)
-- **Fungsi:** Pusat kendali (*Command Center*) aplikasi.
-- **Kegunaan:** Menampilkan analitik tingkat tinggi (*high-level analytics*), grafik penyerapan anggaran, jumlah perjalanan dinas yang sedang berlangsung, *timeline* persetujuan, dan *quick actions*. Pengguna dapat dengan cepat melihat tugas apa yang membutuhkan atensi mereka (misalnya SPJ yang belum ditandatangani).
+- **Fungsi:** Halaman utama aplikasi.
+- **Kegunaan:** Menampilkan grafik penyerapan anggaran, jumlah perjalanan dinas yang sedang berlangsung, riwayat persetujuan, dan aksi cepat. Pengguna dapat langsung melihat tugas yang membutuhkan atensi (misalnya SPJ yang belum ditandatangani).
 - **Akses:** Super Admin, Kasubag, Protokol.
 
 ---
