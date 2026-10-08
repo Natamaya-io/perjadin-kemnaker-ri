@@ -11,7 +11,7 @@ Aplikasi ini mengotomatiskan seluruh siklus birokrasi: mulai dari pengajuan Sura
 ## 🏗️ Arsitektur & Tumpukan Teknologi
 
 
-- **Frontend:** SvelteKit, TailwindCSS, Bits UI.
+- **Frontend:** SvelteKit, TailwindCSS.
 - **Backend:** Golang (Echo Framework, GORM).
 - **Database & Cache:** PostgreSQL 16 & Redis 8.0.
 - **Document Engine:** Gotenberg (berbasis Debian/LibreOffice 26.8) untuk *rendering* PDF yang *pixel-perfect*.

@@ -24,7 +24,6 @@
 		"@testing-library/svelte": "^5.3.1",
 		"@types/node": "^25.8.0",
 		"autoprefixer": "10.4.24",
-		"bits-ui": "2.16.1",
 		"docx-preview": "0.3.7",
 		"eslint": "10.0.3",
 		"eslint-config-prettier": "10.1.8",
